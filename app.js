@@ -12,6 +12,9 @@ function showScreen(name) {
 
   isSwitching = true;
 
+  // Avatar Studio 를 떠날 때는 3D 애니메이션 루프 정지
+  if (current && current.id === 'screen-avatar') closeAvatarStudio();
+
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
 
@@ -55,6 +58,7 @@ async function routeAfterLogin() {
   try {
     var profile = await getProfile();
     if (!profile || profile.avatar === null) {
+      openAvatarStudio(profile);
       showScreen('avatar');
     } else {
       showScreen('shop');
@@ -64,6 +68,19 @@ async function routeAfterLogin() {
     switchTab('signin');
     showScreen('auth');
     showAuthMessage('signin-error', 'Could not load your profile. ' + err.message);
+  }
+}
+
+
+// ===== 매장 화면의 Edit Avatar 버튼 =====
+async function editAvatar() {
+  try {
+    var profile = await getProfile();
+    openAvatarStudio(profile);
+    showScreen('avatar');
+  } catch (err) {
+    console.error(err);
+    alert('Could not load your profile. ' + err.message);
   }
 }
 
