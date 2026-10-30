@@ -35,7 +35,7 @@
     /* ===== 로고: all A but 5μm ===== */
     .logo {
       display: inline-flex;
-      align-items: baseline;   /* all, A, but 의 밑선(baseline)을 똑같이 맞춤 */
+      align-items: baseline;   /* all, A, but, 5μm 의 밑선(baseline)을 똑같이 맞춤 */
       line-height: 1;
     }
     .logo-all,
@@ -54,9 +54,11 @@
     .logo-um {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
-      color: var(--gold);
-      align-self: flex-start;  /* 위쪽으로 올려서 제곱(위첨자)처럼 보이게 */
-      margin-left: 1px;        /* but 바로 오른쪽에 밀착 */
+      color: var(--gold);      /* 5, μ, m 세 글자 모두 같은 골드 */
+      letter-spacing: 0;       /* 자간 없음 */
+      margin-left: 1px;        /* but 에 바짝 붙이기 */
+      position: relative;
+      top: -19px;              /* 밑선에서 위로 올려서 윗부분을 but 의 b 윗부분 높이에 맞춤 */
     }
 
     /* ===== 슬로건 ===== */
@@ -64,9 +66,9 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 9px;
       color: var(--gold);
-      letter-spacing: 5px;
+      letter-spacing: 4px;
       text-transform: uppercase;
-      opacity: 0.5;
+      opacity: 0.7;
       margin-top: 16px;
     }
 
