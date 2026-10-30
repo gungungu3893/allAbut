@@ -20,10 +20,111 @@
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'IBM Plex Sans',sans-serif; background:#06090f; color:#fff; min-height:100vh; }
     :root { --navy:#001D4A; --gold:#D4AF37; --dark:#06090f; --white:#fff; }
+
+    /* ===== 랜딩 페이지 전체 (화면을 꽉 채우고 가운데 정렬) ===== */
+    .landing {
+      min-height: 100vh;
+      background: var(--dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    /* ===== 로고: all A but 5μm ===== */
+    .logo {
+      display: inline-flex;
+      align-items: baseline;   /* all, A, but 의 밑선(baseline)을 똑같이 맞춤 */
+      line-height: 1;
+    }
+    .logo-all,
+    .logo-but {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 36px;
+      font-weight: 200;
+      color: var(--white);
+    }
+    .logo-a {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 48px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    .logo-um {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      align-self: flex-start;  /* 위쪽으로 올려서 제곱(위첨자)처럼 보이게 */
+      margin-left: 1px;        /* but 바로 오른쪽에 밀착 */
+    }
+
+    /* ===== 슬로건 ===== */
+    .slogan {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--gold);
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-top: 16px;
+    }
+
+    /* ===== Start Order 버튼 ===== */
+    .cta-btn {
+      background: var(--gold);
+      color: var(--navy);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 600;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 40px;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .cta-btn:hover {
+      filter: brightness(1.2);  /* 마우스를 올리면 밝아짐 */
+    }
+
+    /* ===== 하단 저작권 문구 (화면 아래 고정) ===== */
+    .footer {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      opacity: 0.2;
+    }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+
+    <!-- 랜딩 페이지 -->
+    <section class="landing">
+
+      <!-- 로고 -->
+      <div class="logo">
+        <span class="logo-all">all</span>
+        <span class="logo-a">A</span>
+        <span class="logo-but">but</span>
+        <span class="logo-um">5μm</span>
+      </div>
+
+      <!-- 슬로건 -->
+      <p class="slogan">Precision Custom Abutment</p>
+
+      <!-- 주문 시작 버튼 -->
+      <button class="cta-btn" onclick="goStep(1)">Start Order</button>
+
+    </section>
+
+    <!-- 하단 저작권 -->
+    <footer class="footer">© 2026 allAbut. All rights reserved.</footer>
+
+  </div>
 
   <script src="lang.js"></script>
   <script src="app.js"></script>
