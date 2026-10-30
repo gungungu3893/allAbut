@@ -16,49 +16,62 @@
   <!-- Three.js v0.160.0 -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'IBM Plex Sans',sans-serif; background:#06090f; color:#fff; min-height:100vh; }
     :root { --navy:#001D4A; --gold:#D4AF37; --dark:#06090f; --white:#fff; }
 
-    /* ===== 랜딩 페이지 전체 (화면을 꽉 채우고 가운데 정렬) ===== */
-    .landing {
+    /* ===== 화면(screen) 공통: 한 번에 하나만 보이고, 페이드로 전환 ===== */
+    .screen {
+      display: none;
       min-height: 100vh;
       background: var(--dark);
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
+      padding: 40px 16px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
     }
+    .screen.active  { display: flex; }   /* 지금 화면 */
+    .screen.visible { opacity: 1; }      /* 서서히 나타남 */
 
-    /* ===== 로고: all A but 5μm ===== */
+    /* ===== 로고: all A but 5μm =====
+       글자 크기는 모두 .logo 의 font-size(36px) 기준 비율(em)로 정해서,
+       .logo-small 을 붙이면 전체가 절반 크기로 줄어들어요. */
     .logo {
       display: inline-flex;
       align-items: baseline;   /* all, A, but, 5μm 의 밑선(baseline)을 똑같이 맞춤 */
       line-height: 1;
+      font-size: 36px;
     }
+    .logo-small { font-size: 18px; }  /* 로그인 화면용 절반 크기 로고 */
+
     .logo-all,
     .logo-but {
       font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 36px;
+      font-size: 1em;          /* 36px */
       font-weight: 200;
       color: var(--white);
     }
     .logo-a {
       font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 48px;
+      font-size: 1.3333em;     /* 48px */
       font-weight: 600;
       color: var(--gold);
     }
     .logo-um {
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
+      font-size: 0.3056em;     /* 11px */
       color: var(--gold);      /* 5, μ, m 세 글자 모두 같은 골드 */
       letter-spacing: 0;       /* 자간 없음 */
       margin-left: 1px;        /* but 에 바짝 붙이기 */
       position: relative;
-      top: -19px;              /* 밑선에서 위로 올려서 윗부분을 but 의 b 윗부분 높이에 맞춤 */
+      top: -1.7273em;          /* -19px: 윗부분을 but 의 b 윗부분 높이에 맞춤 */
     }
 
     /* ===== 슬로건 ===== */
@@ -72,22 +85,172 @@
       margin-top: 16px;
     }
 
-    /* ===== Start Order 버튼 ===== */
-    .cta-btn {
+    /* ===== 골드 버튼 공통 ===== */
+    .cta-btn,
+    .gold-btn {
       background: var(--gold);
       color: var(--navy);
       font-family: 'IBM Plex Sans', sans-serif;
       font-weight: 600;
-      padding: 14px 40px;
       border: none;
       border-radius: 8px;
-      margin-top: 40px;
       cursor: pointer;
-      transition: filter 0.2s;
+      transition: filter 0.2s, opacity 0.2s;
     }
-    .cta-btn:hover {
+    .cta-btn:hover,
+    .gold-btn:hover {
       filter: brightness(1.2);  /* 마우스를 올리면 밝아짐 */
     }
+    .gold-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      filter: none;
+    }
+
+    /* 랜딩의 Start Order 버튼 */
+    .cta-btn {
+      padding: 14px 40px;
+      margin-top: 40px;
+    }
+
+    /* ===== 로그인 화면 배경 (아주 은은한 골드 빛) ===== */
+    #screen-auth {
+      background:
+        radial-gradient(circle at 50% 40%, rgba(212,175,55,0.08), transparent 55%),
+        var(--dark);
+    }
+
+    /* ===== 반투명 유리 패널 ===== */
+    .glass-panel {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      margin-top: 28px;
+      padding: 32px 28px 28px;
+      background: rgba(12,16,24,0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212,175,55,0.25);
+      border-radius: 16px;
+      text-align: left;
+    }
+
+    /* 네 모서리의 짧은 골드 L자 꺾쇠 */
+    .corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 0 solid var(--gold);
+    }
+    .corner.tl { top: 8px;    left: 8px;  border-top-width: 2px;    border-left-width: 2px; }
+    .corner.tr { top: 8px;    right: 8px; border-top-width: 2px;    border-right-width: 2px; }
+    .corner.bl { bottom: 8px; left: 8px;  border-bottom-width: 2px; border-left-width: 2px; }
+    .corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+
+    /* ===== 탭 (Sign In / Create Account) ===== */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 24px;
+    }
+    .tab {
+      flex: 1;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      padding: 12px 0;
+      color: #8892a4;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab:hover { color: #fff; }
+    .tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);  /* 선택된 탭은 골드 밑줄 */
+    }
+
+    /* ===== 입력 칸 ===== */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #8892a4;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus {
+      border-color: var(--gold);  /* 포커스되면 골드 테두리 */
+    }
+
+    /* 패널 안 큰 버튼 (Enter / Create) */
+    .gold-btn.full {
+      width: 100%;
+      height: 48px;
+      margin-top: 8px;
+      font-size: 15px;
+    }
+
+    /* ===== 에러 / 안내 메시지 ===== */
+    .auth-msg {
+      font-size: 12px;
+      line-height: 1.5;
+      min-height: 18px;
+      margin: 4px 0 4px;
+    }
+    .auth-msg.error { color: #ff6b6b; }       /* 빨간 글씨 */
+    .auth-msg.info  { color: var(--gold); }   /* 안내는 골드 글씨 */
+
+    /* ===== ← Back 링크 ===== */
+    .back-link {
+      margin-top: 24px;
+      background: none;
+      border: none;
+      color: #8892a4;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--gold); }
+
+    /* ===== 준비 중 화면 (Avatar Studio / Shop) ===== */
+    .coming-soon {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      margin-bottom: 32px;
+    }
+    .outline-btn {
+      background: none;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 8px;
+      color: var(--gold);
+      padding: 12px 32px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .outline-btn:hover { background: rgba(212,175,55,0.1); }
 
     /* ===== 하단 저작권 문구 (화면 아래 고정) ===== */
     .footer {
@@ -98,14 +261,15 @@
       text-align: center;
       font-size: 10px;
       opacity: 0.2;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div id="app">
 
-    <!-- 랜딩 페이지 -->
-    <section class="landing">
+    <!-- ========== 1. 랜딩 화면 ========== -->
+    <section class="screen" id="screen-landing">
 
       <!-- 로고 -->
       <div class="logo">
@@ -123,12 +287,97 @@
 
     </section>
 
+
+    <!-- ========== 2. 로그인 / 회원가입 화면 ========== -->
+    <section class="screen" id="screen-auth">
+
+      <!-- 작은 로고 (랜딩 로고의 절반 크기) -->
+      <div class="logo logo-small">
+        <span class="logo-all">all</span>
+        <span class="logo-a">A</span>
+        <span class="logo-but">but</span>
+        <span class="logo-um">5μm</span>
+      </div>
+
+      <!-- 유리 패널 -->
+      <div class="glass-panel">
+        <!-- 네 모서리 꺾쇠 -->
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+
+        <!-- 탭 -->
+        <div class="tabs">
+          <button type="button" class="tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+          <button type="button" class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+        </div>
+
+        <!-- Sign In 폼 -->
+        <form id="form-signin" onsubmit="handleSignIn(event)" novalidate>
+          <div class="field">
+            <label for="signin-email">Email</label>
+            <input type="email" id="signin-email" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" autocomplete="current-password">
+          </div>
+          <p class="auth-msg" id="signin-error"></p>
+          <button type="submit" class="gold-btn full" id="signin-btn">Enter</button>
+        </form>
+
+        <!-- Create Account 폼 -->
+        <form id="form-signup" onsubmit="handleSignUp(event)" novalidate style="display:none">
+          <div class="field">
+            <label for="signup-nickname">Nickname</label>
+            <input type="text" id="signup-nickname" autocomplete="nickname">
+          </div>
+          <div class="field">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="signup-password2">Confirm Password</label>
+            <input type="password" id="signup-password2" autocomplete="new-password">
+          </div>
+          <p class="auth-msg" id="signup-error"></p>
+          <button type="submit" class="gold-btn full" id="signup-btn">Create</button>
+        </form>
+      </div>
+
+      <!-- 랜딩으로 돌아가기 -->
+      <button class="back-link" onclick="showScreen('landing')">← Back</button>
+
+    </section>
+
+
+    <!-- ========== 3. 아바타 꾸미기 화면 (준비 중) ========== -->
+    <section class="screen" id="screen-avatar">
+      <p class="coming-soon">Avatar Studio — coming soon</p>
+      <button class="outline-btn" onclick="handleSignOut()">Sign Out</button>
+    </section>
+
+
+    <!-- ========== 4. 매장 화면 (준비 중) ========== -->
+    <section class="screen" id="screen-shop">
+      <p class="coming-soon">Shop — coming soon</p>
+      <button class="outline-btn" onclick="handleSignOut()">Sign Out</button>
+    </section>
+
+
     <!-- 하단 저작권 -->
     <footer class="footer">© 2026 allAbut. All rights reserved.</footer>
 
   </div>
 
+  <script src="config.js"></script>
   <script src="lang.js"></script>
+  <script src="auth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
