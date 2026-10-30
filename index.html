@@ -262,28 +262,33 @@
 
     /* ================================================================
        Avatar Studio (아바타 꾸미기 화면)
-       PC: 왼쪽 3D 미리보기 + 오른쪽 꾸미기 패널
-       모바일: 위 3D 미리보기 + 아래 꾸미기 패널
+       PC: 왼쪽 3D 미리보기(60%) + 오른쪽 꾸미기 패널(40%)
+       모바일: 위 3D 미리보기(45%) + 아래 꾸미기 패널
        ================================================================ */
     #screen-avatar {
       flex-direction: row;
       align-items: stretch;
-      justify-content: stretch;
+      justify-content: flex-start;
       padding: 0;
       height: 100vh;
+      min-height: 0;
+      overflow: hidden;
       text-align: left;
     }
 
-    /* 3D 미리보기 영역 */
+    /* 3D 미리보기 영역 (화면의 60%) */
     .studio-preview {
       position: relative;
-      flex: 1;
+      flex: 0 0 60%;
       min-width: 0;
       background:
         radial-gradient(circle at 50% 70%, rgba(212,175,55,0.10), transparent 50%),
         radial-gradient(circle at 50% 40%, #0d1320, var(--dark) 70%);
     }
+    /* 캔버스는 미리보기 영역을 꽉 채움 */
     #studio-canvas {
+      position: absolute;
+      inset: 0;
       display: block;
       width: 100%;
       height: 100%;
@@ -306,16 +311,18 @@
       pointer-events: none;
     }
 
-    /* 꾸미기 패널 (유리 패널 재사용) */
+    /* 꾸미기 패널 (나머지 40%) */
     .studio-panel.glass-panel {
-      width: 420px;
+      flex: 1 1 0;
+      width: auto;
       max-width: none;
-      flex-shrink: 0;
-      margin: 24px 24px 24px 0;
-      padding: 28px 24px 24px;
+      min-width: 0;
+      margin: 20px 20px 20px 0;
+      padding: 26px 22px 20px;
       display: flex;
       flex-direction: column;
       min-height: 0;
+      container-type: inline-size;   /* 패널 너비에 따라 탭 배치를 바꾸기 위해 */
     }
 
     /* 패널 머리말: 제목 + 닉네임 + Sign Out */
@@ -324,12 +331,16 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
+      padding: 0 4px;
+      flex-shrink: 0;
     }
+    .studio-header > div { min-width: 0; }
     .studio-title {
       font-size: 22px;
       font-weight: 200;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
     .studio-title b { font-weight: 600; color: var(--gold); }
     .studio-nick {
@@ -337,150 +348,203 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
       color: #8892a4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .studio-nick::before { content: '@'; color: var(--gold); }
-    .studio-header .back-link { margin-top: 4px; }
+    .studio-header .back-link {
+      margin-top: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
 
-    /* 카테고리 탭 (가로 스크롤) */
+    /* 카테고리 아이콘 탭: 기본은 5개 + 4개 두 줄 */
     .studio-tabs {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
       gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 10px;
+      padding-bottom: 14px;
       margin-bottom: 14px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
-      scrollbar-width: none;
       flex-shrink: 0;
     }
-    .studio-tabs::-webkit-scrollbar { display: none; }
+    /* 패널이 넓으면 9개 한 줄 */
+    @container (min-width: 560px) {
+      .studio-tabs { grid-template-columns: repeat(9, 1fr); }
+    }
     .studio-tab {
-      flex-shrink: 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
       background: none;
-      border: 1px solid transparent;
-      border-radius: 999px;
-      padding: 7px 14px;
-      color: #8892a4;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 13px;
-      cursor: pointer;
-      transition: color 0.2s, border-color 0.2s, background 0.2s;
-    }
-    .studio-tab:hover { color: #fff; }
-    .studio-tab.active {
+      border: none;
+      padding: 0;
       color: var(--gold);
-      border-color: rgba(212,175,55,0.5);
-      background: rgba(212,175,55,0.08);
+      cursor: pointer;
     }
+    .studio-tab-icon {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      opacity: 0.65;
+      transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+    }
+    .studio-tab-icon svg { width: 22px; height: 22px; }
+    .studio-tab:hover .studio-tab-icon { opacity: 1; }
+    .studio-tab.active .studio-tab-icon {
+      opacity: 1;
+      background: rgba(212,175,55,0.15);   /* 선택된 탭: 골드 반투명 배경 */
+      border-color: var(--gold);           /* + 골드 테두리 */
+    }
+    .studio-tab-label {
+      max-width: 100%;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 9px;
+      line-height: 1.2;
+      color: #8892a4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .studio-tab.active .studio-tab-label { color: var(--gold); }
 
-    /* 아이템 그리드 */
+    /* 아이템 그리드: 정사각형 카드 3열 (이 부분만 스크롤) */
     .studio-items {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
       display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
+      grid-auto-rows: max-content;
       align-content: start;
-      padding: 4px 2px;
+      padding: 6px 6px 6px 2px;
     }
-    .studio-items.cards  { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
-    .studio-items.colors { grid-template-columns: repeat(auto-fill, 52px); gap: 14px; }
 
-    /* 이름 카드 */
+    /* 그림 카드 */
     .item-card {
       position: relative;
-      height: 56px;
-      padding: 0 10px;
+      aspect-ratio: 1 / 1;
+      padding: 0;
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      color: #d5dae3;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 13px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
-    .item-card:hover { border-color: rgba(212,175,55,0.4); }
+    .item-card:hover { border-color: rgba(212,175,55,0.45); }
     .item-card.selected {
-      border: 2px solid var(--gold);   /* 선택된 아이템은 골드 테두리 */
-      background: rgba(212,175,55,0.08);
-      color: #fff;
+      border: 2px solid var(--gold);                 /* 골드 테두리 */
+      background: rgba(212,175,55,0.06);
+      box-shadow: 0 0 16px rgba(212,175,55,0.28);    /* 은은한 골드 빛 */
     }
-
-    /* 동그란 색 칩 */
-    .color-chip {
-      position: relative;
-      width: 52px;
-      height: 52px;
+    .item-card img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 11px;
+      transition: opacity 0.25s;
+    }
+    /* 미리보기 그림을 만드는 중 */
+    .item-card.loading img { opacity: 0; }
+    .item-card.loading::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border: 2px solid rgba(212,175,55,0.25);
+      border-top-color: var(--gold);
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.12);
-      cursor: pointer;
-      transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+      animation: studio-spin 0.8s linear infinite;
     }
-    .color-chip:hover { transform: scale(1.06); }
-    .color-chip.selected {
-      border: 3px solid var(--gold);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+    @keyframes studio-spin { to { transform: rotate(360deg); } }
+
+    /* 색상 아이템: 오른쪽 아래 동그란 색 칩 */
+    .color-dot {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.85);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
     }
 
     /* 잠긴 아이템 */
-    .item-card.locked,
-    .color-chip.locked {
+    .item-card.locked {
       opacity: 0.4;
       cursor: not-allowed;
     }
     .lock-icon {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 16px;
+      left: 8px;
+      bottom: 6px;
+      font-size: 13px;
     }
-    .item-card .lock-icon { left: auto; right: 6px; top: auto; bottom: 4px; transform: none; font-size: 11px; }
 
     /* 가격 뱃지 (오른쪽 위) */
     .price-badge {
       position: absolute;
-      top: -6px;
-      right: -6px;
+      top: 6px;
+      right: 6px;
       background: var(--gold);
       color: var(--navy);
       font-family: 'IBM Plex Mono', monospace;
       font-size: 9px;
       font-weight: 500;
-      padding: 2px 5px;
+      padding: 2px 6px;
       border-radius: 999px;
     }
 
-    /* 하단 버튼 2개 */
+    /* 하단 버튼 2개 (패널 맨 아래 고정) */
     .studio-actions {
       display: flex;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 6px;
       flex-shrink: 0;
     }
-    .studio-actions .outline-btn { flex: 0 0 auto; padding: 0 18px; height: 48px; }
-    .studio-actions .gold-btn    { flex: 1; height: 48px; font-size: 15px; }
+    .studio-actions .outline-btn { flex: 0 0 auto; padding: 0 18px; height: 48px; white-space: nowrap; }
+    .studio-actions .gold-btn    { flex: 1; height: 48px; font-size: 15px; white-space: nowrap; }
+    #studio-error { flex-shrink: 0; }
 
     /* Avatar Studio 화면에서는 하단 저작권 문구 숨김 (버튼과 겹치지 않게) */
     body:has(#screen-avatar.active) .footer { display: none; }
 
-    /* ----- 모바일: 위아래 분할 ----- */
+    /* ----- 모바일 (폭 768px 이하): 위아래 분할 ----- */
     @media (max-width: 768px) {
       #screen-avatar {
         flex-direction: column;
-        height: auto;
-        min-height: 100vh;
+        height: 100vh;
+        height: 100dvh;   /* 모바일 주소창 높이를 뺀 실제 화면 높이 */
       }
       .studio-preview {
-        flex: none;
-        height: 45vh;
+        flex: 0 0 45%;    /* 위 45%: 3D 미리보기 */
       }
+      .studio-hint { bottom: 22px; }
       .studio-panel.glass-panel {
-        width: auto;
-        margin: -16px 12px 12px;
-        padding: 22px 16px 16px;
+        flex: 1 1 0;      /* 아래 나머지: 꾸미기 패널 (아이템 부분만 스크롤) */
+        margin: -12px 10px 10px;
+        padding: 18px 14px 14px;
       }
-      .studio-items { max-height: 38vh; }
+      .studio-header { margin-bottom: 12px; }
+      .studio-title { font-size: 19px; }
+      .studio-tabs { gap: 4px; padding-bottom: 10px; margin-bottom: 10px; }
+      .studio-tab-icon { width: 38px; height: 38px; }
+      .studio-tab-icon svg { width: 20px; height: 20px; }
+      .studio-items { gap: 8px; }
     }
 
 
@@ -612,10 +676,10 @@
           <button class="back-link" onclick="handleSignOut()">Sign Out</button>
         </div>
 
-        <!-- 카테고리 탭 (avatar-studio.js 가 채워요) -->
+        <!-- 카테고리 아이콘 탭 (avatar-studio.js 가 채워요) -->
         <div class="studio-tabs" id="studio-tabs"></div>
 
-        <!-- 아이템 그리드 (avatar-studio.js 가 채워요) -->
+        <!-- 아이템 그림 카드 (avatar-studio.js 가 채워요) -->
         <div class="studio-items" id="studio-items"></div>
 
         <p class="auth-msg" id="studio-error"></p>

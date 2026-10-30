@@ -299,15 +299,17 @@ function avBuildHair(hairId, hairColor, faceId) {
 
   } else if (hairId === 'hair_ponytail') {
     g.add(cap(PI * 0.5, 0.3));
-    // 머리끈 (골드)
-    var tie = avMesh(new THREE.TorusGeometry(0.075, 0.025, 4, 8), avGold(), 0, 0.08, -0.56);
-    g.add(tie);
-    // 묶은 머리 (머리끈에서 아래로 늘어짐)
-    var tail = avMesh(new THREE.CylinderGeometry(0.12, 0.05, 0.5, 6), mat, 0, -0.18, -0.6);
-    tail.rotation.x = 0.12;
-    g.add(tail);
-    var knot = avMesh(new THREE.SphereGeometry(0.11, 6, 4), mat, 0, 0.06, -0.6);
+    // 정수리 뒤쪽에서 묶은 하이 포니테일 (어느 각도에서도 꼬리가 보이게)
+    var knot = avMesh(new THREE.SphereGeometry(0.12, 6, 4), mat, 0, 0.36, -0.46);
     g.add(knot);
+    // 머리끈 (골드)
+    var tie = avMesh(new THREE.TorusGeometry(0.085, 0.026, 4, 8), avGold(), 0, 0.33, -0.55);
+    tie.rotation.x = 0.9;
+    g.add(tie);
+    // 묶은 머리 (뒤로 뻗었다가 아래로 늘어짐)
+    var tail = avMesh(new THREE.CylinderGeometry(0.13, 0.05, 0.62, 6), mat, 0, 0.05, -0.74);
+    tail.rotation.x = 0.55;
+    g.add(tail);
   }
 
   return g;
