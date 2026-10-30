@@ -458,6 +458,8 @@ async function saveAvatar() {
       .single();
     if (result.error) throw result.error;
 
+    // 저장된 프로필로 매장 열기 (바뀐 아바타가 매장에 바로 반영됨)
+    openShop(result.data);
     showScreen('shop');
   } catch (err) {
     console.error(err);

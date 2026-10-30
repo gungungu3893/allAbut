@@ -18,8 +18,9 @@ function showScreen(name) {
 
   isSwitching = true;
 
-  // Avatar Studio 를 떠날 때는 3D 애니메이션 루프 정지
+  // Avatar Studio / 매장을 떠날 때는 3D 애니메이션 루프 정지
   if (current && current.id === 'screen-avatar') closeAvatarStudio();
+  if (current && current.id === 'screen-shop') closeShop();
 
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
@@ -81,6 +82,7 @@ async function routeAfterLogin() {
       openAvatarStudio(profile);
       showScreen('avatar');
     } else {
+      openShop(profile);
       showScreen('shop');
     }
   } catch (err) {
@@ -225,5 +227,6 @@ async function handleSignUp(event) {
 
 
 // ===== 페이지 처음 열릴 때 =====
+document.documentElement.lang = currentLang; // 저장된 언어 반영 (en / ko)
 showScreen('landing');
 checkSessionOnLoad(); // 1시간 세션이 남아 있는지 확인 (session.js)
