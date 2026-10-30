@@ -9,7 +9,8 @@
 //   ├─ armL, armR      팔 + 손
 //   └─ head            머리
 //       ├─ face        얼굴(머리 모양) + 귀
-//       ├─ eyes
+//       ├─ eyes        (female 은 속눈썹 포함)
+//       ├─ cheeks      볼 블러셔 (female 만)
 //       ├─ nose
 //       ├─ mouth
 //       └─ hair
@@ -138,7 +139,16 @@ function avBuildFace(faceId, skin) {
   return { group: g, headMesh: head };
 }
 
-function avBuildEyes(eyesId, headMesh) {
+// 눈 모양별 속눈썹 위치 (눈 중심 기준: 바깥쪽 x, 윗부분 y)
+var AV_LASH_SPOT = {
+  eyes_dot:   { x: 0.03,  y: 0.05 },
+  eyes_round: { x: 0.055, y: 0.08 },
+  eyes_smile: { x: 0.05,  y: 0.03 },
+  eyes_sharp: { x: 0.055, y: 0.035 }
+};
+
+// female 은 속눈썹을 그려요
+function avBuildEyes(eyesId, headMesh, withLashes) {
   var g = avGroup('eyes');
   var dark = '#1a1a2e';
   var ex = 0.17, ey = 0.02;
@@ -175,9 +185,41 @@ function avBuildEyes(eyesId, headMesh) {
       eye.add(slit, spark);
     }
 
+    // 속눈썹: 눈 바깥쪽 위에 바깥으로 퍼지는 작은 선 3개
+    if (withLashes) {
+      var spot = AV_LASH_SPOT[eyesId] || AV_LASH_SPOT.eyes_dot;
+      var lashGeo = new THREE.BoxGeometry(0.013, 0.05, 0.012);
+      for (var k = 0; k < 3; k++) {
+        var lash = avMesh(lashGeo, avMat(dark),
+          side * (spot.x - 0.012 + k * 0.02),
+          spot.y + 0.018 - k * 0.012,
+          0.02
+        );
+        lash.rotation.z = -side * (0.3 + k * 0.35); // 바깥쪽으로 갈수록 더 눕힘
+        eye.add(lash);
+      }
+    }
+
     g.add(eye);
   });
 
+  return g;
+}
+
+// 볼 블러셔 (연한 분홍, 반투명)
+function avBuildCheeks(headMesh, skin) {
+  var g = avGroup('cheeks');
+  var color = '#' + new THREE.Color(skin).lerp(new THREE.Color('#ff6b81'), 0.5).getHexString();
+  var mat = avMat(color, { transparent: true, opacity: 0.6, depthWrite: false });
+  var geo = new THREE.SphereGeometry(0.075, 8, 5);
+  var y = -0.13;
+
+  [-1, 1].forEach(function (side) {
+    var x = 0.26 * side;
+    var cheek = avMesh(geo, mat, x, y, avSurfaceZ(headMesh, x, y) - 0.005);
+    cheek.scale.set(1, 0.6, 0.3);
+    g.add(cheek);
+  });
   return g;
 }
 
@@ -326,19 +368,30 @@ var AVATAR_OUTFITS = {
   outfit_polo:    { torso: '#1d6f7a', upper: '#1d6f7a', lower: null,      pants: '#cbb994', shoes: '#5a3d2b' }
 };
 
-// 몸통 치수 (gender 에 따라 어깨 폭, 허리가 조금 달라요)
+// 몸통 치수 (gender 에 따라 체형이 달라요)
+// top: 어깨 쪽 반지름 / waist: 허리 반지름 / bottom: 몸통 아래쪽 반지름 / waistY: 허리 높이
+// - male  : 어깨 넓고, 아래로 갈수록 살짝 좁아지는 일자 체형
+// - female: 어깨 좁고, 허리 잘록하고, 아래쪽이 넓게 퍼지는 치마 라인
 function avBodySize(genderId) {
   if (genderId === 'female') {
-    return { top: 0.27, bottom: 0.3, legX: 0.12, legR: 0.105 };
+    return { top: 0.25, waist: 0.19, bottom: 0.35, waistY: 0.98, shoulderR: 0.1, legX: 0.115, legR: 0.1 };
   }
-  return { top: 0.34, bottom: 0.28, legX: 0.135, legR: 0.115 };
+  return { top: 0.34, waist: 0.31, bottom: 0.28, waistY: 0.98, shoulderR: 0.12, legX: 0.135, legR: 0.115 };
+}
+
+// 높이 y 에서 몸통 반지름
+function avTorsoRadius(size, y) {
+  if (y < size.waistY) {
+    var t1 = (y - AV.legTop) / (size.waistY - AV.legTop);
+    return size.bottom + (size.waist - size.bottom) * t1;
+  }
+  var t2 = (y - size.waistY) / (AV.torsoTop - size.waistY);
+  return size.waist + (size.top - size.waist) * t2;
 }
 
 // 몸통 앞면 z 좌표 (높이 y 에서)
 function avTorsoFrontZ(size, y) {
-  var t = (y - AV.legTop) / (AV.torsoTop - AV.legTop);
-  var r = size.bottom + (size.top - size.bottom) * t;
-  return r * Math.cos(TORSO_TURN) + 0.006;
+  return avTorsoRadius(size, y) * Math.cos(TORSO_TURN) + 0.006;
 }
 
 // 아래로 뾰족한 V 모양 (V넥, 셔츠 깃 등에 사용)
@@ -369,17 +422,20 @@ function avBuildBody(config, skin) {
   var g = avGroup('body');
   var size = avBodySize(config.gender);
   var style = AVATAR_OUTFITS[config.outfit] || AVATAR_OUTFITS.outfit_labcoat;
-  var torsoH = AV.torsoTop - AV.legTop;
-
-  // 몸통
-  var torso = avMesh(
-    new THREE.CylinderGeometry(size.top, size.bottom, torsoH, TORSO_SIDES, 1, false, TORSO_TURN),
-    avMat(style.torso), 0, AV.legTop + torsoH / 2, 0
-  );
-  g.add(torso);
+  // 몸통 (허리를 기준으로 위/아래 두 조각)
+  var lowerH = size.waistY - AV.legTop;
+  var upperH = AV.torsoTop - size.waistY;
+  g.add(avMesh(
+    new THREE.CylinderGeometry(size.waist, size.bottom, lowerH, TORSO_SIDES, 1, false, TORSO_TURN),
+    avMat(style.torso), 0, AV.legTop + lowerH / 2, 0
+  ));
+  g.add(avMesh(
+    new THREE.CylinderGeometry(size.top, size.waist, upperH, TORSO_SIDES, 1, false, TORSO_TURN),
+    avMat(style.torso), 0, size.waistY + upperH / 2, 0
+  ));
 
   // 어깨 (둥글게)
-  var shoulderGeo = new THREE.SphereGeometry(0.12, 6, 4);
+  var shoulderGeo = new THREE.SphereGeometry(size.shoulderR, 6, 4);
   g.add(avMesh(shoulderGeo, avMat(style.upper || style.torso), -(size.top - 0.03), AV.torsoTop - 0.06, 0));
   g.add(avMesh(shoulderGeo, avMat(style.upper || style.torso), size.top - 0.03, AV.torsoTop - 0.06, 0));
 
@@ -550,7 +606,9 @@ function buildAvatar(config) {
   head.position.y = AV.headY;
   var face = avBuildFace(config.face, skin);
   head.add(face.group);
-  head.add(avBuildEyes(config.eyes, face.headMesh));
+  var isFemale = config.gender === 'female';
+  head.add(avBuildEyes(config.eyes, face.headMesh, isFemale));
+  head.add(isFemale ? avBuildCheeks(face.headMesh, skin) : avGroup('cheeks'));
   head.add(avBuildNose(config.nose, face.headMesh, skin));
   head.add(avBuildMouth(config.mouth, face.headMesh));
   head.add(avBuildHair(config.hair, hairColor, config.face));

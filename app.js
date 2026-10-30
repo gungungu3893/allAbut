@@ -3,12 +3,18 @@ console.log('allAbut 5μm loaded');
 
 
 // ===== 화면 전환 (부드러운 페이드 0.4초) =====
-var isSwitching = false; // 전환 중에 또 누르는 것 방지
+var isSwitching = false;   // 전환 중인지
+var pendingScreen = null;  // 전환 중에 들어온 다음 화면 요청 (전환이 끝나면 이어서 처리)
 
 function showScreen(name) {
+  if (isSwitching) {
+    pendingScreen = name;
+    return;
+  }
+
   var next = document.getElementById('screen-' + name);
   var current = document.querySelector('.screen.active');
-  if (!next || next === current || isSwitching) return;
+  if (!next || next === current) return;
 
   isSwitching = true;
 
@@ -28,6 +34,13 @@ function showScreen(name) {
       requestAnimationFrame(function () {
         next.classList.add('visible');
         isSwitching = false;
+
+        // 전환 중에 들어온 요청이 있으면 이어서 처리
+        if (pendingScreen) {
+          var waiting = pendingScreen;
+          pendingScreen = null;
+          showScreen(waiting);
+        }
       });
     });
   }, current ? 400 : 0);
@@ -40,6 +53,13 @@ async function goStep(n) {
   if (n !== 1) return;
 
   var session = await getSession();
+
+  // Supabase 로그인은 남아 있지만 1시간 세션이 끝났으면 → 로그아웃 처리
+  if (session && getRemaining() <= 0) {
+    await endSession('invalid');
+    session = null;
+  }
+
   if (session) {
     // 이미 로그인 상태 → 로그인 화면 건너뛰기
     await routeAfterLogin();
@@ -156,6 +176,7 @@ async function handleSignIn(event) {
   setLoading(button, true, 'Enter');
   try {
     await signIn(email, password);
+    startSession(); // 로그인 성공 → 1시간 세션 시작
     await routeAfterLogin();
   } catch (err) {
     showAuthMessage('signin-error', friendlyError(err));
@@ -186,7 +207,8 @@ async function handleSignUp(event) {
     var data = await signUp(email, password, nickname);
 
     if (data.session) {
-      // 이메일 인증 없이 바로 로그인된 경우 → 첫 로그인이니 아바타 화면으로
+      // 이메일 인증 없이 바로 로그인된 경우 → 1시간 세션 시작 + 첫 로그인이니 아바타 화면으로
+      startSession();
       await routeAfterLogin();
     } else {
       // 이메일 인증이 필요한 경우 → Sign In 탭으로 보내고 안내
@@ -202,16 +224,6 @@ async function handleSignUp(event) {
 }
 
 
-// ===== Sign Out 버튼 =====
-async function handleSignOut() {
-  try {
-    await signOut();
-  } catch (err) {
-    console.error(err);
-  }
-  showScreen('landing');
-}
-
-
 // ===== 페이지 처음 열릴 때 =====
 showScreen('landing');
+checkSessionOnLoad(); // 1시간 세션이 남아 있는지 확인 (session.js)

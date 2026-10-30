@@ -243,7 +243,7 @@ var preview = null;        // 미리보기용 렌더러, 장면, 카메라
 var PREVIEW_SHOTS = {
   face:  { camY: 1.94, camZ: 2.6, lookY: 1.9,  rotY: 0.18 },
   hair:  { camY: 1.98, camZ: 2.8, lookY: 1.86, rotY: 0.85 },
-  upper: { camY: 1.72, camZ: 3.3, lookY: 1.6,  rotY: 0.3 }
+  upper: { camY: 1.62, camZ: 3.8, lookY: 1.5,  rotY: 0.3 }  // 허리·치마 라인까지 보이게
 };
 var PREVIEW_SHOT_OF = {
   gender: 'upper', outfit: 'upper',

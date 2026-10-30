@@ -548,6 +548,144 @@
     }
 
 
+    /* ================================================================
+       로그인 세션 (남은 시간 표시 / 5분 경고 팝업 / 만료 안내)
+       ================================================================ */
+
+    /* 남은 시간 표시: 시계 아이콘 + 52:13 + [+1h] */
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .session-badge svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .session-time { min-width: 38px; }
+    .session-time.warn { color: #ff9f43; }          /* 10분 이하: 주황 */
+    .session-time.danger {                          /* 5분 이하: 빨강 + 천천히 깜빡임 */
+      color: #ff5c5c;
+      animation: session-blink 1.6s ease-in-out infinite;
+    }
+    @keyframes session-blink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+    .session-extend {
+      background: none;
+      border: 1px solid rgba(212,175,55,0.6);
+      border-radius: 999px;
+      color: var(--gold);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .session-extend:hover { background: rgba(212,175,55,0.12); }
+    .session-extend:disabled { cursor: default; }
+
+    /* Avatar Studio 머리말 오른쪽: 남은 시간 + Sign Out */
+    .studio-header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .studio-header-right .back-link { margin-top: 0; }
+
+    /* 매장 화면 오른쪽 위 */
+    .shop-topbar {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    #screen-shop { position: relative; }
+
+    /* 5분 경고 팝업 */
+    .session-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(3,5,10,0.6);   /* 배경 살짝 어둡게 */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .session-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .session-modal .glass-panel {
+      max-width: 360px;
+      margin-top: 0;
+      text-align: center;
+      transform: scale(0.96);
+      transition: transform 0.3s ease;
+    }
+    .session-modal.open .glass-panel { transform: scale(1); }
+    .session-modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .session-modal-text {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #8892a4;
+    }
+    .session-modal-countdown {
+      margin: 18px 0 22px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 40px;
+      font-weight: 300;
+      color: #ff5c5c;
+      letter-spacing: 2px;
+    }
+    .session-modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .session-modal-actions .gold-btn,
+    .session-modal-actions .outline-btn {
+      width: 100%;
+      height: 48px;
+      font-size: 15px;
+    }
+
+    /* 랜딩 화면 안내 문구 (Session expired...) */
+    .landing-notice {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      z-index: 150;
+      transform: translate(-50%, -10px);
+      max-width: calc(100% - 32px);
+      padding: 12px 20px;
+      background: rgba(12,16,24,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(212,175,55,0.35);
+      border-radius: 10px;
+      color: var(--gold);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .landing-notice.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+
     /* ===== 하단 저작권 문구 (화면 아래 고정) ===== */
     .footer {
       position: fixed;
@@ -673,7 +811,15 @@
             <h2 class="studio-title">Avatar <b>Studio</b></h2>
             <p class="studio-nick" id="studio-nickname"></p>
           </div>
-          <button class="back-link" onclick="handleSignOut()">Sign Out</button>
+          <div class="studio-header-right">
+            <!-- 남은 세션 시간 (session.js 가 1초마다 갱신) -->
+            <div class="session-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="session-time">--:--</span>
+              <button type="button" class="session-extend" onclick="handleExtendClick(this)">+1h</button>
+            </div>
+            <button class="back-link" onclick="endSession('manual')">Sign Out</button>
+          </div>
         </div>
 
         <!-- 카테고리 아이콘 탭 (avatar-studio.js 가 채워요) -->
@@ -695,12 +841,44 @@
 
     <!-- ========== 4. 매장 화면 (준비 중) ========== -->
     <section class="screen" id="screen-shop">
+      <!-- 오른쪽 위: 남은 세션 시간 -->
+      <div class="shop-topbar">
+        <div class="session-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="session-time">--:--</span>
+          <button type="button" class="session-extend" onclick="handleExtendClick(this)">+1h</button>
+        </div>
+      </div>
+
       <p class="coming-soon">Shop — coming soon</p>
       <div class="shop-actions">
         <button class="outline-btn" onclick="editAvatar()">Edit Avatar</button>
-        <button class="outline-btn" onclick="handleSignOut()">Sign Out</button>
+        <button class="outline-btn" onclick="endSession('manual')">Sign Out</button>
       </div>
     </section>
+
+
+    <!-- ========== 5분 경고 팝업 ========== -->
+    <div class="session-modal" id="session-modal" role="dialog" aria-modal="true" aria-labelledby="session-modal-title">
+      <div class="glass-panel">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+
+        <h3 class="session-modal-title" id="session-modal-title">Session ending soon</h3>
+        <p class="session-modal-text">You will be signed out in</p>
+        <p class="session-modal-countdown" id="session-modal-countdown">05:00</p>
+
+        <div class="session-modal-actions">
+          <button type="button" class="gold-btn" onclick="handleModalExtend()">Extend 1 hour</button>
+          <button type="button" class="outline-btn" onclick="endSession('manual')">Sign out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 랜딩 안내 문구 (세션 만료 시 3초간 표시) -->
+    <div class="landing-notice" id="landing-notice" role="status"></div>
 
 
     <!-- 하단 저작권 -->
@@ -711,6 +889,7 @@
   <script src="config.js"></script>
   <script src="lang.js"></script>
   <script src="auth.js"></script>
+  <script src="session.js"></script>
   <script src="avatar-catalog.js"></script>
   <script src="avatar.js"></script>
   <script src="avatar-studio.js"></script>
