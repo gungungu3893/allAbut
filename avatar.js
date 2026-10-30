@@ -4,7 +4,7 @@
 //
 // 캐릭터 구조 (각 파츠는 이름이 붙은 Group 이라 나중에 따로 갈아끼울 수 있어요)
 //   avatar
-//   ├─ legL, legR      다리 + 신발
+//   ├─ legL, legR      다리 + 신발 (엉덩이 높이가 기준점)
 //   ├─ body            몸통 + 옷 디테일
 //   ├─ armL, armR      팔 + 손
 //   └─ head            머리
@@ -572,9 +572,10 @@ function avBuildLeg(side, config) {
   var size = avBodySize(config.gender);
   var style = AVATAR_OUTFITS[config.outfit] || AVATAR_OUTFITS.outfit_labcoat;
 
-  g.position.set(size.legX * side, 0, 0);
-  g.add(avMesh(new THREE.CylinderGeometry(size.legR, size.legR * 0.9, 0.52, 6), avMat(style.pants), 0, 0.34, 0));
-  var shoe = avMesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), avMat(style.shoes), 0, 0.05, 0.04);
+  // 엉덩이 높이를 기준점으로 해서 걸을 때 다리가 앞뒤로 흔들려요
+  g.position.set(size.legX * side, AV.legTop, 0);
+  g.add(avMesh(new THREE.CylinderGeometry(size.legR, size.legR * 0.9, 0.52, 6), avMat(style.pants), 0, 0.34 - AV.legTop, 0));
+  var shoe = avMesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), avMat(style.shoes), 0, 0.05 - AV.legTop, 0.04);
   g.add(shoe);
   return g;
 }
@@ -614,11 +615,13 @@ function buildAvatar(config) {
   head.add(avBuildHair(config.hair, hairColor, config.face));
   avatar.add(head);
 
-  // 숨쉬기 애니메이션용 처음 위치 기억
-  ['head', 'body', 'armL', 'armR'].forEach(function (name) {
+  // 애니메이션용: 파츠를 바로 찾을 수 있게 저장 + 처음 위치 기억
+  avatar.userData.parts = {};
+  ['head', 'body', 'armL', 'armR', 'legL', 'legR'].forEach(function (name) {
     var part = avatar.getObjectByName(name);
     part.userData.baseY = part.position.y;
     part.userData.baseRotZ = part.rotation.z;
+    avatar.userData.parts[name] = part;
   });
 
   return avatar;
@@ -627,27 +630,59 @@ function buildAvatar(config) {
 
 // ===== 숨쉬는 듯한 아주 약한 움직임 =====
 // 매 프레임마다 호출하세요. time 은 초 단위 시간.
+// (걷다가 멈추면 팔·다리가 부드럽게 제자리로 돌아와요)
 function animateIdle(group, time) {
+  var p = group.userData.parts;
+  if (!p) return;
   var breath = Math.sin(time * 1.8);
 
-  var body = group.getObjectByName('body');
-  var head = group.getObjectByName('head');
-  var armL = group.getObjectByName('armL');
-  var armR = group.getObjectByName('armR');
+  p.body.position.y = p.body.userData.baseY + breath * 0.006;
+  p.head.position.y = p.head.userData.baseY + breath * 0.012;
+  p.head.rotation.z = Math.sin(time * 0.7) * 0.02;
 
-  if (body) body.position.y = body.userData.baseY + breath * 0.006;
-  if (head) {
-    head.position.y = head.userData.baseY + breath * 0.012;
-    head.rotation.z = Math.sin(time * 0.7) * 0.02;
-  }
-  if (armL) {
-    armL.position.y = armL.userData.baseY + breath * 0.008;
-    armL.rotation.z = armL.userData.baseRotZ - breath * 0.015;
-  }
-  if (armR) {
-    armR.position.y = armR.userData.baseY + breath * 0.008;
-    armR.rotation.z = armR.userData.baseRotZ + breath * 0.015;
-  }
+  p.armL.position.y = p.armL.userData.baseY + breath * 0.008;
+  p.armL.rotation.z = p.armL.userData.baseRotZ - breath * 0.015;
+  p.armR.position.y = p.armR.userData.baseY + breath * 0.008;
+  p.armR.rotation.z = p.armR.userData.baseRotZ + breath * 0.015;
+
+  // 걷기 동작에서 남은 앞뒤 흔들림을 서서히 0 으로
+  p.armL.rotation.x *= 0.82;
+  p.armR.rotation.x *= 0.82;
+  p.legL.rotation.x *= 0.82;
+  p.legR.rotation.x *= 0.82;
+}
+
+
+// ===== 걷기 동작 =====
+// 매 프레임마다 호출하세요. time 은 초 단위 시간, speed 는 걷는 속도 (1 = 보통)
+function animateWalk(group, time, speed) {
+  var p = group.userData.parts;
+  if (!p) return;
+  var phase = time * 9 * (speed || 1);
+  var swing = Math.sin(phase);
+  var bob = Math.abs(Math.sin(phase)) * 0.035;
+
+  p.legL.rotation.x = swing * 0.55;
+  p.legR.rotation.x = -swing * 0.55;
+  p.armL.rotation.x = -swing * 0.45;
+  p.armR.rotation.x = swing * 0.45;
+  p.armL.rotation.z = p.armL.userData.baseRotZ;
+  p.armR.rotation.z = p.armR.userData.baseRotZ;
+
+  p.body.position.y = p.body.userData.baseY + bob;
+  p.head.position.y = p.head.userData.baseY + bob;
+  p.head.rotation.z = 0;
+  p.armL.position.y = p.armL.userData.baseY + bob;
+  p.armR.position.y = p.armR.userData.baseY + bob;
+}
+
+
+// ===== 손 흔들기 (오른팔을 들고 좌우로) =====
+function animateWave(group, time) {
+  var p = group.userData.parts;
+  if (!p) return;
+  p.armR.rotation.x = 0;
+  p.armR.rotation.z = p.armR.userData.baseRotZ + 2.5 + Math.sin(time * 8) * 0.3;
 }
 
 

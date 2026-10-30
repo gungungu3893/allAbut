@@ -667,55 +667,78 @@
 
 
     /* ================================================================
-       매장 화면 (3D 매장 + NPC 대화창)
+       월드 화면 (방콕 골목 + allAbut 체험관)
        ================================================================ */
-    #screen-shop {
+    #screen-world {
       position: relative;
       padding: 0;
       height: 100vh;
       height: 100dvh;
       min-height: 0;
       overflow: hidden;
-      background:
-        radial-gradient(circle at 50% 35%, #0e1626, var(--dark) 70%);
+      background: #06090f;
     }
-    #shop-canvas {
+    #world-canvas {
       position: absolute;
       inset: 0;
       display: block;
       width: 100%;
       height: 100%;
+      touch-action: none;   /* 손가락 드래그/핀치는 월드 조작에 사용 */
     }
 
-    /* 왼쪽 위 작은 로고 */
-    .shop-logo {
+    /* 왼쪽 위: 작은 로고 + 현재 위치 */
+    .world-location {
       position: absolute;
-      top: 22px;
-      left: 22px;
+      top: 18px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
       pointer-events: none;
+      text-align: left;
+    }
+    .world-location .logo { text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
+    #world-location-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
 
     /* 오른쪽 위 메뉴 */
-    .shop-topbar {
+    .world-topbar {
       position: absolute;
-      top: 18px;
-      right: 18px;
+      top: 16px;
+      right: 16px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 8px;
       padding: 10px 14px;
-      background: rgba(12,16,24,0.55);
+      background: rgba(12,16,24,0.6);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(212,175,55,0.18);
+      border: 1px solid rgba(212,175,55,0.2);
       border-radius: 12px;
     }
-    .shop-topbar-row {
+    .world-topbar-row {
       display: flex;
       align-items: center;
       gap: 14px;
     }
+    #world-nickname {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: #e8ebf1;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #world-nickname::before { content: '@'; color: var(--gold); }
     .topbar-link {
       background: none;
       border: none;
@@ -727,69 +750,123 @@
     }
     .topbar-link:hover { color: var(--gold); }
 
-    /* 언어 전환 EN / KO */
-    .lang-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: #4a5366;
-    }
-    .lang-toggle button {
-      background: none;
-      border: none;
-      padding: 2px 3px;
-      color: #8892a4;
-      font: inherit;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-    .lang-toggle button:hover { color: #fff; }
-    .lang-toggle button.active { color: var(--gold); font-weight: 500; }
-
-    /* 아래 안내 문구 */
-    .shop-hint {
+    /* 오른쪽 아래: 원형 미니맵 */
+    #world-minimap {
       position: absolute;
-      bottom: 28px;
-      left: 0;
-      right: 0;
-      text-align: center;
+      right: 18px;
+      bottom: 18px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    /* 하단 안내 (처음 골목에 왔을 때) */
+    .world-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 30px;
+      transform: translate(-50%, 10px);
+      padding: 10px 18px;
+      background: rgba(12,16,24,0.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(212,175,55,0.35);
+      border-radius: 999px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--gold);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+    .world-hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* 마우스 툴팁 ("Enter allAbut") */
+    .world-tooltip {
+      position: absolute;
+      padding: 6px 10px;
+      background: rgba(11,35,80,0.92);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #8892a4;
-      opacity: 0.7;
+      color: var(--gold);
+      white-space: nowrap;
       pointer-events: none;
-      transition: opacity 0.3s;
+      opacity: 0;
+      transition: opacity 0.15s;
     }
-    .shop-hint.hidden { opacity: 0; }
+    .world-tooltip.show { opacity: 1; }
 
-    /* NPC 대화창: 화면 아래 가운데, 최대 640px */
-    .npc-dialog.glass-panel {
+    /* 3D 위치에 붙는 말풍선 (BTS 역) */
+    .world-bubble {
+      position: absolute;
+      transform: translate(-50%, calc(-100% - 12px));
+      padding: 9px 14px;
+      background: #ffffff;
+      color: #0b2350;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .world-bubble::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -7px;
+      margin-left: -7px;
+      border: 7px solid transparent;
+      border-bottom: 0;
+      border-top-color: #ffffff;
+    }
+    .world-bubble.show { opacity: 1; }
+
+    /* 하단 대화창 (데스크 NPC) */
+    .world-dialog.glass-panel {
       position: absolute;
       left: 50%;
       bottom: 20px;
       width: calc(100% - 32px);
       max-width: 640px;
       margin: 0;
-      padding: 20px 22px 18px;
+      padding: 18px 44px 18px 22px;
       display: flex;
-      gap: 18px;
-      align-items: flex-start;
+      align-items: center;
+      gap: 16px;
       text-align: left;
       opacity: 0;
       pointer-events: none;
       transform: translate(-50%, 16px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.3s, transform 0.3s;
     }
-    .npc-dialog.glass-panel.open {
+    .world-dialog.glass-panel.open {
       opacity: 1;
       pointer-events: auto;
       transform: translate(-50%, 0);
     }
-    .npc-close {
+    #world-dialog-name {
+      flex-shrink: 0;
+      min-width: 64px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    #world-dialog-text {
+      font-size: 15px;
+      line-height: 1.55;
+      color: #e8ebf1;
+    }
+    .world-dialog-close {
       position: absolute;
       top: 10px;
       right: 14px;
@@ -798,99 +875,31 @@
       color: #8892a4;
       font-size: 14px;
       cursor: pointer;
-      transition: color 0.2s;
     }
-    .npc-close:hover { color: var(--gold); }
+    .world-dialog-close:hover { color: var(--gold); }
 
-    /* 왼쪽 원형 NPC 얼굴 */
-    .npc-portrait {
-      flex-shrink: 0;
-      width: 76px;
-      height: 76px;
-      border-radius: 50%;
-      border: 2px solid var(--gold);
-      background: radial-gradient(circle at 50% 40%, #16213a, #070b14);
-      overflow: hidden;
-      box-shadow: 0 0 18px rgba(212,175,55,0.2);
-    }
-    .npc-portrait img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    /* 장면 전환 페이드 (검정) */
+    .world-fade {
+      position: absolute;
+      inset: 0;
+      background: #000000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
     }
 
-    .npc-body {
-      flex: 1;
-      min-width: 0;
-    }
-    .npc-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 8px;
-      padding-right: 20px;
-    }
-    .npc-text {
-      min-height: 48px;
-      font-size: 15px;
-      line-height: 1.6;
-      color: #e8ebf1;
-      white-space: pre-line;   /* 줄바꿈(\n) 표시 */
-      cursor: default;
-    }
-    .npc-footer {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .npc-choices {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .npc-choice {
-      background: none;
-      border: 1px solid rgba(212,175,55,0.6);
-      border-radius: 8px;
-      color: var(--gold);
-      padding: 8px 14px;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 13px;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-    }
-    .npc-choice:hover { background: rgba(212,175,55,0.12); }
-    .npc-choice:disabled { opacity: 0.3; cursor: default; background: none; }
-    .npc-choice.primary {
-      background: var(--gold);
-      color: var(--navy);
-      font-weight: 600;
-    }
-    .npc-choice.primary:hover { filter: brightness(1.15); }
-    .npc-page {
-      flex-shrink: 0;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      color: #8892a4;
-    }
-
-    /* 매장 화면에서는 하단 저작권 문구 숨김 (대화창과 겹치지 않게) */
-    body:has(#screen-shop.active) .footer { display: none; }
+    /* 월드 화면에서는 하단 저작권 문구 숨김 */
+    body:has(#screen-world.active) .footer { display: none; }
 
     /* ----- 모바일 ----- */
     @media (max-width: 640px) {
-      .shop-logo { top: 16px; left: 14px; }
-      .shop-topbar { top: 12px; right: 10px; padding: 8px 10px; }
-      .shop-topbar-row { gap: 10px; }
-      .npc-dialog.glass-panel { bottom: 10px; width: calc(100% - 20px); padding: 16px 14px 14px; gap: 12px; }
-      .npc-portrait { width: 54px; height: 54px; }
-      .npc-text { font-size: 14px; }
-      .npc-choice { padding: 7px 10px; font-size: 12px; }
+      .world-location { top: 14px; left: 14px; }
+      .world-topbar { top: 10px; right: 10px; padding: 8px 10px; }
+      .world-topbar-row { gap: 10px; }
+      #world-nickname { max-width: 90px; }
+      #world-minimap { width: 112px; height: 112px; right: 10px; bottom: 10px; }
+      .world-hint { bottom: 136px; font-size: 11px; }
+      .world-dialog.glass-panel { bottom: 132px; width: calc(100% - 20px); flex-direction: column; align-items: flex-start; gap: 6px; }
     }
 
 
@@ -1047,62 +1056,58 @@
     </section>
 
 
-    <!-- ========== 4. 매장 화면 (준비 중) ========== -->
-    <section class="screen" id="screen-shop">
-      <!-- 3D 매장 -->
-      <canvas id="shop-canvas"></canvas>
+    <!-- ========== 4. 월드 (방콕 골목 + allAbut 체험관) ========== -->
+    <section class="screen" id="screen-world">
+      <canvas id="world-canvas"></canvas>
 
-      <!-- 왼쪽 위: 작은 로고 -->
-      <div class="shop-logo logo logo-small">
-        <span class="logo-all">all</span>
-        <span class="logo-a">A</span>
-        <span class="logo-but">but</span>
-        <span class="logo-um">5μm</span>
+      <!-- 왼쪽 위: 작은 로고 + 현재 위치 이름 -->
+      <div class="world-location">
+        <div class="logo logo-small">
+          <span class="logo-all">all</span>
+          <span class="logo-a">A</span>
+          <span class="logo-but">but</span>
+          <span class="logo-um">5μm</span>
+        </div>
+        <span id="world-location-name"></span>
       </div>
 
-      <!-- 오른쪽 위: 언어 / 남은 세션 시간 / 아바타 수정 / 로그아웃 -->
-      <div class="shop-topbar">
-        <div class="shop-topbar-row">
-          <div class="lang-toggle" role="group" aria-label="Language">
-            <button type="button" data-lang="en" onclick="setShopLang('en')">EN</button>
-            <span>/</span>
-            <button type="button" data-lang="ko" onclick="setShopLang('ko')">KO</button>
-          </div>
+      <!-- 오른쪽 위: 세션 타이머 / 닉네임 / Edit Avatar / Sign Out -->
+      <div class="world-topbar">
+        <div class="world-topbar-row">
+          <span id="world-nickname"></span>
           <div class="session-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <span class="session-time">--:--</span>
             <button type="button" class="session-extend" onclick="handleExtendClick(this)">+1h</button>
           </div>
         </div>
-        <div class="shop-topbar-row">
+        <div class="world-topbar-row">
           <button type="button" class="topbar-link" onclick="editAvatar()">Edit Avatar</button>
           <button type="button" class="topbar-link" onclick="endSession('manual')">Sign Out</button>
         </div>
       </div>
 
-      <!-- 아래 안내: 데스크를 눌러 대화 -->
-      <p class="shop-hint" id="shop-hint">Click a desk to talk</p>
+      <!-- 오른쪽 아래: 원형 미니맵 -->
+      <canvas id="world-minimap"></canvas>
 
-      <!-- NPC 대화창 -->
-      <div class="npc-dialog glass-panel" id="npc-dialog" onclick="handleDialogClick()">
+      <!-- 안내 / 툴팁 / 말풍선 -->
+      <div class="world-hint" id="world-hint"></div>
+      <div class="world-tooltip" id="world-tooltip"></div>
+      <div class="world-bubble" id="world-bubble"></div>
+
+      <!-- 하단 대화창 (데스크 NPC) -->
+      <div class="world-dialog glass-panel" id="world-dialog">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
         <span class="corner bl"></span>
         <span class="corner br"></span>
-
-        <button type="button" class="npc-close" onclick="event.stopPropagation(); closeDialog()" aria-label="Close">✕</button>
-
-        <div class="npc-portrait"><img id="npc-portrait" alt=""></div>
-
-        <div class="npc-body">
-          <p class="npc-name" id="npc-name"></p>
-          <p class="npc-text" id="npc-text"></p>
-          <div class="npc-footer">
-            <div class="npc-choices" id="npc-choices"></div>
-            <span class="npc-page" id="npc-page"></span>
-          </div>
-        </div>
+        <span id="world-dialog-name"></span>
+        <p id="world-dialog-text"></p>
+        <button type="button" class="world-dialog-close" onclick="hideWorldDialog()" aria-label="Close">✕</button>
       </div>
+
+      <!-- 장면 전환 페이드 -->
+      <div class="world-fade" id="world-fade"></div>
     </section>
 
 
@@ -1141,8 +1146,12 @@
   <script src="avatar-catalog.js"></script>
   <script src="avatar.js"></script>
   <script src="avatar-studio.js"></script>
-  <script src="dialogs.js"></script>
-  <script src="shop.js"></script>
+  <script src="world/builders.js"></script>
+  <script src="world/zones/bangkok-soi.js"></script>
+  <script src="world/player.js"></script>
+  <script src="world/zone.js"></script>
+  <script src="world/interiors/allabut-shop.js"></script>
+  <script src="world/scene-manager.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

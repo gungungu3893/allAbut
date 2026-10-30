@@ -11,6 +11,7 @@ var studio = {
   holder: null,       // 캐릭터를 담는 그룹 (이걸 돌려서 회전)
   avatar: null,       // 지금 보이는 캐릭터
   config: null,       // 지금 선택된 꾸미기 값
+  fromWorld: false,   // 월드에서 Edit Avatar 로 왔는지 (저장 후 원래 위치로 복귀)
   category: 'gender', // 지금 열린 탭
   rotY: 0,            // 캐릭터 회전 각도 (0 = 정면)
   dragging: false,
@@ -50,7 +51,9 @@ function studioIconSvg(key) {
 
 // ===== 화면 열기 =====
 // profile: profiles 테이블의 행 (nickname, avatar)
-function openAvatarStudio(profile) {
+// fromWorld: 월드에서 Edit Avatar 로 왔으면 true
+function openAvatarStudio(profile, fromWorld) {
+  studio.fromWorld = !!fromWorld;
   document.getElementById('studio-nickname').textContent = profile && profile.nickname ? profile.nickname : '';
   document.getElementById('studio-error').textContent = '';
   document.getElementById('studio-error').className = 'auth-msg';
@@ -458,9 +461,11 @@ async function saveAvatar() {
       .single();
     if (result.error) throw result.error;
 
-    // 저장된 프로필로 매장 열기 (바뀐 아바타가 매장에 바로 반영됨)
-    openShop(result.data);
-    showScreen('shop');
+    // 저장된 프로필로 월드 입장 (바뀐 아바타가 바로 반영됨)
+    // - 처음 꾸민 경우: 골목 시작 지점에서
+    // - Edit Avatar 로 온 경우: 원래 있던 위치로 복귀
+    openWorld(result.data, { spawn: !studio.fromWorld });
+    showScreen('world');
   } catch (err) {
     console.error(err);
     showStudioError('Could not save your avatar. ' + (err.message || ''));

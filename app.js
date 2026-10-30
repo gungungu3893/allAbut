@@ -18,9 +18,9 @@ function showScreen(name) {
 
   isSwitching = true;
 
-  // Avatar Studio / 매장을 떠날 때는 3D 애니메이션 루프 정지
+  // Avatar Studio / 월드를 떠날 때는 3D 애니메이션 루프 정지 (월드는 위치도 저장)
   if (current && current.id === 'screen-avatar') closeAvatarStudio();
-  if (current && current.id === 'screen-shop') closeShop();
+  if (current && current.id === 'screen-world') closeWorld();
 
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
@@ -74,16 +74,16 @@ async function goStep(n) {
 
 // ===== 로그인 후 이동 규칙 =====
 // avatar 가 null 이면 (첫 로그인) → 아바타 꾸미기 화면
-// avatar 가 있으면 → 매장 화면
+// avatar 가 있으면 → 월드 (마지막 위치에서 시작)
 async function routeAfterLogin() {
   try {
     var profile = await getProfile();
     if (!profile || profile.avatar === null) {
-      openAvatarStudio(profile);
+      openAvatarStudio(profile, false);
       showScreen('avatar');
     } else {
-      openShop(profile);
-      showScreen('shop');
+      openWorld(profile);
+      showScreen('world');
     }
   } catch (err) {
     console.error(err);
@@ -94,11 +94,12 @@ async function routeAfterLogin() {
 }
 
 
-// ===== 매장 화면의 Edit Avatar 버튼 =====
+// ===== 월드 화면의 Edit Avatar 버튼 =====
+// (저장하면 월드의 원래 위치로 돌아와요)
 async function editAvatar() {
   try {
     var profile = await getProfile();
-    openAvatarStudio(profile);
+    openAvatarStudio(profile, true);
     showScreen('avatar');
   } catch (err) {
     console.error(err);
