@@ -72,6 +72,13 @@ var NAV_ITEMS = [
   { route: 'orders', icon: '📋', key: 'nav_orders' },
   { route: 'profile', icon: '👤', key: 'nav_profile' }
 ];
+// 관리자에게만 보이는 메뉴
+var ADMIN_NAV_ITEM = { route: 'admin', icon: '🛠', key: 'nav_admin', admin: true };
+
+// 지금 사용자에게 보여줄 메뉴 목록
+function navItems() {
+  return (window.APP && APP.isAdmin) ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
+}
 
 function sessionBadgeHtml() {
   return '<div class="session-badge" title="' + escHtml(t('session_time_left')) + '">' +
@@ -117,8 +124,9 @@ function renderLayout() {
     '<div class="hdr-inner">' +
       '<a href="#/home" class="hdr-logo">' + logoHtml() + '</a>' +
       '<nav class="hdr-nav" aria-label="Main">' +
-        NAV_ITEMS.map(function (n) {
-          return '<a href="#/' + n.route + '" class="hdr-link" data-nav="' + n.route + '">' + escHtml(t(n.key)) + '</a>';
+        navItems().map(function (n) {
+          return '<a href="#/' + n.route + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
+            (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + '</span>' : escHtml(t(n.key))) + '</a>';
         }).join('') +
       '</nav>' +
       '<div class="hdr-right">' +
@@ -142,7 +150,9 @@ function renderLayout() {
       '<button type="button" class="btn btn-outline btn-block" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
     '</div>';
 
-  tabbar.innerHTML = NAV_ITEMS.map(function (n) {
+  var items = navItems();
+  tabbar.style.gridTemplateColumns = 'repeat(' + items.length + ', 1fr)';
+  tabbar.innerHTML = items.map(function (n) {
     return '<a href="#/' + n.route + '" class="tab-link" data-nav="' + n.route + '">' +
       '<span class="tab-icon" aria-hidden="true">' + n.icon + '</span>' +
       '<span class="tab-label">' + escHtml(t(n.key)) + '</span></a>';
@@ -274,7 +284,13 @@ function uiModal(opts) {
     if (opts.onClose) opts.onClose();
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* 무시 */ } }
   }
-  function onKey(e) { if (e.key === 'Escape') close(); }
+  // Escape 는 맨 위에 떠 있는 창만 닫아요 (창 위에 창이 열린 경우)
+  function onKey(e) {
+    if (e.key !== 'Escape') return;
+    if (document.querySelector('.viewer-overlay.open')) return;   // 파일 뷰어가 먼저 닫혀요
+    var open = root.querySelectorAll('.modal-overlay.open');   // 닫히는 중인 창은 빼고
+    if (open[open.length - 1] === overlay) close();
+  }
 
   if (opts.actions) {
     var bar = overlay.querySelector('.modal-actions');
@@ -380,8 +396,68 @@ function uiErrorMessage(err) {
     NOTE_REQUIRED: 'design_reject_required',
     INVALID_ACTION: 'err_invalid_action',
     UPLOAD_FAILED: 'err_upload_failed',
-    NETWORK: 'err_network'
+    NETWORK: 'err_network',
+    NOT_ADMIN: 'admin_err_not_admin',
+    STAGE_CHANGED: 'admin_err_stage_changed',
+    NO_FILES: 'admin_err_no_files',
+    FILE_TOO_LARGE: 'admin_err_file_too_large',
+    INVALID_AMOUNT: 'admin_err_amount',
+    BALANCE_NEGATIVE: 'admin_err_balance_negative'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
+  if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });
   return t(map[code] || 'err_unknown');
+}
+
+
+// ================================================================
+// 9) 디자인 버전 목록 · 처리 이력 (고객 화면·관리자 화면 공통)
+// ================================================================
+
+// versions: cncOrderDesigns(order) 결과
+// viewCall(vi, fi): 👁 버튼 onclick 에 넣을 자바스크립트 글자 (예: "PageOrders.viewDesign('CA..', 0, 1)")
+function uiDesignVersions(versions, viewCall) {
+  if (!versions.length) return '<p class="muted">' + escHtml(t('no_design_files')) + '</p>';
+  var last = versions.length - 1;
+  // 최신 버전이 맨 위
+  return '<ol class="design-versions">' + versions.map(function (v, vi) {
+    return { v: v, vi: vi };
+  }).reverse().map(function (item) {
+    var v = item.v;
+    var latest = item.vi === last;
+    return '<li class="design-version' + (latest ? ' latest' : '') + '">' +
+      '<div class="design-version-head">' +
+        '<span class="design-version-tag mono">v' + escHtml(v.version) + '</span>' +
+        (latest ? '<span class="badge stage-design_ready">' + escHtml(t('design_latest')) + '</span>' : '') +
+        '<span class="muted">' + escHtml(v.date ? formatDateTime(v.date) : '') + '</span>' +
+      '</div>' +
+      '<ul class="file-list">' + v.files.map(function (f, fi) {
+        return '<li class="file-row">' +
+          '<span class="file-icon" aria-hidden="true">' + uiFileIcon(f.name) + '</span>' +
+          '<span class="file-info"><span class="file-name">' + escHtml(f.name) + '</span></span>' +
+          '<span class="file-actions"><button type="button" class="btn btn-outline btn-sm" onclick="' + escHtml(viewCall(item.vi, fi)) + '">' +
+            '<span aria-hidden="true">👁</span> ' + escHtml(t('btn_preview')) + '</button></span>' +
+          '</li>';
+      }).join('') + '</ul>' +
+      '</li>';
+  }).join('') + '</ol>';
+}
+
+// 처리 이력 타임라인 (review_history)
+function uiHistoryList(history) {
+  history = history || [];
+  if (!history.length) return '<p class="muted">' + escHtml(t('history_empty')) + '</p>';
+  return '<ol class="timeline">' + history.slice().reverse().map(function (h) {
+    h = h || {};
+    var action = h.action || 'note';
+    var label = t('review_' + action);
+    if (label === 'review_' + action) label = action;   // 모르는 동작이면 그대로
+    var who = h.by === 'admin' ? t('by_admin') : t('by_customer');
+    return '<li class="timeline-item action-' + escHtml(action) + '">' +
+      '<span class="timeline-dot" aria-hidden="true"></span>' +
+      '<div class="timeline-body">' +
+        '<p class="timeline-head"><b>' + escHtml(label) + '</b> <span class="muted">· ' + escHtml(who) + ' · <span class="mono">' + escHtml(formatDateTime(h.date)) + '</span></span></p>' +
+        (h.note ? '<p class="pre timeline-note">' + escHtml(h.note) + '</p>' : '') +
+      '</div></li>';
+  }).join('') + '</ol>';
 }

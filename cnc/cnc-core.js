@@ -20,8 +20,10 @@ var CNC_PAGE_SIZE = 20;
 // 서버(DB 함수)가 돌려주는 에러 코드 목록
 var CNC_ERROR_CODES = [
   'INSUFFICIENT_CREDITS', 'NO_TEETH', 'DELIVERY_REQUIRED', 'NOT_LOGGED_IN',
-  'NOT_EDITABLE', 'NOT_CANCELLABLE', 'NOT_FOUND', 'NOTE_REQUIRED', 'INVALID_ACTION'
+  'NOT_EDITABLE', 'NOT_CANCELLABLE', 'NOT_FOUND', 'NOTE_REQUIRED', 'INVALID_ACTION', 'NOT_ADMIN'
 ];
+// 앱 안에서 만드는 에러 코드 (서버 메시지에서 찾지 않음)
+var CNC_APP_ERROR_CODES = ['UPLOAD_FAILED', 'NETWORK', 'STAGE_CHANGED', 'NO_FILES', 'FILE_TOO_LARGE', 'INVALID_AMOUNT', 'BALANCE_NEGATIVE'];
 
 
 // ================================================================
@@ -45,7 +47,7 @@ function cncRandomId() {
 // 에러 → 코드 하나로 정리 ('INSUFFICIENT_CREDITS', 'NETWORK', 'UPLOAD_FAILED', 'UNKNOWN' ...)
 function cncErrorCode(err) {
   if (!err) return 'UNKNOWN';
-  if (err.code && (CNC_ERROR_CODES.indexOf(err.code) !== -1 || err.code === 'UPLOAD_FAILED' || err.code === 'NETWORK')) {
+  if (err.code && (CNC_ERROR_CODES.indexOf(err.code) !== -1 || CNC_APP_ERROR_CODES.indexOf(err.code) !== -1)) {
     return err.code;
   }
   var msg = String(err.message || err.error_description || err || '');
@@ -495,7 +497,8 @@ async function cncListOrders(opts) {
   opts = opts || {};
   var limit = opts.limit || CNC_PAGE_SIZE;
   var offset = opts.offset || 0;
-  var query = sb.from('cnc_orders').select('*').order('created_at', { ascending: false });
+  // 관리자는 DB 규칙상 모든 주문을 읽을 수 있어서, "내 주문" 은 항상 내 user_id 로 걸러요
+  var query = sb.from('cnc_orders').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false });
 
   if (opts.tab === 'progress') query = query.not('stage', 'in', '(done,cancelled)');
   if (opts.tab === 'completed') query = query.in('stage', ['done', 'cancelled']);
@@ -510,19 +513,19 @@ async function cncListOrders(opts) {
 
 // 최근 주문 n개
 async function cncRecentOrders(n) {
-  return cncCheck(await sb.from('cnc_orders').select('*').order('created_at', { ascending: false }).limit(n || 5)) || [];
+  return cncCheck(await sb.from('cnc_orders').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false }).limit(n || 5)) || [];
 }
 
 // 진행 중인 주문 수
 async function cncCountInProgress() {
-  var result = await sb.from('cnc_orders').select('id', { count: 'exact', head: true }).not('stage', 'in', '(done,cancelled)');
+  var result = await sb.from('cnc_orders').select('id', { count: 'exact', head: true }).eq('user_id', cncUserId()).not('stage', 'in', '(done,cancelled)');
   if (result.error) throw result.error;
   return result.count || 0;
 }
 
 // 주문 하나 다시 읽기
 async function cncGetOrder(id) {
-  return cncCheck(await sb.from('cnc_orders').select('*').eq('id', id).maybeSingle());
+  return cncCheck(await sb.from('cnc_orders').select('*').eq('id', id).eq('user_id', cncUserId()).maybeSingle());
 }
 
 // 주문의 치아 목록 (cases 안 teeth 를 한 줄로)
@@ -553,16 +556,23 @@ function cncOrderFiles(order) {
   return list;
 }
 
-// 관리자가 올린 디자인 파일 목록 [{ name, date, path, url }]
+// 관리자가 올린 디자인 버전 목록 (오래된 것 → 최신 순서)
+// [{ version: 1, date, files: [{ name, path, url }] }, ...]
+// 저장 형식: { version, paths: [...], names: [...], date }
+// (예전 형식 { name, path, url } 도 버전 하나로 바꿔서 보여줘요)
 function cncOrderDesigns(order) {
   return (order.design_versions || []).map(function (v, i) {
     v = v || {};
-    return {
-      name: v.name || ('Design v' + (i + 1)),
-      date: v.date || null,
-      path: v.path || null,
-      url: v.url || null
-    };
+    var files = [];
+    if (v.paths && v.paths.length) {
+      for (var k = 0; k < v.paths.length; k++) {
+        var p = v.paths[k];
+        files.push({ name: (v.names && v.names[k]) || String(p).split('/').pop(), path: p, url: null });
+      }
+    } else if (v.path || v.url) {
+      files.push({ name: v.name || String(v.path || v.url).split('/').pop(), path: v.path || null, url: v.url || null });
+    }
+    return { version: v.version || (i + 1), date: v.date || null, files: files };
   });
 }
 
@@ -621,11 +631,11 @@ function cncOrderFileUrl(file) {
   return cncSignedUrl(CNC_FILES_BUCKET, file.path);
 }
 
-// 디자인: path 가 있으면 cnc-designs 서명 URL, http 주소면 그대로, 아니면 url 을 경로로 보고 서명
-function cncDesignUrl(design) {
-  if (design.path) return cncSignedUrl(CNC_DESIGNS_BUCKET, design.path);
-  if (design.url && /^https?:\/\//i.test(design.url)) return Promise.resolve(design.url);
-  if (design.url) return cncSignedUrl(CNC_DESIGNS_BUCKET, design.url);
+// 디자인 파일 하나({ name, path, url }): path 가 있으면 cnc-designs 서명 URL, http 주소면 그대로, 아니면 url 을 경로로 보고 서명
+function cncDesignUrl(file) {
+  if (file.path) return cncSignedUrl(CNC_DESIGNS_BUCKET, file.path);
+  if (file.url && /^https?:\/\//i.test(file.url)) return Promise.resolve(file.url);
+  if (file.url) return cncSignedUrl(CNC_DESIGNS_BUCKET, file.url);
   return Promise.reject(cncError('NOT_FOUND'));
 }
 
@@ -644,7 +654,7 @@ async function cncGetBalance() {
 
 // 크레딧 이력 (최신순)
 async function cncCreditHistory(limit) {
-  return cncCheck(await sb.from('credit_history').select('*').order('created_at', { ascending: false }).limit(limit || 50)) || [];
+  return cncCheck(await sb.from('credit_history').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false }).limit(limit || 50)) || [];
 }
 
 // profiles 에서 내 행 고치기. fields 예: { clinic_name, address, phone, tax_id, line_user_id, lang }

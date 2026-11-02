@@ -208,16 +208,7 @@ var PageOrders = {
       html += '<div class="action-box' + (o.stage === 'design_ready' ? ' highlight' : '') + '">' +
         '<h3 class="detail-title">' + escHtml(t('design_review_title')) + '</h3>' +
         (o.stage === 'design_revision' ? '<p>' + escHtml(t('design_revision_pending')) + '</p>' : '<p>' + escHtml(t('design_ready_help')) + '</p>') +
-        (designs.length
-          ? '<ul class="file-list">' + designs.map(function (dz, i) {
-              return '<li class="file-row' + (i < designs.length - 1 ? ' old' : '') + '">' +
-                '<span class="file-icon" aria-hidden="true">' + uiFileIcon(dz.name) + '</span>' +
-                '<span class="file-info"><span class="file-name">' + escHtml(dz.name) + '</span>' +
-                  '<span class="file-size">' + escHtml(dz.date ? formatDateTime(dz.date) : '') + '</span></span>' +
-                '<span class="file-actions"><button type="button" class="btn btn-outline btn-sm" onclick="PageOrders.viewDesign(\'' + id + '\', ' + i + ')"><span aria-hidden="true">👁</span> ' + escHtml(t('btn_preview')) + '</button></span>' +
-                '</li>';
-            }).join('') + '</ul>'
-          : '<p class="muted">' + escHtml(t('no_design_files')) + '</p>') +
+        uiDesignVersions(designs, function (vi, fi) { return "PageOrders.viewDesign('" + o.id + "', " + vi + ', ' + fi + ')'; }) +
         (o.stage === 'design_ready'
           ? '<div class="action-row">' +
               '<button type="button" class="btn btn-primary" onclick="PageOrders.approve(\'' + id + '\')"' + dis + '>' + escHtml(t('design_satisfied')) + '</button>' +
@@ -278,14 +269,9 @@ var PageOrders = {
       (o.line_id ? '<div class="review-row"><span class="review-label">' + escHtml(t('line_id_label')) + '</span><span class="review-value">' + escHtml(o.line_id) + '</span></div>' : '') +
       '<div class="review-row"><span class="review-label">' + escHtml(t('credits_use')) + '</span><span class="review-value mono">' + formatNumber(o.credits_used) + '</span></div>';
 
-    // 리뷰 이력
-    var history = o.review_history || [];
-    if (history.length) {
-      html += '<h3 class="detail-title">' + escHtml(t('review_history_label')) + '</h3><ul class="history-list">' +
-        history.map(function (h) {
-          return '<li><span class="mono muted">' + escHtml(formatDateTime(h.date)) + '</span> · <b>' + escHtml(t('review_' + (h.action || 'note'))) + '</b>' +
-            (h.note ? '<p class="pre">' + escHtml(h.note) + '</p>' : '') + '</li>';
-        }).join('') + '</ul>';
+    // 리뷰·처리 이력
+    if ((o.review_history || []).length) {
+      html += '<h3 class="detail-title">' + escHtml(t('review_history_label')) + '</h3>' + uiHistoryList(o.review_history);
     }
     return html;
   },
@@ -344,13 +330,15 @@ var PageOrders = {
     cncOpenViewer({ name: f.name, getUrl: function () { return cncOrderFileUrl(f); } });
   },
 
-  viewDesign: function (id, i) {
+  // 디자인 파일 보기 (vi: 버전 순서, fi: 그 버전 안 파일 순서) → cnc-designs 서명 URL
+  viewDesign: function (id, vi, fi) {
     var o = this.findRow(id);
-    var dz = o && cncOrderDesigns(o)[i];
-    if (!dz) return;
-    var name = dz.name;
-    if (!fileExt(name)) name += '.' + (fileExt(dz.path || dz.url || '') || 'png');
-    cncOpenViewer({ name: name, getUrl: function () { return cncDesignUrl(dz); } });
+    var v = o && cncOrderDesigns(o)[vi];
+    var f = v && v.files[fi];
+    if (!f) return;
+    var name = f.name;
+    if (!fileExt(name)) name += '.' + (fileExt(f.path || f.url || '') || 'png');
+    cncOpenViewer({ name: name, getUrl: function () { return cncDesignUrl(f); } });
   },
 
   // ================================================================

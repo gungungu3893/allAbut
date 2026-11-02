@@ -42,7 +42,7 @@
 - 9개 언어: en ko th zh vi es tr ar fa (ar / fa 는 RTL)
 
 ## 제외 (나중에)
-- 세금계산서·영수증, LINE 알림, 관리자 화면, 결제
+- 세금계산서·영수증, LINE 알림, 결제
 
 ## 스택
 - Vanilla JS, HTML / CSS (Tailwind 는 쓰지 않음 — 직접 만든 CSS)
@@ -63,6 +63,8 @@
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대)
 - `ui/router.js` — 해시 라우팅 `#/home`, `#/new`, `#/orders`, `#/profile` (새로고침해도 같은 페이지)
 - `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
+- `cnc/cnc-admin.js` — 관리자 로직 (화면 코드 없음): 대시보드 집계, 주문 목록·상세, 단계 처리, 디자인 업로드, 배송, 취소·환불, 고객·크레딧
+- `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/customers`, `#/admin/dashboard`
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
 ## 규칙
@@ -75,6 +77,18 @@
 - 보기용 주소는 `createSignedUrl` (1시간). 디자인 파일은 `cnc-designs` 버킷
 - 작성 중 주문(draft): `localStorage.allabut_cnc_draft_{user_id}` (파일은 이름만 저장)
 - 화면 폭: 모바일 → 1024px 이상 PC(헤더 메뉴, 새 주문 3단) → 1280px 이상 헤더 전체
+
+## 관리자 화면
+- 로그인할 때 `sb.rpc('is_admin')` → `APP.isAdmin`. 관리자만 헤더·하단 탭에 골드 "Admin" 메뉴
+- 관리자가 아닌 사람이 `#/admin` 으로 오면 `#/home` 으로 (화면에서 숨기는 것은 편의, 실제 보호는 DB 규칙)
+- 단계 처리는 `cnc_orders` 직접 update (관리자 update 정책) + `updated_at`,
+  `review_history` 에 `{ action, note, date, by: 'admin' }` 추가.
+  update 할 때 "지금 단계"도 조건으로 걸어서, 그 사이 바뀌었으면 `STAGE_CHANGED` 에러
+- 디자인 파일: `cnc-designs/{고객 user_id}/{주문번호}/v{버전}_...` →
+  `design_versions` 에 `{ version, paths: [...], names: [...], date }` → stage = `design_ready`
+- 취소·환불은 가공 전 단계만 (`submitted ~ approved`), `admin_cancel_cnc_order` RPC
+- 크레딧 충전/차감: `admin_add_credits(p_user, p_amount, p_description)`
+- 주의: DB 읽기 규칙이 "자기 것 또는 관리자"라서, 고객용 조회(내 주문·크레딧 이력)는 항상 `user_id = 내 id` 로 거른다
 
 ## Supabase
 - 테이블: `profiles`(+ clinic_name, address, phone, tax_id, line_user_id, lang), `admins`, `credit_wallets`,

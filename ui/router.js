@@ -6,7 +6,8 @@ var ROUTES = {
   home: function () { return PageHome; },
   new: function () { return PageNew; },
   orders: function () { return PageOrders; },
-  profile: function () { return PageProfile; }
+  profile: function () { return PageProfile; },
+  admin: function () { return PageAdmin; }      // 관리자만 (아래 renderRoute 에서 확인)
 };
 
 window.currentRoute = null;
@@ -35,6 +36,11 @@ function renderRoute() {
   var name = parseRoute(location.hash);
   if (!/^#\/[a-z]+/.test(location.hash || '')) {
     history.replaceState(null, '', '#/' + name);   // 주소를 #/home 처럼 맞춰 둬요
+  }
+  // 관리자가 아닌 사람이 #/admin 으로 들어오면 홈으로
+  if (name === 'admin' && !APP.isAdmin) {
+    name = 'home';
+    history.replaceState(null, '', '#/home');
   }
 
   if (currentPage && currentPage.leave) currentPage.leave();

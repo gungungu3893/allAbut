@@ -869,6 +869,126 @@ select.input { cursor: pointer; }
 .viewer-msg { padding: 24px; text-align: center; color: var(--muted); font-size: 1.125rem; }
 
 /* ================================================================
+   관리자 화면
+   ================================================================ */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+.admin-badge-lg { font-size: 1rem; vertical-align: middle; }
+.hdr-link-admin.active .admin-badge { box-shadow: 0 0 0 2px var(--navy); }
+.page-admin { max-width: 1280px; margin: 0 auto; }
+.admin-tabs { margin-bottom: 18px; flex-wrap: wrap; }
+
+/* 대시보드 */
+.admin-stage-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.admin-stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 96px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-inline-start: 5px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--navy);
+  text-align: start;
+  cursor: pointer;
+}
+.admin-stage-card:hover { border-color: var(--navy); }
+.admin-stage-count { font-size: 2rem; font-weight: 600; line-height: 1.1; }
+.admin-stage-name { font-weight: 600; color: var(--muted); }
+.stage-card-submitted { border-inline-start-color: #1F3A68; }
+.stage-card-confirmed { border-inline-start-color: #3B5BDB; }
+.stage-card-design_ready { border-inline-start-color: #E0A800; }
+.stage-card-design_revision { border-inline-start-color: #E8590C; }
+.stage-card-approved { border-inline-start-color: #2F9E44; }
+.stage-card-milling { border-inline-start-color: #1C7ED6; }
+.stage-card-shipped { border-inline-start-color: #7048E8; }
+.admin-stats { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+.admin-stats .card + .card { margin-top: 0; }
+.admin-stat { display: flex; flex-direction: column; gap: 4px; }
+.admin-stat-label { color: var(--muted); font-weight: 600; }
+.admin-stat-num { font-size: 2.25rem; font-weight: 600; color: var(--navy); line-height: 1.1; }
+.order-row { width: 100%; background: none; border-left: none; border-right: none; border-bottom: none; text-align: start; cursor: pointer; font: inherit; }
+.admin-due-row.overdue { background: var(--danger-bg); }
+.admin-due-row.soon { background: #FFF4E5; }
+
+/* 납기 색 */
+.due.overdue { color: var(--danger); font-weight: 700; }
+.due.soon { color: #B54708; font-weight: 700; }
+
+/* 주문 목록 */
+.admin-tools { align-items: flex-end; }
+.admin-tools .field { margin-bottom: 0; flex: 0 1 220px; }
+.admin-tools .admin-search { flex: 1 1 280px; }
+.admin-table-wrap { display: none; background: #fff; }
+.admin-table tr.clickable { cursor: pointer; }
+.admin-table tr.clickable:hover td { background: #F5F8FC; }
+.admin-table td { padding: 12px; }
+.admin-order-cards { list-style: none; display: grid; gap: 10px; }
+.admin-order-card { display: block; width: 100%; text-align: start; cursor: pointer; font: inherit; color: inherit; }
+.admin-card-clinic { display: block; margin-top: 6px; font-weight: 600; font-size: 1.0625rem; }
+.credit-badge-sm { padding: 2px 10px; border-radius: 999px; background: #FBF6E4; font-weight: 600; }
+.admin-count { margin-bottom: 8px; }
+
+/* 주문 상세 */
+.admin-detail-status { display: grid; gap: 4px; margin-bottom: 8px; }
+.admin-detail-status .badge { justify-self: start; }
+.admin-actions .btn-lg { justify-self: start; }
+.admin-waiting { font-size: 1.0625rem; font-weight: 600; color: var(--navy); }
+.admin-detail-grid { display: grid; grid-template-columns: 1fr; gap: 8px 28px; }
+.revision-box { padding: 14px 16px; background: var(--warn-bg); border: 2px solid var(--warn-border); border-radius: var(--radius-sm); }
+.revision-title { font-weight: 700; color: #7A4F01; margin-bottom: 6px; }
+.revision-text { font-size: 1.125rem; font-weight: 600; color: var(--navy); }
+.admin-extra { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+.admin-extra summary { min-height: 48px; display: flex; align-items: center; padding: 0 14px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.admin-extra-body { padding: 4px 14px 14px; display: grid; gap: 10px; justify-items: start; }
+.admin-extra-body .field { width: 100%; margin-bottom: 0; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--navy); background: #F5F7FB; }
+
+/* 디자인 버전 */
+.design-versions { list-style: none; display: grid; gap: 10px; }
+.design-version { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; opacity: 0.75; }
+.design-version.latest { opacity: 1; border: 2px solid var(--gold); }
+.design-version-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.design-version-tag { font-weight: 700; font-size: 1.0625rem; color: var(--navy); }
+
+/* 처리 이력 타임라인 */
+.timeline { list-style: none; position: relative; padding-inline-start: 22px; }
+.timeline::before { content: ''; position: absolute; top: 6px; bottom: 6px; inset-inline-start: 7px; width: 2px; background: var(--border); }
+.timeline-item { position: relative; padding: 6px 0 12px; }
+.timeline-dot { position: absolute; inset-inline-start: -20px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--navy); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border-strong); }
+.timeline-item.action-rejected .timeline-dot { background: #E8590C; }
+.timeline-item.action-cancelled .timeline-dot { background: var(--danger); }
+.timeline-item.action-approved .timeline-dot,
+.timeline-item.action-received .timeline-dot,
+.timeline-item.action-marked_done .timeline-dot { background: var(--success); }
+.timeline-head { line-height: 1.5; }
+.timeline-note { margin-top: 4px; padding: 8px 12px; background: #F8F9FB; border-radius: var(--radius-sm); }
+
+/* ================================================================
    넓은 화면
    ================================================================ */
 @media (min-width: 640px) {
@@ -878,6 +998,9 @@ select.input { cursor: pointer; }
   .bulk-grid { grid-template-columns: 1fr 1fr; }
   .tooth-card-fields { grid-template-columns: 1.3fr 1fr 1.2fr; }
   .stagebar-label { display: block; }
+  .admin-stage-cards { grid-template-columns: repeat(4, 1fr); }
+  .admin-stats { grid-template-columns: repeat(3, 1fr); }
+  .admin-detail-grid { grid-template-columns: 1fr 1fr; }
   .modal-actions .btn { flex: 0 0 auto; }
 }
 
@@ -888,6 +1011,9 @@ select.input { cursor: pointer; }
   .app-main { padding: 28px 24px 60px; }
   .home-cards { grid-template-columns: 1.4fr 1fr 1fr; }
   .profile-grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
+  .admin-stage-cards { grid-template-columns: repeat(7, 1fr); }
+  .admin-table-wrap { display: block; }
+  .admin-order-cards { display: none; }
 
   /* 새 주문 3단: 단계 목록 220px | 입력 | 요약 300px */
   .wizard { display: grid; grid-template-columns: 220px minmax(0, 1fr) 300px; gap: 20px; align-items: start; }

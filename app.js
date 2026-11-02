@@ -8,7 +8,8 @@
 var APP = {
   user: null,      // Supabase 사용자 (id, email ...)
   profile: null,   // profiles 행
-  balance: null    // 크레딧 잔액
+  balance: null,   // 크레딧 잔액
+  isAdmin: false   // 관리자인지 (sb.rpc('is_admin'))
 };
 
 
@@ -87,7 +88,9 @@ async function enterApp() {
       return;
     }
     APP.user = session.user;
-    APP.profile = await getProfile();
+    var loaded = await Promise.all([getProfile(), cncCheckAdmin()]);
+    APP.profile = loaded[0];
+    APP.isAdmin = loaded[1];
 
     // 언어를 직접 고른 적이 없으면 프로필에 저장된 언어로
     if (!hasSavedLang() && APP.profile && APP.profile.lang && isSupportedLang(APP.profile.lang) && APP.profile.lang !== currentLang) {
@@ -126,6 +129,7 @@ function onSessionEnded() {
   APP.user = null;
   APP.profile = null;
   APP.balance = null;
+  APP.isAdmin = false;
 }
 
 
