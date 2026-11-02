@@ -12,36 +12,48 @@
 ## 프로젝트
 - **allAbut** — CNC 커스텀 어바트먼트 주문 플랫폼
 
-## 배경 (메타버스 월드)
-- 이 앱은 나중에 **태국 전체를 맵으로 쓰는 메타버스**로 확장할 예정이다.
-- 지금은 첫 지역인 **방콕의 한 골목(Soi allAbut)** 을 만든 상태다.
-- 사용자는 거리를 걸어다니다가 **allAbut 빌딩**에 들어가면, 넓은 **체험관 내부**를 걸어다니며 데스크(01~05)를 차례로 방문해 주문한다.
-- 지역을 계속 추가할 수 있도록 **데이터 기반**으로 설계한다.
-  - 새 지역 = `world/zones/` 에 지도 데이터 파일 하나 추가 (오브젝트 목록: type, 위치, 회전, 충돌 박스)
-  - 새 오브젝트 종류 = `world/builders.js` 에 `WORLD_BUILDERS.타입이름` 함수 추가
-  - 새 건물 내부 = `world/interiors/` 에 파일 추가 후 `INTERIORS['id']` 로 등록
+## 컨셉: 2D 탑다운 픽셀아트 RPG (메타버스)
+- 3D(Three.js)에서 **2D 탑다운 픽셀아트 RPG**로 전환했다 (포켓몬 / 스타듀밸리 느낌).
+- 엔진: **Phaser 3** (CDN, jsdelivr `phaser@3.80.1` 고정 버전)
+- 타일 크기 **32x32**, 픽셀아트 선명하게 (`pixelArt: true`, 안티앨리어싱 끔)
+- 나중에 **태국 전체로 확장하는 메타버스**: 지역(zone) 데이터 기반 설계를 유지한다.
+  - 새 지역 = `game/config/zones/` 에 지도 데이터 파일 추가 (`GAME_ZONES['id']`)
+  - 새 건물 내부 = `game/config/interiors/` 에 데이터 파일 추가 (`GAME_INTERIORS['id']`)
+  - 바깥/실내 씬 코드는 공통 (`ZoneScene`, `InteriorScene` → `WorldScene`)
+- 그림 에셋은 나중에 **LimeZu Modern Interiors/Exteriors** 로 교체 예정.
+  지금은 `BootScene` 에서 코드로 그린 임시 그래픽을 쓴다.
+  모든 텍스처 키 이름은 `game/config/assets.js` 한 곳에 정의한다.
 
-## 폴더 구조 (월드)
-- `world/scene-manager.js` — 현재 장면 관리, 페이드 전환(0.6초), 이전 장면 dispose, 클릭/카메라 입력, 미니맵, 위치 저장
-- `world/zones/bangkok-soi.js` — 첫 지역 지도 데이터
-- `world/builders.js` — 데이터 type → 3D 오브젝트 (shophouse, allabut_building, tree, tuktuk, food_cart, bts_track, bts_station, power_pole, temple_roof, street_lamp, road, sidewalk, crosswalk, block)
-- `world/zone.js` — 지도 데이터를 읽어 바깥 장면을 만드는 공통 코드
-- `world/interiors/allabut-shop.js` — allAbut 체험관 내부 (데스크 01~05, CNC 부스, 전시대, 안내선)
-- `world/player.js` — 내 캐릭터, 클릭 이동, A* 길찾기(셀 0.5m), 3인칭 따라가기 카메라
+## 폴더 구조 (game/)
+- `game/main.js` — Phaser 게임 생성 (Scale.RESIZE), 씬 등록, `openGame` / `closeGame`, 위치 저장, 줌 계산
+- `game/config/assets.js` — 텍스처 키, 타일 종류(TILE_TYPES), 옷 색
+- `game/config/zones/bangkok-soi.js` — 골목 지도 데이터 (바닥 칠하기 목록 + 오브젝트 목록)
+- `game/config/interiors/allabut-shop.js` — 체험관 내부 지도 데이터 (벽·파티션, 데스크, 안내선)
+- `game/scenes/BootScene.js` — 임시 그래픽을 코드로 생성 (타일셋, 오브젝트, 캐릭터 4방향 x 걷기 3프레임)
+- `game/scenes/ZoneScene.js` — 바깥 지역 공통 씬 (뚝뚝, 행인)
+- `game/scenes/InteriorScene.js` — 건물 내부 공통 씬 (데스크, NPC, 간판, 안내선, 다음 데스크 화살표)
+- `game/scenes/UIScene.js` — 화면 고정 UI (위치 이름, 세션 타이머, 버튼, 미니맵, 대화창, 모바일 조이스틱)
+- `game/systems/world.js` — 바깥/실내 공통 씬 클래스 (지도 → 타일/오브젝트/충돌, 입력, 상호작용, 카메라, 전환)
+- `game/systems/player.js` — 플레이어 이동 (클릭 길찾기 + 방향키/WASD + 조이스틱)
+- `game/systems/pathfinding.js` — 타일 기반 A* 길찾기
+- `game/systems/npc.js` — NPC (데스크 직원 idle, 행인 patrol)
 
-## 월드 공통 규칙
-- 단위: 1 = 1미터, 로우폴리 + flatShading (아바타와 통일)
-- 오브젝트 앞면은 +z, 바닥 y=0 기준으로 만들고 위치·회전은 데이터에서 적용
-- 반복 오브젝트는 도형/재료 공유 (`ctx.geo`, `ctx.mat`)
-- 모든 오브젝트 데이터에 충돌 박스(collider) 지정 → 통과 불가
-- 안개로 먼 곳 흐리게, 그림자는 PC 만
-- 모바일: 그림자 끄기, 픽셀 비율 최대 1.5, 행인 3명, 입자 줄이기, 안개 더 가깝게
-- 위치 저장: `localStorage.allabut_location = { scene, x, z }`
+## 게임 공통 규칙
+- 좌표는 타일 단위 (x = 동쪽으로, y = 남쪽으로). 오브젝트가 차지한 칸은 지나갈 수 없다 (`solid: false` 예외)
+- 상호작용: 오브젝트 데이터의 `interact: { kind, approach, label }` → 클릭하면 approach 칸까지 걸어가서 실행
+- 깊이(depth)는 발 밑 y 좌표 → 나무·건물 뒤로 지나갈 수 있음
+- 장면 전환: 검게 페이드아웃 → 씬 전환 → 페이드인 (0.5초)
+- 위치 저장: `localStorage.allabut_location = { scene, x, y, facing }` (타일 단위)
+- 줌: 모바일 가로 약 13타일, PC 가로 약 24타일 (세로 최소 15타일)
+
+## 유지하는 것
+- 랜딩 페이지, 로고, 로그인/회원가입, Supabase 연동, `session.js` (1시간 + 연장), `profiles` 테이블
+- `avatar-catalog.js` 의 구조 (id, name, price, locked) — 내용은 2D용으로 바꿀 예정
 
 ## 스택
 - Vanilla JS
 - HTML / CSS
-- Three.js (CDN, v0.160.0)
+- Phaser 3 (CDN, v3.80.1)
 - Tailwind CSS (CDN)
 - Supabase (CDN)
 
@@ -53,7 +65,7 @@
 
 ## 폰트
 - IBM Plex Sans (200 / 600)
-- IBM Plex Mono
+- IBM Plex Mono (게임 UI 글자)
 - Google Fonts CDN 사용
 
 ## 다국어

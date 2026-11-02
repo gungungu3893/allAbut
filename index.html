@@ -13,9 +13,6 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Three.js v0.160.0 -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -248,79 +245,20 @@
 
 
     /* ================================================================
-       Avatar Studio (아바타 꾸미기 화면)
-       PC: 왼쪽 3D 미리보기(60%) + 오른쪽 꾸미기 패널(40%)
-       모바일: 위 3D 미리보기(45%) + 아래 꾸미기 패널
+       Avatar Studio (단순 버전)
        ================================================================ */
-    #screen-avatar {
-      flex-direction: row;
-      align-items: stretch;
-      justify-content: flex-start;
-      padding: 0;
-      height: 100vh;
-      min-height: 0;
-      overflow: hidden;
-      text-align: left;
-    }
-
-    /* 3D 미리보기 영역 (화면의 60%) */
-    .studio-preview {
-      position: relative;
-      flex: 0 0 60%;
-      min-width: 0;
-      background:
-        radial-gradient(circle at 50% 70%, rgba(212,175,55,0.10), transparent 50%),
-        radial-gradient(circle at 50% 40%, #0d1320, var(--dark) 70%);
-    }
-    /* 캔버스는 미리보기 영역을 꽉 채움 */
-    #studio-canvas {
-      position: absolute;
-      inset: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      cursor: grab;
-      touch-action: pan-y;   /* 손가락 가로 드래그는 회전, 세로는 스크롤 */
-    }
-    #studio-canvas:active { cursor: grabbing; }
-    .studio-hint {
-      position: absolute;
-      bottom: 20px;
-      left: 0;
-      right: 0;
+    .studio-simple.glass-panel {
+      max-width: 420px;
+      margin-top: 0;
       text-align: center;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #8892a4;
-      opacity: 0.6;
-      pointer-events: none;
     }
-
-    /* 꾸미기 패널 (나머지 40%) */
-    .studio-panel.glass-panel {
-      flex: 1 1 0;
-      width: auto;
-      max-width: none;
-      min-width: 0;
-      margin: 20px 20px 20px 0;
-      padding: 26px 22px 20px;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      container-type: inline-size;   /* 패널 너비에 따라 탭 배치를 바꾸기 위해 */
-    }
-
-    /* 패널 머리말: 제목 + 닉네임 + Sign Out */
     .studio-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
-      padding: 0 4px;
-      flex-shrink: 0;
+      margin-bottom: 22px;
+      text-align: left;
     }
     .studio-header > div { min-width: 0; }
     .studio-title {
@@ -340,198 +278,33 @@
       text-overflow: ellipsis;
     }
     .studio-nick::before { content: '@'; color: var(--gold); }
-    .studio-header .back-link {
-      margin-top: 4px;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-
-    /* 카테고리 아이콘 탭: 기본은 5개 + 4개 두 줄 */
-    .studio-tabs {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      padding-bottom: 14px;
-      margin-bottom: 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      flex-shrink: 0;
-    }
-    /* 패널이 넓으면 9개 한 줄 */
-    @container (min-width: 560px) {
-      .studio-tabs { grid-template-columns: repeat(9, 1fr); }
-    }
-    .studio-tab {
-      min-width: 0;
+    .studio-header-right {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      background: none;
-      border: none;
-      padding: 0;
-      color: var(--gold);
-      cursor: pointer;
-    }
-    .studio-tab-icon {
-      width: 42px;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
-      opacity: 0.65;
-      transition: opacity 0.2s, background 0.2s, border-color 0.2s;
-    }
-    .studio-tab-icon svg { width: 22px; height: 22px; }
-    .studio-tab:hover .studio-tab-icon { opacity: 1; }
-    .studio-tab.active .studio-tab-icon {
-      opacity: 1;
-      background: rgba(212,175,55,0.15);   /* 선택된 탭: 골드 반투명 배경 */
-      border-color: var(--gold);           /* + 골드 테두리 */
-    }
-    .studio-tab-label {
-      max-width: 100%;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 9px;
-      line-height: 1.2;
-      color: #8892a4;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .studio-tab.active .studio-tab-label { color: var(--gold); }
-
-    /* 아이템 그리드: 정사각형 카드 3열 (이 부분만 스크롤) */
-    .studio-items {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      grid-auto-rows: max-content;
-      align-content: start;
-      padding: 6px 6px 6px 2px;
-    }
-
-    /* 그림 카드 */
-    .item-card {
-      position: relative;
-      aspect-ratio: 1 / 1;
-      padding: 0;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    }
-    .item-card:hover { border-color: rgba(212,175,55,0.45); }
-    .item-card.selected {
-      border: 2px solid var(--gold);                 /* 골드 테두리 */
-      background: rgba(212,175,55,0.06);
-      box-shadow: 0 0 16px rgba(212,175,55,0.28);    /* 은은한 골드 빛 */
-    }
-    .item-card img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      border-radius: 11px;
-      transition: opacity 0.25s;
-    }
-    /* 미리보기 그림을 만드는 중 */
-    .item-card.loading img { opacity: 0; }
-    .item-card.loading::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 16px;
-      height: 16px;
-      margin: -8px 0 0 -8px;
-      border: 2px solid rgba(212,175,55,0.25);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: studio-spin 0.8s linear infinite;
-    }
-    @keyframes studio-spin { to { transform: rotate(360deg); } }
-
-    /* 색상 아이템: 오른쪽 아래 동그란 색 칩 */
-    .color-dot {
-      position: absolute;
-      right: 8px;
-      bottom: 8px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.85);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-    }
-
-    /* 잠긴 아이템 */
-    .item-card.locked {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .lock-icon {
-      position: absolute;
-      left: 8px;
-      bottom: 6px;
-      font-size: 13px;
-    }
-
-    /* 가격 뱃지 (오른쪽 위) */
-    .price-badge {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      background: var(--gold);
-      color: var(--navy);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 9px;
-      font-weight: 500;
-      padding: 2px 6px;
-      border-radius: 999px;
-    }
-
-    /* 하단 버튼 2개 (패널 맨 아래 고정) */
-    .studio-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 6px;
+      align-items: flex-end;
+      gap: 6px;
       flex-shrink: 0;
     }
-    .studio-actions .outline-btn { flex: 0 0 auto; padding: 0 18px; height: 48px; white-space: nowrap; }
-    .studio-actions .gold-btn    { flex: 1; height: 48px; font-size: 15px; white-space: nowrap; }
-    #studio-error { flex-shrink: 0; }
-
-    /* Avatar Studio 화면에서는 하단 저작권 문구 숨김 (버튼과 겹치지 않게) */
-    body:has(#screen-avatar.active) .footer { display: none; }
-
-    /* ----- 모바일 (폭 768px 이하): 위아래 분할 ----- */
-    @media (max-width: 768px) {
-      #screen-avatar {
-        flex-direction: column;
-        height: 100vh;
-        height: 100dvh;   /* 모바일 주소창 높이를 뺀 실제 화면 높이 */
-      }
-      .studio-preview {
-        flex: 0 0 45%;    /* 위 45%: 3D 미리보기 */
-      }
-      .studio-hint { bottom: 22px; }
-      .studio-panel.glass-panel {
-        flex: 1 1 0;      /* 아래 나머지: 꾸미기 패널 (아이템 부분만 스크롤) */
-        margin: -12px 10px 10px;
-        padding: 18px 14px 14px;
-      }
-      .studio-header { margin-bottom: 12px; }
-      .studio-title { font-size: 19px; }
-      .studio-tabs { gap: 4px; padding-bottom: 10px; margin-bottom: 10px; }
-      .studio-tab-icon { width: 38px; height: 38px; }
-      .studio-tab-icon svg { width: 20px; height: 20px; }
-      .studio-items { gap: 8px; }
+    .studio-header-right .back-link { margin-top: 0; }
+    .studio-preview-box {
+      display: flex;
+      justify-content: center;
+      padding: 22px 0;
+      background: radial-gradient(circle at 50% 60%, rgba(212,175,55,0.12), transparent 70%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    #studio-preview-canvas {
+      width: 320px;
+      max-width: 100%;
+      height: auto;
+      image-rendering: pixelated;   /* 픽셀아트 확대해도 선명하게 */
+    }
+    .studio-note {
+      margin: 16px 0 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #8892a4;
     }
 
 
@@ -667,9 +440,9 @@
 
 
     /* ================================================================
-       월드 화면 (방콕 골목 + allAbut 체험관)
+       게임 화면 (Phaser 2D 픽셀아트)
        ================================================================ */
-    #screen-world {
+    #screen-game {
       position: relative;
       padding: 0;
       height: 100vh;
@@ -678,229 +451,18 @@
       overflow: hidden;
       background: #06090f;
     }
-    #world-canvas {
+    #game-container {
       position: absolute;
       inset: 0;
+      touch-action: none;   /* 손가락 드래그는 게임 조작(조이스틱)에 사용 */
+    }
+    #game-container canvas {
       display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;   /* 손가락 드래그/핀치는 월드 조작에 사용 */
+      image-rendering: pixelated;   /* 픽셀아트 선명하게 */
     }
 
-    /* 왼쪽 위: 작은 로고 + 현재 위치 */
-    .world-location {
-      position: absolute;
-      top: 18px;
-      left: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      pointer-events: none;
-      text-align: left;
-    }
-    .world-location .logo { text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
-    #world-location-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 1.5px;
-      color: var(--gold);
-      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-    }
-
-    /* 오른쪽 위 메뉴 */
-    .world-topbar {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      padding: 10px 14px;
-      background: rgba(12,16,24,0.6);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(212,175,55,0.2);
-      border-radius: 12px;
-    }
-    .world-topbar-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    #world-nickname {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: #e8ebf1;
-      max-width: 140px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    #world-nickname::before { content: '@'; color: var(--gold); }
-    .topbar-link {
-      background: none;
-      border: none;
-      color: #8892a4;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-    .topbar-link:hover { color: var(--gold); }
-
-    /* 오른쪽 아래: 원형 미니맵 */
-    #world-minimap {
-      position: absolute;
-      right: 18px;
-      bottom: 18px;
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
-      pointer-events: none;
-    }
-
-    /* 하단 안내 (처음 골목에 왔을 때) */
-    .world-hint {
-      position: absolute;
-      left: 50%;
-      bottom: 30px;
-      transform: translate(-50%, 10px);
-      padding: 10px 18px;
-      background: rgba(12,16,24,0.72);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(212,175,55,0.35);
-      border-radius: 999px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      color: var(--gold);
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.5s, transform 0.5s;
-    }
-    .world-hint.show { opacity: 1; transform: translate(-50%, 0); }
-
-    /* 마우스 툴팁 ("Enter allAbut") */
-    .world-tooltip {
-      position: absolute;
-      padding: 6px 10px;
-      background: rgba(11,35,80,0.92);
-      border: 1px solid var(--gold);
-      border-radius: 6px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--gold);
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-    .world-tooltip.show { opacity: 1; }
-
-    /* 3D 위치에 붙는 말풍선 (BTS 역) */
-    .world-bubble {
-      position: absolute;
-      transform: translate(-50%, calc(-100% - 12px));
-      padding: 9px 14px;
-      background: #ffffff;
-      color: #0b2350;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .world-bubble::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      bottom: -7px;
-      margin-left: -7px;
-      border: 7px solid transparent;
-      border-bottom: 0;
-      border-top-color: #ffffff;
-    }
-    .world-bubble.show { opacity: 1; }
-
-    /* 하단 대화창 (데스크 NPC) */
-    .world-dialog.glass-panel {
-      position: absolute;
-      left: 50%;
-      bottom: 20px;
-      width: calc(100% - 32px);
-      max-width: 640px;
-      margin: 0;
-      padding: 18px 44px 18px 22px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      text-align: left;
-      opacity: 0;
-      pointer-events: none;
-      transform: translate(-50%, 16px);
-      transition: opacity 0.3s, transform 0.3s;
-    }
-    .world-dialog.glass-panel.open {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translate(-50%, 0);
-    }
-    #world-dialog-name {
-      flex-shrink: 0;
-      min-width: 64px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-    #world-dialog-text {
-      font-size: 15px;
-      line-height: 1.55;
-      color: #e8ebf1;
-    }
-    .world-dialog-close {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-      background: none;
-      border: none;
-      color: #8892a4;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .world-dialog-close:hover { color: var(--gold); }
-
-    /* 장면 전환 페이드 (검정) */
-    .world-fade {
-      position: absolute;
-      inset: 0;
-      background: #000000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
-    /* 월드 화면에서는 하단 저작권 문구 숨김 */
-    body:has(#screen-world.active) .footer { display: none; }
-
-    /* ----- 모바일 ----- */
-    @media (max-width: 640px) {
-      .world-location { top: 14px; left: 14px; }
-      .world-topbar { top: 10px; right: 10px; padding: 8px 10px; }
-      .world-topbar-row { gap: 10px; }
-      #world-nickname { max-width: 90px; }
-      #world-minimap { width: 112px; height: 112px; right: 10px; bottom: 10px; }
-      .world-hint { bottom: 136px; font-size: 11px; }
-      .world-dialog.glass-panel { bottom: 132px; width: calc(100% - 20px); flex-direction: column; align-items: flex-start; gap: 6px; }
-    }
+    /* 게임 화면에서는 하단 저작권 문구 숨김 */
+    body:has(#screen-game.active) .footer { display: none; }
 
 
     /* ===== 하단 저작권 문구 (화면 아래 고정) ===== */
@@ -1007,17 +569,9 @@
     </section>
 
 
-    <!-- ========== 3. Avatar Studio (아바타 꾸미기) ========== -->
+    <!-- ========== 3. Avatar Studio (단순 버전 - 2D 꾸미기는 다음 단계) ========== -->
     <section class="screen" id="screen-avatar">
-
-      <!-- 왼쪽(모바일은 위): 3D 미리보기 -->
-      <div class="studio-preview" id="studio-preview">
-        <canvas id="studio-canvas"></canvas>
-        <p class="studio-hint">Drag to rotate</p>
-      </div>
-
-      <!-- 오른쪽(모바일은 아래): 꾸미기 패널 -->
-      <div class="studio-panel glass-panel">
+      <div class="glass-panel studio-simple">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
         <span class="corner bl"></span>
@@ -1039,75 +593,22 @@
           </div>
         </div>
 
-        <!-- 카테고리 아이콘 탭 (avatar-studio.js 가 채워요) -->
-        <div class="studio-tabs" id="studio-tabs"></div>
-
-        <!-- 아이템 그림 카드 (avatar-studio.js 가 채워요) -->
-        <div class="studio-items" id="studio-items"></div>
+        <!-- 픽셀 캐릭터 미리보기 (앞·왼쪽·오른쪽·뒤) -->
+        <div class="studio-preview-box">
+          <canvas id="studio-preview-canvas" width="128" height="32"></canvas>
+        </div>
+        <p class="studio-note">The 2D avatar editor is coming in the next update.<br>For now you'll start with this look.</p>
 
         <p class="auth-msg" id="studio-error"></p>
-
-        <div class="studio-actions">
-          <button type="button" class="outline-btn" onclick="randomizeAvatar()">🎲 Random</button>
-          <button type="button" class="gold-btn" id="studio-save-btn" onclick="saveAvatar()">Save &amp; Enter →</button>
-        </div>
+        <button type="button" class="gold-btn full" id="studio-save-btn" onclick="saveAvatar()">Save &amp; Enter →</button>
       </div>
-
     </section>
 
 
-    <!-- ========== 4. 월드 (방콕 골목 + allAbut 체험관) ========== -->
-    <section class="screen" id="screen-world">
-      <canvas id="world-canvas"></canvas>
-
-      <!-- 왼쪽 위: 작은 로고 + 현재 위치 이름 -->
-      <div class="world-location">
-        <div class="logo logo-small">
-          <span class="logo-all">all</span>
-          <span class="logo-a">A</span>
-          <span class="logo-but">but</span>
-          <span class="logo-um">5μm</span>
-        </div>
-        <span id="world-location-name"></span>
-      </div>
-
-      <!-- 오른쪽 위: 세션 타이머 / 닉네임 / Edit Avatar / Sign Out -->
-      <div class="world-topbar">
-        <div class="world-topbar-row">
-          <span id="world-nickname"></span>
-          <div class="session-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span class="session-time">--:--</span>
-            <button type="button" class="session-extend" onclick="handleExtendClick(this)">+1h</button>
-          </div>
-        </div>
-        <div class="world-topbar-row">
-          <button type="button" class="topbar-link" onclick="editAvatar()">Edit Avatar</button>
-          <button type="button" class="topbar-link" onclick="endSession('manual')">Sign Out</button>
-        </div>
-      </div>
-
-      <!-- 오른쪽 아래: 원형 미니맵 -->
-      <canvas id="world-minimap"></canvas>
-
-      <!-- 안내 / 툴팁 / 말풍선 -->
-      <div class="world-hint" id="world-hint"></div>
-      <div class="world-tooltip" id="world-tooltip"></div>
-      <div class="world-bubble" id="world-bubble"></div>
-
-      <!-- 하단 대화창 (데스크 NPC) -->
-      <div class="world-dialog glass-panel" id="world-dialog">
-        <span class="corner tl"></span>
-        <span class="corner tr"></span>
-        <span class="corner bl"></span>
-        <span class="corner br"></span>
-        <span id="world-dialog-name"></span>
-        <p id="world-dialog-text"></p>
-        <button type="button" class="world-dialog-close" onclick="hideWorldDialog()" aria-label="Close">✕</button>
-      </div>
-
-      <!-- 장면 전환 페이드 -->
-      <div class="world-fade" id="world-fade"></div>
+    <!-- ========== 4. 게임 (Phaser 2D 픽셀아트 월드) ========== -->
+    <section class="screen" id="screen-game">
+      <!-- Phaser 가 이 안에 캔버스를 만들어요 (UI 도 Phaser 의 UIScene 이 그려요) -->
+      <div id="game-container"></div>
     </section>
 
 
@@ -1144,14 +645,23 @@
   <script src="auth.js"></script>
   <script src="session.js"></script>
   <script src="avatar-catalog.js"></script>
-  <script src="avatar.js"></script>
   <script src="avatar-studio.js"></script>
-  <script src="world/builders.js"></script>
-  <script src="world/zones/bangkok-soi.js"></script>
-  <script src="world/player.js"></script>
-  <script src="world/zone.js"></script>
-  <script src="world/interiors/allabut-shop.js"></script>
-  <script src="world/scene-manager.js"></script>
+
+  <!-- Phaser 3 (2D 게임 엔진, 버전 고정) -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+  <script src="game/config/assets.js"></script>
+  <script src="game/config/zones/bangkok-soi.js"></script>
+  <script src="game/config/interiors/allabut-shop.js"></script>
+  <script src="game/systems/pathfinding.js"></script>
+  <script src="game/systems/player.js"></script>
+  <script src="game/systems/npc.js"></script>
+  <script src="game/systems/world.js"></script>
+  <script src="game/scenes/BootScene.js"></script>
+  <script src="game/scenes/ZoneScene.js"></script>
+  <script src="game/scenes/InteriorScene.js"></script>
+  <script src="game/scenes/UIScene.js"></script>
+  <script src="game/main.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
