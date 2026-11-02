@@ -2,6 +2,7 @@
 // - 로그인/회원가입에 성공하면 "만료 시각"을 브라우저(localStorage)에 저장해요.
 // - localStorage 는 같은 브라우저의 모든 탭이 함께 쓰기 때문에, 여러 탭에서 열어도 같은 만료 시각을 공유해요.
 // - 1초마다 남은 시간을 확인해서 화면에 표시하고, 5분 남으면 경고, 0초가 되면 자동 로그아웃해요.
+// - 로그아웃돼도 작성 중인 주문(draft)은 지우지 않아요 → 다시 로그인하면 이어서 할 수 있어요.
 
 var SESSION_KEY = 'allabut_session_expires';
 var SESSION_LENGTH = 60 * 60 * 1000;      // 1시간 (밀리초)
@@ -86,6 +87,9 @@ async function endSession(reason) {
   hideSessionModal();
   sessionWarned = false;
 
+  // 작성 중인 주문은 저장해 두고 앱 화면 정리 (app.js)
+  if (typeof onSessionEnded === 'function') onSessionEnded();
+
   try {
     await signOut();
   } catch (err) {
@@ -96,7 +100,7 @@ async function endSession(reason) {
     showScreen('landing');
   }
   if (reason === 'expired') {
-    showLandingNotice('Session expired. Please sign in again.');
+    showLandingNotice(t('session_expired'));
   }
 
   sessionEnding = false;
@@ -145,28 +149,31 @@ function sessionTick() {
 
 // ===== 페이지를 열 때 확인 =====
 // Supabase 로그인이 남아 있어도, 만료 시각이 없거나 지났으면 로그아웃
+// 세션이 유지되면 true, 아니면 false 를 돌려줘요
 async function checkSessionOnLoad() {
   var session = null;
   try {
     session = await getSession();
   } catch (err) {
     console.error(err);
-    return;
+    return false;
   }
 
   if (!session) {
     clearSessionExpiry();
-    return;
+    return false;
   }
 
   var expiry = getSessionExpiry();
   if (expiry === null) {
     await endSession('invalid');          // 기록이 없음 → 조용히 로그아웃
+    return false;
   } else if (expiry <= Date.now()) {
     await endSession('expired');          // 시간이 지남 → 안내와 함께 로그아웃
-  } else {
-    startSessionTimer();                  // 아직 남음 → 세션 유지
+    return false;
   }
+  startSessionTimer();                    // 아직 남음 → 세션 유지
+  return true;
 }
 
 
@@ -176,9 +183,8 @@ window.addEventListener('storage', function (e) {
   if (e.newValue === null) {
     // 다른 탭에서 로그아웃 또는 만료
     if (sessionTimer) endSession('remote');
-  } else {
-    // 다른 탭에서 로그인 또는 연장
-    startSessionTimer();
+  } else if (sessionTimer) {
+    // 다른 탭에서 연장
     sessionTick();
   }
 });
@@ -196,8 +202,8 @@ function formatRemaining(ms) {
 }
 
 
-// ===== 화면 오른쪽 위 남은 시간 표시 갱신 =====
-// (class="session-badge" 인 곳이 모두 함께 바뀌어요)
+// ===== 남은 시간 표시 갱신 =====
+// (class="session-badge" 인 곳이 모두 함께 바뀌어요 — 헤더, 메뉴)
 function updateSessionDisplays() {
   var left = getRemaining();
   var text = formatRemaining(left);
@@ -206,8 +212,9 @@ function updateSessionDisplays() {
   var badges = document.querySelectorAll('.session-badge');
   for (var i = 0; i < badges.length; i++) {
     var time = badges[i].querySelector('.session-time');
+    if (!time) continue;
     time.textContent = text;
-    time.className = 'session-time' + (level ? ' ' + level : '');
+    time.className = 'session-time mono' + (level ? ' ' + level : '');
   }
 
   var countdown = document.getElementById('session-modal-countdown');
@@ -218,7 +225,7 @@ function updateSessionDisplays() {
 // ===== "+1h" 버튼 =====
 function handleExtendClick(button) {
   var extended = extendSession();
-  button.textContent = extended ? '+1h ✓' : 'Max 3h';
+  button.textContent = extended ? t('session_extended') : t('session_max');
   button.disabled = true;
   setTimeout(function () {
     button.textContent = '+1h';

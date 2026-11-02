@@ -1,0 +1,330 @@
+/* =================================================================
+   allAbut — 공통 기본 + 랜딩·로그인 화면 (다크) + 세션 팝업
+   글자 크기는 rem 단위 → 글자 크기 버튼(A / A+ / A++)이 화면 전체에 적용돼요
+   ================================================================= */
+
+:root {
+  /* 색 */
+  --navy: #001D4A;
+  --gold: #D4AF37;
+  --gold-dark: #8A6D12;       /* 밝은 배경 위 골드 글씨 (대비 확보용) */
+  --dark: #06090f;
+  --bg: #F7F8FA;
+  --card: #FFFFFF;
+  --text: #001D4A;
+  --muted: #4B5563;           /* 보조 글씨 (#6B7280 보다 조금 진하게: 읽기 쉽게) */
+  --muted-light: #6B7280;
+  --border: #E5E7EB;
+  --border-strong: #CBD2DC;
+  --danger: #B42318;
+  --danger-bg: #FEF3F2;
+  --success: #067647;
+  --success-bg: #ECFDF3;
+  --warn-bg: #FFF8DB;
+  --warn-border: #F5D565;
+  --focus: #2563EB;
+
+  /* 글꼴 */
+  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Thai', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(0, 29, 74, 0.06), 0 4px 16px rgba(0, 29, 74, 0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-sans);
+  font-size: 1rem;            /* 16px */
+  line-height: 1.55;
+  background: var(--dark);
+  color: #fff;
+  min-height: 100vh;
+}
+body.in-app { background: var(--bg); color: var(--text); }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+
+.mono { font-family: var(--font-mono); }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* 키보드로 움직일 때 잘 보이는 테두리 */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+
+/* ===== 화면(screen) 공통: 한 번에 하나만 보이고, 페이드로 전환 ===== */
+.screen {
+  display: none;
+  min-height: 100vh;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.screen.active  { display: flex; }
+.screen.visible { opacity: 1; }
+
+.screen-dark {
+  position: relative;
+  background: var(--dark);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 72px 16px 64px;
+}
+#screen-auth {
+  justify-content: flex-start;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.08), transparent 55%),
+    var(--dark);
+}
+
+
+/* ===== 로고: all A but 5μm (B1 스타일) =====
+   글자 크기는 모두 .logo 의 font-size(36px) 기준 비율(em) */
+.logo {
+  display: inline-flex;
+  align-items: baseline;
+  line-height: 1;
+  font-size: 36px;
+}
+.logo-small { font-size: 22px; }
+.logo-all,
+.logo-but {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 1em;
+  font-weight: 200;
+  color: #fff;
+}
+.logo-a {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 1.3333em;
+  font-weight: 600;
+  color: var(--gold);
+}
+.logo-um {
+  font-family: var(--font-mono);
+  font-size: 0.3056em;
+  color: var(--gold);
+  letter-spacing: 0;
+  margin-left: 1px;
+  position: relative;
+  top: -1.7273em;
+}
+/* 로고는 언어가 RTL 이어도 항상 왼쪽→오른쪽 */
+.logo { direction: ltr; }
+
+/* ===== 슬로건 ===== */
+.slogan {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-top: 18px;
+}
+
+/* ===== 랜딩 Start Order ===== */
+.cta-btn {
+  margin-top: 44px;
+  min-height: 56px;
+  padding: 0 48px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 1.125rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.cta-btn:hover { filter: brightness(1.12); }
+
+/* ===== 랜딩·로그인 언어 선택 (오른쪽 위) ===== */
+.public-lang {
+  position: absolute;
+  top: 16px;
+  inset-inline-end: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #C9D1DE;
+  font-size: 0.9375rem;
+}
+.public-lang select {
+  min-height: 44px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+}
+.public-lang option { color: #001D4A; }
+
+
+/* ===== 로그인 카드 (흰색) ===== */
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  margin-top: 28px;
+  padding: 28px 28px 24px;
+  background: #fff;
+  color: var(--text);
+  border-radius: 16px;
+  border-top: 4px solid var(--gold);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  text-align: start;
+}
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+.auth-tab {
+  flex: 1;
+  min-height: 52px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.auth-tab.active { color: var(--navy); font-weight: 600; border-bottom-color: var(--gold); }
+
+.auth-field { margin-bottom: 16px; }
+.auth-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+.auth-optional { font-weight: 400; color: var(--muted); }
+.auth-field input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  background: #fff;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1.0625rem;
+  color: var(--text);
+}
+.auth-field input:focus { border-color: var(--navy); outline: none; box-shadow: 0 0 0 3px rgba(0, 29, 74, 0.12); }
+
+.auth-submit {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 6px;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-submit:hover { background: #062B66; }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
+
+.auth-msg { font-size: 0.9375rem; line-height: 1.5; min-height: 22px; margin: 4px 0 8px; }
+.auth-msg.error { color: var(--danger); font-weight: 500; }
+.auth-msg.info { color: var(--success); font-weight: 500; }
+
+/* ← Back */
+.back-link {
+  margin-top: 22px;
+  min-height: 48px;
+  padding: 0 18px;
+  background: none;
+  border: none;
+  color: #C9D1DE;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.back-link:hover { color: var(--gold); }
+
+
+/* ===== 5분 경고 팝업 ===== */
+.session-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 5, 10, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.session-modal.open { opacity: 1; pointer-events: auto; }
+.session-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px 24px;
+  background: #fff;
+  color: var(--text);
+  border-radius: 16px;
+  border-top: 4px solid var(--danger);
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.session-modal-title { font-size: 1.375rem; font-weight: 600; }
+.session-modal-text { margin-top: 6px; color: var(--muted); }
+.session-modal-countdown {
+  margin: 16px 0 22px;
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: var(--danger);
+  letter-spacing: 2px;
+}
+.session-modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+
+/* ===== 랜딩 안내 문구 (Session expired...) ===== */
+.landing-notice {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 250;
+  transform: translate(-50%, -10px);
+  max-width: calc(100% - 32px);
+  padding: 14px 22px;
+  background: #fff;
+  border-inline-start: 4px solid var(--gold);
+  border-radius: 10px;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.landing-notice.show { opacity: 1; transform: translate(-50%, 0); }
+
+
+/* ===== 하단 저작권 (랜딩·로그인만) ===== */
+.footer {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #fff;
+  opacity: 0.35;
+  pointer-events: none;
+}
+body.in-app .footer { display: none; }

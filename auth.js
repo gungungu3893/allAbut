@@ -1,45 +1,45 @@
 // ===== Supabase 로그인 / 회원가입 기능 모음 =====
 
 // Supabase 클라이언트 만들기 (어디서든 window.sb 로 사용)
-// 로그인 상태(세션)는 Supabase가 브라우저에 자동 저장하므로, 새로고침해도 로그인이 유지돼요.
+// 로그인 상태(세션)는 Supabase 가 브라우저에 자동 저장하므로, 새로고침해도 로그인이 유지돼요.
 window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 회원가입
-// - 가입하면서 닉네임을 유저 정보(metadata)에도 같이 저장해 둬요.
+// - 닉네임·치과 이름·전화번호를 유저 정보(metadata)에도 같이 저장해 둬요.
 //   (이메일 인증이 켜져 있으면 가입 직후엔 로그인 상태가 아니라서 profiles 저장이 안 될 수 있어요.
-//    그럴 땐 처음 로그인할 때 getProfile() 이 이 닉네임으로 profiles 행을 만들어 줘요.)
-async function signUp(email, password, nickname) {
+//    그럴 땐 처음 로그인할 때 getProfile() 이 이 정보로 profiles 행을 만들어 줘요.)
+async function signUp(email, password, nickname, clinicName, phone) {
   var result = await sb.auth.signUp({
     email: email,
     password: password,
-    options: { data: { nickname: nickname } }
+    options: { data: { nickname: nickname, clinic_name: clinicName || '', phone: phone || '' } }
   });
   if (result.error) throw result.error;
 
   var user = result.data.user;
 
-  // 이미 가입된 이메일이면 Supabase가 identities 를 빈 배열로 돌려줘요
+  // 이미 가입된 이메일이면 Supabase 가 identities 를 빈 배열로 돌려줘요
   if (user && user.identities && user.identities.length === 0) {
-    throw new Error('This email is already registered.');
+    throw new Error('already registered');
   }
 
   // 바로 로그인 상태가 됐다면 (이메일 인증이 꺼져 있는 경우) profiles 에 바로 저장
   if (result.data.session) {
-    await createProfile(user.id, nickname);
+    await createProfile(user.id, nickname, { clinic_name: clinicName, phone: phone });
   }
 
   return result.data; // data.session 이 없으면 → 이메일 인증이 필요하다는 뜻
 }
 
-// profiles 테이블에 새 행 저장 (avatar 는 아직 없으니 null)
-async function createProfile(userId, nickname) {
-  var result = await sb
-    .from('profiles')
-    .insert({ id: userId, nickname: nickname, avatar: null })
-    .select()
-    .single();
+// profiles 테이블에 새 행 저장
+async function createProfile(userId, nickname, extra) {
+  extra = extra || {};
+  var row = { id: userId, nickname: nickname, lang: currentLang };
+  if (extra.clinic_name) row.clinic_name = extra.clinic_name;
+  if (extra.phone) row.phone = extra.phone;
+
+  var result = await sb.from('profiles').insert(row).select().single();
   if (result.error) throw result.error;
-  result.data.guild = null;
   return result.data;
 }
 
@@ -62,41 +62,17 @@ async function getSession() {
   return result.data.session;
 }
 
-// 로그인한 유저의 profiles 행 가져오기
-// - guild_id 가 있으면 guilds 테이블 정보도 함께 가져와서 profile.guild 에 넣어요
-//   ({ id, name, tag, color, emblem } 또는 null)
-// - 행이 없으면 가입할 때 저장해 둔 닉네임으로 새로 만들어요
+// 로그인한 유저의 profiles 행 가져오기 (없으면 가입할 때 저장해 둔 정보로 새로 만들어요)
 async function getProfile() {
   var session = await getSession();
   if (!session) return null;
   var user = session.user;
 
-  // 1) guilds 조인으로 한 번에 가져오기
-  var result = await sb
-    .from('profiles')
-    .select('*, guilds(id, name, tag, color, emblem)')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  // 2) 조인이 안 되면 (테이블 연결(외래키)이 없는 경우 등) 따로 가져오기
-  if (result.error) {
-    console.warn('Guild join failed, loading separately:', result.error.message);
-    result = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    if (result.error) throw result.error;
-    if (result.data) {
-      result.data.guild = null;
-      if (result.data.guild_id) {
-        var g = await sb.from('guilds').select('id, name, tag, color, emblem').eq('id', result.data.guild_id).maybeSingle();
-        if (!g.error) result.data.guild = g.data;
-      }
-    }
-  } else if (result.data) {
-    result.data.guild = result.data.guilds || null;
-    delete result.data.guilds;
-  }
-
+  var result = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (result.error) throw result.error;
   if (result.data) return result.data;
 
-  var nickname = (user.user_metadata && user.user_metadata.nickname) || user.email.split('@')[0];
-  return await createProfile(user.id, nickname);
+  var meta = user.user_metadata || {};
+  var nickname = meta.nickname || user.email.split('@')[0];
+  return await createProfile(user.id, nickname, { clinic_name: meta.clinic_name, phone: meta.phone });
 }

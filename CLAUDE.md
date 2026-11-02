@@ -10,72 +10,73 @@
   ```
 
 ## 프로젝트
-- **allAbut** — CNC 커스텀 어바트먼트 주문 플랫폼
+- **allAbut** — CNC 커스텀 어버트먼트를 **쉽고 정확하게 주문하는 전문 웹앱**
+- 메타버스/게임 요소는 전부 폐기했다 (Phaser, 아바타, 펫, 이름표, 길드 코드 없음)
+- 주문 흐름은 Dentalk CNC 주문 방식을 바탕으로 새로 정리했다 (`CNC_PORT_PLAN.md` 참고)
 
-## 컨셉: 2D 탑다운 픽셀아트 RPG (메타버스)
-- 3D(Three.js)에서 **2D 탑다운 픽셀아트 RPG**로 전환했다 (포켓몬 / 스타듀밸리 느낌).
-- 엔진: **Phaser 3** (CDN, jsdelivr `phaser@3.80.1` 고정 버전)
-- 타일 크기 **32x32**, 픽셀아트 선명하게 (`pixelArt: true`, 안티앨리어싱 끔)
-- 나중에 **태국 전체로 확장하는 메타버스**: 지역(zone) 데이터 기반 설계를 유지한다.
-  - 새 지역 = `game/config/zones/` 에 지도 데이터 파일 추가 (`GAME_ZONES['id']`)
-  - 새 건물 내부 = `game/config/interiors/` 에 데이터 파일 추가 (`GAME_INTERIORS['id']`)
-  - 바깥/실내 씬 코드는 공통 (`ZoneScene`, `InteriorScene` → `WorldScene`)
-- 그림 에셋은 나중에 **LimeZu Modern Interiors/Exteriors** 로 교체 예정.
-  지금은 `BootScene` 에서 코드로 그린 임시 그래픽을 쓴다.
-  모든 텍스처 키 이름은 `game/config/assets.js` 한 곳에 정의한다.
-
-## 폴더 구조 (game/)
-- `game/main.js` — Phaser 게임 생성 (Scale.RESIZE), 씬 등록, `openGame` / `closeGame`, 위치 저장, 줌 계산
-- `game/config/assets.js` — 텍스처 키, 타일 종류(TILE_TYPES), 옷 색
-- `game/config/zones/bangkok-soi.js` — 골목 지도 데이터 (바닥 칠하기 목록 + 오브젝트 목록)
-- `game/config/interiors/allabut-shop.js` — 체험관 내부 지도 데이터 (벽·파티션, 데스크, 안내선)
-- `game/scenes/BootScene.js` — 임시 그래픽을 코드로 생성 (타일셋, 오브젝트, 캐릭터 4방향 x 걷기 3프레임)
-- `game/scenes/ZoneScene.js` — 바깥 지역 공통 씬 (뚝뚝, 행인)
-- `game/scenes/InteriorScene.js` — 건물 내부 공통 씬 (데스크, NPC, 간판, 안내선, 다음 데스크 화살표)
-- `game/scenes/UIScene.js` — 화면 고정 UI (위치 이름, 세션 타이머, 버튼, 미니맵, 대화창, 모바일 조이스틱)
-- `game/systems/world.js` — 바깥/실내 공통 씬 클래스 (지도 → 타일/오브젝트/충돌, 입력, 상호작용, 카메라, 전환)
-- `game/systems/player.js` — 플레이어 이동 (클릭 길찾기 + 방향키/WASD + 조이스틱)
-- `game/systems/pathfinding.js` — 타일 기반 A* 길찾기
-- `game/systems/npc.js` — NPC (데스크 직원 idle, 행인 patrol)
-- `game/systems/nameplate.js` — 머리 위 이름표 (플레이어·다른 유저·NPC 공통): 칭호 / [길드 배지] 닉네임
-- `game/systems/pet.js` — 어깨 펫 (방향 따라 위치·앞뒤 바뀜, 걸을 때 흔들림, 가끔 작은 동작)
-
-## 게임 공통 규칙
-- 좌표는 타일 단위 (x = 동쪽으로, y = 남쪽으로). 오브젝트가 차지한 칸은 지나갈 수 없다 (`solid: false` 예외)
-- 상호작용: 오브젝트 데이터의 `interact: { kind, approach, label }` → 클릭하면 approach 칸까지 걸어가서 실행
-- 깊이(depth)는 발 밑 y 좌표 → 나무·건물 뒤로 지나갈 수 있음
-- 장면 전환: 검게 페이드아웃 → 씬 전환 → 페이드인 (0.5초)
-- 위치 저장: `localStorage.allabut_location = { scene, x, y, facing }` (타일 단위)
-- 지도 크기: 골목 28x40 타일, 체험관 22x28 타일
-- 캐릭터: 한 프레임 32x64 (타일 2칸 높이), 4방향 x 걷기 3프레임. 펫은 16x16
-- 줌: 모바일 가로 약 9~10타일, PC 가로 약 18타일 (세로 최소 10타일), 정수 배율에 가까우면 정수로
-- 이름표 데이터: `profiles.nickname`, `profiles.title`, `profiles.guild_id` → `guilds(id, name, tag, color, emblem)`
-  (`getProfile()` 이 `profile.guild` 로 함께 가져옴). 테스트: `DEBUG_SHOW_SAMPLE_GUILD = true` (nameplate.js 상단)
-- 펫: `avatar-catalog.js` 의 `pet` 카테고리, 저장 위치 `profiles.avatar.pet`, 텍스처 키는 `assets.js` 의 `ASSETS.pets`
-
-## 유지하는 것
-- 랜딩 페이지, 로고, 로그인/회원가입, Supabase 연동, `session.js` (1시간 + 연장), `profiles` 테이블
-- `avatar-catalog.js` 의 구조 (id, name, price, locked) — 내용은 2D용으로 바꿀 예정
-
-## 스택
-- Vanilla JS
-- HTML / CSS
-- Phaser 3 (CDN, v3.80.1)
-- Tailwind CSS (CDN)
-- Supabase (CDN)
+## 대상 사용자
+- 나이 많은 치과의사도 쉽게 쓸 수 있어야 한다: **심플, 큰 글씨, 명확한 단계**
+- 본문 최소 16px, 버튼 높이 최소 52px, 아이콘만 있는 버튼 금지(항상 글자 라벨)
+- 글자 크기 100% / 115% / 130% (헤더 A / A+ / A++, `localStorage.allabut_font_scale`) → CSS 는 rem 단위
+- 에러는 해당 칸 바로 아래 빨간 글씨 + 아이콘 (`uiFieldError`)
+- 색 대비 충분히 (보조 글씨는 `--muted: #4B5563`)
 
 ## 디자인
-- 다크 테마 기반
-- Navy: `#001D4A`
-- Gold: `#D4AF37`
-- Dark BG: `#06090f`
+- 랜딩·로그인: 다크 `#06090f` + 골드 로고 (B1 스타일), 로그인은 흰색 카드
+- 로그인 후 앱: 밝은 테마
+  - 배경 `#F7F8FA`, 카드 흰색, 글자 네이비 `#001D4A`, 포인트 골드 `#D4AF37`
+  - 보조 회색 `#6B7280`, 테두리 `#E5E7EB`
+- 밝은 배경 로고: all/but 네이비, A 골드, 5μm 골드
+- 색은 `css/landing.css` 의 `:root` 변수 한 곳에서 정의
 
 ## 폰트
-- IBM Plex Sans (200 / 600)
-- IBM Plex Mono (게임 UI 글자)
-- Google Fonts CDN 사용
+- IBM Plex Sans (본문), IBM Plex Mono (숫자·주문번호·라벨) — Google Fonts CDN
+- 태국어·아랍어·페르시아어는 IBM Plex Sans Thai / Arabic 로 보완
 
-## 다국어
-- `t()` 함수로 번역 텍스트 사용
-- 기본 언어: `en`
-- 지원 언어: `en`, `ko`
+## 확정 사항
+- 치아 32개 (FDI, 사랑니 포함)
+- 브랜드·쉐이드·사이즈는 **치아마다 따로** (브랜드·쉐이드 필수, 사이즈 선택)
+- 한 주문 = 환자 1명 (`cases` 배열에 1개)
+- 파일: STL / PLY / OBJ / 3MF / JPG / PNG / PDF, 파일당 50MB, 최대 10개
+- 1 치아 = 1 크레딧 (차감은 DB 함수 `create_cnc_order` 가 한 번에 처리)
+- 9개 언어: en ko th zh vi es tr ar fa (ar / fa 는 RTL)
+
+## 제외 (나중에)
+- 세금계산서·영수증, LINE 알림, 관리자 화면, 결제
+
+## 스택
+- Vanilla JS, HTML / CSS (Tailwind 는 쓰지 않음 — 직접 만든 CSS)
+- Supabase (CDN, `@supabase/supabase-js@2.45.4` 고정): Auth, DB, Storage
+- Three.js `three@0.160.0` — 파일 뷰어를 **열 때만** 동적으로 불러옴
+
+## 파일 구조 (로직과 화면 분리)
+- `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
+- `config.js` — Supabase 주소·공개 키
+- `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시
+- `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
+- `auth.js` — 회원가입(닉네임, 치과 이름·전화 선택) / 로그인 / `getProfile()`
+- `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지
+- `app.js` — `APP { user, profile, balance }`, 화면 전환, 로그인 폼, 시작(boot)
+- `cnc/cnc-data.js` — 브랜드 11종, VITA 14색, 주문 단계, FDI 32개, `getToothName()`, 파일 규칙
+- `cnc/cnc-core.js` — 화면 코드 없는 순수 로직: draft 저장/복원, 단계별 검사, 파일 규칙, cases 만들기, 업로드, 제출(RPC), 주문 조회, 고객 액션, 크레딧, 프로필 저장
+- `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
+- `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/new`, `#/orders`, `#/profile` (새로고침해도 같은 페이지)
+- `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
+- `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
+
+## 규칙
+- 사용자가 입력한 값은 HTML 에 넣을 때 **항상 `escHtml()`** (XSS 방지)
+- 화면 글자는 전부 번역 키로 (`t()` / `tf()`), 새 키는 9개 언어 파일에 모두 추가
+- 크레딧·주문 쓰기는 브라우저에서 테이블에 직접 하지 않고 **DB 함수(RPC)** 로만
+  (`create_cnc_order`, `update_my_cnc_order`, `cancel_my_cnc_order`, `customer_cnc_action`)
+- 파일은 비공개 버킷 `cnc-files` 의 `{user_id}/{uploadId}/{번호}_{안전한파일명}` 에 올리고,
+  `cases[0].stls`(원래 이름) + `cases[0].stlPaths`(경로) 에 저장. 업로드 실패 시 base64 대체 금지
+- 보기용 주소는 `createSignedUrl` (1시간). 디자인 파일은 `cnc-designs` 버킷
+- 작성 중 주문(draft): `localStorage.allabut_cnc_draft_{user_id}` (파일은 이름만 저장)
+- 화면 폭: 모바일 → 1024px 이상 PC(헤더 메뉴, 새 주문 3단) → 1280px 이상 헤더 전체
+
+## Supabase
+- 테이블: `profiles`(+ clinic_name, address, phone, tax_id, line_user_id, lang), `admins`, `credit_wallets`,
+  `credit_history`, `cnc_orders`, `invoices` — SQL 은 `CNC_PORT_PLAN.md` 6장
+- `guilds` 테이블, `profiles.avatar` 컬럼은 DB 에 남아 있지만 코드에서는 쓰지 않는다
