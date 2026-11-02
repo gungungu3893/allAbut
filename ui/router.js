@@ -1,9 +1,10 @@
 // ===== 해시 라우팅 =====
-// 주소 끝의 #/home, #/new, #/orders, #/profile 를 보고 맞는 페이지를 그려요.
+// 주소 끝의 #/home, #/guide, #/new, #/orders, #/profile, #/admin 을 보고 맞는 페이지를 그려요.
 // 주소에 페이지가 남아 있어서, 새로고침해도 같은 페이지가 다시 열려요.
 
 var ROUTES = {
   home: function () { return PageHome; },
+  guide: function () { return PageGuide; },
   new: function () { return PageNew; },
   orders: function () { return PageOrders; },
   profile: function () { return PageProfile; },

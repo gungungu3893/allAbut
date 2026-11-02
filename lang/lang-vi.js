@@ -114,7 +114,6 @@ LANG.vi = {
   case_deadline_label: 'Hạn giao hàng',
   err_deadline_required: 'Vui lòng chọn hạn giao hàng.',
   err_deadline_past: 'Hạn giao hàng không thể là ngày trong quá khứ.',
-  err_patient_long: 'ID bệnh nhân quá dài (tối đa 60 ký tự).',
 
   // ----- Step 2 -----
   upper_jaw: 'Hàm trên',
@@ -338,7 +337,6 @@ LANG.vi = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: 'Giai đoạn',
-  admin_filter_active: 'Tất cả đang xử lý',
   admin_filter_all: 'Tất cả đơn hàng',
   admin_sort: 'Sắp xếp',
   admin_sort_newest: 'Mới nhất trước',
@@ -395,7 +393,6 @@ LANG.vi = {
   admin_cancel_msg: 'Hủy đơn {id} và hoàn lại {n} tín dụng cho khách hàng?',
   admin_cancel_reason: 'Lý do (khách hàng sẽ thấy)',
   admin_cancel_reason_required: 'Vui lòng nhập lý do.',
-  admin_cancel_not_allowed: 'Không thể hủy đơn hàng sau khi đã bắt đầu phay CNC.',
   admin_done_cancelled: 'Đã hủy đơn và hoàn lại tín dụng.',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.vi = {
   admin_deduct_credits_msg: 'Khấu trừ {n} tín dụng của {name}?',
   admin_credits_done: 'Hoàn tất. Số dư mới: {balance}',
   admin_customer_orders: 'Đơn hàng',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: 'Chọn ngày',
+  date_today: 'Hôm nay',
+  date_prev_month: 'Tháng trước',
+  date_next_month: 'Tháng sau',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: 'Vui lòng nhập mã bệnh nhân',
+  err_patient_long: 'Mã bệnh nhân quá dài (tối đa 50 ký tự).',
+  draft_continue_order: 'Tiếp tục đặt hàng',
+  draft_discard: 'Xóa bỏ',
+  draft_discard_confirm: 'Đơn hàng chưa hoàn tất của bạn sẽ bị xóa. Không thể hoàn tác.',
+  draft_saved_at: 'Lưu lần cuối lúc {time}',
+  draft_last_step: 'Bạn đã dừng ở bước: {step}',
+  help_label: 'Trợ giúp',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: 'Đăng xuất?',
+  signout_text: 'Bạn có thể đăng nhập lại bất cứ lúc nào.',
+  signout_draft_saved: 'Đơn hàng chưa hoàn tất của bạn đã được lưu. Bạn có thể tiếp tục sau khi đăng nhập lại.',
+  err_cannot_cancel_after_milling: 'Không thể hủy đơn hàng này vì đã bắt đầu phay.',
+  btn_hide: 'Ẩn',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: 'Đang xử lý (tất cả)',
+  admin_filter_completed: 'Đã hoàn thành',
+  admin_filter_cancelled: 'Đã hủy',
+  admin_cancel_not_allowed: 'Không thể hủy sau khi bắt đầu phay',
+  admin_prev: 'Trước',
+  admin_next: 'Sau',
+  admin_m_orders: 'Đơn hàng',
+  admin_m_teeth: 'Số răng (tín dụng đã dùng)',
+  admin_m_done: 'Đã hoàn thành',
+  admin_m_cancelled: 'Đã hủy',
+  admin_m_progress: 'Đang xử lý',
+  admin_daily_title: 'Số đơn mỗi ngày',
+  admin_max_fmt: 'Tối đa {n} mỗi ngày',
+  admin_trend_title: '12 tháng gần nhất (đơn / răng)',
+  admin_completed_month: 'Hoàn thành trong tháng này',
+  admin_completed_date: 'Ngày hoàn thành',
+  admin_no_completed: 'Không có đơn hàng nào hoàn thành trong tháng này.',
+  admin_orders_count: '{n} đơn',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: 'Hướng dẫn',
+  guide_banner_title: 'Mới dùng allAbut? Hãy đọc hướng dẫn 5 bước',
+  guide_banner_desc: 'Tìm hiểu cách đặt hàng, ý nghĩa của từng trạng thái và việc cần làm ở mỗi bước.',
+  guide_banner_small: 'Cách sử dụng allAbut — mở hướng dẫn',
+  guide_open: 'Mở hướng dẫn',
+  guide_open_full: 'Mở hướng dẫn đầy đủ',
+  guide_title: 'Cách sử dụng allAbut',
+  guide_subtitle: 'Mọi điều bạn cần để đặt abutment tùy chỉnh CNC, từng bước một.',
+  guide_toc: 'Mục lục',
+  guide_start_order: 'Bắt đầu đơn mới',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: 'Bắt đầu',
+  guide_s1_p1: 'Trước tiên, hãy mở "Hồ sơ" và nhập tên phòng khám, địa chỉ và số điện thoại.',
+  guide_s1_p2: 'Thông tin này sẽ được tự động điền mỗi khi bạn đặt hàng, nên bạn chỉ cần nhập một lần.',
+  guide_s1_btn: 'Mở hồ sơ của tôi',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: 'Tín dụng',
+  guide_s2_rule: 'răng = 1 tín dụng',
+  guide_s2_p1: 'Số dư tín dụng của bạn luôn hiển thị ở góc trên bên phải màn hình.',
+  guide_s2_p2: 'Để nạp thêm tín dụng, vui lòng liên hệ allAbut. Nếu bạn hủy đơn trước khi đơn được xác nhận, tín dụng sẽ được hoàn lại.',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: 'Đặt hàng trong 5 bước',
+  guide_step1_text: 'Nhập mã bệnh nhân (bắt buộc) và chọn hạn giao hàng trên lịch. Không thể chọn ngày đã qua.',
+  guide_step2_text: 'Chạm vào từng răng cần abutment tùy chỉnh trên sơ đồ FDI (32 răng, gồm cả răng khôn). Mỗi răng dùng 1 tín dụng. Chạm lại để bỏ chọn.',
+  guide_step3_text: 'Với mỗi răng, chọn thương hiệu implant và màu răng (cả hai đều bắt buộc). Kích thước có thể bỏ trống. Dùng "Áp dụng cho tất cả răng" khi các răng giống nhau, và thêm ghi chú nếu có yêu cầu đặc biệt.',
+  guide_step4_text: 'Thêm file scan (STL, PLY, OBJ, 3MF), ảnh (JPG, PNG) hoặc tài liệu PDF. Tối đa 10 file, mỗi file 50 MB. Dùng "Xem trước" để kiểm tra file trước khi gửi.',
+  guide_step5_text: 'Kiểm tra phần tóm tắt, xác nhận địa chỉ giao hàng và tín dụng, rồi nhấn "Gửi đơn hàng". Bạn sẽ nhận được mã đơn hàng ngay lập tức.',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: 'Sau khi đặt hàng',
+  guide_flow_submitted: 'Chúng tôi đã nhận đơn hàng của bạn. Bạn vẫn có thể sửa hoặc hủy đơn.',
+  guide_flow_confirmed: 'Chúng tôi đã kiểm tra đơn hàng và bắt đầu thiết kế.',
+  guide_flow_design_ready: 'Việc bạn cần làm: xem thiết kế trong "Đơn của tôi" và nhấn "Phê duyệt thiết kế" hoặc "Yêu cầu chỉnh sửa".',
+  guide_flow_approved: 'Thiết kế đã được phê duyệt và sẽ được chuyển sang phay.',
+  guide_flow_milling: 'Abutment của bạn đang được phay.',
+  guide_flow_shipped: 'Việc bạn cần làm: khi nhận được bưu kiện, hãy nhấn "Đã nhận" trong "Đơn của tôi".',
+  guide_flow_done: 'Đơn hàng đã hoàn tất.',
+  guide_no_cancel_after_milling: 'Khi đã bắt đầu phay, đơn hàng không thể hủy được nữa.',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: 'Sửa và hủy đơn',
+  guide_s5_p1: 'Khi trạng thái đơn hàng là "Đã gửi", bạn có thể sửa mã bệnh nhân, hạn giao hàng và thông tin giao hàng, hoặc hủy đơn.',
+  guide_s5_p2: 'Khi bạn hủy, tín dụng sẽ được hoàn lại vào số dư ngay lập tức. Để thay đổi răng hoặc file, hãy hủy đơn và đặt đơn mới.',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: 'Câu hỏi thường gặp',
+  guide_faq1_q: 'Tại sao tôi bị đăng xuất?',
+  guide_faq1_a: 'Để bảo mật, bạn sẽ bị đăng xuất sau 1 giờ. Đồng hồ ở góc trên bên phải hiển thị thời gian còn lại — nhấn "+1h" để gia hạn (tối đa 3 giờ). Bạn sẽ thấy cảnh báo trước 5 phút.',
+  guide_faq2_q: 'Tôi có bị mất đơn hàng khi bị đăng xuất không?',
+  guide_faq2_a: 'Không. Đơn hàng chưa hoàn tất được tự động lưu trong khi bạn nhập. Sau khi đăng nhập lại, hãy nhấn "Tiếp tục đặt hàng". Bạn cần chọn lại các file.',
+  guide_faq3_q: 'Tôi có thể tải lên những file nào?',
+  guide_faq3_a: 'File scan STL, PLY, OBJ và 3MF, ảnh JPG và PNG, và tài liệu PDF — tối đa 10 file, mỗi file 50 MB.',
+  guide_faq4_q: 'Làm sao để phóng to chữ?',
+  guide_faq4_a: 'Dùng các nút A / A+ / A++ ở góc trên bên phải (trên điện thoại, hãy mở "Menu"). Lựa chọn của bạn sẽ được ghi nhớ.',
+  guide_faq5_q: 'Làm sao để đổi ngôn ngữ?',
+  guide_faq5_a: 'Chọn ngôn ngữ trong menu 🌐 ở góc trên bên phải (trên điện thoại, hãy mở "Menu"), hoặc trong "Hồ sơ". Có 9 ngôn ngữ.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

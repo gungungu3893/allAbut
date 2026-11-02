@@ -114,7 +114,6 @@ LANG.ko = {
   case_deadline_label: '납품 기한',
   err_deadline_required: '납품 기한을 선택해 주세요.',
   err_deadline_past: '납품 기한은 지난 날짜로 정할 수 없어요.',
-  err_patient_long: '환자 ID가 너무 길어요 (최대 60자).',
 
   // ----- Step 2 -----
   upper_jaw: '상악',
@@ -338,7 +337,6 @@ LANG.ko = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: '단계',
-  admin_filter_active: '진행 중 전체',
   admin_filter_all: '전체 주문',
   admin_sort: '정렬',
   admin_sort_newest: '최신순',
@@ -395,7 +393,6 @@ LANG.ko = {
   admin_cancel_msg: '주문 {id}을(를) 취소하고 고객에게 {n}크레딧을 반환할까요?',
   admin_cancel_reason: '사유 (고객에게 표시돼요)',
   admin_cancel_reason_required: '사유를 입력해 주세요.',
-  admin_cancel_not_allowed: '밀링이 시작된 주문은 취소할 수 없어요.',
   admin_done_cancelled: '주문을 취소하고 크레딧을 환불했어요.',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.ko = {
   admin_deduct_credits_msg: '{name}님에게서 {n}크레딧을 차감할까요?',
   admin_credits_done: '완료되었어요. 새 잔액: {balance}',
   admin_customer_orders: '주문',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: '날짜를 선택해 주세요',
+  date_today: '오늘',
+  date_prev_month: '이전 달',
+  date_next_month: '다음 달',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: '환자 ID를 입력해 주세요',
+  err_patient_long: '환자 ID가 너무 길어요 (최대 50자).',
+  draft_continue_order: '주문 이어서 하기',
+  draft_discard: '삭제',
+  draft_discard_confirm: '작성 중인 주문이 삭제돼요. 삭제하면 되돌릴 수 없어요.',
+  draft_saved_at: '마지막 저장 {time}',
+  draft_last_step: '멈춘 단계: {step}',
+  help_label: '도움말',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: '로그아웃할까요?',
+  signout_text: '언제든지 다시 로그인할 수 있어요.',
+  signout_draft_saved: '작성 중인 주문은 저장되어 있어요. 다시 로그인한 뒤 이어서 작성할 수 있어요.',
+  err_cannot_cancel_after_milling: '이미 밀링이 시작되어 이 주문은 취소할 수 없어요.',
+  btn_hide: '숨기기',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: '진행 중 전체',
+  admin_filter_completed: '완료',
+  admin_filter_cancelled: '취소됨',
+  admin_cancel_not_allowed: '밀링 시작 후에는 취소할 수 없어요',
+  admin_prev: '이전',
+  admin_next: '다음',
+  admin_m_orders: '주문',
+  admin_m_teeth: '치아 (사용 크레딧)',
+  admin_m_done: '완료',
+  admin_m_cancelled: '취소됨',
+  admin_m_progress: '진행 중',
+  admin_daily_title: '일별 주문 수',
+  admin_max_fmt: '하루 최대 {n}건',
+  admin_trend_title: '최근 12개월 (주문 / 치아)',
+  admin_completed_month: '이번 달 완료',
+  admin_completed_date: '완료일',
+  admin_no_completed: '이 달에 완료된 주문이 없어요.',
+  admin_orders_count: '{n}건',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: '가이드',
+  guide_banner_title: 'allAbut이 처음이신가요? 5단계 가이드를 읽어 보세요',
+  guide_banner_desc: '주문 방법, 진행 상태의 뜻, 단계별로 하실 일을 알려 드려요.',
+  guide_banner_small: 'allAbut 사용법 — 가이드 열기',
+  guide_open: '가이드 열기',
+  guide_open_full: '전체 가이드 보기',
+  guide_title: 'allAbut 사용법',
+  guide_subtitle: 'CNC 커스텀 어버트먼트 주문에 필요한 모든 것을 차근차근 알려 드려요.',
+  guide_toc: '목차',
+  guide_start_order: '새 주문 시작하기',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: '시작하기',
+  guide_s1_p1: '먼저 내 정보에서 치과 이름, 주소, 전화번호를 입력해 주세요.',
+  guide_s1_p2: '이 정보는 주문할 때마다 자동으로 채워지니까 한 번만 입력하면 돼요.',
+  guide_s1_btn: '내 정보 열기',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: '크레딧',
+  guide_s2_rule: '개 치아 = 1크레딧',
+  guide_s2_p1: '크레딧 잔액은 항상 화면 오른쪽 위에 표시돼요.',
+  guide_s2_p2: '크레딧 충전은 allAbut에 문의해 주세요. 주문이 접수 확인되기 전에 취소하면 크레딧이 돌아와요.',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: '5단계로 주문하기',
+  guide_step1_text: '환자 ID(필수)를 입력하고 달력에서 납품 기한을 선택해 주세요. 지난 날짜는 선택할 수 없어요.',
+  guide_step2_text: 'FDI 치식(사랑니 포함 32개 치아)에서 커스텀 어버트먼트가 필요한 치아를 모두 눌러 주세요. 치아 1개당 1크레딧이 사용돼요. 다시 누르면 선택이 해제돼요.',
+  guide_step3_text: '치아마다 임플란트 브랜드와 쉐이드를 선택해 주세요(둘 다 필수). 사이즈는 선택 사항이에요. 모든 치아가 같다면 "모든 치아에 적용"을 누르고, 특별한 요청은 메모에 적어 주세요.',
+  guide_step4_text: '스캔 파일(STL, PLY, OBJ, 3MF), 사진(JPG, PNG), PDF 문서를 첨부해 주세요. 최대 10개, 파일당 50 MB까지 가능해요. 보내기 전에 "미리보기"로 파일을 확인할 수 있어요.',
+  guide_step5_text: '요약 내용을 확인하고 배송지와 크레딧을 확인한 다음 "주문 제출"을 눌러 주세요. 바로 주문 번호가 나와요.',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: '주문한 다음에는',
+  guide_flow_submitted: '주문이 접수되었어요. 아직 수정하거나 취소할 수 있어요.',
+  guide_flow_confirmed: '주문을 확인하고 디자인을 시작했어요.',
+  guide_flow_design_ready: '하실 일: 내 주문에서 디자인을 확인하고 "디자인 승인" 또는 "수정 요청"을 눌러 주세요.',
+  guide_flow_approved: '디자인이 승인되어 밀링으로 넘어가요.',
+  guide_flow_milling: '어버트먼트를 밀링하고 있어요.',
+  guide_flow_shipped: '하실 일: 택배를 받으시면 내 주문에서 "수령 확인"을 눌러 주세요.',
+  guide_flow_done: '주문이 완료되었어요.',
+  guide_no_cancel_after_milling: '밀링이 시작되면 더 이상 주문을 취소할 수 없어요.',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: '수정과 취소',
+  guide_s5_p1: '주문 상태가 "접수 대기"일 때는 환자 ID, 납품 기한, 배송 정보를 수정하거나 주문을 취소할 수 있어요.',
+  guide_s5_p2: '취소하면 크레딧이 바로 잔액으로 돌아와요. 치아나 파일을 바꾸려면 주문을 취소하고 새로 주문해 주세요.',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: '자주 묻는 질문',
+  guide_faq1_q: '왜 로그아웃되었나요?',
+  guide_faq1_a: '보안을 위해 1시간이 지나면 자동으로 로그아웃돼요. 오른쪽 위 타이머에 남은 시간이 표시되고, "+1h"를 누르면 연장할 수 있어요(최대 3시간). 5분 전에 미리 알려 드려요.',
+  guide_faq2_q: '로그아웃되면 작성하던 주문이 사라지나요?',
+  guide_faq2_a: '아니요. 작성 중인 주문은 입력하는 대로 자동 저장돼요. 다시 로그인한 뒤 "주문 이어서 하기"를 눌러 주세요. 파일은 다시 선택해야 해요.',
+  guide_faq3_q: '어떤 파일을 올릴 수 있나요?',
+  guide_faq3_a: 'STL, PLY, OBJ, 3MF 스캔 파일, JPG, PNG 사진, PDF 문서를 올릴 수 있어요. 최대 10개, 파일당 50 MB까지예요.',
+  guide_faq4_q: '글자를 크게 하려면 어떻게 하나요?',
+  guide_faq4_a: '오른쪽 위의 A / A+ / A++ 버튼을 눌러 주세요(모바일에서는 "메뉴"를 열어 주세요). 선택한 크기는 기억돼요.',
+  guide_faq5_q: '언어는 어떻게 바꾸나요?',
+  guide_faq5_a: '오른쪽 위 🌐 메뉴에서 언어를 고르거나(모바일에서는 "메뉴"를 열어 주세요) 내 정보에서 바꿀 수 있어요. 9개 언어를 지원해요.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

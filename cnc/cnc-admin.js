@@ -56,49 +56,86 @@ function cncDueState(order) {
 // ================================================================
 // 1) 대시보드
 // ================================================================
-// 돌려주는 값:
-// { counts: { submitted: 3, ... }, due: [주문...], today: 2, month: 15, monthCredits: 40 }
 
-async function cncAdminDashboard() {
-  var now = new Date();
-  var startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  var startMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+// 지금 기준 (월 선택과 상관없음): 단계별 진행 중 주문 수 + 납기 임박·지남 목록
+// 돌려주는 값: { counts: { submitted: 3, ... }, due: [주문...] }
+async function cncAdminDashboardNow() {
   var dueLimit = cncAddDays(cncToday(), ADMIN_DUE_DAYS);
-
-  // 단계별 주문 수 (개수만 세서 가볍게)
   var countJobs = ADMIN_ACTIVE_STAGES.map(function (stage) {
     return sb.from('cnc_orders').select('id', { count: 'exact', head: true }).eq('stage', stage);
   });
-
   var results = await Promise.all(countJobs.concat([
-    // 납기 임박·지남 (진행 중 주문만)
     sb.from('cnc_orders').select('id, stage, deadline, clinic, patient, teeth_count, created_at')
       .not('stage', 'in', '(done,cancelled)').lte('deadline', dueLimit)
-      .order('deadline', { ascending: true }).limit(50),
-    // 오늘 들어온 주문 수
-    sb.from('cnc_orders').select('id', { count: 'exact', head: true }).gte('created_at', startToday),
-    // 이번 달 주문 (취소 제외) — 사용 크레딧 합계용
-    sb.from('cnc_orders').select('credits_used, stage').gte('created_at', startMonth).limit(10000)
+      .order('deadline', { ascending: true }).limit(50)
   ]));
-
   var counts = {};
   ADMIN_ACTIVE_STAGES.forEach(function (stage, i) {
     if (results[i].error) throw results[i].error;
     counts[stage] = results[i].count || 0;
   });
-  var due = cncCheck(results[ADMIN_ACTIVE_STAGES.length]) || [];
-  var todayRes = results[ADMIN_ACTIVE_STAGES.length + 1];
-  if (todayRes.error) throw todayRes.error;
-  var monthRows = cncCheck(results[ADMIN_ACTIVE_STAGES.length + 2]) || [];
-  var monthActive = monthRows.filter(function (r) { return r.stage !== 'cancelled'; });
+  return { counts: counts, due: cncCheck(results[ADMIN_ACTIVE_STAGES.length]) || [] };
+}
 
+// 달의 시작·끝 (내 컴퓨터 시간 기준) → ISO 글자
+function cncMonthRange(year, month) {
   return {
-    counts: counts,
-    due: due,
-    today: todayRes.count || 0,
-    month: monthActive.length,
-    monthCredits: monthActive.reduce(function (s, r) { return s + (r.credits_used || 0); }, 0)
+    start: new Date(year, month, 1).toISOString(),
+    end: new Date(year, month + 1, 1).toISOString()
   };
+}
+
+// 선택한 달 통계 (created_at 기준) + 그 달에 완료된 주문 (updated_at 기준, stage = done)
+// 돌려주는 값:
+// { orders, teeth, done, cancelled, inProgress, daily: [1일 수, 2일 수, ...], completed: [주문...] }
+// - teeth(= 사용 크레딧) 은 취소된 주문을 빼고 더해요 (취소하면 크레딧이 환불되니까)
+async function cncAdminMonthStats(year, month) {
+  var r = cncMonthRange(year, month);
+  var results = await Promise.all([
+    sb.from('cnc_orders').select('id, stage, teeth_count, created_at')
+      .gte('created_at', r.start).lt('created_at', r.end).limit(20000),
+    sb.from('cnc_orders').select('id, clinic, patient, teeth_count, updated_at, created_at')
+      .eq('stage', 'done').gte('updated_at', r.start).lt('updated_at', r.end)
+      .order('updated_at', { ascending: false }).limit(200)
+  ]);
+  var rows = cncCheck(results[0]) || [];
+  var completed = cncCheck(results[1]) || [];
+  var days = new Date(year, month + 1, 0).getDate();
+  var daily = [];
+  for (var i = 0; i < days; i++) daily.push(0);
+
+  var stats = { orders: rows.length, teeth: 0, done: 0, cancelled: 0, inProgress: 0, daily: daily, completed: completed };
+  rows.forEach(function (o) {
+    if (o.stage === 'cancelled') stats.cancelled++;
+    else stats.teeth += o.teeth_count || 0;
+    if (o.stage === 'done') stats.done++;
+    if (!isClosedStage(o.stage)) stats.inProgress++;
+    var d = new Date(o.created_at);
+    if (!isNaN(d.getTime())) daily[d.getDate() - 1]++;
+  });
+  return stats;
+}
+
+// 최근 12개월 (선택한 달까지) 월별 주문 수·치아 수
+// 돌려주는 값: [{ year, month, orders, teeth }, ...] (오래된 달 → 선택한 달)
+async function cncAdminTrend(year, month) {
+  var first = new Date(year, month - 11, 1);
+  var r = { start: first.toISOString(), end: new Date(year, month + 1, 1).toISOString() };
+  var rows = cncCheck(await sb.from('cnc_orders').select('stage, teeth_count, created_at')
+    .gte('created_at', r.start).lt('created_at', r.end).limit(50000)) || [];
+  var list = [];
+  for (var i = 0; i < 12; i++) {
+    var d = new Date(first.getFullYear(), first.getMonth() + i, 1);
+    list.push({ year: d.getFullYear(), month: d.getMonth(), orders: 0, teeth: 0 });
+  }
+  rows.forEach(function (o) {
+    var d = new Date(o.created_at);
+    var idx = (d.getFullYear() - first.getFullYear()) * 12 + (d.getMonth() - first.getMonth());
+    if (idx < 0 || idx > 11) return;
+    list[idx].orders++;
+    if (o.stage !== 'cancelled') list[idx].teeth += o.teeth_count || 0;
+  });
+  return list;
 }
 
 
@@ -115,8 +152,14 @@ async function cncAdminListOrders(opts) {
   var query = sb.from('cnc_orders').select('*');
 
   if (opts.userId) query = query.eq('user_id', opts.userId);
-  if (!opts.stage || opts.stage === 'active') query = query.not('stage', 'in', '(done,cancelled)');
-  else if (opts.stage !== 'all') query = query.eq('stage', opts.stage);
+  var stage = opts.stage || 'active';
+  if (stage === 'active') {
+    query = query.not('stage', 'in', '(done,cancelled)');          // 진행 중 전체
+  } else if (stage !== 'all') {
+    if (ADMIN_ALL_STAGES.indexOf(stage) === -1) throw cncError('INVALID_ACTION');
+    query = query.eq('stage', stage);                              // 한 단계만
+  }
+  // 'all' → 단계 조건 없음 (완료·취소 포함 정말 전체)
 
   var q = cncCleanSearch(opts.search);
   if (q) query = query.or('id.ilike.*' + q + '*,patient.ilike.*' + q + '*,clinic.ilike.*' + q + '*');

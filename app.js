@@ -69,7 +69,7 @@ async function handleStartOrder() {
   }
 
   if (session) {
-    if (!/^#\/[a-z]+/.test(location.hash)) history.replaceState(null, '', '#/home');
+    history.replaceState(null, '', '#/home');
     await enterApp();
   } else {
     resetAuthForms();
@@ -98,6 +98,15 @@ async function enterApp() {
       applyLangToDocument();
     }
 
+    // 첫 로그인이면 가이드를 한 번 자동으로 열어요 (계정별 기록)
+    if (window.__guideCheckPending) {
+      window.__guideCheckPending = false;
+      var seenKey = GUIDE_SEEN_PREFIX + APP.user.id;
+      var seen = false;
+      try { seen = !!localStorage.getItem(seenKey); localStorage.setItem(seenKey, '1'); } catch (e) { seen = true; }
+      if (!seen) history.replaceState(null, '', '#/guide');
+    }
+
     renderLayout();
     showScreen('app');
     startRouter();
@@ -112,9 +121,25 @@ async function enterApp() {
   }
 }
 
-// 헤더의 Sign Out 버튼
-function handleSignOut() {
-  endSession('manual');
+// 로그인 직후 시작 페이지: 항상 #/home. 이 계정으로 가이드를 본 적이 없으면 처음 한 번은 #/guide
+// (로그인 상태에서 새로고침할 때는 이 함수를 부르지 않아서 지금 페이지가 그대로 유지돼요)
+var GUIDE_SEEN_PREFIX = 'allabut_guide_seen_';
+function goStartPage() {
+  history.replaceState(null, '', '#/home');
+  window.__guideCheckPending = true;   // enterApp 에서 사용자 id 를 안 뒤에 가이드를 열지 정해요
+}
+
+// 헤더의 Sign Out 버튼 → 확인 모달 (세션 만료로 인한 자동 로그아웃은 확인 없이 바로)
+async function handleSignOut() {
+  closeHeaderMenu();
+  var hasDraft = APP.user && ((window.PageNew && PageNew.draft && !PageNew.locked && cncHasDraft(APP.user.id)) || cncHasDraft(APP.user.id));
+  var ok = await uiConfirm({
+    title: t('signout_title'),
+    message: hasDraft ? t('signout_draft_saved') : t('signout_text'),
+    okLabel: t('sign_out'),
+    cancelLabel: t('btn_cancel')
+  });
+  if (ok) endSession('manual');
 }
 
 // 세션이 끝날 때 (session.js 가 불러요): 작성 중인 주문 저장 + 앱 화면 정리
@@ -207,7 +232,7 @@ async function handleSignIn(event) {
   try {
     await signIn(email, password);
     startSession(); // 로그인 성공 → 1시간 세션 시작
-    if (!/^#\/[a-z]+/.test(location.hash)) history.replaceState(null, '', '#/home');
+    goStartPage();  // 로그인하면 항상 홈 (처음이면 가이드)
     await enterApp();
   } catch (err) {
     showAuthMessage('signin-error', friendlyError(err));
@@ -242,7 +267,7 @@ async function handleSignUp(event) {
     if (data.session) {
       // 이메일 인증 없이 바로 로그인된 경우 → 1시간 세션 시작 + 홈으로
       startSession();
-      history.replaceState(null, '', '#/home');
+      goStartPage();
       await enterApp();
     } else {
       // 이메일 인증이 필요한 경우 → Sign In 탭으로 보내고 안내

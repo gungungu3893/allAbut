@@ -352,13 +352,14 @@ var PageOrders = {
       return '<div class="field">' +
         '<label class="field-label" for="e-' + name + '">' + escHtml(t(labelKey)) +
           (required ? ' <span class="required">*</span>' : ' <span class="optional">(' + escHtml(t('optional')) + ')</span>') + '</label>' +
-        '<input class="input" id="e-' + name + '" type="' + (type || 'text') + '" maxlength="200" value="' + escHtml(value || '') + '"' +
-          (type === 'date' ? ' min="' + cncToday() + '"' : '') + '>' +
+        (type === 'date'
+          ? uiDateField({ id: 'e-' + name, value: value || '', min: (value && value < cncToday()) ? value : cncToday() })
+          : '<input class="input" id="e-' + name + '" type="' + (type || 'text') + '" maxlength="' + (name === 'patient' ? 50 : 200) + '" value="' + escHtml(value || '') + '">') +
         '<div class="err-slot" data-err="' + name + '"></div>' +
         '</div>';
     }
     var body = '<p class="modal-text">' + escHtml(t('edit_order_help')) + '</p>' +
-      field('patient', 'wiz_patient_label', o.patient, false) +
+      field('patient', 'wiz_patient_label', o.patient, true) +
       field('deadline', 'case_deadline_label', o.deadline, true, 'date') +
       field('clinic', 'clinic_name', o.clinic, true) +
       field('addr', 'address_label', o.addr, true) +
@@ -372,9 +373,13 @@ var PageOrders = {
         { label: t('btn_cancel'), kind: 'outline' },
         { label: t('pe_save'), kind: 'primary', onClick: async function (close, btn) {
           var el = modal.el;
-          var v = function (n) { return el.querySelector('#e-' + n).value.trim(); };
+          var v = function (n) {
+            var input = el.querySelector('#e-' + n);
+            return input.classList.contains('date-field') ? (input.getAttribute('data-value') || '') : input.value.trim();
+          };
           var f = { patient: v('patient'), deadline: v('deadline'), clinic: v('clinic'), addr: v('addr'), phone: v('phone'), line_id: v('line_id') };
           var errs = {};
+          if (!f.patient) errs.patient = 'err_patient_required';
           if (!f.deadline) errs.deadline = 'err_deadline_required';
           else if (f.deadline < cncToday() && f.deadline !== o.deadline) errs.deadline = 'err_deadline_past';
           ['clinic', 'addr', 'phone'].forEach(function (k) { if (!f[k]) errs[k] = 'err_required'; });

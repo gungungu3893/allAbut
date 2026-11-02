@@ -10,8 +10,8 @@ var PageAdmin = {
 
   // Orders 탭 상태
   orders: { stage: 'active', search: '', sort: 'newest', rows: [], hasMore: false, loading: false, error: false },
-  // Dashboard 탭 상태
-  dash: { data: null, error: false },
+  // Dashboard 탭 상태 (now: 지금 기준, month: 선택한 달, trend: 최근 12개월)
+  dash: { year: null, month: null, now: null, monthData: null, trend: null, error: false },
   // Customers 탭 상태
   users: { rows: null, search: '', error: false },
 
@@ -117,54 +117,188 @@ var PageAdmin = {
   // ================================================================
   // Dashboard 탭
   // ================================================================
+  // 위쪽(지금 기준): 단계별 카드, Due soon
+  // 아래쪽(선택한 달): ◀ 월 ▶, 숫자 카드 5개, 일별 막대, 최근 12개월 추이, 그 달 완료 목록
+
+  ensureMonth: function () {
+    if (this.dash.year == null) {
+      var now = new Date();
+      this.dash.year = now.getFullYear();
+      this.dash.month = now.getMonth();
+    }
+  },
+
+  isCurrentMonth: function () {
+    var now = new Date();
+    return this.dash.year === now.getFullYear() && this.dash.month === now.getMonth();
+  },
+
   loadDash: async function () {
+    this.ensureMonth();
     var token = ++this.loadToken;
-    this.dash.error = false;
+    var d = this.dash;
+    d.error = false;
+    d.now = null;
+    d.monthData = null;
+    d.trend = null;
     this.drawBody();
     try {
-      var data = await cncAdminDashboard();
+      var res = await Promise.all([
+        cncAdminDashboardNow(),
+        cncAdminMonthStats(d.year, d.month),
+        cncAdminTrend(d.year, d.month)
+      ]);
       if (token !== this.loadToken) return;
-      this.dash.data = data;
+      d.now = res[0];
+      d.monthData = res[1];
+      d.trend = res[2];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
-      this.dash.error = err;
+      d.error = err;
     }
     this.drawBody();
   },
 
+  // 달 바꾸기 (미래 달로는 못 가요)
+  shiftMonth: function (n) {
+    this.ensureMonth();
+    var dt = new Date(this.dash.year, this.dash.month + n, 1);
+    var now = new Date();
+    if (dt > new Date(now.getFullYear(), now.getMonth(), 1)) return;
+    this.setMonth(dt.getFullYear(), dt.getMonth());
+  },
+
+  setMonth: async function (year, month) {
+    var d = this.dash;
+    d.year = year;
+    d.month = month;
+    var token = ++this.loadToken;
+    d.monthData = null;
+    d.trend = null;
+    this.drawBody();
+    try {
+      var res = await Promise.all([cncAdminMonthStats(year, month), cncAdminTrend(year, month)]);
+      if (token !== this.loadToken) return;
+      d.monthData = res[0];
+      d.trend = res[1];
+    } catch (err) {
+      console.error(err);
+      if (token !== this.loadToken) return;
+      d.error = err;
+    }
+    this.drawBody();
+  },
+
+  monthLabel: function (year, month, short) {
+    try {
+      return new Intl.DateTimeFormat(localeTag(), short ? { month: 'short' } : { year: 'numeric', month: 'long' }).format(new Date(year, month, 1));
+    } catch (e) {
+      return year + '-' + String(month + 1).padStart(2, '0');
+    }
+  },
+
   dashHtml: function () {
     var self = this;
-    if (this.dash.error) return this.errorBox('PageAdmin.loadDash()', this.dash.error);
-    var d = this.dash.data;
-    if (!d) return '<div class="card">' + uiLoading() + '</div>';
+    var d = this.dash;
+    if (d.error) return this.errorBox('PageAdmin.loadDash()', d.error);
+    var html = '';
 
-    var stageCards = '<div class="admin-stage-cards">' + ADMIN_ACTIVE_STAGES.map(function (stage) {
-      return '<button type="button" class="admin-stage-card stage-card-' + stage + '" onclick="PageAdmin.filterStage(\'' + stage + '\')">' +
-        '<span class="admin-stage-count mono">' + formatNumber(d.counts[stage]) + '</span>' +
-        '<span class="admin-stage-name">' + escHtml(t('stage_' + stage)) + '</span>' +
-        '</button>';
-    }).join('') + '</div>';
+    // ----- 지금 기준 -----
+    if (!d.now) {
+      html += '<div class="card">' + uiLoading() + '</div>';
+    } else {
+      html += '<h2 class="section-label">' + escHtml(t('admin_by_stage')) + '</h2>' +
+        '<div class="admin-stage-cards">' + ADMIN_ACTIVE_STAGES.map(function (stage) {
+          return '<button type="button" class="admin-stage-card stage-card-' + stage + '" onclick="PageAdmin.filterStage(\'' + stage + '\')">' +
+            '<span class="admin-stage-count mono">' + formatNumber(d.now.counts[stage]) + '</span>' +
+            '<span class="admin-stage-name">' + escHtml(t('stage_' + stage)) + '</span>' +
+            '</button>';
+        }).join('') + '</div>' +
+        '<section class="card"><div class="card-head"><h2 class="card-title">' + escHtml(t('admin_due_soon')) + '</h2>' +
+          '<span class="muted">' + escHtml(tf('admin_due_soon_desc', { n: ADMIN_DUE_DAYS })) + '</span></div>' +
+          (d.now.due.length
+            ? '<ul class="order-list">' + d.now.due.map(function (o) {
+                return '<li><button type="button" class="order-row admin-due-row ' + cncDueState(o) + '" onclick="PageAdmin.openOrder(\'' + escHtml(o.id) + '\')">' +
+                  '<span class="order-row-id mono">' + escHtml(o.id) + '</span>' +
+                  '<span class="order-row-meta">' + self.dueHtml(o) + ' · ' + escHtml(o.clinic || '') + ' · ' + escHtml(o.patient || '—') + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
+                  uiStageBadge(o.stage) + '</button></li>';
+              }).join('') + '</ul>'
+            : '<p class="empty-text">' + escHtml(t('admin_no_due')) + '</p>') +
+        '</section>';
+    }
 
-    var stats = '<div class="admin-stats">' +
-      '<div class="card admin-stat"><span class="admin-stat-label">' + escHtml(t('admin_today_orders')) + '</span><span class="admin-stat-num mono">' + formatNumber(d.today) + '</span></div>' +
-      '<div class="card admin-stat"><span class="admin-stat-label">' + escHtml(t('admin_month_orders')) + '</span><span class="admin-stat-num mono">' + formatNumber(d.month) + '</span></div>' +
-      '<div class="card admin-stat"><span class="admin-stat-label">' + escHtml(t('admin_month_credits')) + '</span><span class="admin-stat-num mono">' + formatNumber(d.monthCredits) + '</span></div>' +
+    // ----- 선택한 달 -----
+    html += '<div class="month-nav">' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
+      '<h2 class="month-title">' + escHtml(this.monthLabel(d.year, d.month)) + '</h2>' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(1)"' + (this.isCurrentMonth() ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
       '</div>';
 
-    var due = '<section class="card"><div class="card-head"><h2 class="card-title">' + escHtml(t('admin_due_soon')) + '</h2>' +
-      '<span class="muted">' + escHtml(tf('admin_due_soon_desc', { n: ADMIN_DUE_DAYS })) + '</span></div>' +
-      (d.due.length
-        ? '<ul class="order-list">' + d.due.map(function (o) {
-            return '<li><button type="button" class="order-row admin-due-row ' + cncDueState(o) + '" onclick="PageAdmin.openOrder(\'' + escHtml(o.id) + '\')">' +
-              '<span class="order-row-id mono">' + escHtml(o.id) + '</span>' +
-              '<span class="order-row-meta">' + self.dueHtml(o) + ' · ' + escHtml(o.clinic || '') + ' · ' + escHtml(o.patient || t('anonymous')) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
-              uiStageBadge(o.stage) + '</button></li>';
-          }).join('') + '</ul>'
-        : '<p class="empty-text">' + escHtml(t('admin_no_due')) + '</p>') +
+    var m = d.monthData;
+    if (!m) return html + '<div class="card">' + uiLoading() + '</div>';
+
+    function stat(key, value, cls) {
+      return '<div class="card admin-stat ' + (cls || '') + '"><span class="admin-stat-label">' + escHtml(t(key)) + '</span>' +
+        '<span class="admin-stat-num mono">' + formatNumber(value) + '</span></div>';
+    }
+    html += '<div class="admin-stats five">' +
+      stat('admin_m_orders', m.orders) +
+      stat('admin_m_teeth', m.teeth) +
+      stat('admin_m_done', m.done, 'stat-done') +
+      stat('admin_m_cancelled', m.cancelled, 'stat-cancelled') +
+      stat('admin_m_progress', m.inProgress) +
+      '</div>';
+
+    // 일별 막대
+    var maxDay = Math.max.apply(null, m.daily.concat([1]));
+    html += '<section class="card"><div class="card-head"><h2 class="card-title">' + escHtml(t('admin_daily_title')) + '</h2>' +
+      '<span class="muted">' + escHtml(tf('admin_max_fmt', { n: maxDay })) + '</span></div>' +
+      '<div class="bars daily" role="img" aria-label="' + escHtml(t('admin_daily_title')) + '">' + m.daily.map(function (n, i) {
+        var label = (i + 1) + ': ' + n;
+        return '<div class="bar-col" title="' + escHtml(label) + '">' +
+          '<span class="bar-val mono">' + (n || '') + '</span>' +
+          '<span class="bar" style="height:' + (n ? Math.max(4, Math.round(n / maxDay * 100)) : 0) + '%"></span>' +
+          '<span class="bar-label mono">' + ((i + 1) % 5 === 0 || i === 0 ? i + 1 : '') + '</span>' +
+          '</div>';
+      }).join('') + '</div></section>';
+
+    // 최근 12개월 추이 (막대를 누르면 그 달로)
+    if (d.trend) {
+      var maxT = Math.max.apply(null, d.trend.map(function (x) { return Math.max(x.orders, x.teeth); }).concat([1]));
+      html += '<section class="card"><div class="card-head"><h2 class="card-title">' + escHtml(t('admin_trend_title')) + '</h2>' +
+        '<span class="legend"><span class="legend-dot orders"></span>' + escHtml(t('admin_m_orders')) +
+        ' <span class="legend-dot teeth"></span>' + escHtml(t('admin_m_teeth')) + '</span></div>' +
+        '<div class="bars trend">' + d.trend.map(function (x) {
+          var sel = x.year === d.year && x.month === d.month;
+          return '<button type="button" class="bar-group' + (sel ? ' selected' : '') + '" onclick="PageAdmin.setMonth(' + x.year + ', ' + x.month + ')" ' +
+            'title="' + escHtml(self.monthLabel(x.year, x.month) + ' · ' + x.orders + ' / ' + x.teeth) + '">' +
+            '<span class="bar-pair">' +
+              '<span class="bar orders" style="height:' + (x.orders ? Math.max(4, Math.round(x.orders / maxT * 100)) : 0) + '%"></span>' +
+              '<span class="bar teeth" style="height:' + (x.teeth ? Math.max(4, Math.round(x.teeth / maxT * 100)) : 0) + '%"></span>' +
+            '</span>' +
+            '<span class="bar-label">' + escHtml(self.monthLabel(x.year, x.month, true)) + '</span>' +
+            '<span class="bar-val mono">' + x.orders + '/' + x.teeth + '</span>' +
+            '</button>';
+        }).join('') + '</div></section>';
+    }
+
+    // 그 달에 완료된 주문
+    html += '<section class="card"><div class="card-head"><h2 class="card-title">' + escHtml(t('admin_completed_month')) + '</h2>' +
+      '<span class="muted">' + escHtml(tf('admin_orders_count', { n: m.completed.length })) + '</span></div>' +
+      (m.completed.length
+        ? '<div class="table-wrap"><table class="table admin-table-plain"><thead><tr>' +
+            '<th>' + escHtml(t('order_number')) + '</th><th>' + escHtml(t('clinic_name')) + '</th><th>' + escHtml(t('patient_label')) + '</th>' +
+            '<th>' + escHtml(t('teeth_label')) + '</th><th>' + escHtml(t('admin_completed_date')) + '</th></tr></thead><tbody>' +
+            m.completed.map(function (o) {
+              return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openOrder(\'' + escHtml(o.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openOrder(\'' + escHtml(o.id) + '\')">' +
+                '<td class="mono nowrap"><b>' + escHtml(o.id) + '</b></td><td>' + escHtml(o.clinic) + '</td><td>' + escHtml(o.patient || '—') + '</td>' +
+                '<td class="mono">' + formatNumber(o.teeth_count) + '</td><td class="nowrap">' + escHtml(formatDate(o.updated_at)) + '</td></tr>';
+            }).join('') + '</tbody></table></div>'
+        : '<p class="empty-text">' + escHtml(t('admin_no_completed')) + '</p>') +
       '</section>';
 
-    return '<h2 class="section-label">' + escHtml(t('admin_by_stage')) + '</h2>' + stageCards + stats + due;
+    return html;
   },
 
   // 대시보드 카드 → Orders 탭에서 그 단계만
@@ -204,8 +338,10 @@ var PageAdmin = {
 
   ordersHtml: function () {
     var o = this.orders;
+    // 순서: 진행 중 전체(기본) / 정말 전체 / 각 단계 / 완료 / 취소
     var stageOptions = [{ v: 'active', k: 'admin_filter_active' }, { v: 'all', k: 'admin_filter_all' }]
-      .concat(ADMIN_ALL_STAGES.map(function (s) { return { v: s, k: 'stage_' + s }; }));
+      .concat(ADMIN_ACTIVE_STAGES.map(function (s) { return { v: s, k: 'stage_' + s }; }))
+      .concat([{ v: 'done', k: 'admin_filter_completed' }, { v: 'cancelled', k: 'admin_filter_cancelled' }]);
     return '<div class="orders-tools admin-tools">' +
         '<div class="field">' +
           '<label class="field-label" for="admin-stage">' + escHtml(t('admin_filter_stage')) + '</label>' +
@@ -466,7 +602,7 @@ var PageAdmin = {
         '</div>' +
         (canCancel
           ? '<button type="button" class="btn btn-outline btn-danger-text" onclick="PageAdmin.openCancel()"' + dis + '>' + escHtml(t('admin_cancel_refund')) + '</button>'
-          : '<p class="muted">' + escHtml(t('admin_cancel_not_allowed')) + '</p>') +
+          : '<p class="muted cancel-locked"><span aria-hidden="true">🔒</span> ' + escHtml(t('admin_cancel_not_allowed')) + '</p>') +
       '</div></details>';
 
     return '<div class="action-box admin-actions highlight">' + main + '</div>' + extra;

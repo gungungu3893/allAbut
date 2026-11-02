@@ -114,7 +114,6 @@ LANG.en = {
   case_deadline_label: 'Delivery deadline',
   err_deadline_required: 'Please choose a delivery deadline.',
   err_deadline_past: 'The deadline cannot be in the past.',
-  err_patient_long: 'Patient ID is too long (max 60 characters).',
 
   // ----- Step 2 -----
   upper_jaw: 'Upper jaw',
@@ -338,7 +337,6 @@ LANG.en = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: 'Stage',
-  admin_filter_active: 'All in progress',
   admin_filter_all: 'All orders',
   admin_sort: 'Sort',
   admin_sort_newest: 'Newest first',
@@ -395,7 +393,6 @@ LANG.en = {
   admin_cancel_msg: 'Cancel order {id} and return {n} credits to the customer?',
   admin_cancel_reason: 'Reason (the customer will see it)',
   admin_cancel_reason_required: 'Please enter a reason.',
-  admin_cancel_not_allowed: 'Orders cannot be cancelled after milling has started.',
   admin_done_cancelled: 'Order cancelled and credits refunded.',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.en = {
   admin_deduct_credits_msg: 'Deduct {n} credits from {name}?',
   admin_credits_done: 'Done. New balance: {balance}',
   admin_customer_orders: 'Orders',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: 'Select a date',
+  date_today: 'Today',
+  date_prev_month: 'Previous month',
+  date_next_month: 'Next month',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: 'Please enter the patient ID',
+  err_patient_long: 'Patient ID is too long (max 50 characters).',
+  draft_continue_order: 'Continue order',
+  draft_discard: 'Discard',
+  draft_discard_confirm: 'Your unfinished order will be deleted. This cannot be undone.',
+  draft_saved_at: 'Last saved {time}',
+  draft_last_step: 'You stopped at: {step}',
+  help_label: 'Help',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: 'Sign out?',
+  signout_text: 'You can sign in again at any time.',
+  signout_draft_saved: 'Your unfinished order is saved. You can continue it after signing in again.',
+  err_cannot_cancel_after_milling: 'This order cannot be cancelled because milling has already started.',
+  btn_hide: 'Hide',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: 'In progress (all)',
+  admin_filter_completed: 'Completed',
+  admin_filter_cancelled: 'Cancelled',
+  admin_cancel_not_allowed: 'Cannot cancel after milling starts',
+  admin_prev: 'Previous',
+  admin_next: 'Next',
+  admin_m_orders: 'Orders',
+  admin_m_teeth: 'Teeth (credits used)',
+  admin_m_done: 'Completed',
+  admin_m_cancelled: 'Cancelled',
+  admin_m_progress: 'In progress',
+  admin_daily_title: 'Orders per day',
+  admin_max_fmt: 'Max {n} per day',
+  admin_trend_title: 'Last 12 months (orders / teeth)',
+  admin_completed_month: 'Completed this month',
+  admin_completed_date: 'Completed on',
+  admin_no_completed: 'No orders were completed in this month.',
+  admin_orders_count: '{n} orders',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: 'Guide',
+  guide_banner_title: 'New to allAbut? Read the 5-step guide',
+  guide_banner_desc: 'Learn how to order, what each status means and what to do at each step.',
+  guide_banner_small: 'How to use allAbut — open the guide',
+  guide_open: 'Open guide',
+  guide_open_full: 'Open the full guide',
+  guide_title: 'How to use allAbut',
+  guide_subtitle: 'Everything you need to order CNC custom abutments, step by step.',
+  guide_toc: 'Contents',
+  guide_start_order: 'Start a new order',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: 'Getting started',
+  guide_s1_p1: 'First, open Profile and enter your clinic name, address and phone number.',
+  guide_s1_p2: 'This information is filled in automatically every time you place an order, so you only type it once.',
+  guide_s1_btn: 'Open my profile',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: 'Credits',
+  guide_s2_rule: 'tooth = 1 credit',
+  guide_s2_p1: 'Your credit balance is always shown at the top right of the screen.',
+  guide_s2_p2: 'To add credits, please contact allAbut. If you cancel an order before it is confirmed, the credits are returned.',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: 'Ordering in 5 steps',
+  guide_step1_text: 'Enter the patient ID (required) and choose the delivery deadline from the calendar. Past dates cannot be selected.',
+  guide_step2_text: 'Tap every tooth that needs a custom abutment on the FDI chart (32 teeth, wisdom teeth included). Each tooth uses 1 credit. Tap again to remove it.',
+  guide_step3_text: 'For each tooth, choose the implant brand and the shade (both required). Size is optional. Use "Apply to all teeth" when all teeth are the same, and add a memo for special requests.',
+  guide_step4_text: 'Add scan files (STL, PLY, OBJ, 3MF), photos (JPG, PNG) or PDF documents. Up to 10 files, 50 MB each. Use Preview to check a file before sending.',
+  guide_step5_text: 'Check the summary, confirm the delivery address and credits, then press Submit Order. You will get an order number right away.',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: 'After you order',
+  guide_flow_submitted: 'We received your order. You can still edit or cancel it.',
+  guide_flow_confirmed: 'We checked your order and started the design.',
+  guide_flow_design_ready: 'Your action: check the design in My Orders and press "Approve design" or "Request changes".',
+  guide_flow_approved: 'The design is approved and will go to milling.',
+  guide_flow_milling: 'Your abutments are being milled.',
+  guide_flow_shipped: 'Your action: when the parcel arrives, press "Received" in My Orders.',
+  guide_flow_done: 'The order is complete.',
+  guide_no_cancel_after_milling: 'Once milling starts, the order can no longer be cancelled.',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: 'Editing and cancelling',
+  guide_s5_p1: 'While the order status is "Submitted", you can edit the patient ID, deadline and delivery information, or cancel the order.',
+  guide_s5_p2: 'When you cancel, the credits are returned to your balance immediately. To change teeth or files, cancel and place a new order.',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: 'Frequently asked questions',
+  guide_faq1_q: 'Why was I signed out?',
+  guide_faq1_a: 'For security, you are signed out after 1 hour. The timer at the top right shows the time left — press "+1h" to extend (up to 3 hours). You will see a warning 5 minutes before.',
+  guide_faq2_q: 'Will I lose my order if I am signed out?',
+  guide_faq2_a: 'No. Your unfinished order is saved automatically as you type. After signing in again, press "Continue order". Files must be chosen again.',
+  guide_faq3_q: 'Which files can I upload?',
+  guide_faq3_a: 'STL, PLY, OBJ and 3MF scan files, JPG and PNG photos, and PDF documents — up to 10 files, 50 MB each.',
+  guide_faq4_q: 'How do I make the text bigger?',
+  guide_faq4_a: 'Use the A / A+ / A++ buttons at the top right (on mobile, open Menu). Your choice is remembered.',
+  guide_faq5_q: 'How do I change the language?',
+  guide_faq5_a: 'Choose a language from the 🌐 menu at the top right (on mobile, open Menu), or in Profile. 9 languages are available.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

@@ -114,7 +114,6 @@ LANG.tr = {
   case_deadline_label: 'Teslim tarihi',
   err_deadline_required: 'Lütfen bir teslim tarihi seçin.',
   err_deadline_past: 'Teslim tarihi geçmiş bir tarih olamaz.',
-  err_patient_long: 'Hasta ID çok uzun (en fazla 60 karakter).',
 
   // ----- Step 2 -----
   upper_jaw: 'Üst çene',
@@ -338,7 +337,6 @@ LANG.tr = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: 'Aşama',
-  admin_filter_active: 'Devam edenlerin tümü',
   admin_filter_all: 'Tüm siparişler',
   admin_sort: 'Sırala',
   admin_sort_newest: 'En yeni',
@@ -395,7 +393,6 @@ LANG.tr = {
   admin_cancel_msg: '{id} numaralı sipariş iptal edilsin ve müşteriye {n} kredi iade edilsin mi?',
   admin_cancel_reason: 'Neden (müşteri görecek)',
   admin_cancel_reason_required: 'Lütfen bir neden girin.',
-  admin_cancel_not_allowed: 'Frezeleme başladıktan sonra siparişler iptal edilemez.',
   admin_done_cancelled: 'Sipariş iptal edildi ve krediler iade edildi.',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.tr = {
   admin_deduct_credits_msg: 'Müşteri: {name} — {n} kredi düşülsün mü?',
   admin_credits_done: 'Tamamlandı. Yeni bakiye: {balance}',
   admin_customer_orders: 'Siparişler',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: 'Tarih seçin',
+  date_today: 'Bugün',
+  date_prev_month: 'Önceki ay',
+  date_next_month: 'Sonraki ay',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: 'Lütfen hasta ID girin',
+  err_patient_long: 'Hasta ID çok uzun (en fazla 50 karakter).',
+  draft_continue_order: 'Siparişe devam et',
+  draft_discard: 'Sil',
+  draft_discard_confirm: 'Tamamlanmamış siparişiniz silinecek. Bu işlem geri alınamaz.',
+  draft_saved_at: 'Son kayıt: {time}',
+  draft_last_step: 'Kaldığınız adım: {step}',
+  help_label: 'Yardım',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: 'Çıkış yapılsın mı?',
+  signout_text: 'İstediğiniz zaman yeniden giriş yapabilirsiniz.',
+  signout_draft_saved: 'Tamamlanmamış siparişiniz kaydedildi. Yeniden giriş yaptıktan sonra devam edebilirsiniz.',
+  err_cannot_cancel_after_milling: 'Frezeleme başladığı için bu sipariş iptal edilemez.',
+  btn_hide: 'Gizle',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: 'Devam eden (tümü)',
+  admin_filter_completed: 'Tamamlanan',
+  admin_filter_cancelled: 'İptal edilen',
+  admin_cancel_not_allowed: 'Frezeleme başladıktan sonra iptal edilemez',
+  admin_prev: 'Önceki',
+  admin_next: 'Sonraki',
+  admin_m_orders: 'Siparişler',
+  admin_m_teeth: 'Diş (kullanılan kredi)',
+  admin_m_done: 'Tamamlanan',
+  admin_m_cancelled: 'İptal edilen',
+  admin_m_progress: 'Devam eden',
+  admin_daily_title: 'Günlük sipariş',
+  admin_max_fmt: 'Günde en fazla {n}',
+  admin_trend_title: 'Son 12 ay (sipariş / diş)',
+  admin_completed_month: 'Bu ay tamamlanan',
+  admin_completed_date: 'Tamamlanma tarihi',
+  admin_no_completed: 'Bu ay tamamlanan sipariş yok.',
+  admin_orders_count: '{n} sipariş',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: 'Kılavuz',
+  guide_banner_title: 'allAbut\'u yeni mi kullanıyorsunuz? 5 adımlık kılavuzu okuyun',
+  guide_banner_desc: 'Nasıl sipariş vereceğinizi, her durumun ne anlama geldiğini ve her adımda ne yapmanız gerektiğini öğrenin.',
+  guide_banner_small: 'allAbut nasıl kullanılır — kılavuzu açın',
+  guide_open: 'Kılavuzu aç',
+  guide_open_full: 'Kılavuzun tamamını aç',
+  guide_title: 'allAbut nasıl kullanılır',
+  guide_subtitle: 'CNC özel abutment siparişi için bilmeniz gereken her şey, adım adım.',
+  guide_toc: 'İçindekiler',
+  guide_start_order: 'Yeni sipariş başlat',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: 'Başlarken',
+  guide_s1_p1: 'Önce Profil sayfasını açın ve kliniğinizin adını, adresini ve telefon numarasını girin.',
+  guide_s1_p2: 'Bu bilgiler her siparişte otomatik olarak doldurulur; yani yalnızca bir kez yazmanız yeterlidir.',
+  guide_s1_btn: 'Profilimi aç',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: 'Krediler',
+  guide_s2_rule: 'diş = 1 kredi',
+  guide_s2_p1: 'Kredi bakiyeniz her zaman ekranın sağ üst köşesinde görünür.',
+  guide_s2_p2: 'Kredi eklemek için lütfen allAbut ile iletişime geçin. Bir siparişi onaylanmadan önce iptal ederseniz krediler iade edilir.',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: '5 adımda sipariş',
+  guide_step1_text: 'Hasta ID bilgisini girin (zorunlu) ve takvimden teslim tarihini seçin. Geçmiş tarihler seçilemez.',
+  guide_step2_text: 'FDI diş şemasında özel abutment gereken her dişe dokunun (yirmilik dişler dahil 32 diş). Her diş 1 kredi kullanır. Kaldırmak için dişe tekrar dokunun.',
+  guide_step3_text: 'Her diş için implant markasını ve rengi seçin (ikisi de zorunlu). Boyut isteğe bağlıdır. Tüm dişler aynıysa "Tüm dişlere uygula" düğmesini kullanın; özel istekleriniz için not ekleyin.',
+  guide_step4_text: 'Tarama dosyaları (STL, PLY, OBJ, 3MF), fotoğraflar (JPG, PNG) veya PDF belgeleri ekleyin. En fazla 10 dosya, her biri en fazla 50 MB. Göndermeden önce bir dosyayı kontrol etmek için "Önizle" düğmesini kullanın.',
+  guide_step5_text: 'Özeti kontrol edin, teslimat adresini ve kredileri onaylayın, ardından "Siparişi Gönder" düğmesine basın. Sipariş numaranız hemen verilir.',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: 'Sipariş verdikten sonra',
+  guide_flow_submitted: 'Siparişinizi aldık. Hâlâ düzenleyebilir veya iptal edebilirsiniz.',
+  guide_flow_confirmed: 'Siparişinizi kontrol ettik ve tasarıma başladık.',
+  guide_flow_design_ready: 'Sizden beklenen: "Siparişlerim" bölümünde tasarımı kontrol edin ve "Tasarımı onayla" ya da "Değişiklik iste" düğmesine basın.',
+  guide_flow_approved: 'Tasarım onaylandı ve frezelemeye gönderilecek.',
+  guide_flow_milling: 'Abutmentlarınız frezeleniyor.',
+  guide_flow_shipped: 'Sizden beklenen: kargo elinize ulaştığında "Siparişlerim" bölümünde "Teslim aldım" düğmesine basın.',
+  guide_flow_done: 'Sipariş tamamlandı.',
+  guide_no_cancel_after_milling: 'Frezeleme başladıktan sonra sipariş artık iptal edilemez.',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: 'Düzenleme ve iptal',
+  guide_s5_p1: 'Sipariş durumu "Gönderildi" olduğu sürece hasta ID, teslim tarihi ve teslimat bilgilerini düzenleyebilir veya siparişi iptal edebilirsiniz.',
+  guide_s5_p2: 'İptal ettiğinizde krediler hemen bakiyenize iade edilir. Dişleri veya dosyaları değiştirmek için siparişi iptal edip yeni bir sipariş verin.',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: 'Sık sorulan sorular',
+  guide_faq1_q: 'Neden oturumum kapandı?',
+  guide_faq1_a: 'Güvenliğiniz için oturum 1 saat sonra kapanır. Sağ üstteki sayaç kalan süreyi gösterir — uzatmak için "+1h" düğmesine basın (en fazla 3 saat). Kapanmadan 5 dakika önce bir uyarı görürsünüz.',
+  guide_faq2_q: 'Oturumum kapanırsa siparişim kaybolur mu?',
+  guide_faq2_a: 'Hayır. Tamamlanmamış siparişiniz siz yazdıkça otomatik olarak kaydedilir. Yeniden giriş yaptıktan sonra "Siparişe devam et" düğmesine basın. Dosyaların yeniden seçilmesi gerekir.',
+  guide_faq3_q: 'Hangi dosyaları yükleyebilirim?',
+  guide_faq3_a: 'STL, PLY, OBJ ve 3MF tarama dosyaları, JPG ve PNG fotoğraflar ve PDF belgeleri — en fazla 10 dosya, her biri en fazla 50 MB.',
+  guide_faq4_q: 'Yazıları nasıl büyütebilirim?',
+  guide_faq4_a: 'Sağ üstteki A / A+ / A++ düğmelerini kullanın (mobilde "Menü"yü açın). Seçiminiz hatırlanır.',
+  guide_faq5_q: 'Dili nasıl değiştirebilirim?',
+  guide_faq5_a: 'Sağ üstteki 🌐 menüsünden (mobilde "Menü"yü açın) veya Profil sayfasından bir dil seçin. 9 dil kullanılabilir.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

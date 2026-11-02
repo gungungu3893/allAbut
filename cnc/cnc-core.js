@@ -20,7 +20,8 @@ var CNC_PAGE_SIZE = 20;
 // 서버(DB 함수)가 돌려주는 에러 코드 목록
 var CNC_ERROR_CODES = [
   'INSUFFICIENT_CREDITS', 'NO_TEETH', 'DELIVERY_REQUIRED', 'NOT_LOGGED_IN',
-  'NOT_EDITABLE', 'NOT_CANCELLABLE', 'NOT_FOUND', 'NOTE_REQUIRED', 'INVALID_ACTION', 'NOT_ADMIN'
+  'NOT_EDITABLE', 'NOT_CANCELLABLE', 'NOT_FOUND', 'NOTE_REQUIRED', 'INVALID_ACTION', 'NOT_ADMIN',
+  'CANNOT_CANCEL_AFTER_MILLING'   // DB 트리거 prevent_late_cancel: 가공 시작 후 취소 막기
 ];
 // 앱 안에서 만드는 에러 코드 (서버 메시지에서 찾지 않음)
 var CNC_APP_ERROR_CODES = ['UPLOAD_FAILED', 'NETWORK', 'STAGE_CHANGED', 'NO_FILES', 'FILE_TOO_LARGE', 'INVALID_AMOUNT', 'BALANCE_NEGATIVE'];
@@ -251,7 +252,9 @@ function cncValidateStep(draft, step) {
   var teethErrors = {};
 
   if (step === 1) {
-    if (draft.patient.length > 60) errors.patient = 'err_patient_long';
+    var patient = draft.patient.trim();
+    if (!patient) errors.patient = 'err_patient_required';
+    else if (patient.length > 50) errors.patient = 'err_patient_long';
     if (!draft.deadline) errors.deadline = 'err_deadline_required';
     else if (draft.deadline < cncToday()) errors.deadline = 'err_deadline_past';
   }

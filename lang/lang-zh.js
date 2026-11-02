@@ -114,7 +114,6 @@ LANG.zh = {
   case_deadline_label: '交付截止日期',
   err_deadline_required: '请选择交付截止日期。',
   err_deadline_past: '截止日期不能早于今天。',
-  err_patient_long: '患者ID过长（最多60个字符）。',
 
   // ----- Step 2 -----
   upper_jaw: '上颌',
@@ -338,7 +337,6 @@ LANG.zh = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: '阶段',
-  admin_filter_active: '所有进行中',
   admin_filter_all: '全部订单',
   admin_sort: '排序',
   admin_sort_newest: '最新优先',
@@ -395,7 +393,6 @@ LANG.zh = {
   admin_cancel_msg: '确定取消订单 {id} 并向客户退还 {n} 积分吗？',
   admin_cancel_reason: '原因（客户可见）',
   admin_cancel_reason_required: '请输入原因。',
-  admin_cancel_not_allowed: 'CNC加工开始后无法取消订单。',
   admin_done_cancelled: '订单已取消，积分已退还。',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.zh = {
   admin_deduct_credits_msg: '确定从 {name} 扣除 {n} 积分吗？',
   admin_credits_done: '完成。新余额：{balance}',
   admin_customer_orders: '订单',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: '选择日期',
+  date_today: '今天',
+  date_prev_month: '上个月',
+  date_next_month: '下个月',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: '请输入患者编号',
+  err_patient_long: '患者编号过长（最多 50 个字符）。',
+  draft_continue_order: '继续下单',
+  draft_discard: '删除',
+  draft_discard_confirm: '您未完成的订单将被删除，且无法恢复。',
+  draft_saved_at: '最后保存于 {time}',
+  draft_last_step: '上次停在：{step}',
+  help_label: '帮助',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: '确定退出登录吗？',
+  signout_text: '您可以随时重新登录。',
+  signout_draft_saved: '您未完成的订单已保存，重新登录后可以继续填写。',
+  err_cannot_cancel_after_milling: '此订单已开始加工，无法取消。',
+  btn_hide: '隐藏',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: '进行中（全部）',
+  admin_filter_completed: '已完成',
+  admin_filter_cancelled: '已取消',
+  admin_cancel_not_allowed: '加工开始后无法取消',
+  admin_prev: '上一页',
+  admin_next: '下一页',
+  admin_m_orders: '订单',
+  admin_m_teeth: '牙数（已用积分）',
+  admin_m_done: '已完成',
+  admin_m_cancelled: '已取消',
+  admin_m_progress: '进行中',
+  admin_daily_title: '每日订单数',
+  admin_max_fmt: '每日最多 {n}',
+  admin_trend_title: '近 12 个月（订单 / 牙数）',
+  admin_completed_month: '本月已完成',
+  admin_completed_date: '完成日期',
+  admin_no_completed: '本月没有已完成的订单。',
+  admin_orders_count: '{n} 个订单',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: '使用指南',
+  guide_banner_title: '第一次使用 allAbut？请阅读 5 步指南',
+  guide_banner_desc: '了解如何下单、每个状态的含义，以及每一步需要做什么。',
+  guide_banner_small: 'allAbut 使用方法 — 打开指南',
+  guide_open: '打开指南',
+  guide_open_full: '打开完整指南',
+  guide_title: 'allAbut 使用方法',
+  guide_subtitle: '一步一步教您订购 CNC 个性化基台。',
+  guide_toc: '目录',
+  guide_start_order: '开始新订单',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: '开始使用',
+  guide_s1_p1: '首先，请打开“个人资料”，填写诊所名称、地址和电话号码。',
+  guide_s1_p2: '以后每次下单时，这些信息都会自动填入，您只需填写一次。',
+  guide_s1_btn: '打开我的个人资料',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: '积分',
+  guide_s2_rule: '颗牙 = 1 积分',
+  guide_s2_p1: '您的积分余额始终显示在屏幕右上角。',
+  guide_s2_p2: '如需充值积分，请联系 allAbut。订单确认前取消，积分会退回。',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: '下单 5 步',
+  guide_step1_text: '输入患者编号（必填），并在日历中选择交货期限。过去的日期无法选择。',
+  guide_step2_text: '在 FDI 牙位图上点选所有需要个性化基台的牙齿（共 32 颗，含智齿）。每颗牙使用 1 积分。再点一次即可取消。',
+  guide_step3_text: '为每颗牙选择种植体品牌和色号（均为必填），尺寸可不填。如果所有牙齿相同，请使用“应用于所有牙位”。有特殊要求请填写备注。',
+  guide_step4_text: '添加扫描文件（STL、PLY、OBJ、3MF）、照片（JPG、PNG）或 PDF 文档。最多 10 个文件，每个不超过 50 MB。发送前可点击“预览”查看文件。',
+  guide_step5_text: '核对订单摘要，确认收货地址和积分，然后点击“提交订单”。您会立即获得订单号。',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: '下单之后',
+  guide_flow_submitted: '我们已收到您的订单。此时您仍可以修改或取消。',
+  guide_flow_confirmed: '我们已核对您的订单，并开始设计。',
+  guide_flow_design_ready: '需要您操作：在“我的订单”中查看设计，然后点击“批准设计”或“要求修改”。',
+  guide_flow_approved: '设计已批准，即将进入加工。',
+  guide_flow_milling: '您的基台正在加工中。',
+  guide_flow_shipped: '需要您操作：收到包裹后，请在“我的订单”中点击“已收货”。',
+  guide_flow_done: '订单已完成。',
+  guide_no_cancel_after_milling: '一旦开始加工，订单将无法再取消。',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: '修改和取消',
+  guide_s5_p1: '当订单状态为“已提交”时，您可以修改患者编号、交货期限和收货信息，也可以取消订单。',
+  guide_s5_p2: '取消后，积分会立即退回到您的余额。如需更改牙位或文件，请取消后重新下单。',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: '常见问题',
+  guide_faq1_q: '为什么我被退出登录了？',
+  guide_faq1_a: '为了安全，登录 1 小时后会自动退出。右上角的计时器显示剩余时间 — 点击“+1h”可以延长（最多 3 小时）。退出前 5 分钟会有提醒。',
+  guide_faq2_q: '被退出登录后，我的订单会丢失吗？',
+  guide_faq2_a: '不会。您填写时，未完成的订单会自动保存。重新登录后，请点击“继续下单”。文件需要重新选择。',
+  guide_faq3_q: '可以上传哪些文件？',
+  guide_faq3_a: 'STL、PLY、OBJ 和 3MF 扫描文件，JPG 和 PNG 照片，以及 PDF 文档 — 最多 10 个文件，每个不超过 50 MB。',
+  guide_faq4_q: '如何把文字调大？',
+  guide_faq4_a: '使用右上角的 A / A+ / A++ 按钮（手机上请先打开“菜单”）。系统会记住您的选择。',
+  guide_faq5_q: '如何更改语言？',
+  guide_faq5_a: '在右上角的 🌐 菜单中选择语言（手机上请先打开“菜单”），也可以在“个人资料”中更改。共支持 9 种语言。',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

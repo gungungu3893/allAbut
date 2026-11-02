@@ -68,6 +68,7 @@ function logoHtml() {
 // ================================================================
 var NAV_ITEMS = [
   { route: 'home', icon: '🏠', key: 'nav_home' },
+  { route: 'guide', icon: '📖', key: 'nav_guide', showIcon: true },
   { route: 'new', icon: '➕', key: 'nav_new' },
   { route: 'orders', icon: '📋', key: 'nav_orders' },
   { route: 'profile', icon: '👤', key: 'nav_profile' }
@@ -126,7 +127,8 @@ function renderLayout() {
       '<nav class="hdr-nav" aria-label="Main">' +
         navItems().map(function (n) {
           return '<a href="#/' + n.route + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
-            (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + '</span>' : escHtml(t(n.key))) + '</a>';
+            (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + '</span>'
+              : (n.showIcon ? '<span aria-hidden="true">' + n.icon + '</span>&nbsp;' : '') + escHtml(t(n.key))) + '</a>';
         }).join('') +
       '</nav>' +
       '<div class="hdr-right">' +
@@ -392,6 +394,7 @@ function uiErrorMessage(err) {
     NOT_LOGGED_IN: 'err_not_logged_in',
     NOT_EDITABLE: 'err_not_editable',
     NOT_CANCELLABLE: 'err_not_cancellable',
+    CANNOT_CANCEL_AFTER_MILLING: 'err_cannot_cancel_after_milling',
     NOT_FOUND: 'err_not_found',
     NOTE_REQUIRED: 'design_reject_required',
     INVALID_ACTION: 'err_invalid_action',
@@ -461,3 +464,53 @@ function uiHistoryList(history) {
       '</div></li>';
   }).join('') + '</ol>';
 }
+
+
+
+// ================================================================
+// 10) 작은 팝오버 (버튼 아래 말풍선) — 새 주문 단계의 "? Help"
+// ================================================================
+var _popover = null;
+
+function closePopover() {
+  if (!_popover) return;
+  var p = _popover;
+  _popover = null;
+  p.el.remove();
+  p.btn.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('mousedown', p.outside);
+  document.removeEventListener('keydown', p.key);
+}
+
+function uiPopover(btn, html) {
+  if (_popover && _popover.btn === btn) { closePopover(); return; }
+  closePopover();
+  var el = document.createElement('div');
+  el.className = 'popover';
+  el.setAttribute('role', 'dialog');
+  el.innerHTML = '<div class="popover-body">' + html + '</div>' +
+    '<button type="button" class="btn btn-outline btn-sm popover-close">' + escHtml(t('btn_close')) + '</button>';
+  document.body.appendChild(el);
+  var r = btn.getBoundingClientRect();
+  var w = Math.min(380, window.innerWidth - 32);
+  el.style.width = w + 'px';
+  var left = document.documentElement.dir === 'rtl' ? r.left : r.right - w;
+  left = Math.max(16, Math.min(left, window.innerWidth - w - 16));
+  el.style.left = left + 'px';
+  el.style.top = (r.bottom + window.scrollY + 8) + 'px';
+  btn.setAttribute('aria-expanded', 'true');
+
+  var p = {
+    el: el,
+    btn: btn,
+    outside: function (e) { if (!el.contains(e.target) && !btn.contains(e.target)) closePopover(); },
+    key: function (e) { if (e.key === 'Escape') { closePopover(); btn.focus(); } }
+  };
+  el.querySelector('.popover-close').addEventListener('click', function () { closePopover(); btn.focus(); });
+  el.addEventListener('click', function (e) { if (e.target.closest('a')) closePopover(); });
+  _popover = p;
+  setTimeout(function () { document.addEventListener('mousedown', p.outside); }, 0);
+  document.addEventListener('keydown', p.key);
+  el.querySelector('.popover-close').focus({ preventScroll: true });
+}
+window.addEventListener('hashchange', closePopover);

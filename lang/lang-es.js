@@ -114,7 +114,6 @@ LANG.es = {
   case_deadline_label: 'Fecha límite de entrega',
   err_deadline_required: 'Elija una fecha límite de entrega.',
   err_deadline_past: 'La fecha límite no puede ser anterior a hoy.',
-  err_patient_long: 'El ID del paciente es demasiado largo (máx. 60 caracteres).',
 
   // ----- Step 2 -----
   upper_jaw: 'Maxilar superior',
@@ -338,7 +337,6 @@ LANG.es = {
 
   // ----- 관리자: 주문 목록 -----
   admin_filter_stage: 'Etapa',
-  admin_filter_active: 'Todos en curso',
   admin_filter_all: 'Todos los pedidos',
   admin_sort: 'Ordenar',
   admin_sort_newest: 'Más recientes',
@@ -395,7 +393,6 @@ LANG.es = {
   admin_cancel_msg: '¿Cancelar el pedido {id} y devolver {n} créditos al cliente?',
   admin_cancel_reason: 'Motivo (el cliente lo verá)',
   admin_cancel_reason_required: 'Introduzca un motivo.',
-  admin_cancel_not_allowed: 'No se pueden cancelar pedidos una vez iniciado el fresado.',
   admin_done_cancelled: 'Pedido cancelado y créditos reembolsados.',
 
   // ----- 관리자: 고객 -----
@@ -413,6 +410,110 @@ LANG.es = {
   admin_deduct_credits_msg: '¿Descontar {n} créditos a {name}?',
   admin_credits_done: 'Hecho. Nuevo saldo: {balance}',
   admin_customer_orders: 'Pedidos',
+
+  // ----- 사용성 개선: 달력 -----
+  date_select: 'Seleccione una fecha',
+  date_today: 'Hoy',
+  date_prev_month: 'Mes anterior',
+  date_next_month: 'Mes siguiente',
+
+  // ----- 사용성 개선: 환자 ID · 작성 중 주문 -----
+  err_patient_required: 'Introduzca el ID del paciente',
+  err_patient_long: 'El ID del paciente es demasiado largo (máx. 50 caracteres).',
+  draft_continue_order: 'Continuar pedido',
+  draft_discard: 'Descartar',
+  draft_discard_confirm: 'Se eliminará su pedido sin terminar. Esta acción no se puede deshacer.',
+  draft_saved_at: 'Guardado por última vez: {time}',
+  draft_last_step: 'Se quedó en: {step}',
+  help_label: 'Ayuda',
+
+  // ----- 사용성 개선: 로그아웃 · 취소 잠금 -----
+  signout_title: '¿Cerrar sesión?',
+  signout_text: 'Puede volver a iniciar sesión en cualquier momento.',
+  signout_draft_saved: 'Su pedido sin terminar está guardado. Podrá continuarlo cuando vuelva a iniciar sesión.',
+  err_cannot_cancel_after_milling: 'Este pedido no se puede cancelar porque el fresado ya ha comenzado.',
+  btn_hide: 'Ocultar',
+
+  // ----- 사용성 개선: 관리자 -----
+  admin_filter_active: 'En curso (todos)',
+  admin_filter_completed: 'Completados',
+  admin_filter_cancelled: 'Cancelados',
+  admin_cancel_not_allowed: 'No se puede cancelar una vez iniciado el fresado',
+  admin_prev: 'Anterior',
+  admin_next: 'Siguiente',
+  admin_m_orders: 'Pedidos',
+  admin_m_teeth: 'Dientes (créditos usados)',
+  admin_m_done: 'Completados',
+  admin_m_cancelled: 'Cancelados',
+  admin_m_progress: 'En curso',
+  admin_daily_title: 'Pedidos por día',
+  admin_max_fmt: 'Máx. {n} por día',
+  admin_trend_title: 'Últimos 12 meses (pedidos / dientes)',
+  admin_completed_month: 'Completados este mes',
+  admin_completed_date: 'Completado el',
+  admin_no_completed: 'No se completó ningún pedido en este mes.',
+  admin_orders_count: '{n} pedidos',
+
+  // ----- 가이드: 메뉴 · 배너 -----
+  nav_guide: 'Guía',
+  guide_banner_title: '¿Es nuevo en allAbut? Lea la guía de 5 pasos',
+  guide_banner_desc: 'Aprenda cómo hacer un pedido, qué significa cada estado y qué hacer en cada paso.',
+  guide_banner_small: 'Cómo usar allAbut: abrir la guía',
+  guide_open: 'Abrir guía',
+  guide_open_full: 'Abrir la guía completa',
+  guide_title: 'Cómo usar allAbut',
+  guide_subtitle: 'Todo lo que necesita para pedir pilares CNC personalizados, paso a paso.',
+  guide_toc: 'Contenido',
+  guide_start_order: 'Empezar un nuevo pedido',
+
+  // ----- 가이드 1) 시작하기 -----
+  guide_s1_title: 'Primeros pasos',
+  guide_s1_p1: 'Primero, abra Perfil e introduzca el nombre, la dirección y el teléfono de su clínica.',
+  guide_s1_p2: 'Estos datos se rellenan automáticamente cada vez que hace un pedido, así que solo tiene que escribirlos una vez.',
+  guide_s1_btn: 'Abrir mi perfil',
+
+  // ----- 가이드 2) 크레딧 -----
+  guide_s2_title: 'Créditos',
+  guide_s2_rule: 'diente = 1 crédito',
+  guide_s2_p1: 'Su saldo de créditos se muestra siempre en la parte superior derecha de la pantalla.',
+  guide_s2_p2: 'Para añadir créditos, contacte con allAbut. Si cancela un pedido antes de que se confirme, se le devuelven los créditos.',
+
+  // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
+  guide_s3_title: 'Hacer un pedido en 5 pasos',
+  guide_step1_text: 'Introduzca el ID del paciente (obligatorio) y elija la fecha límite de entrega en el calendario. No se pueden elegir fechas pasadas.',
+  guide_step2_text: 'Toque en el odontograma FDI cada diente que necesite un pilar personalizado (32 dientes, incluidas las muelas del juicio). Cada diente usa 1 crédito. Vuelva a tocarlo para quitarlo.',
+  guide_step3_text: 'Para cada diente, elija la marca del implante y el color (ambos obligatorios). El tamaño es opcional. Use "Aplicar a todos" si todos los dientes son iguales y añada una nota para peticiones especiales.',
+  guide_step4_text: 'Añada archivos de escaneo (STL, PLY, OBJ, 3MF), fotos (JPG, PNG) o documentos PDF. Hasta 10 archivos de 50 MB cada uno. Use "Vista previa" para revisar un archivo antes de enviarlo.',
+  guide_step5_text: 'Revise el resumen, confirme la dirección de entrega y los créditos, y pulse "Enviar pedido". Recibirá un número de pedido al instante.',
+
+  // ----- 가이드 4) 주문 후 진행 단계 -----
+  guide_s4_title: 'Después de hacer el pedido',
+  guide_flow_submitted: 'Hemos recibido su pedido. Todavía puede modificarlo o cancelarlo.',
+  guide_flow_confirmed: 'Hemos revisado su pedido y empezado el diseño.',
+  guide_flow_design_ready: 'Acción necesaria: revise el diseño en "Mis pedidos" y pulse "Aprobar diseño" o "Solicitar cambios".',
+  guide_flow_approved: 'El diseño está aprobado y pasará al fresado.',
+  guide_flow_milling: 'Sus pilares se están fresando.',
+  guide_flow_shipped: 'Acción necesaria: cuando llegue el paquete, pulse "Recibido" en "Mis pedidos".',
+  guide_flow_done: 'El pedido se ha completado.',
+  guide_no_cancel_after_milling: 'Una vez iniciado el fresado, el pedido ya no se puede cancelar.',
+
+  // ----- 가이드 5) 수정 · 취소 -----
+  guide_s5_title: 'Modificar y cancelar',
+  guide_s5_p1: 'Mientras el estado del pedido sea "Pedido realizado", puede modificar el ID del paciente, la fecha límite y los datos de entrega, o cancelar el pedido.',
+  guide_s5_p2: 'Al cancelar, los créditos vuelven a su saldo de inmediato. Para cambiar dientes o archivos, cancele el pedido y haga uno nuevo.',
+
+  // ----- 가이드 6) 자주 묻는 질문 -----
+  guide_s6_title: 'Preguntas frecuentes',
+  guide_faq1_q: '¿Por qué se cerró mi sesión?',
+  guide_faq1_a: 'Por seguridad, la sesión se cierra después de 1 hora. El temporizador de la parte superior derecha muestra el tiempo restante: pulse "+1h" para ampliarlo (hasta 3 horas). Verá un aviso 5 minutos antes.',
+  guide_faq2_q: '¿Perderé mi pedido si se cierra la sesión?',
+  guide_faq2_a: 'No. Su pedido sin terminar se guarda automáticamente mientras escribe. Al volver a iniciar sesión, pulse "Continuar pedido". Tendrá que volver a elegir los archivos.',
+  guide_faq3_q: '¿Qué archivos puedo subir?',
+  guide_faq3_a: 'Archivos de escaneo STL, PLY, OBJ y 3MF, fotos JPG y PNG, y documentos PDF: hasta 10 archivos de 50 MB cada uno.',
+  guide_faq4_q: '¿Cómo puedo ver el texto más grande?',
+  guide_faq4_a: 'Use los botones A / A+ / A++ de la parte superior derecha (en el móvil, abra "Menú"). Su elección se recuerda.',
+  guide_faq5_q: '¿Cómo cambio el idioma?',
+  guide_faq5_a: 'Elija un idioma en el menú 🌐 de la parte superior derecha (en el móvil, abra "Menú") o en Perfil. Hay 9 idiomas disponibles.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

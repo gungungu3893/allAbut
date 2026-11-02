@@ -1,5 +1,6 @@
 // ===== 홈 (대시보드) #/home =====
 // - 작성 중인 주문이 있으면 맨 위 노란 안내 바 (이어서 하기 / 삭제)
+// - 그 아래 가이드 배너 (닫으면 작은 한 줄)
 // - 인사말
 // - 큰 카드 3개: 새 주문 / 크레딧 잔액 / 진행 중인 주문 수
 // - 최근 주문 5개
@@ -52,13 +53,27 @@ var PageHome = {
 
     var html = '<div class="page page-home">';
 
-    // 작성 중인 주문 안내
+    // 작성 중인 주문 안내 (Continue → 새 주문에서 이어서 / Discard → 확인 후 삭제)
     if (cncHasDraft(APP.user.id)) {
       html += '<div class="draft-bar" role="status">' +
         '<span class="draft-bar-text"><span aria-hidden="true">📝</span> ' + escHtml(t('draft_found')) + '</span>' +
         '<div class="draft-bar-actions">' +
-          '<a href="#/new" class="btn btn-primary">' + escHtml(t('draft_continue')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
-          '<button type="button" class="btn btn-outline" onclick="PageHome.deleteDraft()">' + escHtml(t('draft_delete')) + '</button>' +
+          '<button type="button" class="btn btn-primary" onclick="PageHome.continueDraft()">' + escHtml(t('draft_continue_order')) + ' <span class="arrow" aria-hidden="true">→</span></button>' +
+          '<button type="button" class="btn btn-outline btn-discard" onclick="PageHome.deleteDraft()">' + escHtml(t('draft_discard')) + '</button>' +
+        '</div></div>';
+    }
+
+    // 가이드 배너 (✕ 로 닫으면 다음부터 작은 한 줄)
+    if (this.guideBannerSmall()) {
+      html += '<p class="guide-banner-small"><span aria-hidden="true">📖</span> <a href="#/guide">' + escHtml(t('guide_banner_small')) + '</a></p>';
+    } else {
+      html += '<div class="guide-banner">' +
+        '<span class="guide-banner-icon" aria-hidden="true">📖</span>' +
+        '<div class="guide-banner-text"><p class="guide-banner-title">' + escHtml(t('guide_banner_title')) + '</p>' +
+          '<p class="muted">' + escHtml(t('guide_banner_desc')) + '</p></div>' +
+        '<div class="guide-banner-actions">' +
+          '<a href="#/guide" class="btn btn-gold">' + escHtml(t('guide_open')) + '</a>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="PageHome.hideGuideBanner()"><span aria-hidden="true">✕</span> ' + escHtml(t('btn_hide')) + '</button>' +
         '</div></div>';
     }
 
@@ -112,11 +127,27 @@ var PageHome = {
     this.main.innerHTML = html;
   },
 
+  continueDraft: function () {
+    PageNew.resumeRequested = true;
+    navigate('new');
+  },
+
   deleteDraft: async function () {
-    var ok = await uiConfirm({ title: t('draft_delete'), message: t('draft_delete_confirm'), okLabel: t('draft_delete'), danger: true });
+    var ok = await uiConfirm({ title: t('draft_discard'), message: t('draft_discard_confirm'), okLabel: t('draft_discard'), danger: true });
     if (!ok) return;
     cncClearDraft(APP.user.id);
-    if (window.PageNew) PageNew.draft = null;
+    if (window.PageNew) { PageNew.draft = null; PageNew.locked = false; PageNew.pendingDraft = null; }
+    this.draw();
+  },
+
+  GUIDE_BANNER_KEY: 'allabut_guide_banner_small',
+
+  guideBannerSmall: function () {
+    try { return localStorage.getItem(this.GUIDE_BANNER_KEY) === '1'; } catch (e) { return false; }
+  },
+
+  hideGuideBanner: function () {
+    try { localStorage.setItem(this.GUIDE_BANNER_KEY, '1'); } catch (e) { /* 무시 */ }
     this.draw();
   }
 };

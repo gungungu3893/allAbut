@@ -1,5 +1,5 @@
 // ===== 새 주문 #/new (5단계) =====
-//  1. Patient & Deadline   환자 ID(선택), 납기일(필수)
+//  1. Patient & Deadline   환자 ID(필수), 납기일(필수, 자체 달력)
 //  2. Select Teeth          FDI 32개 치아 차트
 //  3. Tooth Details         치아마다 브랜드·사이즈·쉐이드 + 메모
 //  4. Upload Files          스캔 파일·사진·PDF (최대 10개, 파일당 50MB)
@@ -8,6 +8,9 @@
 // 화면 배치
 //  - PC(1024px 이상): 왼쪽 단계 목록 | 가운데 입력 카드 | 오른쪽 주문 요약(따라 내려옴)
 //  - 모바일: 위 가로 진행 표시, 아래 고정 Back / Next 버튼 (요약은 5단계에서)
+//
+// 작성 중인 주문(draft)이 저장돼 있으면, 처음 들어올 때 맨 위에 "이어서 하기 / 삭제" 카드가 떠요.
+// 카드가 떠 있는 동안 아래 입력은 잠겨요(흐리게) — 둘 중 하나를 골라야 진행할 수 있어요.
 //
 // 데이터 처리는 cnc/cnc-core.js 가 하고, 이 파일은 화면만 그려요.
 
@@ -23,6 +26,9 @@ var PageNew = {
   progress: null,       // 제출 진행 상황
   submitError: null,    // 제출 에러
   success: null,        // 제출 성공 결과 { id, teeth, balance }
+  locked: false,        // 저장된 draft 를 "이어서 할지 / 지울지" 고르는 중 (입력 잠금)
+  pendingDraft: null,   // 고르기 전의 저장된 draft
+  resumeRequested: false, // 홈의 "Continue" 버튼으로 들어옴 → 카드 없이 바로 이어서
 
   STEP_KEYS: ['wiz_step1', 'wiz_step2', 'wiz_step3', 'wiz_step4', 'wiz_step5'],
   STEP_DESC_KEYS: ['wiz_step1_desc', 'wiz_step2_desc', 'wiz_step3_desc', 'wiz_step4_desc', 'wiz_step5_desc'],
@@ -34,12 +40,22 @@ var PageNew = {
     this.main = main;
     var uid = APP.user.id;
 
-    if (!this.draft || this.draftUser !== uid) {
-      this.draft = cncLoadDraft(uid, APP.profile) || cncNewDraft(APP.profile);
-      this.draftUser = uid;
-      this.check = null;
-      this.fileNotices = [];
-      this.submitError = null;
+    if (this.resumeRequested) {
+      // 홈에서 "Continue" → 저장된 draft 를 바로 불러와요
+      this.resumeRequested = false;
+      if (!this.draft || this.draftUser !== uid || this.locked) {
+        this.draft = cncLoadDraft(uid, APP.profile) || cncNewDraft(APP.profile);
+      }
+      this.resetState(uid);
+    } else if (!this.draft || this.draftUser !== uid) {
+      // 처음 들어옴: 저장된 draft 가 있으면 고르는 카드, 없으면 빈 주문
+      var saved = cncHasDraft(uid) ? cncLoadDraft(uid, APP.profile) : null;
+      this.draft = cncNewDraft(APP.profile);
+      this.resetState(uid);
+      if (saved) {
+        this.pendingDraft = saved;
+        this.locked = true;
+      }
     }
     this.fillDeliveryFromProfile();
 
@@ -49,14 +65,71 @@ var PageNew = {
     refreshBalance();
   },
 
+  resetState: function (uid) {
+    this.draftUser = uid;
+    this.check = null;
+    this.fileNotices = [];
+    this.submitError = null;
+    this.locked = false;
+    this.pendingDraft = null;
+  },
+
   rerender: function () {
     this.draw();
   },
 
   leave: function () {
     if (this.onBalance) window.removeEventListener('balancechange', this.onBalance);
+    closePopover();
+    if (this.locked) {
+      // 고르지 않고 떠나면 다음에 다시 카드를 보여줘요
+      this.draft = null;
+      this.locked = false;
+      this.pendingDraft = null;
+      return;
+    }
     if (this.draft && !this.success) cncSaveDraft(this.draftUser, this.draft);
     if (this.success) this.success = null;    // 다시 들어오면 새 주문 화면
+  },
+
+  // ----- 저장된 draft: 이어서 하기 / 삭제 -----
+  continueDraft: function () {
+    if (!this.pendingDraft) return;
+    this.draft = this.pendingDraft;
+    this.pendingDraft = null;
+    this.locked = false;
+    this.fillDeliveryFromProfile();
+    this.draw();
+    this.scrollTop();
+  },
+
+  discardDraft: async function () {
+    var ok = await uiConfirm({ title: t('draft_discard'), message: t('draft_discard_confirm'), okLabel: t('draft_discard'), danger: true });
+    if (!ok) return;
+    cncClearDraft(this.draftUser);
+    this.pendingDraft = null;
+    this.locked = false;
+    this.draft = cncNewDraft(APP.profile);
+    this.draw();
+    var input = document.getElementById('f-patient');
+    if (input) input.focus();
+  },
+
+  draftCardHtml: function () {
+    var p = this.pendingDraft;
+    var info = [];
+    info.push(t('wiz_patient_label') + ': ' + (p.patient.trim() || '—'));
+    info.push(tf('teeth_count_fmt', { n: p.teeth.length }));
+    info.push(tf('draft_saved_at', { time: formatDateTime(p.updatedAt) }));
+    return '<div class="draft-choice" role="region" aria-label="' + escHtml(t('draft_found')) + '">' +
+      '<p class="draft-choice-title"><span aria-hidden="true">📝</span> ' + escHtml(t('draft_found')) + '</p>' +
+      '<p class="draft-choice-info">' + info.map(escHtml).join(' · ') + '</p>' +
+      '<p class="draft-choice-step muted">' + escHtml(tf('draft_last_step', { step: t(this.STEP_KEYS[p.step - 1]) })) + '</p>' +
+      '<div class="draft-choice-actions">' +
+        '<button type="button" class="btn btn-primary btn-lg" onclick="PageNew.continueDraft()">' + escHtml(t('draft_continue_order')) + ' <span class="arrow" aria-hidden="true">→</span></button>' +
+        '<button type="button" class="btn btn-outline btn-lg btn-discard" onclick="PageNew.discardDraft()">' + escHtml(t('draft_discard')) + '</button>' +
+      '</div>' +
+    '</div>';
   },
 
   onBalanceChange: function () {
@@ -75,6 +148,7 @@ var PageNew = {
   },
 
   save: function () {
+    if (this.locked) return;   // 고르기 전에는 저장된 draft 를 덮어쓰지 않아요
     cncSaveDraft(this.draftUser, this.draft);
   },
 
@@ -88,13 +162,14 @@ var PageNew = {
     this.main.innerHTML =
       '<div class="page page-new">' +
         '<h1 class="page-title wiz-page-title">' + escHtml(t('nav_new')) + '</h1>' +
-        '<div class="wizard">' +
+        (this.locked ? this.draftCardHtml() : '') +
+        '<div class="wizard' + (this.locked ? ' wiz-locked' : '') + '"' + (this.locked ? ' inert aria-hidden="true"' : '') + '>' +
           '<nav class="wiz-steps" aria-label="' + escHtml(t('order_steps')) + '" id="wiz-steps"></nav>' +
           '<div class="wiz-mobile-progress" id="wiz-mobile-progress"></div>' +
           '<section class="card wiz-main" id="wiz-main" aria-live="polite"></section>' +
           '<aside class="wiz-summary card" id="wiz-summary" aria-label="' + escHtml(t('summary_title')) + '"></aside>' +
         '</div>' +
-        '<div class="wiz-bottom-bar" id="wiz-bottom-bar"></div>' +
+        '<div class="wiz-bottom-bar" id="wiz-bottom-bar"' + (this.locked ? ' inert' : '') + '></div>' +
       '</div>';
     this.drawStep();
   },
@@ -102,6 +177,7 @@ var PageNew = {
   // 단계 목록 + 입력 카드 + 요약 + 아래 버튼 다시 그리기
   drawStep: function () {
     var d = this.draft;
+    closePopover();
     var self = this;
 
     // 왼쪽 세로 단계 목록 (PC)
@@ -145,7 +221,11 @@ var PageNew = {
     document.getElementById('wiz-main').innerHTML =
       '<div class="wiz-head">' +
         '<p class="wiz-step-label mono">' + escHtml(tf('step_of', { n: d.step, total: 5 })) + '</p>' +
-        '<h2 class="wiz-title">' + escHtml(t(this.STEP_KEYS[d.step - 1])) + '</h2>' +
+        '<div class="wiz-title-row">' +
+          '<h2 class="wiz-title">' + escHtml(t(this.STEP_KEYS[d.step - 1])) + '</h2>' +
+          '<button type="button" class="btn btn-outline btn-sm help-btn" aria-expanded="false" onclick="PageNew.showHelp(this)">' +
+            '<span class="help-q" aria-hidden="true">?</span> ' + escHtml(t('help_label')) + '</button>' +
+        '</div>' +
         '<p class="wiz-desc">' + escHtml(t(this.STEP_DESC_KEYS[d.step - 1])) + '</p>' +
       '</div>' +
       '<div class="wiz-body">' + body + '</div>' +
@@ -203,32 +283,31 @@ var PageNew = {
     var e = (this.check && this.check.errors) || {};
     return '<div class="form-grid">' +
       '<div class="field">' +
-        '<label class="field-label" for="f-patient">' + escHtml(t('wiz_patient_label')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
-        '<input class="input input-lg' + (e.patient ? ' invalid' : '') + '" id="f-patient" type="text" maxlength="60" autocomplete="off" ' +
+        '<label class="field-label" for="f-patient">' + escHtml(t('wiz_patient_label')) + ' <span class="required">*</span></label>' +
+        '<input class="input input-lg' + (e.patient ? ' invalid' : '') + '" id="f-patient" type="text" maxlength="50" autocomplete="off" ' +
           'value="' + escHtml(d.patient) + '" placeholder="' + escHtml(t('patient_ph')) + '" ' +
           'oninput="PageNew.setField(\'patient\', this.value)">' +
-        '<p class="field-help">' + escHtml(t('patient_help')) + '</p>' +
         uiFieldError(e.patient) +
       '</div>' +
       '<div class="field">' +
         '<label class="field-label" for="f-deadline">' + escHtml(t('case_deadline_label')) + ' <span class="required">*</span></label>' +
-        '<div class="date-box" onclick="PageNew.openDatePicker()">' +
-          '<span class="date-icon" aria-hidden="true">📅</span>' +
-          '<input class="input input-lg date-input' + (e.deadline ? ' invalid' : '') + '" id="f-deadline" type="date" ' +
-            'min="' + cncToday() + '" value="' + escHtml(d.deadline) + '" ' +
-            'onchange="PageNew.setField(\'deadline\', this.value)" oninput="PageNew.setField(\'deadline\', this.value)">' +
-        '</div>' +
-        (d.deadline ? '<p class="field-help">' + escHtml(formatDate(d.deadline)) + '</p>' : '') +
+        uiDateField({ id: 'f-deadline', value: d.deadline, min: cncToday(), onChange: 'PageNew.setDeadline', invalid: !!e.deadline }) +
         uiFieldError(e.deadline) +
       '</div>' +
     '</div>';
   },
 
-  openDatePicker: function () {
-    var input = document.getElementById('f-deadline');
-    if (!input) return;
-    input.focus();
-    try { if (input.showPicker) input.showPicker(); } catch (err) { /* 일부 브라우저는 지원 안 함 → 그냥 칸 선택 */ }
+  // 달력에서 날짜를 고르면 불려요 ('YYYY-MM-DD')
+  setDeadline: function (value) {
+    this.setField('deadline', value);
+  },
+
+  // 단계 제목 옆 "? Help" → 그 단계 설명 (가이드 문구 재사용)
+  showHelp: function (btn) {
+    var n = this.draft.step;
+    uiPopover(btn, '<p class="popover-title">' + escHtml(t(this.STEP_KEYS[n - 1])) + '</p>' +
+      '<p>' + escHtml(t('guide_step' + n + '_text')) + '</p>' +
+      '<a href="#/guide" class="popover-link">' + escHtml(t('guide_open_full')) + ' <span class="arrow" aria-hidden="true">→</span></a>');
   },
 
   // 글자 입력 칸 (patient, deadline, memo) — 다시 그리지 않고 저장 + 요약만 갱신 (입력 중 커서 유지)
@@ -573,7 +652,7 @@ var PageNew = {
 
     var html = '';
     html += group('wiz_step1', 1,
-      row('wiz_patient_label', escHtml(d.patient || t('anonymous'))) +
+      row('wiz_patient_label', escHtml(d.patient.trim() || '—')) +
       row('case_deadline_label', escHtml(formatDate(d.deadline))));
     html += group('wiz_step3', 3, teethTable +
       (d.memo ? row('memo_label', '<span class="pre">' + escHtml(d.memo) + '</span>') : ''));
@@ -742,7 +821,7 @@ var PageNew = {
     box.innerHTML =
       '<h2 class="sum-title">' + escHtml(t('summary_title')) + '</h2>' +
       '<dl class="sum-list">' +
-        '<dt>' + escHtml(t('wiz_patient_label')) + '</dt><dd>' + escHtml(d.patient || t('anonymous')) + '</dd>' +
+        '<dt>' + escHtml(t('wiz_patient_label')) + '</dt><dd>' + escHtml(d.patient.trim() || '—') + '</dd>' +
         '<dt>' + escHtml(t('case_deadline_label')) + '</dt><dd>' + escHtml(d.deadline ? formatDate(d.deadline) : '—') + '</dd>' +
         '<dt>' + escHtml(tf('teeth_count_fmt', { n: d.teeth.length })) + '</dt><dd>' + teeth + '</dd>' +
         '<dt>' + escHtml(t('files_label')) + '</dt><dd class="mono">' + d.files.length + ' / ' + FILE_MAX_COUNT + '</dd>' +
