@@ -3,7 +3,10 @@
 // 나중에 LimeZu Modern Interiors/Exteriors 같은 실제 에셋으로 바꿀 때는
 // 이 파일의 이름(키)은 그대로 두고, 같은 키로 이미지를 불러오기만 하면 돼요.
 
-var TILE = 32; // 타일 한 칸 = 32 x 32 픽셀
+var TILE = 32;     // 타일 한 칸 = 32 x 32 픽셀
+var CHAR_W = 32;   // 캐릭터 한 프레임 가로 (1칸)
+var CHAR_H = 64;   // 캐릭터 한 프레임 세로 (2칸 높이)
+var PET_SIZE = 16; // 펫 한 프레임 (16 x 16)
 
 var ASSETS = {
   // 바닥 타일들을 한 줄로 이어 붙인 타일셋 텍스처
@@ -29,6 +32,15 @@ var ASSETS = {
     exitDoor: 'exit_door'
   },
 
+  // 어깨 펫 (펫 id → 텍스처 키). 한 텍스처 = 2열(기본, 동작) x 4줄(아래·왼·오른·위)
+  pets: {
+    pet_cat: 'pet_cat',
+    pet_parrot: 'pet_parrot',
+    pet_hamster: 'pet_hamster',
+    pet_puppy: 'pet_puppy',
+    pet_tooth_buddy: 'pet_tooth_buddy'
+  },
+
   // UI / 효과
   ui: {
     marker: 'marker',       // 클릭한 곳 골드 원
@@ -36,7 +48,7 @@ var ASSETS = {
     shadow: 'shadow'
   },
 
-  // 캐릭터: 아바타 설정마다 'char_xxxx' 텍스처가 만들어져요 (3프레임 x 4방향)
+  // 캐릭터: 아바타 설정마다 'char_xxxx' 텍스처가 만들어져요 (3프레임 x 4방향, 한 프레임 32 x 64)
   characterPrefix: 'char_'
 };
 

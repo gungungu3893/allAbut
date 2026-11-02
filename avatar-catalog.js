@@ -73,6 +73,16 @@ var AVATAR_CATALOG = {
     { id: 'outfit_suit',    name: 'Gold-Trim Suit', price: 0, locked: false },
     { id: 'outfit_hoodie',  name: 'Casual Hoodie',  price: 0, locked: false },
     { id: 'outfit_polo',    name: 'Polo Shirt',     price: 0, locked: false }
+  ],
+
+  // 어깨 위에 앉는 펫 (첫 번째 = 펫 없음, 기본값)
+  pet: [
+    { id: 'pet_none',        name: 'No Pet',      price: 0, locked: false },
+    { id: 'pet_cat',         name: 'Cat',         price: 0, locked: false },
+    { id: 'pet_parrot',      name: 'Parrot',      price: 0, locked: false },
+    { id: 'pet_hamster',     name: 'Hamster',     price: 0, locked: false },
+    { id: 'pet_puppy',       name: 'Puppy',       price: 0, locked: false },
+    { id: 'pet_tooth_buddy', name: 'Tooth Buddy', price: 0, locked: false }
   ]
 };
 
@@ -87,7 +97,8 @@ var AVATAR_CATEGORIES = [
   { key: 'mouth',     label: 'Mouth' },
   { key: 'hair',      label: 'Hair' },
   { key: 'hairColor', label: 'Hair Color' },
-  { key: 'outfit',    label: 'Outfit' }
+  { key: 'outfit',    label: 'Outfit' },
+  { key: 'pet',       label: 'Pet' }
 ];
 
 

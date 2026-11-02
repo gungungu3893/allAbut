@@ -39,6 +39,7 @@ async function createProfile(userId, nickname) {
     .select()
     .single();
   if (result.error) throw result.error;
+  result.data.guild = null;
   return result.data;
 }
 
@@ -62,18 +63,37 @@ async function getSession() {
 }
 
 // 로그인한 유저의 profiles 행 가져오기
-// (행이 없으면 가입할 때 저장해 둔 닉네임으로 새로 만들어요)
+// - guild_id 가 있으면 guilds 테이블 정보도 함께 가져와서 profile.guild 에 넣어요
+//   ({ id, name, tag, color, emblem } 또는 null)
+// - 행이 없으면 가입할 때 저장해 둔 닉네임으로 새로 만들어요
 async function getProfile() {
   var session = await getSession();
   if (!session) return null;
-
   var user = session.user;
+
+  // 1) guilds 조인으로 한 번에 가져오기
   var result = await sb
     .from('profiles')
-    .select('*')
+    .select('*, guilds(id, name, tag, color, emblem)')
     .eq('id', user.id)
     .maybeSingle();
-  if (result.error) throw result.error;
+
+  // 2) 조인이 안 되면 (테이블 연결(외래키)이 없는 경우 등) 따로 가져오기
+  if (result.error) {
+    console.warn('Guild join failed, loading separately:', result.error.message);
+    result = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (result.error) throw result.error;
+    if (result.data) {
+      result.data.guild = null;
+      if (result.data.guild_id) {
+        var g = await sb.from('guilds').select('id, name, tag, color, emblem').eq('id', result.data.guild_id).maybeSingle();
+        if (!g.error) result.data.guild = g.data;
+      }
+    }
+  } else if (result.data) {
+    result.data.guild = result.data.guilds || null;
+    delete result.data.guilds;
+  }
 
   if (result.data) return result.data;
 

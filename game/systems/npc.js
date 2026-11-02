@@ -2,12 +2,12 @@
 // behavior:
 //   'idle'   : 제자리에 서 있고, 플레이어가 가까이 오면 그쪽을 바라봄
 //   'patrol' : 정해진 두 지점 사이를 천천히 왔다갔다 (행인)
+// 크기·이름표·펫은 플레이어와 같은 부품을 써요.
 
 class Npc {
-  // opts: { x, y (타일), config (아바타), name, facing, behavior, path:[[x,y],[x,y]], speed (칸/초) }
+  // opts: { x, y (타일), config (아바타), label (이름표 글자), facing, behavior, path:[[x,y],[x,y]], speed (칸/초) }
   constructor(scene, opts) {
     this.scene = scene;
-    this.name = opts.name || '';
     this.behavior = opts.behavior || 'idle';
     this.baseDir = opts.facing || 'down';
     this.dir = this.baseDir;
@@ -16,19 +16,13 @@ class Npc {
     this.y = (opts.y + 0.75) * TILE;
 
     this.sprite = scene.add.sprite(this.x, this.y, this.key, this.idleFrame());
-    this.sprite.setOrigin(0.5, 0.9);
+    this.sprite.setOrigin(0.5, CHAR_FEET / CHAR_H);
 
-    // 머리 위 이름표
-    if (this.name) {
-      this.tag = scene.add.text(this.x, this.y - 34, this.name, {
-        fontFamily: '"IBM Plex Mono", monospace',
-        fontSize: '10px',
-        color: '#ffffff',
-        backgroundColor: 'rgba(11,35,80,0.85)',
-        padding: { x: 4, y: 1 },
-        resolution: 3
-      }).setOrigin(0.5, 1);
-    }
+    // 어깨 펫 (아바타 설정에 펫이 있으면)
+    this.pet = new Pet(scene, normalizeAvatarConfig(opts.config || DEFAULT_AVATAR).pet);
+
+    // 머리 위 이름표 (NPC 는 "Reception · Mina" 형식, 네이비 배경)
+    this.nameplate = opts.label ? createNameplate(scene, { name: opts.label, kind: 'npc' }) : null;
 
     // 왔다갔다 경로
     if (this.behavior === 'patrol' && opts.path) {
@@ -95,17 +89,28 @@ class Npc {
     this.sync();
   }
 
+  // 그림 + 펫 + 이름표 위치 맞추기
   sync() {
-    this.sprite.setPosition(Math.round(this.x), Math.round(this.y));
+    var x = Math.round(this.x), y = Math.round(this.y);
+    this.sprite.setPosition(x, y);
     this.sprite.setDepth(this.y);
-    if (this.tag) {
-      this.tag.setPosition(Math.round(this.x), Math.round(this.y - 30));
-      this.tag.setDepth(100000);
+    this.pet.update({ x: x, y: y, dir: this.dir, moving: this.walking, depth: this.y }, this.scene.time.now / 1000);
+    if (this.nameplate) {
+      var top = y - CHAR_HEAD_TOP;
+      var petTop = this.pet.topY(y, this.dir);
+      if (petTop !== null) top = Math.min(top, petTop);
+      this.nameplate.setPosition(x, top - 2);
     }
+  }
+
+  // 이름표 꼭대기 y (말풍선·간판을 그 위에 두기 위해)
+  get labelTop() {
+    var top = this.y - CHAR_HEAD_TOP - 2;
+    return this.nameplate ? top - this.nameplate.height : top;
   }
 }
 
-// 행인 외형을 seed 로 정하기 (늘 같은 사람이 나오게)
+// 행인 외형을 seed 로 정하기 (늘 같은 사람이 나오게, 펫이 있을 수도 있어요)
 function randomLook(seed) {
   var s = seed * 7919 + 17;
   function pick(list) {

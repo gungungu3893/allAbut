@@ -1,15 +1,19 @@
 // ===== 플레이어 이동 (바깥/실내 공통) =====
 // - 클릭(탭) 이동: A* 길찾기로 장애물을 돌아서 걸어가요
 // - 방향키 / WASD / 모바일 조이스틱: 누르는 방향으로 바로 걸어가요 (벽에 막히면 미끄러지듯)
+// - 머리 위 이름표 + 어깨 펫이 함께 따라다녀요
 // 위치는 "발 밑" 픽셀 좌표예요.
 
 var PLAYER_SPEED = 4 * TILE;   // 초당 4칸
 var FEET_HALF_W = 9;           // 발 충돌 상자 (가로 반)
 var FEET_HALF_H = 5;           // 발 충돌 상자 (세로 반)
+var CHAR_FEET = 60;            // 캐릭터 그림 안에서 발바닥 y (64 중)
+var CHAR_HEAD_TOP = 58;        // 발에서 머리 꼭대기까지 높이
 
 class Player {
   // tx, ty: 시작 타일 / facing: 'up' | 'down' | 'left' | 'right'
-  constructor(scene, tx, ty, config, facing) {
+  // profile: profiles 행 (avatar, nickname, title, guild)
+  constructor(scene, tx, ty, profile, facing) {
     this.scene = scene;
     this.x = (tx + 0.5) * TILE;
     this.y = (ty + 0.75) * TILE;
@@ -18,16 +22,24 @@ class Player {
     this.onArrive = null;
     this.moving = false;
 
-    this.key = ensureCharacterTexture(scene, config);
+    var avatar = profile && profile.avatar;
+    this.key = ensureCharacterTexture(scene, avatar);
     this.sprite = scene.add.sprite(this.x, this.y, this.key, this.idleFrame());
-    this.sprite.setOrigin(0.5, 0.9);
+    this.sprite.setOrigin(0.5, CHAR_FEET / CHAR_H);
+
+    this.pet = new Pet(scene, normalizeAvatarConfig(avatar || DEFAULT_AVATAR).pet);
+    this.nameplate = createNameplate(scene, nameplateFromProfile(profile, true));
     this.sync();
   }
 
-  // 아바타가 바뀌면 그림만 바꾸기
-  setLook(config) {
-    this.key = ensureCharacterTexture(this.scene, config);
+  // 아바타·프로필이 바뀌면 그림 / 펫 / 이름표 바꾸기
+  setProfile(profile) {
+    var avatar = profile && profile.avatar;
+    this.key = ensureCharacterTexture(this.scene, avatar);
     this.sprite.setTexture(this.key, this.idleFrame());
+    this.pet.setPet(normalizeAvatarConfig(avatar || DEFAULT_AVATAR).pet);
+    this.nameplate.setInfo(nameplateFromProfile(profile, true));
+    this.sync();
   }
 
   idleFrame() {
@@ -75,6 +87,7 @@ class Player {
     var dx = x - this.x, dy = y - this.y;
     this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     if (!this.moving) this.sprite.setFrame(this.idleFrame());
+    this.sync();
   }
 
   setMoving(on) {
@@ -105,11 +118,10 @@ class Player {
     if (input && (Math.abs(input.x) > 0.15 || Math.abs(input.y) > 0.15)) {
       // 방향키 / 조이스틱: 클릭 이동은 취소
       if (this.path.length) this.stop();
-      var len = Math.min(1, Math.sqrt(input.x * input.x + input.y * input.y));
-      var nx = input.x / (Math.sqrt(input.x * input.x + input.y * input.y) || 1);
-      var ny = input.y / (Math.sqrt(input.x * input.x + input.y * input.y) || 1);
-      vx = nx * step * len;
-      vy = ny * step * len;
+      var mag = Math.sqrt(input.x * input.x + input.y * input.y) || 1;
+      var len = Math.min(1, mag);
+      vx = input.x / mag * step * len;
+      vy = input.y / mag * step * len;
       // 벽에 막히면 막히지 않은 축으로만 (미끄러지듯)
       if (this.canStand(this.x + vx, this.y)) this.x += vx; else vx = 0;
       if (this.canStand(this.x, this.y + vy)) this.y += vy; else vy = 0;
@@ -148,8 +160,17 @@ class Player {
     this.sync();
   }
 
+  // 그림 + 펫 + 이름표 위치 맞추기
   sync() {
-    this.sprite.setPosition(Math.round(this.x), Math.round(this.y));
+    var x = Math.round(this.x), y = Math.round(this.y);
+    this.sprite.setPosition(x, y);
     this.sprite.setDepth(this.y);
+    var t = this.scene.time.now / 1000;
+    this.pet.update({ x: x, y: y, dir: this.dir, moving: this.moving, depth: this.y }, t);
+    // 이름표: 머리 위 (펫이 더 위에 있으면 펫 위)
+    var top = y - CHAR_HEAD_TOP;
+    var petTop = this.pet.topY(y, this.dir);
+    if (petTop !== null) top = Math.min(top, petTop);
+    this.nameplate.setPosition(x, top - 2);
   }
 }

@@ -245,10 +245,10 @@
 
 
     /* ================================================================
-       Avatar Studio (단순 버전)
+       Avatar Studio (Pet 탭)
        ================================================================ */
     .studio-simple.glass-panel {
-      max-width: 420px;
+      max-width: 440px;
       margin-top: 0;
       text-align: center;
     }
@@ -257,7 +257,7 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 22px;
+      margin-bottom: 18px;
       text-align: left;
     }
     .studio-header > div { min-width: 0; }
@@ -286,27 +286,131 @@
       flex-shrink: 0;
     }
     .studio-header-right .back-link { margin-top: 0; }
+
+    /* 미리보기 (픽셀 2배 확대) */
     .studio-preview-box {
       display: flex;
       justify-content: center;
-      padding: 22px 0;
+      padding: 14px 0;
       background: radial-gradient(circle at 50% 60%, rgba(212,175,55,0.12), transparent 70%);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
     }
     #studio-preview-canvas {
-      width: 320px;
+      width: 256px;
+      height: 128px;
       max-width: 100%;
-      height: auto;
       image-rendering: pixelated;   /* 픽셀아트 확대해도 선명하게 */
     }
-    .studio-note {
-      margin: 16px 0 6px;
+
+    /* 카테고리 탭 */
+    .studio-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 16px 0 10px;
+    }
+    .studio-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 6px 6px;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: #8892a4;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+    .studio-tab-icon {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+    }
+    .studio-tab-icon svg { width: 20px; height: 20px; }
+    .studio-tab-label {
+      font-family: 'IBM Plex Sans', sans-serif;
       font-size: 13px;
+    }
+    .studio-tab.active {
+      color: var(--gold);
+      background: rgba(212,175,55,0.15);
+      border-color: var(--gold);
+    }
+
+    /* 아이템 카드 (3열) */
+    .studio-items {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .studio-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      aspect-ratio: 1 / 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .studio-card:hover { border-color: rgba(212,175,55,0.45); }
+    .studio-card.selected {
+      border: 2px solid var(--gold);
+      background: rgba(212,175,55,0.06);
+      box-shadow: 0 0 16px rgba(212,175,55,0.28);
+    }
+    .studio-card canvas {
+      width: 48px;
+      height: 48px;
+      image-rendering: pixelated;
+    }
+    .studio-card-none {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: #4a5366;
+    }
+    .studio-card-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #8892a4;
+    }
+    .studio-card.selected .studio-card-name { color: var(--gold); }
+    .studio-card.locked { opacity: 0.4; cursor: not-allowed; }
+    .price-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--gold);
+      color: var(--navy);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 999px;
+    }
+    .lock-icon {
+      position: absolute;
+      left: 8px;
+      bottom: 6px;
+      font-size: 13px;
+    }
+    .studio-note {
+      margin: 14px 0 4px;
+      font-size: 12px;
       line-height: 1.6;
       color: #8892a4;
     }
-
 
     /* ================================================================
        로그인 세션 (남은 시간 표시 / 5분 경고 팝업 / 만료 안내)
@@ -569,7 +673,7 @@
     </section>
 
 
-    <!-- ========== 3. Avatar Studio (단순 버전 - 2D 꾸미기는 다음 단계) ========== -->
+    <!-- ========== 3. Avatar Studio (Pet 탭 - 얼굴·머리·옷은 다음 단계) ========== -->
     <section class="screen" id="screen-avatar">
       <div class="glass-panel studio-simple">
         <span class="corner tl"></span>
@@ -593,11 +697,18 @@
           </div>
         </div>
 
-        <!-- 픽셀 캐릭터 미리보기 (앞·왼쪽·오른쪽·뒤) -->
+        <!-- 픽셀 캐릭터 미리보기 (앞·왼쪽·오른쪽·뒤, 어깨 펫 포함) -->
         <div class="studio-preview-box">
-          <canvas id="studio-preview-canvas" width="128" height="32"></canvas>
+          <canvas id="studio-preview-canvas" width="128" height="64"></canvas>
         </div>
-        <p class="studio-note">The 2D avatar editor is coming in the next update.<br>For now you'll start with this look.</p>
+
+        <!-- 카테고리 탭 (avatar-studio.js 가 채워요) -->
+        <div class="studio-tabs" id="studio-tabs"></div>
+
+        <!-- 아이템 카드 (avatar-studio.js 가 채워요) -->
+        <div class="studio-items" id="studio-items"></div>
+
+        <p class="studio-note">Face, hair and outfit editing is coming in the next update.</p>
 
         <p class="auth-msg" id="studio-error"></p>
         <button type="button" class="gold-btn full" id="studio-save-btn" onclick="saveAvatar()">Save &amp; Enter →</button>
@@ -654,6 +765,8 @@
   <script src="game/config/zones/bangkok-soi.js"></script>
   <script src="game/config/interiors/allabut-shop.js"></script>
   <script src="game/systems/pathfinding.js"></script>
+  <script src="game/systems/nameplate.js"></script>
+  <script src="game/systems/pet.js"></script>
   <script src="game/systems/player.js"></script>
   <script src="game/systems/npc.js"></script>
   <script src="game/systems/world.js"></script>

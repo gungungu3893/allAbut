@@ -21,6 +21,8 @@ class UIScene extends Phaser.Scene {
   }
 
   create() {
+    // 이 장면에 추가되는 글자는 모두 부드럽게 (픽셀아트 모드에서도 깨지지 않게)
+    this.events.on('addedtoscene', function (obj) { if (obj.type === 'Text') smoothText(obj); });
     GameState.ui = this;
     this.dpr = Math.min(3, window.devicePixelRatio || 1);
     this.dialogOpen = false;
@@ -398,7 +400,8 @@ class UIScene extends Phaser.Scene {
     var face = 72;
     this.dlgFaceBg.clear().fillStyle(0x06142e, 1).fillRect(dx + 16, dy + 22, face, face)
       .lineStyle(2, 0xD4AF37, 1).strokeRect(dx + 16, dy + 22, face, face);
-    this.dlgFace.setPosition(dx + 16 + face / 2, dy + 22 + face / 2 + 8).setScale(2.6).setCrop(0, 0, 32, 22);
+    // 캐릭터 그림(32x64)에서 얼굴 부분만 잘라서 2배로
+    this.dlgFace.setPosition(dx + 16 + face / 2, dy + 22 + face / 2 + 24).setScale(2).setCrop(0, 4, 32, 32);
     this.dlgName.setPosition(dx + 104, dy + 16);
     this.dlgText.setPosition(dx + 104, dy + 38);
     this.dlgText.setWordWrapWidth(dw - 130);

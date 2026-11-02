@@ -37,6 +37,8 @@
 - `game/systems/player.js` — 플레이어 이동 (클릭 길찾기 + 방향키/WASD + 조이스틱)
 - `game/systems/pathfinding.js` — 타일 기반 A* 길찾기
 - `game/systems/npc.js` — NPC (데스크 직원 idle, 행인 patrol)
+- `game/systems/nameplate.js` — 머리 위 이름표 (플레이어·다른 유저·NPC 공통): 칭호 / [길드 배지] 닉네임
+- `game/systems/pet.js` — 어깨 펫 (방향 따라 위치·앞뒤 바뀜, 걸을 때 흔들림, 가끔 작은 동작)
 
 ## 게임 공통 규칙
 - 좌표는 타일 단위 (x = 동쪽으로, y = 남쪽으로). 오브젝트가 차지한 칸은 지나갈 수 없다 (`solid: false` 예외)
@@ -44,7 +46,12 @@
 - 깊이(depth)는 발 밑 y 좌표 → 나무·건물 뒤로 지나갈 수 있음
 - 장면 전환: 검게 페이드아웃 → 씬 전환 → 페이드인 (0.5초)
 - 위치 저장: `localStorage.allabut_location = { scene, x, y, facing }` (타일 단위)
-- 줌: 모바일 가로 약 13타일, PC 가로 약 24타일 (세로 최소 15타일)
+- 지도 크기: 골목 28x40 타일, 체험관 22x28 타일
+- 캐릭터: 한 프레임 32x64 (타일 2칸 높이), 4방향 x 걷기 3프레임. 펫은 16x16
+- 줌: 모바일 가로 약 9~10타일, PC 가로 약 18타일 (세로 최소 10타일), 정수 배율에 가까우면 정수로
+- 이름표 데이터: `profiles.nickname`, `profiles.title`, `profiles.guild_id` → `guilds(id, name, tag, color, emblem)`
+  (`getProfile()` 이 `profile.guild` 로 함께 가져옴). 테스트: `DEBUG_SHOW_SAMPLE_GUILD = true` (nameplate.js 상단)
+- 펫: `avatar-catalog.js` 의 `pet` 카테고리, 저장 위치 `profiles.avatar.pet`, 텍스처 키는 `assets.js` 의 `ASSETS.pets`
 
 ## 유지하는 것
 - 랜딩 페이지, 로고, 로그인/회원가입, Supabase 연동, `session.js` (1시간 + 연장), `profiles` 테이블

@@ -22,6 +22,8 @@ class WorldScene extends Phaser.Scene {
   paintExtras() {}
 
   create() {
+    // 이 장면에 추가되는 글자는 모두 부드럽게 (픽셀아트 모드에서도 깨지지 않게)
+    this.events.on('addedtoscene', function (obj) { if (obj.type === 'Text') smoothText(obj); });
     var d = this.mapData = this.getMapData();
     this.mapW = d.width;
     this.mapH = d.height;
@@ -40,14 +42,14 @@ class WorldScene extends Phaser.Scene {
 
     // ----- 플레이어 -----
     var start = this.findStart(d);
-    this.player = new Player(this, start.x, start.y, GameState.profile && GameState.profile.avatar, start.facing);
+    this.player = new Player(this, start.x, start.y, GameState.profile, start.facing);
 
     // ----- 클릭 마커 / 상호작용 말풍선 -----
     this.marker = this.add.image(0, 0, ASSETS.ui.marker).setVisible(false).setDepth(5);
-    this.hint = this.add.text(0, 0, '', {
-      fontFamily: '"IBM Plex Mono", monospace', fontSize: '11px', color: '#0b2350',
-      backgroundColor: '#ffffff', padding: { x: 5, y: 2 }, resolution: 3
-    }).setOrigin(0.5, 1).setDepth(200000).setVisible(false);
+    this.hint = smoothText(this.add.text(0, 0, '', {
+      fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', color: '#0b2350',
+      backgroundColor: '#ffffff', padding: { x: 4, y: 2 }, resolution: 4
+    })).setOrigin(0.5, 1).setDepth(2000000).setVisible(false);
     this.hintTarget = null;
 
     // ----- 카메라 / 입력 -----
@@ -116,10 +118,10 @@ class WorldScene extends Phaser.Scene {
         img = this.add.image(left, top, ASSETS.objects.shophouse[(o.variant || 0) % 4]).setOrigin(0, 0);
         if (o.front === 'west') img.setFlipX(true);
         if (o.sign) {
-          this.add.text((o.x + w / 2) * T, (o.y + 1) * T, o.sign, {
+          smoothText(this.add.text((o.x + w / 2) * T, (o.y + 1) * T, o.sign, {
             fontFamily: '"IBM Plex Sans", sans-serif', fontSize: '12px', fontStyle: '600',
-            color: '#ffe08a', backgroundColor: 'rgba(29,42,58,0.92)', padding: { x: 6, y: 2 }, resolution: 3
-          }).setOrigin(0.5).setDepth(bottom + 1);
+            color: '#ffe08a', backgroundColor: 'rgba(29,42,58,0.92)', padding: { x: 6, y: 2 }, resolution: 4
+          })).setOrigin(0.5).setDepth(bottom + 1);
         }
         break;
 
@@ -131,10 +133,10 @@ class WorldScene extends Phaser.Scene {
 
       case 'bts_station':
         img = this.add.image(left, top, ASSETS.objects.btsStation).setOrigin(0, 0);
-        this.add.text((o.x + w / 2) * T, top + 18, 'BTS · Soi allAbut', {
+        smoothText(this.add.text((o.x + w / 2) * T, top + 18, 'BTS · Soi allAbut', {
           fontFamily: '"IBM Plex Sans", sans-serif', fontSize: '12px', fontStyle: '600',
-          color: '#ffffff', backgroundColor: '#1f6f45', padding: { x: 8, y: 2 }, resolution: 3
-        }).setOrigin(0.5).setDepth(bottom + 1);
+          color: '#ffffff', backgroundColor: '#1f6f45', padding: { x: 8, y: 2 }, resolution: 4
+        })).setOrigin(0.5).setDepth(bottom + 1);
         anchor = { x: (o.x + w / 2) * T, y: bottom - 30 };
         break;
 
@@ -194,10 +196,10 @@ class WorldScene extends Phaser.Scene {
 
   // 네이비 박스 + 골드 테두리 + 골드 글씨 (간판)
   addLabelBox(x, y, text, depth) {
-    var label = this.add.text(x, y, text, {
-      fontFamily: '"IBM Plex Mono", monospace', fontSize: '11px', fontStyle: '500',
-      color: '#D4AF37', backgroundColor: 'rgba(11,35,80,0.95)', padding: { x: 7, y: 3 }, resolution: 3
-    }).setOrigin(0.5, 1).setDepth(depth + 1);
+    var label = smoothText(this.add.text(x, y, text, {
+      fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', fontStyle: '500',
+      color: '#D4AF37', backgroundColor: 'rgba(11,35,80,0.95)', padding: { x: 6, y: 3 }, resolution: 4
+    })).setOrigin(0.5, 1).setDepth(depth + 1);
     var border = this.add.rectangle(x, y - label.height / 2, label.width + 2, label.height + 2)
       .setStrokeStyle(1, 0xD4AF37).setDepth(depth + 2);
     return { label: label, border: border };
@@ -353,10 +355,10 @@ class WorldScene extends Phaser.Scene {
   // 3초 동안 보이는 말풍선
   say(x, y, text) {
     if (this.bubble) this.bubble.destroy();
-    var b = this.bubble = this.add.text(x, y, text, {
-      fontFamily: '"IBM Plex Sans", sans-serif', fontSize: '12px', fontStyle: '600',
-      color: '#0b2350', backgroundColor: '#ffffff', padding: { x: 8, y: 4 }, resolution: 3
-    }).setOrigin(0.5, 1).setDepth(300000);
+    var b = this.bubble = smoothText(this.add.text(x, y, text, {
+      fontFamily: '"IBM Plex Sans", sans-serif', fontSize: '11px', fontStyle: '600',
+      color: '#0b2350', backgroundColor: '#ffffff', padding: { x: 7, y: 4 }, resolution: 4
+    })).setOrigin(0.5, 1).setDepth(3000000);
     this.tweens.add({ targets: b, alpha: 0, delay: 2600, duration: 400, onComplete: function () { b.destroy(); } });
   }
 
@@ -427,10 +429,10 @@ function makeLogoText(scene, cx, cy, size) {
   var thin = { fontFamily: '"IBM Plex Sans", sans-serif', fontSize: size + 'px', fontStyle: '200', color: '#ffffff', resolution: 3 };
   var bold = { fontFamily: '"IBM Plex Sans", sans-serif', fontSize: Math.round(size * 1.33) + 'px', fontStyle: '600', color: '#D4AF37', resolution: 3 };
   var mono = { fontFamily: '"IBM Plex Mono", monospace', fontSize: Math.max(6, Math.round(size * 0.32)) + 'px', color: '#D4AF37', resolution: 4 };
-  var all = scene.add.text(0, 0, 'all', thin).setOrigin(0, 1);
-  var A = scene.add.text(0, 0, 'A', bold).setOrigin(0, 1);
-  var but = scene.add.text(0, 0, 'but', thin).setOrigin(0, 1);
-  var um = scene.add.text(0, 0, '5μm', mono).setOrigin(0, 0);
+  var all = smoothText(scene.add.text(0, 0, 'all', thin)).setOrigin(0, 1);
+  var A = smoothText(scene.add.text(0, 0, 'A', bold)).setOrigin(0, 1);
+  var but = smoothText(scene.add.text(0, 0, 'but', thin)).setOrigin(0, 1);
+  var um = smoothText(scene.add.text(0, 0, '5μm', mono)).setOrigin(0, 0);
   var total = all.width + A.width + but.width + um.width;
   var x = -total / 2;
   var baseY = size * 0.45;

@@ -10,6 +10,7 @@ class BootScene extends Phaser.Scene {
   create() {
     makeTileset(this);
     makeObjectTextures(this);
+    makePetTextures(this);
     makeUiTextures(this);
 
     // 글꼴(IBM Plex)이 준비된 뒤에 시작해야 글자가 제대로 나와요
@@ -58,15 +59,14 @@ function seededRandom(seed) {
   };
 }
 
-// 색을 밝게/어둡게 (amount: -1 ~ 1)
+// 색을 밝게/어둡게 (amount: -1 ~ 1). Phaser 없이도 동작 (Avatar Studio 미리보기에서도 사용)
 function shadeColor(hex, amount) {
-  var c = Phaser.Display.Color.HexStringToColor(hex);
+  var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  var c = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
   var t = amount < 0 ? 0 : 255;
   var p = Math.abs(amount);
-  var r = Math.round(c.red + (t - c.red) * p);
-  var g = Math.round(c.green + (t - c.green) * p);
-  var b = Math.round(c.blue + (t - c.blue) * p);
-  return 'rgb(' + r + ',' + g + ',' + b + ')';
+  return 'rgb(' + c.map(function (v) { return Math.round(v + (t - v) * p); }).join(',') + ')';
 }
 
 
@@ -138,7 +138,6 @@ function drawTile(ctx, type, seed) {
     ctx.fillRect(0, 0, T, T);
     ctx.fillStyle = '#c9c2b7';
     ctx.fillRect(0, 0, T, 1); ctx.fillRect(0, 0, 1, T);
-    ctx.fillStyle = 'rgba(212,175,55,0.35)';
     pxCircle(ctx, 16, 16, 8, 'rgba(212,175,55,0.25)');
     ctx.fillStyle = '#D4AF37';
     ctx.beginPath(); ctx.moveTo(16, 10); ctx.lineTo(22, 16); ctx.lineTo(16, 22); ctx.lineTo(10, 16); ctx.closePath(); ctx.fill();
@@ -189,24 +188,17 @@ function makeObjectTextures(scene) {
       var color = SHOPHOUSE_COLORS[v];
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, w, h);
-      // 지붕 테두리 + 집 사이 경계
       ctx.fillStyle = shadeColor(color, -0.18);
       ctx.fillRect(0, 0, w, 4); ctx.fillRect(0, h - 4, w, 4); ctx.fillRect(0, 0, 4, h);
       ctx.fillRect(0, h / 2 - 1, w - 34, 2);
-      // 옥상 물탱크 + 에어컨 실외기
       pxCircle(ctx, 30, 30, 10, '#dfe3e6');
       pxCircle(ctx, 30, 30, 6, '#c9ced3');
       ctx.fillStyle = '#eceae4';
       ctx.fillRect(70, 18, 22, 14); ctx.fillRect(110, 90, 22, 14);
-      ctx.fillStyle = '#6b6f75';
       pxCircle(ctx, 81, 25, 4, '#6b6f75');
       pxCircle(ctx, 121, 97, 4, '#6b6f75');
-      // 창문 점 (위층 창문)
       ctx.fillStyle = '#2e4a5c';
-      for (var yy = 16; yy < h - 10; yy += 26) {
-        ctx.fillRect(w - 52, yy, 8, 10);
-      }
-      // 가게 앞면 (오른쪽): 차양 줄무늬 + 셔터
+      for (var yy = 16; yy < h - 10; yy += 26) ctx.fillRect(w - 52, yy, 8, 10);
       ctx.fillStyle = AWNING_COLORS[v];
       ctx.fillRect(w - 30, 0, 12, h);
       ctx.fillStyle = '#ffffff';
@@ -218,8 +210,8 @@ function makeObjectTextures(scene) {
     });
   });
 
-  // ----- allAbut 빌딩 (9 x 8 타일, 네이비 + 골드 테두리, 왼쪽이 유리 정면 + 문) -----
-  makeCanvasTexture(scene, ASSETS.objects.allabutBuilding, 9 * T, 8 * T, function (ctx, w, h) {
+  // ----- allAbut 빌딩 (7 x 7 타일, 네이비 + 골드 테두리, 왼쪽이 유리 정면 + 문) -----
+  makeCanvasTexture(scene, ASSETS.objects.allabutBuilding, 7 * T, 7 * T, function (ctx, w, h) {
     ctx.fillStyle = '#0b2350';
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#12306a';
@@ -227,7 +219,6 @@ function makeObjectTextures(scene) {
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, w - 4, h - 4);
-    // 유리 정면 (왼쪽)
     ctx.fillStyle = '#5d8fc4';
     ctx.fillRect(4, 4, 26, h - 8);
     ctx.fillStyle = '#8fb8e0';
@@ -235,7 +226,7 @@ function makeObjectTextures(scene) {
     ctx.fillStyle = '#D4AF37';
     for (var fy = 4; fy < h; fy += 32) ctx.fillRect(4, fy, 26, 2);
     ctx.fillRect(28, 4, 2, h - 8);
-    // 문 (왼쪽 가운데, 3~4번째 칸)
+    // 문 (왼쪽, 4~5번째 칸)
     ctx.fillStyle = '#D4AF37';
     ctx.fillRect(0, 3 * T - 4, 14, 2 * T + 8);
     ctx.fillStyle = '#ffe6b8';
@@ -256,7 +247,6 @@ function makeObjectTextures(scene) {
     ctx.fillRect(10, 24, w - 20, 22);
     ctx.fillStyle = '#4c6f86';
     for (var x = 14; x < w - 20; x += 40) ctx.fillRect(x, 26, 30, 18);
-    // 가운데 계단 (7~8번째 칸)
     ctx.fillStyle = '#b5b1a7';
     ctx.fillRect(7 * T, 56, 2 * T, h - 56);
     ctx.fillStyle = '#9d998f';
@@ -266,62 +256,66 @@ function makeObjectTextures(scene) {
     ctx.fillRect(9 * T, 56, 4, h - 56);
   });
 
-  // ----- 나무 (초록 원, 아래 1칸 차지 + 잎이 위로 걸침) -----
-  makeCanvasTexture(scene, ASSETS.objects.tree, 48, 60, function (ctx) {
-    pxCircle(ctx, 24, 54, 9, 'rgba(0,0,0,0.22)');
-    ctx.fillStyle = '#7a5a3a';
-    ctx.fillRect(21, 32, 6, 22);
-    pxCircle(ctx, 24, 22, 20, '#2f6b35');
-    pxCircle(ctx, 20, 18, 14, '#3f8a45');
-    pxCircle(ctx, 30, 24, 10, '#4e9c52');
-    pxCircle(ctx, 18, 14, 5, '#66b56a');
+  // ----- 나무 (아래 1칸 차지 + 큰 잎이 위로 걸침, 캐릭터보다 키가 큼) -----
+  makeCanvasTexture(scene, ASSETS.objects.tree, 64, 88, function (ctx) {
+    pxCircle(ctx, 32, 82, 12, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = '#6b4d30';
+    ctx.fillRect(27, 46, 10, 36);
+    ctx.fillStyle = '#7f5c3a';
+    ctx.fillRect(27, 46, 4, 36);
+    pxCircle(ctx, 32, 30, 28, '#2a5e30');
+    pxCircle(ctx, 27, 25, 21, '#3f8a45');
+    pxCircle(ctx, 41, 33, 15, '#4e9c52');
+    pxCircle(ctx, 22, 18, 8, '#66b56a');
+    pxCircle(ctx, 40, 22, 5, '#5aa95f');
   });
 
   // ----- 가로등 -----
-  makeCanvasTexture(scene, ASSETS.objects.lamp, 32, 64, function (ctx) {
-    pxCircle(ctx, 16, 60, 6, 'rgba(0,0,0,0.2)');
+  makeCanvasTexture(scene, ASSETS.objects.lamp, 32, 88, function (ctx) {
+    pxCircle(ctx, 16, 84, 7, 'rgba(0,0,0,0.2)');
     ctx.fillStyle = '#3b3f45';
-    ctx.fillRect(14, 10, 4, 52);
-    ctx.fillRect(8, 8, 16, 6);
-    pxCircle(ctx, 16, 12, 9, 'rgba(255,214,140,0.35)');
+    ctx.fillRect(14, 12, 4, 74);
+    ctx.fillRect(6, 8, 20, 7);
+    pxCircle(ctx, 16, 14, 11, 'rgba(255,214,140,0.35)');
     ctx.fillStyle = '#ffe2a8';
-    ctx.fillRect(10, 12, 12, 3);
+    ctx.fillRect(8, 14, 16, 3);
   });
 
   // ----- 노점 수레 (파라솔 + 수레) -----
-  makeCanvasTexture(scene, ASSETS.objects.foodCart, 40, 48, function (ctx) {
-    pxCircle(ctx, 20, 44, 10, 'rgba(0,0,0,0.2)');
+  makeCanvasTexture(scene, ASSETS.objects.foodCart, 48, 64, function (ctx) {
+    pxCircle(ctx, 24, 59, 13, 'rgba(0,0,0,0.2)');
     ctx.fillStyle = '#c0392b';
-    ctx.fillRect(6, 26, 28, 14);
+    ctx.fillRect(6, 34, 36, 18);
     ctx.fillStyle = '#d7dbdf';
-    ctx.fillRect(5, 24, 30, 3);
+    ctx.fillRect(4, 31, 40, 4);
+    ctx.fillStyle = '#cfe8f2';
+    ctx.fillRect(10, 22, 18, 10);
     ctx.fillStyle = '#2b2b2b';
-    ctx.fillRect(6, 40, 6, 6); ctx.fillRect(28, 40, 6, 6);
-    // 파라솔 (노랑/흰 줄무늬)
+    ctx.fillRect(6, 52, 8, 8); ctx.fillRect(34, 52, 8, 8);
     ctx.fillStyle = '#dddddd';
-    ctx.fillRect(19, 10, 2, 16);
-    pxCircle(ctx, 20, 10, 16, '#f2c14e');
+    ctx.fillRect(23, 12, 2, 20);
+    pxCircle(ctx, 24, 12, 20, '#f2c14e');
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(4, 9, 32, 3);
-    ctx.fillRect(18, -6, 4, 32);
+    ctx.fillRect(4, 10, 40, 4);
+    ctx.fillRect(22, -8, 4, 40);
   });
 
-  // ----- 뚝뚝 (위에서 본 작은 주황 차, 위쪽을 향함) -----
-  makeCanvasTexture(scene, ASSETS.objects.tuktuk, 32, 48, function (ctx) {
-    pxCircle(ctx, 16, 42, 12, 'rgba(0,0,0,0.22)');
+  // ----- 뚝뚝 (위에서 본 주황 차, 위쪽을 향함) -----
+  makeCanvasTexture(scene, ASSETS.objects.tuktuk, 44, 64, function (ctx) {
+    pxCircle(ctx, 22, 56, 17, 'rgba(0,0,0,0.22)');
     ctx.fillStyle = '#1e1f22';
-    ctx.fillRect(13, 2, 6, 6); ctx.fillRect(3, 32, 5, 9); ctx.fillRect(24, 32, 5, 9);
+    ctx.fillRect(18, 2, 8, 8); ctx.fillRect(3, 42, 7, 12); ctx.fillRect(34, 42, 7, 12);
     ctx.fillStyle = '#e8711c';
-    ctx.fillRect(10, 6, 12, 12);
-    ctx.fillRect(5, 16, 22, 26);
+    ctx.fillRect(13, 8, 18, 16);
+    ctx.fillRect(7, 22, 30, 34);
     ctx.fillStyle = '#c45a10';
-    ctx.fillRect(4, 18, 24, 22);
+    ctx.fillRect(6, 24, 32, 30);
     ctx.fillStyle = '#7a1f2b';
-    ctx.fillRect(8, 30, 16, 8);
+    ctx.fillRect(11, 40, 22, 10);
     ctx.fillStyle = '#9fd0e6';
-    ctx.fillRect(10, 14, 12, 3);
+    ctx.fillRect(13, 19, 18, 4);
     ctx.fillStyle = '#fff6d0';
-    ctx.fillRect(14, 4, 4, 2);
+    ctx.fillRect(19, 5, 6, 3);
   });
 
   // ----- CNC 기계 (4 x 3 타일) -----
@@ -374,7 +368,7 @@ function makeObjectTextures(scene) {
   });
 
   // ----- 04: 모니터 벽 -----
-  makeCanvasTexture(scene, ASSETS.objects.monitors, 6 * T, 40, function (ctx, w, h) {
+  makeCanvasTexture(scene, ASSETS.objects.monitors, 6 * T, 40, function (ctx) {
     for (var i = 0; i < 3; i++) {
       var x = 4 + i * 62;
       ctx.fillStyle = '#1b1e24';
@@ -413,15 +407,15 @@ function makeObjectTextures(scene) {
     ctx.fillStyle = '#D4AF37';
     ctx.fillRect(3, 28, 26, 2);
   });
-  makeCanvasTexture(scene, ASSETS.objects.plant, 32, 44, function (ctx) {
-    pxCircle(ctx, 16, 40, 8, 'rgba(0,0,0,0.18)');
+  makeCanvasTexture(scene, ASSETS.objects.plant, 32, 56, function (ctx) {
+    pxCircle(ctx, 16, 52, 9, 'rgba(0,0,0,0.18)');
     ctx.fillStyle = '#f4f1ea';
-    ctx.fillRect(9, 26, 14, 14);
+    ctx.fillRect(8, 34, 16, 18);
     ctx.fillStyle = '#D4AF37';
-    ctx.fillRect(9, 26, 14, 2);
-    pxCircle(ctx, 16, 16, 11, '#3e8a4b');
-    pxCircle(ctx, 12, 12, 6, '#55a862');
-    pxCircle(ctx, 21, 18, 5, '#2f7140');
+    ctx.fillRect(8, 34, 16, 2);
+    pxCircle(ctx, 16, 20, 14, '#3e8a4b');
+    pxCircle(ctx, 11, 15, 7, '#55a862');
+    pxCircle(ctx, 22, 23, 6, '#2f7140');
   });
 
   // ----- EXIT 문 (2 x 1 타일) -----
@@ -480,7 +474,7 @@ function makeUiTextures(scene) {
 
 
 // ================================================================
-//  캐릭터 (32x32, 4방향 x 걷기 3프레임)
+//  캐릭터 (한 프레임 32 x 64 = 타일 2칸 높이, 4방향 x 걷기 3프레임)
 //  아바타 설정(피부색, 머리 모양/색, 옷)을 받아서 칠해요
 // ================================================================
 var CHAR_DIRS = ['down', 'left', 'right', 'up'];
@@ -494,6 +488,7 @@ function characterLook(config) {
     hairColor: getCatalogItem('hairColor', c.hairColor).color,
     hair: c.hair,
     female: c.gender === 'female',
+    outfit: c.outfit,
     body: outfit.body,
     trim: outfit.trim,
     legs: outfit.legs,
@@ -506,11 +501,11 @@ function ensureCharacterTexture(scene, config) {
   var look = characterLook(config);
   var key = ASSETS.characterPrefix + hashString(JSON.stringify(look));
   if (!scene.textures.exists(key)) {
-    var tex = makeCanvasTexture(scene, key, 3 * TILE, 4 * TILE, function (ctx) {
+    var tex = makeCanvasTexture(scene, key, 3 * CHAR_W, 4 * CHAR_H, function (ctx) {
       CHAR_DIRS.forEach(function (dir, row) {
         for (var step = 0; step < 3; step++) {
           ctx.save();
-          ctx.translate(step * TILE, row * TILE);
+          ctx.translate(step * CHAR_W, row * CHAR_H);
           drawCharacterFrame(ctx, dir, step, look);
           ctx.restore();
         }
@@ -518,7 +513,7 @@ function ensureCharacterTexture(scene, config) {
     });
     // 프레임 번호: 줄(방향) * 3 + 걸음
     for (var i = 0; i < 12; i++) {
-      tex.add(i, 0, (i % 3) * TILE, Math.floor(i / 3) * TILE, TILE, TILE);
+      tex.add(i, 0, (i % 3) * CHAR_W, Math.floor(i / 3) * CHAR_H, CHAR_W, CHAR_H);
     }
   }
   CHAR_DIRS.forEach(function (dir, row) {
@@ -540,125 +535,292 @@ function hashString(s) {
   return (h >>> 0).toString(36);
 }
 
-// 캐릭터 한 프레임 그리기
+// 캐릭터 한 프레임 그리기 (32 x 64, 발바닥 y = 60)
 // dir: down/left/right/up, step: 0 = 서 있음, 1 = 왼발, 2 = 오른발
 function drawCharacterFrame(ctx, dir, step, look) {
   var swing = step === 1 ? 1 : (step === 2 ? -1 : 0);
   var side = dir === 'left' || dir === 'right';
   var px = function (color, x, y, w, h) { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
+  var outline = '#1c1d26';
+  var bodyDark = shadeColor(look.body, -0.18);
+  var skinDark = shadeColor(look.skin, -0.18);
 
   // 그림자
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(16, 29, 8, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.24)';
+  ctx.beginPath(); ctx.ellipse(16, 60, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
 
-  // 다리 + 신발
+  // ----- 다리 + 신발 -----
   if (side) {
-    px(look.legs, 14 + swing * 2, 22, 4, 6);
-    px(look.legs, 14 - swing * 2, 22, 4, 6);
-    px(look.shoes, 14 + swing * 2, 27, 4, 2);
-    px(look.shoes, 14 - swing * 2, 27, 4, 2);
+    var front = 13 + swing * 3, back = 13 - swing * 3;
+    px(shadeColor(look.legs, -0.15), back, 48, 6, 10);
+    px(shadeColor(look.shoes, -0.1), back, 56, 7, 3);
+    px(look.legs, front, 48, 6, 10);
+    px(look.shoes, front + (dir === 'left' ? -1 : 0), 56, 7, 3);
   } else {
-    px(look.legs, 12, 22 - Math.max(0, swing), 3, 6);
-    px(look.legs, 17, 22 - Math.max(0, -swing), 3, 6);
-    px(look.shoes, 12, 27 - Math.max(0, swing), 3, 2);
-    px(look.shoes, 17, 27 - Math.max(0, -swing), 3, 2);
+    var liftL = swing > 0 ? 2 : 0, liftR = swing < 0 ? 2 : 0;
+    px(look.legs, 11, 48 - liftL, 4, 10);
+    px(look.legs, 17, 48 - liftR, 4, 10);
+    px(look.shoes, 10, 56 - liftL, 6, 3);
+    px(look.shoes, 16, 56 - liftR, 6, 3);
   }
 
-  // 몸통 (여자는 아래가 살짝 퍼진 치마 라인)
-  px(look.body, 10, 14, 12, 9);
-  if (look.female) px(look.body, 9, 20, 14, 4);
-  px(shadeColor(look.body, -0.15), 10, 22, 12, 1);
+  // ----- 몸통 (테두리 + 옷 색 + 그림자) -----
+  px(outline, 8, 33, 16, 17);
+  px(look.body, 9, 34, 14, 15);
+  px(bodyDark, 21, 34, 2, 15);
+  if (look.female) {           // 치마 라인
+    px(outline, 7, 43, 18, 8);
+    px(look.body, 8, 43, 16, 7);
+    px(bodyDark, 22, 43, 2, 7);
+  }
+  px(bodyDark, 9, 47, 14, 2);
 
-  // 팔 (걸을 때 앞뒤로)
+  // ----- 팔 -----
   if (side) {
-    px(look.body, 14 - swing, 15, 4, 6);
-    px(look.skin, 14 - swing, 21, 4, 2);
+    var ax = 13 - swing * 2;
+    px(outline, ax - 1, 34, 6, 12);
+    px(look.body, ax, 35, 4, 10);
+    px(look.skin, ax, 44, 4, 3);
   } else {
-    px(look.body, 8, 15 + swing, 2, 6);
-    px(look.body, 22, 15 - swing, 2, 6);
-    px(look.skin, 8, 21 + swing, 2, 2);
-    px(look.skin, 22, 21 - swing, 2, 2);
+    px(outline, 5, 34 + swing, 5, 12);
+    px(outline, 22, 34 - swing, 5, 12);
+    px(look.body, 6, 35 + swing, 3, 9);
+    px(look.body, 23, 35 - swing, 3, 9);
+    px(look.skin, 6, 44 + swing, 3, 3);
+    px(look.skin, 23, 44 - swing, 3, 3);
   }
 
-  // 옷 디테일 (앞모습: 목 V / 옆모습: 단추줄)
+  // ----- 옷 디테일 -----
   if (dir === 'down') {
-    px(look.trim, 15, 14, 2, 3);
-    px(look.trim, 14, 14, 1, 2);
-    px(look.trim, 17, 14, 1, 2);
-  } else if (side) {
-    px(look.trim, dir === 'left' ? 11 : 20, 15, 1, 6);
-  }
-
-  // 머리
-  var hx = dir === 'left' ? 15 : (dir === 'right' ? 17 : 16);
-  pxCircle(ctx, hx, 8, 7, look.skin);
-
-  // 얼굴 (뒷모습은 없음)
-  if (dir === 'down') {
-    px('#1a1a2e', hx - 4, 8, 2, 2);
-    px('#1a1a2e', hx + 2, 8, 2, 2);
-    px('#b5525f', hx - 1, 12, 3, 1);
-    if (look.female) {
-      px('rgba(255,120,140,0.5)', hx - 6, 10, 2, 1);
-      px('rgba(255,120,140,0.5)', hx + 4, 10, 2, 1);
+    // 목 V
+    var v = look.outfit === 'outfit_scrubs' ? look.skin : look.trim;
+    px(v, 14, 34, 4, 2); px(v, 15, 36, 2, 2);
+    if (look.outfit === 'outfit_labcoat' || look.outfit === 'outfit_polo') {
+      px('#8d96a3', 16, 40, 1, 1); px('#8d96a3', 16, 44, 1, 1);
+    } else if (look.outfit === 'outfit_suit') {
+      px('#D4AF37', 15, 37, 2, 7);
+    } else if (look.outfit === 'outfit_hoodie') {
+      px('#f2f4f7', 13, 36, 1, 5); px('#f2f4f7', 18, 36, 1, 5);
+      px(bodyDark, 11, 43, 10, 3);  // 캥거루 주머니
     }
-  } else if (dir === 'left') {
-    px('#1a1a2e', hx - 5, 8, 2, 2);
-  } else if (dir === 'right') {
-    px('#1a1a2e', hx + 3, 8, 2, 2);
+  } else if (side) {
+    px(look.trim, dir === 'left' ? 10 : 21, 35, 1, 8);
   }
 
-  drawHair(ctx, look, dir, hx);
+  // ----- 목 -----
+  px(skinDark, 14, 31, 4, 3);
+
+  // ----- 머리 (테두리 + 피부) -----
+  var hx = dir === 'left' ? 15 : (dir === 'right' ? 17 : 16);
+  var hy = 19;
+  pxCircle(ctx, hx, hy, 13, outline);
+  pxCircle(ctx, hx, hy, 12, look.skin);
+  px(skinDark, hx - 9, hy + 8, 18, 2);   // 턱 아래 그늘
+
+  // ----- 얼굴 -----
+  var eye = '#1f1f2e';
+  if (dir === 'down') {
+    px(eye, hx - 6, hy - 1, 3, 4);
+    px(eye, hx + 3, hy - 1, 3, 4);
+    px('#ffffff', hx - 6, hy - 1, 1, 1);
+    px('#ffffff', hx + 3, hy - 1, 1, 1);
+    px(shadeColor(look.hairColor, 0.1), hx - 6, hy - 4, 3, 1);   // 눈썹
+    px(shadeColor(look.hairColor, 0.1), hx + 3, hy - 4, 3, 1);
+    px(skinDark, hx, hy + 3, 1, 1);                               // 코
+    px('#b5525f', hx - 2, hy + 6, 4, 1);                          // 입
+    px('#b5525f', hx - 3, hy + 5, 1, 1); px('#b5525f', hx + 2, hy + 5, 1, 1);
+    if (look.female) {
+      px('rgba(255,120,140,0.55)', hx - 10, hy + 3, 3, 2);        // 볼터치
+      px('rgba(255,120,140,0.55)', hx + 7, hy + 3, 3, 2);
+      px(eye, hx - 7, hy - 2, 1, 1); px(eye, hx + 6, hy - 2, 1, 1); // 속눈썹
+    }
+  } else if (side) {
+    var s = dir === 'left' ? -1 : 1;
+    var ex = hx + s * 6 - (s < 0 ? 2 : 0);
+    px(eye, ex, hy - 1, 3, 4);
+    px('#ffffff', ex + (s < 0 ? 0 : 2), hy - 1, 1, 1);
+    px(shadeColor(look.hairColor, 0.1), ex, hy - 4, 3, 1);
+    px('#b5525f', hx + s * 7 - (s < 0 ? 2 : 0), hy + 6, 3, 1);
+    if (look.female) px('rgba(255,120,140,0.55)', hx + s * 3 - 1, hy + 3, 3, 2);
+    px(skinDark, hx - s * 2, hy, 2, 4);                            // 귀
+  }
+
+  drawHair(ctx, look, dir, hx, hy);
 }
 
-// 머리카락 (스타일별)
-function drawHair(ctx, look, dir, hx) {
+// 머리카락 (스타일별). 머리 원: 중심 (hx, hy), 반지름 13
+function drawHair(ctx, look, dir, hx, hy) {
   var c = look.hairColor;
-  var px = function (x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
-  var back = dir === 'up';
+  var dark = shadeColor(c, -0.25);
+  var px = function (x, y, w, h, color) { ctx.fillStyle = color || c; ctx.fillRect(x, y, w, h); };
   var style = look.hair;
-  if (style === 'hair_bald') return;
+  var R = 13;
 
-  // 기본 모자 모양 (윗머리)
-  function cap(depth) {
-    for (var y = 1; y <= depth; y++) {
-      var half = Math.round(Math.sqrt(49 - (y - 8) * (y - 8)));
-      px(hx - half, y, half * 2, 1);
-    }
-  }
-
-  if (back) {
-    // 뒷모습: 머리 전체를 덮음
-    cap(12);
-    if (style === 'hair_long') px(hx - 7, 10, 14, 10);
-    if (style === 'hair_bob') px(hx - 7, 10, 14, 4);
-    if (style === 'hair_ponytail') { px(hx - 2, 12, 4, 6); px(hx - 1, 18, 2, 2); }
-    if (style === 'hair_curly') { for (var i = -6; i <= 6; i += 3) px(hx + i - 1, 0, 3, 2); }
+  if (style === 'hair_bald') {
+    px(hx - 6, hy - 9, 4, 2, 'rgba(255,255,255,0.35)');   // 반짝
     return;
   }
 
-  if (style === 'hair_short') {
-    cap(4);
-  } else if (style === 'hair_sidepart') {
-    cap(4);
-    px(hx - 6, 4, 7, 2);
-  } else if (style === 'hair_curly') {
-    cap(5);
-    for (var k = -7; k <= 6; k += 3) px(hx + k, 0, 3, 3);
-    px(hx - 8, 3, 2, 5); px(hx + 6, 3, 2, 5);
-  } else if (style === 'hair_bob') {
-    cap(4);
-    px(hx - 8, 4, 3, 9); px(hx + 5, 4, 3, 9);
-  } else if (style === 'hair_long') {
-    cap(4);
-    px(hx - 8, 4, 3, 15); px(hx + 5, 4, 3, 15);
-  } else if (style === 'hair_ponytail') {
-    cap(4);
-    if (dir === 'left') px(hx + 6, 4, 3, 9);
-    else if (dir === 'right') px(hx - 9, 4, 3, 9);
-    else { px(hx - 8, 4, 2, 4); px(hx + 6, 4, 2, 4); }
+  // 원 모양을 따라 윗머리 채우기 (y 줄 0 ~ toY)
+  function cap(toY, fromX, toX) {
+    for (var y = hy - R; y <= toY; y++) {
+      var half = Math.round(Math.sqrt(Math.max(0, R * R - (y - hy) * (y - hy))));
+      var x0 = hx - half, x1 = hx + half;
+      if (fromX !== undefined) x0 = Math.max(x0, fromX);
+      if (toX !== undefined) x1 = Math.min(x1, toX);
+      if (x1 > x0) px(x0, y, x1 - x0, 1);
+    }
   }
-  // 옆모습이면 뒤통수 쪽 머리
-  if (dir === 'left') px(hx + 3, 2, 4, 8);
-  if (dir === 'right') px(hx - 7, 2, 4, 8);
+
+  if (dir === 'up') {
+    // 뒷모습: 머리 전체를 덮음
+    cap(hy + 9);
+    px(hx - 10, hy + 6, 20, 2, dark);
+    if (style === 'hair_long') { px(hx - 12, hy + 6, 24, 22); px(hx - 12, hy + 26, 24, 2, dark); }
+    if (style === 'hair_bob') px(hx - 13, hy + 4, 26, 8);
+    if (style === 'hair_ponytail') { px(hx - 3, hy + 8, 6, 14); px(hx - 2, hy + 22, 4, 3); px(hx - 3, hy + 7, 6, 2, '#D4AF37'); }
+    if (style === 'hair_curly') { for (var i = -12; i <= 12; i += 5) { ctx.fillStyle = c; pxCircle(ctx, hx + i, hy - 12, 3, c); } }
+    return;
+  }
+
+  // 옆모습: 뒤통수 쪽 머리
+  if (dir === 'left') cap(hy + 8, hx + 1);
+  if (dir === 'right') cap(hy + 8, undefined, hx - 1);
+
+  if (style === 'hair_short') {
+    cap(hy - 7);
+    if (dir === 'down') { px(hx - 12, hy - 7, 2, 6); px(hx + 10, hy - 7, 2, 6); }
+  } else if (style === 'hair_sidepart') {
+    cap(hy - 7);
+    if (dir === 'down') { px(hx - 11, hy - 7, 12, 3); px(hx - 12, hy - 7, 2, 7); px(hx + 10, hy - 7, 2, 6); }
+    else px(hx - 9, hy - 7, 18, 2);
+    px(hx + 2, hy - 12, 1, 5, dark);  // 가르마
+  } else if (style === 'hair_curly') {
+    cap(hy - 6);
+    for (var k = -12; k <= 12; k += 5) pxCircle(ctx, hx + k, hy - 11, 3, c);
+    pxCircle(ctx, hx - 12, hy - 4, 3, c);
+    pxCircle(ctx, hx + 12, hy - 4, 3, c);
+  } else if (style === 'hair_bob') {
+    cap(hy - 6);
+    if (dir === 'down') { px(hx - 14, hy - 7, 4, 17); px(hx + 10, hy - 7, 4, 17); px(hx - 9, hy - 6, 18, 2); }
+    else px(hx - 13, hy - 7, 26, 3);
+  } else if (style === 'hair_long') {
+    cap(hy - 6);
+    if (dir === 'down') { px(hx - 14, hy - 7, 4, 30); px(hx + 10, hy - 7, 4, 30); }
+    else px(dir === 'left' ? hx + 4 : hx - 12, hy - 4, 8, 28);
+  } else if (style === 'hair_ponytail') {
+    cap(hy - 6);
+    if (dir === 'down') { px(hx - 13, hy - 6, 3, 6); px(hx + 10, hy - 6, 3, 6); }
+    else {
+      var tx = dir === 'left' ? hx + 11 : hx - 15;
+      px(tx, hy - 6, 4, 18);
+      px(tx, hy - 7, 4, 2, '#D4AF37');
+    }
+  }
+}
+
+
+// ================================================================
+//  어깨 펫 (한 프레임 16 x 16, 2열(기본·동작) x 4줄(아래·왼·오른·위))
+// ================================================================
+var PET_COLORS = {
+  pet_cat:         { body: '#e8913a', dark: '#b8661f', light: '#f6c58a' },
+  pet_parrot:      { body: '#3fb34f', dark: '#257a33', light: '#e84a3c' },
+  pet_hamster:     { body: '#e2b07a', dark: '#b07f4f', light: '#fbefe0' },
+  pet_puppy:       { body: '#d9b382', dark: '#8a5a33', light: '#f3e2c7' },
+  pet_tooth_buddy: { body: '#fbfbf7', dark: '#c9ccd2', light: '#ffffff' }
+};
+
+function makePetTextures(scene) {
+  Object.keys(ASSETS.pets).forEach(function (petId) {
+    var key = ASSETS.pets[petId];
+    var tex = makeCanvasTexture(scene, key, 2 * PET_SIZE, 4 * PET_SIZE, function (ctx) {
+      CHAR_DIRS.forEach(function (dir, row) {
+        for (var action = 0; action < 2; action++) {
+          ctx.save();
+          ctx.translate(action * PET_SIZE, row * PET_SIZE);
+          drawPetFrame(ctx, petId, dir, action === 1);
+          ctx.restore();
+        }
+      });
+    });
+    for (var i = 0; i < 8; i++) {
+      tex.add(i, 0, (i % 2) * PET_SIZE, Math.floor(i / 2) * PET_SIZE, PET_SIZE, PET_SIZE);
+    }
+  });
+}
+
+// 펫 한 프레임 그리기 (16 x 16). action = 가끔 하는 작은 동작
+// 왼쪽 모습은 오른쪽 모습을 거울처럼 뒤집어서 그려요
+function drawPetFrame(ctx, petId, dir, action) {
+  var col = PET_COLORS[petId];
+  if (!col) return;
+  if (dir === 'left') {
+    ctx.save();
+    ctx.translate(16, 0);
+    ctx.scale(-1, 1);
+    drawPetFrame(ctx, petId, 'right', action);
+    ctx.restore();
+    return;
+  }
+  var px = function (color, x, y, w, h) { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
+  var eye = '#1f1f2e', ol = '#2a2324';
+  var front = dir === 'down', back = dir === 'up';
+
+  if (petId === 'pet_cat') {
+    // 꼬리 (동작: 위로 휙)
+    if (action) px(col.dark, back ? 7 : 1, 2, 2, 8); else px(col.dark, back ? 6 : 1, 9, 5, 2);
+    pxCircle(ctx, 8, 11, 4, col.body);                 // 몸
+    pxCircle(ctx, back ? 8 : 9, 6, 4, col.body);        // 머리
+    px(col.body, back ? 4 : 5, 1, 2, 3); px(col.body, back ? 10 : 11, 1, 2, 3);   // 귀
+    px(col.dark, back ? 5 : 6, 6, 6, 1);                 // 줄무늬
+    if (front) { px(eye, 6, 6, 1, 2); px(eye, 10, 6, 1, 2); px('#e57a8a', 8, 8, 1, 1); }
+    else if (!back) { px(eye, 11, 6, 1, 2); px('#e57a8a', 13, 8, 1, 1); }
+  } else if (petId === 'pet_parrot') {
+    // 날개 (동작: 퍼덕)
+    if (action) { px(col.dark, 1, 6, 4, 3); px(col.dark, 11, 6, 4, 3); }
+    pxCircle(ctx, 8, 10, 4, col.body);
+    px(col.dark, 6, 13, 4, 3);                           // 꼬리깃
+    pxCircle(ctx, 8, 5, 3, col.light);                   // 빨간 머리
+    if (front) { px(eye, 6, 4, 1, 1); px(eye, 10, 4, 1, 1); px('#f2c14e', 7, 6, 2, 2); }
+    else if (!back) { px(eye, 9, 4, 1, 1); px('#f2c14e', 11, 5, 2, 2); }
+    px(col.dark, back ? 5 : 4, 9, 2, 4);                 // 날개
+  } else if (petId === 'pet_hamster') {
+    pxCircle(ctx, 8, 9, 6, col.body);
+    pxCircle(ctx, 8, 11, 4, col.light);                  // 배
+    px(col.dark, 3, 3, 3, 3); px(col.dark, 10, 3, 3, 3); // 귀
+    if (front) {
+      px(eye, 5, 7, 1, 2); px(eye, 10, 7, 1, 2); px('#e57a8a', 7, 10, 2, 1);
+      if (action) { pxCircle(ctx, 3, 11, 3, col.light); pxCircle(ctx, 13, 11, 3, col.light); }   // 볼 빵빵
+    } else if (!back) {
+      px(eye, 11, 7, 1, 2);
+      if (action) pxCircle(ctx, 12, 11, 3, col.light);
+    }
+  } else if (petId === 'pet_puppy') {
+    pxCircle(ctx, 8, 11, 4, col.body);
+    pxCircle(ctx, back ? 8 : 9, 6, 4, col.body);
+    // 귀 (동작: 쫑긋)
+    if (action) { px(col.dark, 4, 0, 2, 4); px(col.dark, 11, 0, 2, 4); }
+    else { px(col.dark, 3, 4, 3, 5); px(col.dark, 11, 4, 3, 5); }
+    px(col.dark, back ? 7 : 1, back ? 12 : 9, 3, 2);     // 꼬리
+    if (front) { px(eye, 6, 6, 1, 2); px(eye, 10, 6, 1, 2); px(eye, 8, 8, 1, 1); px('#e57a8a', 8, 9, 1, 1); }
+    else if (!back) { px(eye, 11, 6, 1, 2); px(eye, 13, 8, 1, 1); }
+  } else if (petId === 'pet_tooth_buddy') {
+    // 하얀 치아: 둥근 머리(크라운) + 뿌리 두 개
+    pxCircle(ctx, 8, 7, 6, ol);
+    pxCircle(ctx, 8, 7, 5, col.body);
+    px(ol, 3, 9, 4, 6); px(ol, 9, 9, 4, 6);
+    px(col.body, 4, 9, 2, 5); px(col.body, 10, 9, 2, 5);
+    px(col.body, 4, 8, 8, 3);
+    px(col.dark, 6, 11, 4, 1);
+    if (front) {
+      px(eye, 5, 6, 2, 2); px(eye, 9, 6, 2, 2);
+      px('#ffffff', 5, 6, 1, 1); px('#ffffff', 9, 6, 1, 1);
+      px('rgba(255,120,140,0.6)', 4, 9, 1, 1); px('rgba(255,120,140,0.6)', 11, 9, 1, 1);
+    } else if (!back) {
+      px(eye, 10, 6, 2, 2); px('#ffffff', 10, 6, 1, 1);
+    }
+    // 반짝임 (동작)
+    if (action) { px('#D4AF37', 13, 1, 1, 3); px('#D4AF37', 12, 2, 3, 1); px('#fff4c2', 13, 2, 1, 1); }
+  }
 }

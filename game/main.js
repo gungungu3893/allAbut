@@ -83,8 +83,8 @@ function openGame(profile, opts) {
   if (target && GameState.current) {
     GameState.current.scene.start(target.key, target.data);
   } else if (GameState.current && GameState.current.player) {
-    // Edit Avatar 갔다 온 경우: 같은 위치에서 바뀐 모습으로
-    GameState.current.player.setLook(GameState.profile && GameState.profile.avatar);
+    // Edit Avatar 갔다 온 경우: 같은 위치에서 바뀐 모습(펫·이름표 포함)으로
+    GameState.current.player.setProfile(GameState.profile);
   }
 }
 
@@ -117,14 +117,16 @@ function loadGameLocation() {
 
 
 // ================================================================
-//  줌: 타일이 너무 작아 보이지 않게
-//  모바일은 가로로 약 13타일, PC 는 약 24타일이 보이게 (세로는 최소 15타일)
+//  줌: 캐릭터가 크게 보이게
+//  - 모바일: 화면 가로에 약 9~10타일
+//  - PC: 가로 약 18타일 (세로는 최소 10타일)
+//  - 픽셀아트가 선명하도록 정수 배율(1, 2, 3배)에 가까우면 정수로 맞춰요
 // ================================================================
 function computeZoom(w, h) {
-  var tilesAcross = w < 768 ? 13 : 24;
-  var z = w / (tilesAcross * TILE);
-  if (w >= 768) z = Math.min(z, h / (15 * TILE));
-  z = Math.max(1, Math.min(3, z));
+  var z = w < 768 ? w / (9.5 * TILE) : Math.min(w / (18 * TILE), h / (10 * TILE));
+  z = Math.max(1, Math.min(4, z));
+  var whole = Math.round(z);
+  if (Math.abs(z - whole) <= z * 0.15) return whole;   // 정수 배율 우선
   return Math.floor(z * 4) / 4;
 }
 
