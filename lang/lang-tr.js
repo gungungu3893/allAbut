@@ -515,6 +515,29 @@ LANG.tr = {
   guide_faq5_q: 'Dili nasıl değiştirebilirim?',
   guide_faq5_a: 'Sağ üstteki 🌐 menüsünden (mobilde "Menü"yü açın) veya Profil sayfasından bir dil seçin. 9 dil kullanılabilir.',
 
+  // ----- LINE 알림 연결 (Profile · 홈) -----
+  line_title: 'LINE bildirimleri',
+  line_desc: 'Siparişiniz onaylandığında, bir tasarım onayınızı beklediğinde ve kargoya verildiğinde LINE mesajı alın.',
+  line_step1: 'LINE\'da allAbut\'u arkadaş olarak ekleyin',
+  line_add_friend: 'LINE\'da arkadaş ekle',
+  line_qr_hint: 'Ya da bu QR kodunu telefonunuzla tarayın',
+  line_step2: 'Bu kodu LINE sohbetinde gönderin',
+  line_copy: 'Kopyala',
+  line_copied: 'Kod kopyalandı.',
+  line_copy_manual: 'Lütfen seçili kodu kopyalayın.',
+  line_code_error: 'Bağlantı kodunuz yüklenemedi.',
+  line_step3: '"LINE\'a bağlandı" mesajını aldığınızda işlem tamamdır',
+  line_check_status: 'Gönderdim — durumu kontrol et',
+  line_not_yet: 'Henüz bağlanmadı. Lütfen kodu LINE sohbetinde gönderip tekrar deneyin.',
+  line_connected: 'LINE\'a bağlandı',
+  line_connected_desc: 'Sipariş bildirimlerini LINE üzerinden alacaksınız.',
+  line_disconnect: 'Bağlantıyı kes',
+  line_disconnect_confirm: 'LINE bildirimleri durdurulsun mu? İstediğiniz zaman yeniden bağlanabilirsiniz.',
+  line_disconnected: 'LINE bağlantısı kesildi.',
+  line_home_text: 'Sipariş bildirimlerini LINE\'dan alın',
+  line_home_btn: 'Bağlan',
+  review_admin_cancelled: 'allAbut tarafından iptal edildi',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -113,7 +113,7 @@ function cncNewDraft(profile) {
       clinic: profile.clinic_name || '',
       addr: profile.address || '',
       phone: profile.phone || '',
-      line_id: profile.line_user_id || ''
+      line_id: ''   // 연락용 LINE ID (글자). profiles.line_user_id 는 LINE 알림 연결용이라 여기 쓰지 않아요
     },
     saveToProfile: true,
     uploadId: cncRandomId(),
@@ -470,11 +470,11 @@ async function cncSubmitOrder(draft, onProgress) {
   // "내 프로필에 저장" 을 켰으면 배송 정보를 profiles 에도 저장 (실패해도 주문은 이미 완료)
   if (draft.saveToProfile) {
     try {
+      // (LINE ID 칸은 저장하지 않아요 — profiles.line_user_id 는 LINE 알림 연결 전용)
       await cncSaveProfile({
         clinic_name: d.clinic.trim(),
         address: d.addr.trim(),
-        phone: d.phone.trim(),
-        line_user_id: d.line_id.trim()
+        phone: d.phone.trim()
       });
     } catch (err) {
       console.warn('Profile save after order failed:', err);
@@ -660,11 +660,52 @@ async function cncCreditHistory(limit) {
   return cncCheck(await sb.from('credit_history').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false }).limit(limit || 50)) || [];
 }
 
-// profiles 에서 내 행 고치기. fields 예: { clinic_name, address, phone, tax_id, line_user_id, lang }
+// profiles 에서 내 행 고치기. fields 예: { clinic_name, address, phone, tax_id, lang }
+// (line_user_id 는 LINE 알림 연결 전용 — 서버(line-webhook)만 저장해요)
 async function cncSaveProfile(fields) {
   var uid = cncUserId();
   if (!uid) throw cncError('NOT_LOGGED_IN');
   var data = cncCheck(await sb.from('profiles').update(fields).eq('id', uid).select().maybeSingle());
+  if (data && window.APP) APP.profile = data;
+  return data;
+}
+
+
+
+// ================================================================
+// 12) LINE 알림 연결
+// ================================================================
+// 연결 방법: 고객이 allAbut LINE 공식계정을 친구추가 → 연결 코드(AB-XXXX)를 채팅에 보냄
+//          → 서버 함수 line-webhook 이 profiles.line_user_id 에 LINE 사용자 id 를 저장
+var LINE_ADD_FRIEND_URL = 'https://line.me/R/ti/p/@925caqxb';
+
+// 연결됐는지: LINE 사용자 id 모양(U + 16진수 32자리)일 때만 "연결됨"
+// (예전에 손으로 적어 둔 LINE ID 글자는 연결로 보지 않아요)
+function cncIsLineLinked(profile) {
+  return !!(profile && typeof profile.line_user_id === 'string' && /^U[0-9a-f]{32}$/.test(profile.line_user_id));
+}
+
+// 내 연결 코드 (DB 함수 get_my_line_link_code)
+async function cncGetLineLinkCode() {
+  var result = await sb.rpc('get_my_line_link_code');
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  var d = result.data;
+  if (d && typeof d === 'object') d = d.code || d.line_link_code || d.get_my_line_link_code || '';
+  return String(d || '');
+}
+
+// 연결 해제 (DB 함수 unlink_my_line)
+async function cncUnlinkLine() {
+  var result = await sb.rpc('unlink_my_line');
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  if (window.APP && APP.profile) APP.profile.line_user_id = null;
+}
+
+// 내 프로필 다시 읽기 (연결 상태 확인용)
+async function cncReloadProfile() {
+  var uid = cncUserId();
+  if (!uid) return null;
+  var data = cncCheck(await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
   if (data && window.APP) APP.profile = data;
   return data;
 }

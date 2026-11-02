@@ -515,6 +515,29 @@ LANG.ko = {
   guide_faq5_q: '언어는 어떻게 바꾸나요?',
   guide_faq5_a: '오른쪽 위 🌐 메뉴에서 언어를 고르거나(모바일에서는 "메뉴"를 열어 주세요) 내 정보에서 바꿀 수 있어요. 9개 언어를 지원해요.',
 
+  // ----- LINE 알림 연결 (Profile · 홈) -----
+  line_title: 'LINE 알림',
+  line_desc: '주문이 접수 확인되거나, 디자인 승인이 필요하거나, 발송되면 LINE으로 알려 드려요.',
+  line_step1: 'LINE에서 allAbut을 친구로 추가해 주세요',
+  line_add_friend: 'LINE 친구 추가',
+  line_qr_hint: '또는 휴대폰으로 이 QR 코드를 스캔해 주세요',
+  line_step2: 'LINE 채팅방에 이 코드를 보내 주세요',
+  line_copy: '복사',
+  line_copied: '코드를 복사했어요.',
+  line_copy_manual: '선택된 코드를 복사해 주세요.',
+  line_code_error: '연결 코드를 불러오지 못했어요.',
+  line_step3: '"LINE 연결 완료" 메시지를 받으면 끝이에요',
+  line_check_status: '보냈어요 — 연결 상태 확인',
+  line_not_yet: '아직 연결되지 않았어요. LINE 채팅방에 코드를 보낸 뒤 다시 시도해 주세요.',
+  line_connected: 'LINE 연결 완료',
+  line_connected_desc: '이제 주문 알림을 LINE으로 받을 수 있어요.',
+  line_disconnect: '연결 해제',
+  line_disconnect_confirm: 'LINE 알림을 그만 받을까요? 언제든 다시 연결할 수 있어요.',
+  line_disconnected: 'LINE 연결을 해제했어요.',
+  line_home_text: '주문 알림을 LINE으로 받아 보세요',
+  line_home_btn: '연결하기',
+  review_admin_cancelled: 'allAbut에서 취소',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

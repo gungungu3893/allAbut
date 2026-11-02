@@ -515,6 +515,29 @@ LANG.zh = {
   guide_faq5_q: '如何更改语言？',
   guide_faq5_a: '在右上角的 🌐 菜单中选择语言（手机上请先打开“菜单”），也可以在“个人资料”中更改。共支持 9 种语言。',
 
+  // ----- LINE 알림 연결 (Profile · 홈) -----
+  line_title: 'LINE 通知',
+  line_desc: '订单确认、设计需要您批准以及发货时，我们会通过 LINE 通知您。',
+  line_step1: '在 LINE 上添加 allAbut 为好友',
+  line_add_friend: '在 LINE 上加好友',
+  line_qr_hint: '或用手机扫描此二维码',
+  line_step2: '在 LINE 聊天中发送此代码',
+  line_copy: '复制',
+  line_copied: '代码已复制。',
+  line_copy_manual: '请复制已选中的代码。',
+  line_code_error: '无法加载您的连接码。',
+  line_step3: '收到“已连接 LINE”消息即完成',
+  line_check_status: '我已发送 — 查看状态',
+  line_not_yet: '尚未连接。请在 LINE 聊天中发送代码后重试。',
+  line_connected: '已连接 LINE',
+  line_connected_desc: '您将通过 LINE 收到订单通知。',
+  line_disconnect: '断开连接',
+  line_disconnect_confirm: '停止接收 LINE 通知？您可以随时重新连接。',
+  line_disconnected: 'LINE 已断开连接。',
+  line_home_text: '通过 LINE 接收订单通知',
+  line_home_btn: '连接',
+  review_admin_cancelled: '由 allAbut 取消',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

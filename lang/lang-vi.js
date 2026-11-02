@@ -515,6 +515,29 @@ LANG.vi = {
   guide_faq5_q: 'Làm sao để đổi ngôn ngữ?',
   guide_faq5_a: 'Chọn ngôn ngữ trong menu 🌐 ở góc trên bên phải (trên điện thoại, hãy mở "Menu"), hoặc trong "Hồ sơ". Có 9 ngôn ngữ.',
 
+  // ----- LINE 알림 연결 (Profile · 홈) -----
+  line_title: 'Thông báo qua LINE',
+  line_desc: 'Nhận tin nhắn LINE khi đơn được xác nhận, khi thiết kế cần bạn phê duyệt và khi đơn được gửi đi.',
+  line_step1: 'Kết bạn với allAbut trên LINE',
+  line_add_friend: 'Kết bạn trên LINE',
+  line_qr_hint: 'Hoặc quét mã QR này bằng điện thoại',
+  line_step2: 'Gửi mã này trong cuộc trò chuyện LINE',
+  line_copy: 'Sao chép',
+  line_copied: 'Đã sao chép mã.',
+  line_copy_manual: 'Vui lòng sao chép mã đã được chọn.',
+  line_code_error: 'Không tải được mã liên kết của bạn.',
+  line_step3: 'Khi nhận được tin nhắn "Đã kết nối LINE" là xong',
+  line_check_status: 'Tôi đã gửi — kiểm tra trạng thái',
+  line_not_yet: 'Chưa kết nối. Vui lòng gửi mã trong cuộc trò chuyện LINE rồi thử lại.',
+  line_connected: 'Đã kết nối LINE',
+  line_connected_desc: 'Bạn sẽ nhận thông báo đơn hàng qua LINE.',
+  line_disconnect: 'Ngắt kết nối',
+  line_disconnect_confirm: 'Ngừng nhận thông báo qua LINE? Bạn có thể kết nối lại bất cứ lúc nào.',
+  line_disconnected: 'Đã ngắt kết nối LINE.',
+  line_home_text: 'Nhận thông báo đơn hàng qua LINE',
+  line_home_btn: 'Kết nối',
+  review_admin_cancelled: 'Đã hủy bởi allAbut',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -144,7 +144,6 @@ var PageNew = {
     if (!d.clinic && p.clinic_name) d.clinic = p.clinic_name;
     if (!d.addr && p.address) d.addr = p.address;
     if (!d.phone && p.phone) d.phone = p.phone;
-    if (!d.line_id && p.line_user_id) d.line_id = p.line_user_id;
   },
 
   save: function () {

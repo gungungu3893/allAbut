@@ -1235,6 +1235,78 @@ select.input { cursor: pointer; }
 .cancel-locked { font-weight: 600; }
 
 /* ================================================================
+   LINE 알림 연결
+   ================================================================ */
+/* LINE 초록 (흰 글씨가 잘 보이게 공식 색보다 조금 진하게) */
+.btn-line { background: #05893C; color: #fff; border-color: #05893C; }
+.btn-line:hover:not(:disabled) { background: #047233; }
+.line-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #06C755;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+.line-card { margin-top: 16px; }
+.line-layout { display: grid; gap: 20px; }
+.line-steps { list-style: none; display: grid; gap: 14px; }
+.line-steps li { display: flex; gap: 14px; align-items: flex-start; padding: 14px; background: #F6FBF7; border: 1px solid #CDEBD6; border-radius: 12px; }
+.line-steps li > div { display: grid; gap: 10px; justify-items: start; min-width: 0; }
+.line-step-num {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05893C;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.line-step-text { font-size: 1.0625rem; font-weight: 600; color: var(--navy); }
+.line-code-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.line-code {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--navy);
+  padding: 6px 16px;
+  background: #fff;
+  border: 2px dashed #05893C;
+  border-radius: 10px;
+  direction: ltr;
+  unicode-bidi: isolate;
+  user-select: all;
+}
+.line-qr-box { display: none; }
+.line-qr { width: 184px; height: 184px; padding: 8px; background: #fff; border: 1px solid var(--border); border-radius: 10px; }
+.line-qr img, .line-qr canvas { display: block; }
+.line-connected { display: grid; gap: 10px; justify-items: start; }
+.line-connected-text { font-size: 1.25rem; font-weight: 700; color: var(--success); }
+.line-home-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #F6FBF7;
+  border: 1px solid #CDEBD6;
+  border-radius: var(--radius);
+}
+.line-home-text { flex: 1 1 220px; font-weight: 600; }
+
+/* ================================================================
    넓은 화면
    ================================================================ */
 @media (min-width: 640px) {
@@ -1260,6 +1332,9 @@ select.input { cursor: pointer; }
   .profile-grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
   .admin-stage-cards { grid-template-columns: repeat(7, 1fr); }
   .admin-table-wrap { display: block; }
+  .line-layout { grid-template-columns: 1fr auto; align-items: start; }
+  .line-qr-box { display: grid; gap: 8px; justify-items: center; text-align: center; max-width: 220px; }
+  .line-qr-box[hidden] { display: none; }
   .admin-order-cards { display: none; }
 
   /* 새 주문 3단: 단계 목록 220px | 입력 | 요약 300px */

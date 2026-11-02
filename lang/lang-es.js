@@ -515,6 +515,29 @@ LANG.es = {
   guide_faq5_q: '¿Cómo cambio el idioma?',
   guide_faq5_a: 'Elija un idioma en el menú 🌐 de la parte superior derecha (en el móvil, abra "Menú") o en Perfil. Hay 9 idiomas disponibles.',
 
+  // ----- LINE 알림 연결 (Profile · 홈) -----
+  line_title: 'Notificaciones por LINE',
+  line_desc: 'Reciba un mensaje de LINE cuando se confirme su pedido, cuando un diseño necesite su aprobación y cuando se envíe.',
+  line_step1: 'Agregue a allAbut como amigo en LINE',
+  line_add_friend: 'Agregar amigo en LINE',
+  line_qr_hint: 'O escanee este código QR con su teléfono',
+  line_step2: 'Envíe este código en el chat de LINE',
+  line_copy: 'Copiar',
+  line_copied: 'Código copiado.',
+  line_copy_manual: 'Por favor, copie el código seleccionado.',
+  line_code_error: 'No se pudo cargar su código de vinculación.',
+  line_step3: 'Cuando reciba el mensaje "Conectado a LINE", habrá terminado',
+  line_check_status: 'Ya lo envié: comprobar estado',
+  line_not_yet: 'Aún no está conectado. Envíe el código en el chat de LINE e inténtelo de nuevo.',
+  line_connected: 'Conectado a LINE',
+  line_connected_desc: 'Recibirá las notificaciones de sus pedidos en LINE.',
+  line_disconnect: 'Desconectar',
+  line_disconnect_confirm: '¿Dejar de recibir notificaciones por LINE? Puede volver a conectarse en cualquier momento.',
+  line_disconnected: 'LINE desconectado.',
+  line_home_text: 'Reciba notificaciones de sus pedidos en LINE',
+  line_home_btn: 'Conectar',
+  review_admin_cancelled: 'Cancelado por allAbut',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

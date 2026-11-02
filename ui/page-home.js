@@ -77,6 +77,15 @@ var PageHome = {
         '</div></div>';
     }
 
+    // LINE 알림 연결 안내 (연결 안 된 사람에게만, 작게)
+    if (!cncIsLineLinked(APP.profile)) {
+      html += '<div class="line-home-card">' +
+        '<span class="line-logo" aria-hidden="true">LINE</span>' +
+        '<span class="line-home-text">' + escHtml(t('line_home_text')) + '</span>' +
+        '<a href="#/profile" class="btn btn-line btn-sm" onclick="PageProfile.scrollToLine = true">' + escHtml(t('line_home_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
+        '</div>';
+    }
+
     html += '<h1 class="page-title">' + escHtml(tf('home_welcome', { name: name })) + '</h1>' +
       '<p class="page-desc">' + escHtml(t('home_subtitle')) + '</p>';
 

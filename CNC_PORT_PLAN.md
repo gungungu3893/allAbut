@@ -769,3 +769,38 @@ Dentalk 파일을 통째로 복사하지 않았고, 필요한 로직만 새로 �
 ### 참고
 - 예전 주문 중 환자 ID 가 비어 있는 주문은 내 주문 목록에서 계속 "Anonymous" 로 보여요 (새 주문은 필수라 더 생기지 않아요)
 - 관리자가 단계를 직접 milling → submitted 로 되돌린 뒤 취소하면 트리거를 지나갈 수 있어요 (관리자만 가능한 우회라 그대로 뒀어요)
+
+---
+
+## 12. 5단계: LINE 알림 (2026-11-02)
+
+### 만든 것
+| 파일 | 내용 |
+|---|---|
+| `supabase/functions/line-webhook/index.ts` | LINE → 서버. `x-line-signature` HMAC-SHA256 검증(틀리면 401), 친구추가 시 3개 언어 안내, 연결 코드(대소문자·공백 무시, `AB-XXXX`) → `profiles.line_user_id` 저장 + 같은 LINE 계정의 다른 프로필 연결 해제 → 사용자 언어로 "연결 완료", 못 찾으면 3개 언어 안내, 일반 메시지는 연결 안 된 사람에게만 짧은 안내. reply API 사용 |
+| `supabase/functions/line-notify/index.ts` | DB Webhook → LINE. `x-notify-secret` 확인(틀리면 401). 관리자(영어): 새 주문 · 디자인 승인 · 수정 요청(사유) · 수령 완료 · 고객 취소. 고객(9개 언어, 연결한 사람만): 주문 확인 · 디자인 확인 요청 · 가공 시작(취소 불가 안내) · 배송(택배사·송장) · 관리자 취소(환불 크레딧·사유) · 크레딧 충전. Flex 카드(네이비 머리 + 골드 allAbut, 항목, "Open allAbut" 버튼, altText). 단계가 안 바뀐 UPDATE 는 무시, LINE 실패해도 200 |
+| `ui/page-profile.js` | "LINE notifications": ① 친구추가(초록 버튼, PC 는 QR — cdnjs qrcodejs 1.0.0 을 열 때만 불러옴) ② 연결 코드(크게, Copy) ③ "I've sent it — check status". 연결되면 ✅ Connected + Disconnect(확인창 → `unlink_my_line`) |
+| `ui/page-home.js` | 연결 안 된 사용자에게 작은 "LINE으로 주문 알림 받기 → Connect" 카드 |
+| `LINE_SETUP.md` | 배포 안내 (클릭 순서대로) |
+
+### 함께 바꾼 것 (중요)
+- 예전에는 `profiles.line_user_id` 를 **손으로 적는 연락용 LINE ID** 로 썼어요 (Profile 입력칸, 주문의 "Save to my profile").
+  이제 이 칸은 **LINE 알림 연결 전용**이라, 웹앱에서 이 칸을 쓰던 곳을 모두 없앴어요.
+  - Profile 의 "LINE ID" 입력칸 삭제
+  - 새 주문 배송 정보의 "LINE ID" 는 주문(`cnc_orders.line_id`)에만 저장, 프로필에서 미리 채우지도 저장하지도 않음
+  - "연결됨" 판단은 LINE 사용자 id 모양(U + 16진수 32자리)일 때만 → 예전에 적어 둔 글자는 연결로 보지 않아요
+- 관리자 Cancel & refund: 먼저 이력에 `admin_cancelled` 기록 → `admin_cancel_cnc_order` → 실패하면 기록 되돌림.
+  이렇게 해야 line-notify 가 취소 순간에 "관리자 취소"(고객에게 환불 안내)와 "고객 취소"(관리자에게 알림)를 구분할 수 있어요.
+
+### 확인한 것
+- Edge Function 2개: Deno 2.1 로 타입 검사 통과 + 가짜 Supabase REST·가짜 LINE API 로 실제 요청 테스트 36개 통과
+  (서명 틀림/없음 401, Verify 200, 친구추가 안내, 소문자·공백 코드 연결, 다른 프로필 해제, 한국어 답장, 모르는 언어 → 영어,
+  코드 없음, 일반 메시지, 비밀 헤더 틀림 401, 새 주문 → 관리자, Flex 구조·빈 글자 없음, 같은 단계 무시, 단계별 고객·관리자 알림,
+  관리자 직접 완료는 무시, 고객 취소 / 관리자 취소 구분, LINE 미연결 고객 무시, 크레딧 충전, LINE 실패해도 200)
+- 웹앱: 기존 고객·관리자 Playwright 테스트 + LINE 섹션 테스트 통과
+- **실제 Supabase · LINE 에는 배포·테스트하지 않았어요** (작업 환경에서 접속 불가). `LINE_SETUP.md` 순서대로 배포해 주세요.
+
+### 확인이 필요한 가정
+1. `get_my_line_link_code()` 는 코드 글자(예: `'AB-7K2Q'`)를 돌려준다고 봤어요. `{ code: ... }` 모양이어도 읽어요.
+2. 연결 코드는 `AB-` + 영문·숫자 4~8자로 봤어요.
+3. 연결 후 코드를 새로 바꾸지는 않아요 (같은 코드를 다시 보내면 같은 계정에 다시 연결될 뿐이에요).

@@ -313,6 +313,11 @@ async function cncAdminUploadDesign(order, files, onProgress) {
 // ================================================================
 // 5) 취소 + 환불 (DB 함수 admin_cancel_cnc_order)
 // ================================================================
+// 순서
+//  1) 먼저 review_history 에 { action: 'admin_cancelled', note: 사유, by: 'admin' } 를 붙여요 (단계는 그대로라 알림 없음)
+//     → LINE 알림 함수(line-notify)가 "관리자 취소"인지 "고객 취소"인지 이 기록으로 구분해요
+//  2) admin_cancel_cnc_order 로 취소 + 환불 (이때 stage 가 cancelled 로 바뀌면서 고객에게 LINE 알림)
+//  3) 2) 가 실패하면 1) 에서 붙인 기록을 되돌려요
 // 함수의 인자 이름이 프로젝트마다 다를 수 있어서, 흔한 이름 순서대로 시도해요.
 // (PGRST202 = "그 인자 이름으로는 함수를 찾을 수 없음")
 async function cncAdminCancel(order, reason) {
@@ -320,6 +325,11 @@ async function cncAdminCancel(order, reason) {
   if (!reason) throw cncError('NOTE_REQUIRED');
   if (ADMIN_CANCELLABLE_STAGES.indexOf(order.stage) === -1) throw cncError('NOT_CANCELLABLE');
 
+  // 1) 취소 기록 먼저 (지금 단계가 그대로일 때만)
+  var before = order.review_history || [];
+  var marked = await cncAdminUpdate(order, order.stage, {}, cncAdminHistoryEntry('admin_cancelled', reason));
+
+  // 2) 취소 + 환불
   var tries = [
     { p_id: order.id, p_reason: reason },
     { p_id: order.id, p_note: reason },
@@ -332,33 +342,22 @@ async function cncAdminCancel(order, reason) {
     try {
       result = await sb.rpc('admin_cancel_cnc_order', tries[i]);
     } catch (err) {
-      throw cncError(cncErrorCode(err), { cause: err });
+      lastErr = err;
+      break;
     }
-    if (!result.error) {
-      // 사유가 이력에 남았는지 확인하고, 없으면 붙여 둬요
-      await cncAdminEnsureCancelNote(order.id, reason);
-      return result.data;
-    }
+    if (!result.error) return result.data;
     lastErr = result.error;
     if (result.error.code !== 'PGRST202') break;
   }
-  throw cncError(cncErrorCode(lastErr), { cause: lastErr });
-}
 
-async function cncAdminEnsureCancelNote(id, reason) {
+  // 3) 실패 → 붙인 기록 되돌리기
   try {
-    var fresh = cncCheck(await sb.from('cnc_orders').select('review_history, stage').eq('id', id).maybeSingle());
-    if (!fresh) return;
-    var history = fresh.review_history || [];
-    var has = history.some(function (h) { return h && h.note === reason; });
-    if (has) return;
-    await sb.from('cnc_orders').update({
-      review_history: history.concat([cncAdminHistoryEntry('cancelled', reason)]),
-      updated_at: new Date().toISOString()
-    }).eq('id', id);
+    await sb.from('cnc_orders').update({ review_history: before, updated_at: new Date().toISOString() })
+      .eq('id', order.id).eq('stage', marked.stage);
   } catch (err) {
-    console.warn('Cancel note save failed:', err);
+    console.warn('Cancel note rollback failed:', err);
   }
+  throw cncError(cncErrorCode(lastErr), { cause: lastErr });
 }
 
 
