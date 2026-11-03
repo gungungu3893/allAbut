@@ -34,7 +34,9 @@ var PageAdmin = {
   topups: { status: 'pending', rows: [], hasMore: false, loading: false, error: false },
   topupDetail: null,     // { modal, row, busy, slipUrl, slipError }
   // Settings 탭 상태
-  settingsTab: { packages: null, settings: null, error: false, saving: false },
+  settingsTab: { packages: null, settings: null, company: null, versions: null, error: false, saving: false, savingCompany: false },
+  // Customers 탭의 계정 삭제 요청
+  deletions: { rows: null, status: 'pending', error: false },
 
   // ================================================================
   // 페이지 열기 / 다시 그리기 / 떠나기
@@ -864,6 +866,7 @@ var PageAdmin = {
     this.users.error = false;
     if (!document.getElementById('admin-users-list')) this.drawBody();
     this.drawUsersList();
+    this.loadDeletions();
     try {
       var rows = await cncAdminListUsers();
       if (token !== this.loadToken) return;
@@ -877,7 +880,8 @@ var PageAdmin = {
   },
 
   usersHtml: function () {
-    return '<div class="orders-tools">' +
+    return '<section class="card admin-deletions" id="admin-deletions"></section>' +
+      '<div class="orders-tools">' +
         '<div class="search-box">' +
           '<label class="sr-only" for="admin-user-search">' + escHtml(t('admin_search_users')) + '</label>' +
           '<span class="search-icon" aria-hidden="true">🔍</span>' +
@@ -1329,10 +1333,12 @@ var PageAdmin = {
     sx.error = false;
     this.drawBody();
     try {
-      var res = await Promise.all([cncAdminListPackages(), cncGetPaymentSettings()]);
+      var res = await Promise.all([cncAdminListPackages(), cncGetPaymentSettings(), cncGetCompany(true), cncListLegalVersions()]);
       if (token !== this.loadToken) return;
       sx.packages = res[0];
       sx.settings = res[1];
+      sx.company = res[2] || {};
+      sx.versions = res[3] || [];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -1391,7 +1397,7 @@ var PageAdmin = {
         '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '</section>';
 
-    return '<div class="admin-settings">' + payment + packages + '</div>';
+    return '<div class="admin-settings">' + this.companyHtml() + this.versionsHtml() + payment + packages + '</div>';
   },
 
   saveSettings: async function (event) {
@@ -1587,6 +1593,192 @@ var PageAdmin = {
     }
     this.drawCustomer();
     this.loadCustomer();
+  }
+,
+
+  // ================================================================
+  // Settings: 회사 정보 (company_settings) — 법적 문서·푸터에 자동으로 들어가요
+  // ================================================================
+  companyHtml: function () {
+    var c = this.settingsTab.company || {};
+    var saving = this.settingsTab.savingCompany;
+    function input(id, labelKey, value, opts) {
+      opts = opts || {};
+      return '<div class="field' + (opts.span ? ' span-2' : '') + '"><label class="field-label" for="co-' + id + '">' + escHtml(t(labelKey)) + '</label>' +
+        '<input class="input" id="co-' + id + '" type="' + (opts.type || 'text') + '" maxlength="300" value="' + escHtml(c[id] || '') + '">' +
+        '<div class="err-slot" data-co-err="' + id + '"></div></div>';
+    }
+    return '<section class="card">' +
+      '<h2 class="card-title">' + escHtml(t('admin_company_info')) + '</h2>' +
+      '<p class="card-desc">' + escHtml(t('admin_company_help')) + '</p>' +
+      '<form class="form-grid two" onsubmit="PageAdmin.saveCompany(event)" novalidate>' +
+        input('company_name', 'legal_company', c.company_name, { span: true }) +
+        input('address', 'address_label', c.address, { span: true }) +
+        input('tax_id', 'tax_id_label', c.tax_id) +
+        input('phone', 'phone_label', c.phone, { type: 'tel' }) +
+        input('email', 'email_label', c.email, { type: 'email' }) +
+        input('dpo_email', 'legal_dpo_email', c.dpo_email, { type: 'email' }) +
+        input('line_id', 'line_id_label', c.line_id) +
+        '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (saving ? ' disabled' : '') + '>' + escHtml(saving ? t('saving') : t('pe_save')) + '</button></div>' +
+      '</form></section>';
+  },
+
+  saveCompany: async function (event) {
+    event.preventDefault();
+    var sx = this.settingsTab;
+    if (sx.savingCompany) return;
+    var v = function (id) { return document.getElementById('co-' + id).value.trim(); };
+    var fields = { company_name: v('company_name'), address: v('address'), tax_id: v('tax_id'), phone: v('phone'), email: v('email'), dpo_email: v('dpo_email'), line_id: v('line_id') };
+    var errs = {};
+    ['email', 'dpo_email'].forEach(function (k) { if (fields[k] && !isValidEmail(fields[k])) errs[k] = 'err_email_invalid'; });
+    var slots = document.querySelectorAll('[data-co-err]');
+    for (var i = 0; i < slots.length; i++) slots[i].innerHTML = uiFieldError(errs[slots[i].getAttribute('data-co-err')]);
+    if (Object.keys(errs).length) return;
+    sx.savingCompany = true;
+    try {
+      sx.company = await cncAdminSaveCompany(fields);
+      renderFooters();
+      uiToast(t('admin_settings_saved'), 'success');
+    } catch (err) {
+      console.error(err);
+      uiToast(uiErrorMessage(err), 'error');
+    }
+    sx.savingCompany = false;
+    this.drawBody();
+  },
+
+  // ================================================================
+  // Settings: 법적 문서 버전 (새 버전 → 약관·개인정보는 모든 사용자가 다시 동의)
+  // ================================================================
+  versionsHtml: function () {
+    var list = this.settingsTab.versions || [];
+    var today = cncToday();
+    var current = {};
+    list.forEach(function (v) { if (!current[v.doc]) current[v.doc] = v; });
+    return '<section class="card">' +
+      '<h2 class="card-title">' + escHtml(t('admin_legal_versions')) + '</h2>' +
+      '<p class="card-desc">' + escHtml(t('admin_legal_versions_help')) + '</p>' +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>' + escHtml(t('admin_legal_doc')) + '</th><th>' + escHtml(t('legal_version')) + '</th><th>' + escHtml(t('legal_effective')) + '</th><th></th></tr></thead><tbody>' +
+        LEGAL_DOCS_LIST.map(function (d) {
+          var v = current[d.doc];
+          return '<tr><td><b>' + escHtml(t(d.titleKey)) + '</b></td><td class="mono">' + escHtml(v ? v.version : '—') + '</td>' +
+            '<td>' + escHtml(v ? formatDate(v.effective_date) : '—') + '</td>' +
+            '<td><a href="#/' + d.route + '" target="_blank" rel="noopener" class="btn btn-outline btn-sm">' + escHtml(t('admin_legal_view')) + '</a></td></tr>';
+        }).join('') + '</tbody></table></div>' +
+      '<form class="form-grid two legal-version-form" onsubmit="PageAdmin.addLegalVersion(event)" novalidate>' +
+        '<div class="field"><label class="field-label" for="lv-doc">' + escHtml(t('admin_legal_doc')) + '</label>' +
+          '<select class="input" id="lv-doc">' + LEGAL_DOCS_LIST.map(function (d) { return '<option value="' + d.doc + '">' + escHtml(t(d.titleKey)) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label class="field-label" for="lv-version">' + escHtml(t('legal_version')) + '</label>' +
+          '<input class="input mono" id="lv-version" type="text" maxlength="40" value="' + escHtml(today) + '"></div>' +
+        '<div class="field"><label class="field-label" for="lv-date">' + escHtml(t('legal_effective')) + '</label>' +
+          uiDateField({ id: 'lv-date', value: today, min: '' }) + '</div>' +
+        '<div class="field form-actions"><button type="submit" class="btn btn-primary">' + escHtml(t('admin_legal_add')) + '</button></div>' +
+      '</form>' +
+      '</section>';
+  },
+
+  addLegalVersion: async function (event) {
+    event.preventDefault();
+    var doc = document.getElementById('lv-doc').value;
+    var version = document.getElementById('lv-version').value.trim();
+    var date = uiDateValue('lv-date');
+    if (!version || !date) { uiToast(t('err_required'), 'error'); return; }
+    var docInfo = LEGAL_DOCS_LIST.filter(function (d) { return d.doc === doc; })[0];
+    var ok = await uiConfirm({
+      title: t('admin_legal_add'),
+      message: tf(doc === 'credit' ? 'admin_legal_add_msg_credit' : 'admin_legal_add_msg', { doc: t(docInfo.titleKey), version: version, date: formatDate(date) }),
+      okLabel: t('admin_legal_add'),
+      danger: doc !== 'credit'
+    });
+    if (!ok) return;
+    try {
+      await cncAdminAddLegalVersion(doc, version, date);
+      uiToast(t('admin_legal_added'), 'success');
+      // 관리자 본인도 새 버전에 다시 동의해야 해요
+      APP.legal = await cncGetLegalVersions(true).catch(function () { return APP.legal; });
+      APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
+    } catch (err) {
+      console.error(err);
+      uiToast(err && err.code === 'DUPLICATE_VERSION' ? t('admin_err_duplicate_version') : uiErrorMessage(err), 'error');
+    }
+    await this.loadSettings();
+    updateConsentGate();
+  },
+
+  // ================================================================
+  // Customers: 계정 삭제 요청
+  // ================================================================
+  loadDeletions: async function () {
+    var dl = this.deletions;
+    dl.error = false;
+    this.drawDeletions();
+    try {
+      dl.rows = await cncAdminListDeletionRequests(dl.status);
+    } catch (err) {
+      console.error(err);
+      dl.error = err;
+    }
+    this.drawDeletions();
+  },
+
+  setDeletionStatus: function (value) {
+    this.deletions.status = value;
+    this.deletions.rows = null;
+    this.loadDeletions();
+  },
+
+  drawDeletions: function () {
+    var box = document.getElementById('admin-deletions');
+    if (!box) return;
+    var dl = this.deletions;
+    var html = '<div class="card-head"><h2 class="card-title">🗑 ' + escHtml(t('admin_deletions')) + '</h2>' +
+      '<select class="input admin-deletion-filter" aria-label="' + escHtml(t('admin_filter_stage')) + '" onchange="PageAdmin.setDeletionStatus(this.value)">' +
+        ['pending', 'all'].map(function (v) { return '<option value="' + v + '"' + (dl.status === v ? ' selected' : '') + '>' + escHtml(t(v === 'pending' ? 'deletion_status_pending' : 'admin_filter_all')) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<p class="card-desc">' + escHtml(t('admin_deletions_help')) + '</p>';
+    if (dl.error) html += '<p class="error-text">' + escHtml(uiErrorMessage(dl.error)) + '</p>';
+    else if (!dl.rows) html += uiLoading();
+    else if (!dl.rows.length) html += '<p class="muted">' + escHtml(t('admin_no_deletions')) + '</p>';
+    else html += '<div class="table-wrap"><table class="table"><thead><tr><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('delete_reason')) + '</th><th>' + escHtml(t('col_type')) + '</th><th></th></tr></thead><tbody>' +
+      dl.rows.map(function (r) {
+        var c = r.customer || {};
+        return '<tr><td class="nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
+          '<td>' + escHtml(c.clinic_name || c.nickname || String(r.user_id).slice(0, 8)) + '</td>' +
+          '<td class="pre">' + escHtml(r.reason || '—') + '</td>' +
+          '<td><span class="badge deletion-' + escHtml(r.status) + '">' + escHtml(t('deletion_status_' + r.status)) + '</span>' +
+            (r.admin_note ? '<p class="muted">' + escHtml(r.admin_note) + '</p>' : '') + '</td>' +
+          '<td class="nowrap">' + (r.status === 'pending'
+            ? '<button type="button" class="btn btn-primary btn-sm" onclick="PageAdmin.handleDeletion(' + Number(r.id) + ', \'done\')">' + escHtml(t('admin_deletion_done')) + '</button> ' +
+              '<button type="button" class="btn btn-outline btn-sm btn-discard" onclick="PageAdmin.handleDeletion(' + Number(r.id) + ', \'rejected\')">' + escHtml(t('admin_reject')) + '</button>'
+            : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    box.innerHTML = html;
+  },
+
+  handleDeletion: function (id, status) {
+    var self = this;
+    var modal = uiModal({
+      title: status === 'done' ? t('admin_deletion_done') : t('admin_reject'),
+      body: '<p class="modal-text">' + escHtml(t(status === 'done' ? 'admin_deletion_done_msg' : 'admin_deletion_reject_msg')) + '</p>' +
+        '<div class="field"><label class="field-label" for="deletion-note">' + escHtml(t('col_description')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
+        '<textarea class="input textarea" id="deletion-note" rows="2" maxlength="500"></textarea></div>',
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: status === 'done' ? t('admin_deletion_done') : t('admin_reject'), kind: status === 'done' ? 'primary' : 'danger', onClick: async function (close, btn) {
+          btn.disabled = true;
+          try {
+            await cncAdminHandleDeletion(id, status, modal.el.querySelector('#deletion-note').value);
+            close();
+            uiToast(t('admin_settings_saved'), 'success');
+          } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            uiToast(uiErrorMessage(err), 'error');
+          }
+          self.loadDeletions();
+        } }
+      ]
+    });
   }
 
 };

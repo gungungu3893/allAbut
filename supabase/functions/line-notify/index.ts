@@ -20,6 +20,7 @@
 //   - credit_history 'expire': ⌛ 크레딧 만료 / 'charge' 에는 유효기간(만료일) 표시
 //   - topup_requests: INSERT → 관리자 💰 / rejected → 고객 (사유) / cancelled → 관리자
 //   - { type: 'EXPIRY_REMINDER', user_id, days, lots } (예약 작업) → 고객 ⏰ n개가 d일 후 만료
+//   - account_deletion_requests INSERT → 관리자 🗑 계정 삭제 요청 (진행 중 주문 수, 남은 크레딧)
 //
 // 원칙
 //   - UPDATE 인데 stage 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
@@ -38,6 +39,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 const SITE_ORDERS_URL = 'https://gungungu3893.github.io/allAbut/#/orders';
 const SITE_ADMIN_URL = 'https://gungungu3893.github.io/allAbut/#/admin/orders';
 const SITE_ADMIN_TOPUPS_URL = 'https://gungungu3893.github.io/allAbut/#/admin/topups';
+const SITE_ADMIN_CUSTOMERS_URL = 'https://gungungu3893.github.io/allAbut/#/admin/customers';
 const SITE_TOPUP_URL = 'https://gungungu3893.github.io/allAbut/#/topup';
 const SITE_PROFILE_URL = 'https://gungungu3893.github.io/allAbut/#/profile';
 
@@ -553,6 +555,25 @@ async function handleReminder(payload: any): Promise<void> {
 }
 
 
+// 계정 삭제 요청 (account_deletion_requests INSERT) → 관리자 (영어)
+async function handleDeletionRequest(rec: any): Promise<void> {
+  if (!LINE_ADMIN_USER_ID) return;
+  const p = await getProfile(rec.user_id);
+  const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
+  const balance = await getBalance(rec.user_id);
+  const { count } = await db.from('cnc_orders').select('id', { count: 'exact', head: true })
+    .eq('user_id', rec.user_id).not('stage', 'in', '(done,cancelled)');
+  const title = '🗑 Account deletion request';
+  await push(LINE_ADMIN_USER_ID, flexCard({
+    title,
+    body: 'Check open orders, remaining credits and tax records before deleting the account (Admin → Customers).',
+    rows: [['Customer', who], ['Open orders', String(count ?? 0)], ['Credits', String(balance ?? 0)], ['Reason', rec.reason]],
+    buttonLabel: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL,
+    altText: title + ' · ' + who,
+  }));
+}
+
+
 // ================================================================
 // 이벤트 → 알림
 // ================================================================
@@ -569,6 +590,12 @@ async function handle(payload: any): Promise<void> {
   // 충전 요청
   if (table === 'topup_requests') {
     await handleTopup(type, record, old_record);
+    return;
+  }
+
+  // 계정 삭제 요청 → 관리자
+  if (table === 'account_deletion_requests') {
+    if (type === 'INSERT') await handleDeletionRequest(record);
     return;
   }
 

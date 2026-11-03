@@ -286,6 +286,7 @@ var PageNew = {
         '<input class="input input-lg' + (e.patient ? ' invalid' : '') + '" id="f-patient" type="text" maxlength="50" autocomplete="off" ' +
           'value="' + escHtml(d.patient) + '" placeholder="' + escHtml(t('patient_ph')) + '" ' +
           'oninput="PageNew.setField(\'patient\', this.value)">' +
+        '<p class="field-help privacy-hint"><span aria-hidden="true">🔒</span> ' + escHtml(t('patient_privacy_hint')) + '</p>' +
         uiFieldError(e.patient) +
       '</div>' +
       '<div class="field">' +
@@ -565,6 +566,7 @@ var PageNew = {
       '<input type="file" id="file-input" multiple accept="' + FILE_ACCEPT + '" hidden onchange="PageNew.addFiles(this.files); this.value=\'\'">' +
       '<p class="drop-hint">' + escHtml(t('file_formats_hint')) + '</p>' +
       '<p class="drop-hint">' + escHtml(tf('file_limits_hint', { size: 50, count: FILE_MAX_COUNT })) + '</p>' +
+      '<p class="drop-hint privacy-hint"><span aria-hidden="true">🔒</span> ' + escHtml(t('files_privacy_hint')) + '</p>' +
       '</div>';
 
     // 거부된 파일 안내

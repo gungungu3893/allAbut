@@ -109,6 +109,11 @@
             <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
             <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30">
           </div>
+          <!-- 약관·개인정보 동의 (체크하지 않으면 가입 불가) — 글자는 app.js 의 renderSignupAgree() 가 채워요 -->
+          <label class="auth-agree">
+            <input type="checkbox" id="signup-agree">
+            <span id="signup-agree-label">I agree to the Terms of Service and Privacy Policy.</span>
+          </label>
           <p class="auth-msg" id="signup-error" role="alert"></p>
           <button type="submit" class="auth-submit" id="signup-btn" data-i18n="btn_create_account">Create Account</button>
         </form>
@@ -124,7 +129,30 @@
     <section class="screen screen-app" id="screen-app">
       <header class="app-header" id="app-header"></header>
       <main class="app-main" id="app-main" tabindex="-1"></main>
+      <footer class="site-footer app-footer"></footer>
       <nav class="app-tabbar" id="app-tabbar" aria-label="Main"></nav>
+    </section>
+
+
+    <!-- ========== 4. 법적 문서 (로그인 없이 보기: #/terms, #/privacy, #/credit-policy) ========== -->
+    <section class="screen screen-app screen-legal" id="screen-legal">
+      <header class="app-header legal-header">
+        <div class="hdr-inner">
+          <a href="#/" class="hdr-logo" onclick="leaveLegalPage(event)">
+            <span class="logo logo-light" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
+          </a>
+          <div class="hdr-right">
+            <label class="lang-select public-lang-light">
+              <span aria-hidden="true">🌐</span>
+              <span class="sr-only" data-i18n="language">Language</span>
+              <select class="public-lang-select" onchange="setLang(this.value)"></select>
+            </label>
+            <button type="button" class="btn btn-primary btn-sm" onclick="leaveLegalPage(event, true)" data-i18n="btn_sign_in">Sign In</button>
+          </div>
+        </div>
+      </header>
+      <main class="app-main" id="legal-main" tabindex="-1"></main>
+      <footer class="site-footer app-footer"></footer>
     </section>
 
 
@@ -149,7 +177,11 @@
     <div id="modal-root"></div>
 
     <!-- 하단 저작권 (랜딩·로그인 화면) -->
-    <footer class="footer">© 2026 allAbut. All rights reserved.</footer>
+    <!-- 하단 푸터 (랜딩·로그인 화면) -->
+    <footer class="site-footer public-footer"></footer>
+
+    <!-- 약관·개인정보 재동의 창 (전체 화면) -->
+    <div class="consent-gate" id="consent-gate" hidden></div>
 
   </div>
 
@@ -174,6 +206,7 @@
   <script src="cnc/cnc-data.js"></script>
   <script src="cnc/cnc-core.js"></script>
   <script src="cnc/promptpay.js"></script>
+  <script src="cnc/cnc-legal.js"></script>
   <script src="cnc/cnc-viewer.js"></script>
   <script src="cnc/cnc-admin.js"></script>
 
@@ -186,6 +219,7 @@
   <script src="ui/page-orders.js"></script>
   <script src="ui/page-profile.js"></script>
   <script src="ui/page-topup.js"></script>
+  <script src="ui/page-legal.js"></script>
   <script src="ui/page-admin.js"></script>
   <script src="ui/router.js"></script>
 

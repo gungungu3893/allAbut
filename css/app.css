@@ -1447,6 +1447,112 @@ select.input { cursor: pointer; }
 .refund-box .btn-danger { justify-self: start; }
 
 /* ================================================================
+   법적 문서 · 푸터 · 동의 창 · 계정 삭제
+   ================================================================ */
+.screen-legal .legal-header .hdr-inner { gap: 12px; }
+.public-lang-light select { min-height: 44px; }
+.app-footer {
+  padding: 18px 16px 90px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+.screen-legal .app-footer { padding-bottom: 24px; }
+.app-footer a { color: var(--navy); text-decoration: none; padding: 6px 4px; display: inline-block; }
+.app-footer a:hover { text-decoration: underline; }
+
+.page-legal { max-width: 1120px; margin: 0 auto; }
+.legal-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.legal-tab {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: none;
+}
+.legal-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.legal-layout { display: grid; gap: 16px; }
+.legal-toc { padding: 16px; }
+.legal-toc-title { font-weight: 700; margin-bottom: 8px; }
+.legal-toc ol { list-style: none; display: grid; gap: 2px; }
+.legal-toc a { display: block; padding: 8px 6px; border-radius: 6px; color: var(--navy); text-decoration: none; font-size: 0.9375rem; line-height: 1.4; }
+.legal-toc a:hover { background: #F1F5FB; }
+.legal-doc { max-width: 760px; width: 100%; padding: 28px 24px; line-height: 1.75; font-size: 1.0625rem; }
+.legal-doc .card + .card { margin-top: 0; }
+.legal-draft { padding: 10px 14px; margin-bottom: 16px; background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: var(--radius-sm); font-weight: 700; color: #7A4F01; }
+.legal-title { font-size: 2rem; line-height: 1.25; color: var(--navy); }
+.legal-meta { margin-top: 6px; color: var(--muted); }
+.legal-notice { margin: 16px 0; padding: 12px 14px; background: #F1F5FB; border-inline-start: 4px solid var(--navy); border-radius: 6px; font-size: 0.9375rem; display: grid; gap: 4px; }
+.legal-intro { margin: 12px 0 8px; }
+.legal-section { margin-top: 26px; }
+.legal-section h2 { font-size: 1.3125rem; color: var(--navy); margin-bottom: 8px; line-height: 1.35; outline: none; }
+.legal-section h2 .mono { color: var(--gold-dark); margin-inline-end: 4px; }
+.legal-section p { margin: 8px 0; }
+.legal-section ul { margin: 8px 0; padding-inline-start: 1.4em; display: grid; gap: 6px; }
+.legal-ph { padding: 0 4px; background: #FFF4E5; border-radius: 4px; color: #B54708; font-weight: 600; }
+.legal-table { margin: 10px 0; }
+.legal-example { margin: 10px 0; padding: 12px 14px; background: #F8F9FB; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); font-family: var(--font-sans); }
+.legal-example p { margin: 4px 0; }
+.legal-ex-result { font-weight: 700; color: var(--navy); }
+.legal-contact-row { display: grid; grid-template-columns: 1fr; gap: 0 12px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.legal-contact-label { color: var(--muted); }
+.legal-actions { margin-top: 24px; }
+
+.consent-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 340;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 16, 40, 0.75);
+}
+.consent-gate[hidden] { display: none; }
+body.consent-open { overflow: hidden; }
+.consent-box { width: 100%; max-width: 560px; max-height: calc(100vh - 32px); overflow-y: auto; padding: 28px 24px; background: #fff; border-radius: 16px; border-top: 5px solid var(--gold); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35); color: var(--text); }
+.consent-title { font-size: 1.5rem; color: var(--navy); }
+.consent-text { margin-top: 10px; font-size: 1.0625rem; }
+.consent-links { list-style: none; margin: 16px 0; display: grid; gap: 8px; }
+.consent-links a { font-size: 1.125rem; font-weight: 700; color: var(--navy); }
+.consent-note { color: var(--muted); font-size: 0.9375rem; }
+.consent-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.consent-actions .btn { flex: 1 1 180px; }
+
+.privacy-hint { color: #475467; font-weight: 500; }
+.drop-hint.privacy-hint { font-weight: 600; }
+.policy-check { align-items: flex-start; font-size: 1rem; }
+.policy-check a { color: var(--navy); font-weight: 700; }
+.delete-card { margin-top: 16px; }
+.delete-pending { font-weight: 700; color: #B54708; }
+.delete-links { margin-top: 10px; }
+.admin-deletions { margin-bottom: 16px; }
+.admin-deletion-filter { width: auto; min-width: 160px; }
+.deletion-pending { background: #FFF1C2; color: #7A4F01; }
+.deletion-done { background: var(--success-bg); color: var(--success); }
+.deletion-rejected { background: #F2F4F7; color: #475467; }
+.legal-version-form { margin-top: 14px; align-items: end; }
+
+/* 인쇄: 문서만 깔끔하게 */
+@media print {
+  .app-header, .app-tabbar, .site-footer, .legal-tabs, .legal-toc, .no-print, .toast-root, .consent-gate, #modal-root { display: none !important; }
+  body, body.in-app, .screen-app { background: #fff !important; }
+  .app-main { padding: 0 !important; max-width: none; }
+  .legal-doc { box-shadow: none; border: none; padding: 0; max-width: none; font-size: 11pt; }
+  .legal-layout { display: block; }
+  .legal-section { break-inside: avoid-page; }
+  .legal-section h2 { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
+}
+
+/* ================================================================
    넓은 화면
    ================================================================ */
 @media (min-width: 640px) {
@@ -1459,6 +1565,7 @@ select.input { cursor: pointer; }
   .admin-stage-cards { grid-template-columns: repeat(4, 1fr); }
   .admin-stats { grid-template-columns: repeat(3, 1fr); }
   .admin-stats.five { grid-template-columns: repeat(5, 1fr); }
+  .legal-contact-row { grid-template-columns: 13em 1fr; }
   .admin-detail-grid { grid-template-columns: 1fr 1fr; }
   .modal-actions .btn { flex: 0 0 auto; }
   .topup-btn { display: inline-flex; }
@@ -1476,6 +1583,9 @@ select.input { cursor: pointer; }
   .profile-grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
   .admin-stage-cards { grid-template-columns: repeat(7, 1fr); }
   .admin-table-wrap { display: block; }
+  .legal-layout { grid-template-columns: 260px minmax(0, 760px); align-items: start; justify-content: center; }
+  .legal-toc { position: sticky; top: 92px; max-height: calc(100vh - 110px); overflow-y: auto; }
+  .app-footer { padding-bottom: 24px; }
   .package-grid { grid-template-columns: repeat(5, 1fr); }
   .topup-pay { grid-template-columns: 1fr 1fr; align-items: start; }
   .topup-pay .pay-summary { grid-column: 1 / -1; }

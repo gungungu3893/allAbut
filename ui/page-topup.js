@@ -15,6 +15,8 @@ var PageTopup = {
   slip: null,          // 고른 슬립 파일 (File)
   slipUrl: null,       // 미리보기 주소
   slipError: '',
+  policyRead: false,   // "Credit & Refund Policy 를 읽었습니다" 체크
+  policyError: false,
   submitting: false,
   submitError: null,
   done: null,          // 완료 결과 { id, total, ... }
@@ -30,6 +32,8 @@ var PageTopup = {
     this.clearSlip();
     this.submitError = null;
     this.done = null;
+    this.policyRead = false;
+    this.policyError = false;
     this.draw();
     this.load();
   },
@@ -218,6 +222,10 @@ var PageTopup = {
                 '<p class="drop-hint">' + escHtml(t('topup_slip_formats')) + '</p></div>') +
           '<input type="file" id="slip-input" accept="image/*,.pdf" hidden onchange="PageTopup.pickSlip(this.files[0]); this.value=\'\'">' +
           uiFieldError(this.slipError) +
+          '<label class="checkbox policy-check"><input type="checkbox" id="policy-read"' + (this.policyRead ? ' checked' : '') + dis +
+            ' onchange="PageTopup.policyRead = this.checked; PageTopup.policyError = false"> <span>' +
+            escHtml(t('topup_policy_read')).replace('{policy}', '<a href="#/credit-policy" target="_blank" rel="noopener">' + escHtml(t('legal_credit')) + '</a>') + '</span></label>' +
+          (this.policyError ? uiFieldError('topup_policy_required') : '') +
           (this.submitError ? '<div class="notice notice-error" role="alert"><p><span aria-hidden="true">⚠</span> ' + escHtml(this.errorText(this.submitError)) + '</p></div>' : '') +
           '<button type="button" class="btn btn-gold btn-lg btn-block" onclick="PageTopup.submit()"' + dis + '>' +
             (this.submitting ? '<span class="spinner" aria-hidden="true"></span> ' + escHtml(t('submitting')) : escHtml(t('topup_submit'))) + '</button>' +
@@ -286,6 +294,11 @@ var PageTopup = {
     if (this.submitting) return;   // 두 번 클릭 방지
     if (!this.slip) {
       this.slipError = 'topup_slip_required';
+      this.drawBody();
+      return;
+    }
+    if (!this.policyRead) {
+      this.policyError = true;
       this.drawBody();
       return;
     }

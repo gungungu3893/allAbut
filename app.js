@@ -28,7 +28,7 @@ function showScreen(name) {
   if (!next || next === current) return;
 
   isSwitching = true;
-  document.body.classList.toggle('in-app', name === 'app');   // 앱 화면은 밝은 배경
+  document.body.classList.toggle('in-app', name === 'app' || name === 'legal');   // 앱·법적 문서 화면은 밝은 배경
 
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
@@ -88,9 +88,24 @@ async function enterApp() {
       return;
     }
     APP.user = session.user;
-    var loaded = await Promise.all([getProfile(), cncCheckAdmin()]);
+    var loaded = await Promise.all([getProfile(), cncCheckAdmin(), cncGetLegalVersions(true).catch(function () { return null; })]);
     APP.profile = loaded[0];
     APP.isAdmin = loaded[1];
+    APP.legal = loaded[2];
+    APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
+
+    // 가입할 때 지금 최신 버전에 동의했으면 (이메일 인증으로 기록을 못 했던 경우) 여기서 기록
+    if (APP.needsConsent) {
+      var meta = APP.user.user_metadata || {};
+      if (APP.legal && meta.accepted_terms_version === APP.legal.terms.version && meta.accepted_privacy_version === APP.legal.privacy.version) {
+        try {
+          await cncAcceptLegal(APP.legal);
+          APP.needsConsent = false;
+        } catch (e) {
+          console.warn('Signup consent record failed:', e);
+        }
+      }
+    }
 
     // 언어를 직접 고른 적이 없으면 프로필에 저장된 언어로
     if (!hasSavedLang() && APP.profile && APP.profile.lang && isSupportedLang(APP.profile.lang) && APP.profile.lang !== currentLang) {
@@ -155,6 +170,10 @@ function onSessionEnded() {
   APP.profile = null;
   APP.balance = null;
   APP.isAdmin = false;
+  APP.needsConsent = false;
+  APP.legal = null;
+  APP.lots = null;
+  APP.expiringSoon = 0;
 }
 
 
@@ -259,13 +278,20 @@ async function handleSignUp(event) {
   if (!isValidEmail(email)) return showAuthMessage('signup-error', t('err_email_invalid'));
   if (password.length < 6) return showAuthMessage('signup-error', t('err_password_short'));
   if (password !== password2) return showAuthMessage('signup-error', t('err_password_mismatch'));
+  if (!document.getElementById('signup-agree').checked) return showAuthMessage('signup-error', t('signup_agree_required'));
 
   setLoading(button, true, 'btn_create_account');
   try {
-    var data = await signUp(email, password, nickname, clinic, phone);
+    // 지금 최신 약관·개인정보 버전 (가입과 함께 동의 기록)
+    var versions = await cncGetLegalVersions(true).catch(function () { return null; });
+    var legal = versions && versions.terms && versions.privacy ? { terms: versions.terms.version, privacy: versions.privacy.version } : null;
+    var data = await signUp(email, password, nickname, clinic, phone, legal);
 
     if (data.session) {
-      // 이메일 인증 없이 바로 로그인된 경우 → 1시간 세션 시작 + 홈으로
+      // 이메일 인증 없이 바로 로그인된 경우 → 동의 기록 + 1시간 세션 시작 + 홈으로
+      if (versions && legal) {
+        try { await cncAcceptLegal(versions); } catch (e) { console.warn('Consent record failed:', e); }
+      }
       startSession();
       goStartPage();
       await enterApp();
@@ -285,7 +311,7 @@ async function handleSignUp(event) {
 
 // ===== 랜딩·로그인 화면의 언어 선택 =====
 function fillLangSelects() {
-  var selects = document.querySelectorAll('.public-lang select');
+  var selects = document.querySelectorAll('.public-lang select, .public-lang-select');
   for (var i = 0; i < selects.length; i++) {
     selects[i].innerHTML = LANGUAGES.map(function (l) {
       return '<option value="' + l.code + '"' + (l.code === currentLang ? ' selected' : '') + '>' + escHtml(l.name) + '</option>';
@@ -293,6 +319,34 @@ function fillLangSelects() {
   }
 }
 window.addEventListener('langchange', fillLangSelects);
+
+// 가입 동의 글자: "I agree to the [Terms of Service] and [Privacy Policy]." (링크는 새 탭)
+function renderSignupAgree() {
+  var el = document.getElementById('signup-agree-label');
+  if (!el) return;
+  var terms = '<a href="#/terms" target="_blank" rel="noopener">' + escHtml(t('legal_terms')) + '</a>';
+  var privacy = '<a href="#/privacy" target="_blank" rel="noopener">' + escHtml(t('legal_privacy')) + '</a>';
+  el.innerHTML = escHtml(t('signup_agree')).replace('{terms}', terms).replace('{privacy}', privacy);
+}
+window.addEventListener('langchange', renderSignupAgree);
+
+// 로그인 전 법적 문서 화면에서 나가기 (로고 → 랜딩, Sign In → 로그인)
+function leaveLegalPage(event, toSignIn) {
+  if (event) event.preventDefault();
+  history.replaceState(null, '', location.pathname + location.search);
+  publicPageActive = false;
+  if (currentPage && currentPage.leave) currentPage.leave();
+  currentPage = null;
+  window.currentRoute = null;
+  document.title = 'allAbut 5μm';
+  if (toSignIn) {
+    resetAuthForms();
+    switchTab('signin');
+    showScreen('auth');
+  } else {
+    showScreen('landing');
+  }
+}
 
 
 // ===== 페이지 처음 열릴 때 =====
@@ -303,10 +357,16 @@ window.addEventListener('langchange', fillLangSelects);
   applyLangToDocument();   // 저장된 언어 반영 (아랍어·페르시아어는 RTL)
   applyFontScale();        // 저장된 글자 크기 반영
   fillLangSelects();
+  renderSignupAgree();
+  renderFooters();
+  // 회사 이름 (푸터 · 법적 문서) — 로그인 전에도 읽을 수 있어요
+  cncGetCompany().then(renderFooters).catch(function () { /* SQL 실행 전이면 기본값 */ });
 
   var kept = await checkSessionOnLoad();   // 1시간 세션이 남아 있는지 (session.js)
   if (kept) {
     await enterApp();                      // 새로고침해도 같은 페이지 (#/orders 등)
+  } else if (isLegalHash()) {
+    renderRoute();                         // 로그인 없이 법적 문서 (#/terms 등)
   } else {
     showScreen('landing');
   }

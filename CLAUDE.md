@@ -55,6 +55,18 @@
 - SQL: `sql/002_credit_topups.sql`, 설정 안내: `TOPUP_SETUP.md`
 - 금액 표시는 `formatTHB()` (언어와 상관없이 21,935.00 THB)
 
+## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
+- 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
+- 문서: `#/terms`, `#/privacy`, `#/credit-policy` — **로그인 없이도** 볼 수 있음 (로그인 전: `screen-legal` 화면)
+- 본문: `legal/{terms|privacy|credit}.{en|th|ko}.js` (`LEGAL_DOCS['terms.en']`). 영어가 기준, th·ko 번역. 다른 6개 언어는 영어 본문 + 안내.
+  본문 배열에서 문자열 = 문단, 배열 = 목록, '{{PRICE_TABLE}}' / '{{REFUND_EXAMPLE}}' = 가격표·환불 예시 (credit_packages 에서 자동)
+- 회사 정보는 하드코딩 금지 → `company_settings` 에서 읽어 `{company_name}` 등 자리에 자동 삽입 (비면 [자리표시])
+- "초안 · 법률 검토 필요" 표시는 관리자에게만
+- 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
+- 가입: 동의 체크 필수 → `accept_legal()`. 충전 결제: Credit & Refund Policy 읽음 체크 필수
+- 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
+- 모든 화면 아래 푸터: Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
+
 ## 제외 (나중에)
 - 세금계산서·영수증, 카드·온라인 자동 결제
 
@@ -75,8 +87,10 @@
 - `cnc/cnc-core.js` — 화면 코드 없는 순수 로직: draft 저장/복원, 단계별 검사, 파일 규칙, cases 만들기, 업로드, 제출(RPC), 주문 조회, 고객 액션, 크레딧, 프로필 저장
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대)
-- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/admin` (새로고침해도 같은 페이지)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy` (새로고침해도 같은 페이지)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
+- `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
+- `ui/page-legal.js` — 법적 문서 페이지 (목차, 섹션 번호, 버전·시행일, 연락처, 인쇄)
 - `cnc/promptpay.js` — PromptPay QR 페이로드(EMVCo + CRC16), `promptPayPayload(id, amount)`
 - `ui/page-topup.js` — 크레딧 충전 `#/topup` (패키지 → QR·계좌 → 슬립 → 완료, 내 충전 내역)
 - `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)

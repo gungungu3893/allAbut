@@ -74,7 +74,7 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 72px 16px 64px;
+  padding: 72px 16px 120px;   /* 아래 푸터에 가리지 않게 */
 }
 #screen-auth {
   justify-content: flex-start;
@@ -315,16 +315,26 @@ a { color: inherit; }
 .landing-notice.show { opacity: 1; transform: translate(-50%, 0); }
 
 
-/* ===== 하단 저작권 (랜딩·로그인만) ===== */
-.footer {
+/* ===== 하단 푸터 (랜딩·로그인 화면): Terms · Privacy · Credit & Refund Policy · © ===== */
+.public-footer {
   position: fixed;
-  bottom: 16px;
+  bottom: 0;
   left: 0;
   right: 0;
+  z-index: 20;
+  padding: 10px 16px 14px;
   text-align: center;
-  font-size: 0.75rem;
-  color: #fff;
-  opacity: 0.35;
-  pointer-events: none;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: linear-gradient(transparent, rgba(6, 9, 15, 0.9) 40%);
 }
-body.in-app .footer { display: none; }
+.public-footer a { color: rgba(255, 255, 255, 0.78); text-decoration: none; padding: 6px 4px; display: inline-block; }
+.public-footer a:hover { color: var(--gold); text-decoration: underline; }
+body.in-app .public-footer { display: none; }
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; }
+.footer-copy { margin-top: 2px; }
+
+/* 가입 동의 체크 */
+.auth-agree { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 8px; font-size: 0.9375rem; line-height: 1.5; color: var(--text); cursor: pointer; }
+.auth-agree input { width: 22px; height: 22px; margin-top: 1px; flex: 0 0 auto; accent-color: var(--navy); }
+.auth-agree a { color: var(--navy); font-weight: 600; }

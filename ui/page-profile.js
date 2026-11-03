@@ -22,6 +22,7 @@ var PageProfile = {
     this.draw();
     this.loadHistory();
     this.loadLine();
+    this.loadDeletion();
     if (this.scrollToLine) {
       this.scrollToLine = false;
       var box = document.getElementById('profile-line');
@@ -105,9 +106,73 @@ var PageProfile = {
           '<section class="card" id="profile-credits"></section>' +
         '</div>' +
         '<section class="card line-card" id="profile-line"></section>' +
+        '<section class="card delete-card" id="profile-delete"></section>' +
       '</div>';
     this.drawCredits();
     this.drawLine();
+    this.drawDelete();
+  },
+
+  // ================================================================
+  // 계정 삭제 요청
+  // ================================================================
+  deletion: undefined,   // 내 최근 삭제 요청 (undefined = 아직 안 읽음)
+
+  loadDeletion: async function () {
+    try {
+      this.deletion = await cncMyDeletionRequest();
+    } catch (err) {
+      console.warn('Deletion request read failed:', err);
+      this.deletion = null;
+    }
+    this.drawDelete();
+  },
+
+  drawDelete: function () {
+    var box = document.getElementById('profile-delete');
+    if (!box) return;
+    var d = this.deletion;
+    var html = '<h2 class="card-title">' + escHtml(t('delete_title')) + '</h2>' +
+      '<p class="card-desc">' + escHtml(t('delete_desc')) + '</p>';
+    if (d && d.status === 'pending') {
+      html += '<p class="delete-pending"><span aria-hidden="true">⏳</span> ' + escHtml(tf('delete_pending', { date: formatDate(d.created_at) })) + '</p>';
+    } else {
+      if (d && d.status === 'rejected') html += '<p class="muted">' + escHtml(tf('delete_rejected', { date: formatDate(d.handled_at) })) + '</p>';
+      html += '<button type="button" class="btn btn-outline btn-discard" onclick="PageProfile.requestDeletion()">' + escHtml(t('delete_btn')) + '</button>';
+    }
+    html += '<p class="muted delete-links"><a href="#/privacy">' + escHtml(t('legal_privacy')) + '</a></p>';
+    box.innerHTML = html;
+  },
+
+  requestDeletion: function () {
+    var self = this;
+    var modal = uiModal({
+      title: t('delete_btn'),
+      body: '<p class="modal-text">' + escHtml(t('delete_confirm_text')) + '</p>' +
+        '<div class="field"><label class="field-label" for="delete-reason">' + escHtml(t('delete_reason')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
+        '<textarea class="input textarea" id="delete-reason" rows="3" maxlength="1000"></textarea></div>',
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: t('delete_submit'), kind: 'danger', onClick: async function (close, btn) {
+          btn.disabled = true;
+          var reason = modal.el.querySelector('#delete-reason').value.trim();
+          try {
+            var res = await cncRequestDeletion(reason);
+            close();
+            var msg = t('delete_done');
+            if (res && (res.active_orders > 0 || res.balance > 0)) {
+              msg += ' ' + tf('delete_done_pending_items', { orders: res.active_orders || 0, credits: res.balance || 0 });
+            }
+            uiModal({ title: t('delete_done_title'), body: '<p class="modal-text">' + escHtml(msg) + '</p>', actions: [{ label: t('btn_ok'), kind: 'primary' }] });
+            self.loadDeletion();
+          } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            uiToast(uiErrorMessage(err), 'error');
+          }
+        } }
+      ]
+    });
   },
 
   // ================================================================

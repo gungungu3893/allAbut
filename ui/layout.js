@@ -433,7 +433,9 @@ function uiErrorMessage(err) {
     ALREADY_REVIEWED: 'admin_err_already_reviewed',
     AMOUNT_TOO_HIGH: 'admin_err_amount_too_high',
     LOT_NOT_REFUNDABLE: 'admin_err_lot_not_refundable',
-    NO_LOTS: 'admin_err_no_lots'
+    NO_LOTS: 'admin_err_no_lots',
+    VERSION_OUTDATED: 'consent_outdated',
+    DUPLICATE_VERSION: 'admin_err_duplicate_version'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });
@@ -549,4 +551,86 @@ window.addEventListener('hashchange', closePopover);
 // ================================================================
 function uiTopupBadge(status) {
   return '<span class="badge topup-' + escHtml(status) + '">' + escHtml(t('topup_status_' + status)) + '</span>';
+}
+
+
+// ================================================================
+// 12) 하단 푸터 (모든 화면): Terms · Privacy · Credit & Refund Policy · © 2026 회사명
+// ================================================================
+function renderFooters() {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  var name = c.company_name || 'allAbut';
+  var html = '<nav class="footer-links" aria-label="' + escHtml(t('legal_documents')) + '">' +
+    LEGAL_DOCS_LIST.map(function (d) {
+      return '<a href="#/' + d.route + '">' + escHtml(t(d.titleKey)) + '</a>';
+    }).join('<span aria-hidden="true">·</span>') +
+    '</nav><p class="footer-copy">© 2026 ' + escHtml(name) + '</p>';
+  var els = document.querySelectorAll('.site-footer');
+  for (var i = 0; i < els.length; i++) els[i].innerHTML = html;
+}
+
+
+// ================================================================
+// 13) 약관·개인정보 재동의 창 (전체 화면, 닫기 없음)
+// ================================================================
+// 동의하기 전에는 주문·충전 등 앱을 쓸 수 없어요. 법적 문서 페이지와 Sign Out 은 가능해요.
+function updateConsentGate() {
+  var need = !!(window.APP && APP.user && APP.needsConsent);
+  var onLegal = window.currentRoute && isLegalRoute(window.currentRoute);
+  if (need && !onLegal) showConsentGate();
+  else hideConsentGate();
+}
+
+function showConsentGate() {
+  var gate = document.getElementById('consent-gate');
+  if (!gate) return;
+  var v = (APP.legal) || {};
+  var first = !(APP.profile && APP.profile.accepted_at);
+  gate.innerHTML =
+    '<div class="consent-box" role="dialog" aria-modal="true" aria-labelledby="consent-title">' +
+      '<h2 class="consent-title" id="consent-title">' + escHtml(t(first ? 'consent_title_first' : 'consent_title')) + '</h2>' +
+      '<p class="consent-text">' + escHtml(t(first ? 'consent_text_first' : 'consent_text')) + '</p>' +
+      '<ul class="consent-links">' +
+        '<li><a href="#/terms" target="_blank" rel="noopener">' + escHtml(t('legal_terms')) + '</a> <span class="muted mono">' + escHtml(v.terms ? v.terms.version : '') + '</span></li>' +
+        '<li><a href="#/privacy" target="_blank" rel="noopener">' + escHtml(t('legal_privacy')) + '</a> <span class="muted mono">' + escHtml(v.privacy ? v.privacy.version : '') + '</span></li>' +
+      '</ul>' +
+      '<p class="consent-note">' + escHtml(t('consent_note')) + '</p>' +
+      '<div class="consent-actions">' +
+        '<button type="button" class="btn btn-primary btn-lg" id="consent-agree" onclick="agreeToLegal(this)">' + escHtml(t('consent_agree')) + '</button>' +
+        '<button type="button" class="btn btn-outline btn-lg" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
+      '</div>' +
+    '</div>';
+  gate.hidden = false;
+  document.body.classList.add('consent-open');
+  var btn = document.getElementById('consent-agree');
+  if (btn) btn.focus();
+}
+
+function hideConsentGate() {
+  var gate = document.getElementById('consent-gate');
+  if (!gate) return;
+  gate.hidden = true;
+  gate.innerHTML = '';
+  document.body.classList.remove('consent-open');
+}
+
+async function agreeToLegal(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = t('saving'); }
+  try {
+    await cncAcceptLegal(APP.legal);
+    APP.needsConsent = false;
+    hideConsentGate();
+    uiToast(t('consent_thanks'), 'success');
+  } catch (err) {
+    console.error(err);
+    if (cncErrorCode(err) === 'VERSION_OUTDATED') {
+      // 그 사이 새 버전이 나왔으면 다시 읽어서 보여줘요
+      try { APP.legal = await cncGetLegalVersions(true); } catch (e) { /* 무시 */ }
+      showConsentGate();
+    } else if (btn) {
+      btn.disabled = false;
+      btn.textContent = t('consent_agree');
+    }
+    uiToast(uiErrorMessage(err), 'error');
+  }
 }

@@ -8,11 +8,17 @@ window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // - 닉네임·치과 이름·전화번호를 유저 정보(metadata)에도 같이 저장해 둬요.
 //   (이메일 인증이 켜져 있으면 가입 직후엔 로그인 상태가 아니라서 profiles 저장이 안 될 수 있어요.
 //    그럴 땐 처음 로그인할 때 getProfile() 이 이 정보로 profiles 행을 만들어 줘요.)
-async function signUp(email, password, nickname, clinicName, phone) {
+// legal: 가입 화면에서 동의한 약관·개인정보 버전 { terms, privacy } — 유저 정보(metadata)에도 남겨 둬요
+//        (이메일 인증 때문에 가입 직후 동의 기록을 못 하면, 첫 로그인 때 이 값으로 기록해요)
+async function signUp(email, password, nickname, clinicName, phone, legal) {
+  legal = legal || {};
   var result = await sb.auth.signUp({
     email: email,
     password: password,
-    options: { data: { nickname: nickname, clinic_name: clinicName || '', phone: phone || '' } }
+    options: { data: {
+      nickname: nickname, clinic_name: clinicName || '', phone: phone || '',
+      accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
+    } }
   });
   if (result.error) throw result.error;
 
