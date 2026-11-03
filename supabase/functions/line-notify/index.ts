@@ -6,6 +6,7 @@
 //
 // 보안: Verify JWT 는 끄고 배포해요. 대신 요청 헤더 x-notify-secret 이 NOTIFY_SECRET 과 같아야만 동작 (다르면 401)
 // 비밀값은 Deno.env.get() 으로만 읽어요. SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 는 Supabase 가 자동으로 넣어 주는 서버 전용 값.
+// 버튼 링크의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
 //
 // 관리자(LINE_ADMIN_USER_ID)에게 (영어)
 //   - 새 주문(INSERT)            🆕
@@ -36,12 +37,14 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const LINE_API_BASE = Deno.env.get('LINE_API_BASE') ?? 'https://api.line.me';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-const SITE_ORDERS_URL = 'https://gungungu3893.github.io/allAbut/#/orders';
-const SITE_ADMIN_URL = 'https://gungungu3893.github.io/allAbut/#/admin/orders';
-const SITE_ADMIN_TOPUPS_URL = 'https://gungungu3893.github.io/allAbut/#/admin/topups';
-const SITE_ADMIN_CUSTOMERS_URL = 'https://gungungu3893.github.io/allAbut/#/admin/customers';
-const SITE_TOPUP_URL = 'https://gungungu3893.github.io/allAbut/#/topup';
-const SITE_PROFILE_URL = 'https://gungungu3893.github.io/allAbut/#/profile';
+// 사이트 주소: Supabase Secrets 에 SITE_URL 이 있으면 그것, 없으면 정식 도메인 (끝의 / 는 떼요)
+const SITE_URL = (Deno.env.get('SITE_URL') || 'https://allabut.com').replace(/\/+$/, '');
+const SITE_ORDERS_URL = SITE_URL + '/#/orders';
+const SITE_ADMIN_URL = SITE_URL + '/#/admin/orders';
+const SITE_ADMIN_TOPUPS_URL = SITE_URL + '/#/admin/topups';
+const SITE_ADMIN_CUSTOMERS_URL = SITE_URL + '/#/admin/customers';
+const SITE_TOPUP_URL = SITE_URL + '/#/topup';
+const SITE_PROFILE_URL = SITE_URL + '/#/profile';
 
 const NAVY = '#001D4A';
 const GOLD = '#D4AF37';

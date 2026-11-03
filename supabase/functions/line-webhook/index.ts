@@ -26,7 +26,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const LINE_API_BASE = Deno.env.get('LINE_API_BASE') ?? 'https://api.line.me';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-const SITE_URL = 'https://gungungu3893.github.io/allAbut/#/profile';
+// 사이트 주소: Supabase Secrets 에 SITE_URL 이 있으면 그것, 없으면 정식 도메인 (끝의 / 는 떼요)
+const SITE_URL = (Deno.env.get('SITE_URL') || 'https://allabut.com').replace(/\/+$/, '');
+const SITE_PROFILE_URL = SITE_URL + '/#/profile';
 
 // 서버 전용 관리 키로 접속 (RLS 를 건너뛰어요 — 이 함수 안에서만 사용)
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -43,7 +45,7 @@ const FOLLOW_TEXT = [
   'Welcome to allAbut! To receive order notifications, send the link code from the Profile page of the allAbut website (e.g. AB-7K2Q) to this chat.',
   'ยินดีต้อนรับสู่ allAbut! หากต้องการรับการแจ้งเตือนคำสั่งงาน กรุณาส่งรหัสเชื่อมต่อจากหน้าโปรไฟล์บนเว็บไซต์ allAbut (เช่น AB-7K2Q) มาที่แชทนี้',
   'allAbut 알림을 받으려면 allAbut 웹사이트 Profile 화면의 연결 코드(예: AB-7K2Q)를 이 채팅에 보내주세요.',
-].join('\n\n') + '\n\n' + SITE_URL;
+].join('\n\n') + '\n\n' + SITE_PROFILE_URL;
 
 const NOT_FOUND_TEXT = [
   'We could not find this code. Please check the code on your Profile page and send it again.',

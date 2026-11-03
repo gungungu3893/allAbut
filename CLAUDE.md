@@ -9,6 +9,20 @@
   git add . && git commit -m "메시지" && git push origin main
   ```
 
+## 배포 · 도메인
+- 사이트 주소: **https://allabut.com** (www.allabut.com 도 연결 — www → allabut.com 301 은 Cloudflare 대시보드 Redirect Rules 에서)
+- 호스팅: **Cloudflare Pages** (프로젝트 `allabut`), `main` 브랜치에 push 하면 자동 배포
+  - Build command: `bash build.sh` / Build output directory: `dist`
+  - `build.sh` 가 공개 파일만 `dist/` 에 복사 → `*.md`, `sql/`, `supabase/` 는 배포되지 않아 404
+  - **사이트에 새 파일·폴더를 추가하면 `build.sh` 목록에도 추가** (안 하면 사이트에서 404)
+  - `404.html` 은 지우지 않는다 (없으면 Cloudflare 가 없는 주소에 index.html 을 200 으로 보여줌)
+  - `_redirects` (빌드 설정을 깜빡했을 때 문서 주소 → 404 페이지 안전장치), `_headers` (기본 보안 헤더)
+- GitHub Pages(gungungu3893.github.io/allAbut)는 **더 이상 사용하지 않는다**
+- 사이트 주소는 하드코딩 금지:
+  - 브라우저: `config.js` 의 `SITE_URL` 하나만 사용 (예: 회원가입 인증 메일 링크 `emailRedirectTo`)
+  - Edge Function(line-notify, line-webhook): `Deno.env.get('SITE_URL')` 가 있으면 그것, 없으면 `'https://allabut.com'`
+- Supabase → Authentication → URL Configuration: Site URL `https://allabut.com`, Redirect URLs 에 `https://allabut.com/**`, `https://www.allabut.com/**`
+
 ## 프로젝트
 - **allAbut** — CNC 커스텀 어버트먼트를 **쉽고 정확하게 주문하는 전문 웹앱**
 - 메타버스/게임 요소는 전부 폐기했다 (Phaser, 아바타, 펫, 이름표, 길드 코드 없음)
@@ -85,7 +99,8 @@
 
 ## 파일 구조 (로직과 화면 분리)
 - `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
-- `config.js` — Supabase 주소·공개 키
+- `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`
+- `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
 - `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시
 - `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
 - `auth.js` — 회원가입(닉네임, 치과 이름·전화 선택) / 로그인 / `getProfile()`

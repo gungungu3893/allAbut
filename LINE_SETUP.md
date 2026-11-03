@@ -25,6 +25,8 @@ allAbut 의 LINE 알림은 **Supabase Edge Function 2개**로 동작해요.
    - `LINE_CHANNEL_SECRET`
    - `LINE_ADMIN_USER_ID` (관리자 본인의 LINE 사용자 id, `U` 로 시작하는 33글자)
    - `NOTIFY_SECRET` (아무도 모르는 긴 글자 — 3장에서 한 번 더 써요. 메모장에 잠깐 복사해 두세요)
+3. (선택) `SITE_URL` — LINE 카드 버튼이 여는 사이트 주소. **없으면 `https://allabut.com`** 을 써요.
+   테스트 사이트로 보내고 싶을 때만 추가하세요 (끝에 `/` 는 있어도 없어도 돼요).
 
 ---
 

@@ -1,0 +1,23 @@
+# ================================================================
+# allAbut — Cloudflare Pages 주소 규칙
+# ================================================================
+# www.allabut.com → allabut.com (301) 은 여기서 하지 않아요 (Cloudflare 대시보드 Redirect Rules 에서 설정).
+#
+# 공개되면 안 되는 파일(안내문 *.md, sql/, supabase/)은 build.sh 가 아예 배포하지 않아서
+# 주소로 열면 404.html 이 404 로 나와요. (진짜 차단은 build.sh 담당)
+#
+# 아래 규칙은 "안전장치"예요:
+# Cloudflare 빌드 설정(Build command: bash build.sh / Build output directory: dist)을 깜빡해서
+# 저장소 전체가 올라간 경우에도, 이 주소들을 열면 내용 대신 "찾을 수 없음" 페이지로 보내요.
+# (_redirects 는 404 응답 코드를 지원하지 않아서 302 로 404 페이지에 보내요)
+
+/README.md            /404.html  302
+/CLAUDE.md            /404.html  302
+/CNC_PORT_PLAN.md     /404.html  302
+/LINE_SETUP.md        /404.html  302
+/TOPUP_SETUP.md       /404.html  302
+/LEGAL_SETUP.md       /404.html  302
+/FINANCE_SETUP.md     /404.html  302
+/build.sh             /404.html  302
+/sql/*                /404.html  302
+/supabase/*           /404.html  302

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Page not found · allAbut</title>
+  <!--
+    Cloudflare Pages 는 없는 주소를 열면 이 페이지를 "404" 로 보여줘요.
+    (이 파일이 없으면 Cloudflare 가 모든 없는 주소에 index.html 을 200 으로 보여줘서 404 가 안 나와요 — 지우지 마세요)
+  -->
+  <style>
+    :root { --navy: #001D4A; --gold: #D4AF37; --bg: #F7F8FA; --muted: #4B5563; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px; background: var(--bg); color: var(--navy);
+      font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 1.125rem; line-height: 1.6;
+    }
+    .box { width: 100%; max-width: 520px; padding: 32px 24px; background: #fff; border-radius: 16px; border-top: 6px solid var(--gold); text-align: center; box-shadow: 0 4px 16px rgba(0, 29, 74, 0.08); }
+    .logo { font-size: 2rem; font-weight: 700; margin: 0 0 8px; }
+    .logo span { color: var(--gold); }
+    .code { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 3rem; font-weight: 700; margin: 8px 0; }
+    p { margin: 6px 0; }
+    .muted { color: var(--muted); }
+    a.btn {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 52px; margin-top: 20px; padding: 0 28px;
+      border-radius: 12px; background: var(--navy); color: #fff; font-weight: 600; text-decoration: none;
+    }
+    a.btn:focus-visible { outline: 3px solid #2563EB; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main class="box">
+    <p class="logo">all<span>A</span>but</p>
+    <p class="code">404</p>
+    <p><b>Page not found</b></p>
+    <p class="muted" lang="th">ไม่พบหน้านี้</p>
+    <p class="muted" lang="ko">페이지를 찾을 수 없어요</p>
+    <a class="btn" href="/">Go to allAbut</a>
+  </main>
+</body>
+</html>

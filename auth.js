@@ -15,10 +15,14 @@ async function signUp(email, password, nickname, clinicName, phone, legal) {
   var result = await sb.auth.signUp({
     email: email,
     password: password,
-    options: { data: {
-      nickname: nickname, clinic_name: clinicName || '', phone: phone || '',
-      accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
-    } }
+    options: {
+      // 인증 메일의 링크를 누르면 돌아올 주소 (config.js 의 SITE_URL)
+      emailRedirectTo: SITE_URL + '/',
+      data: {
+        nickname: nickname, clinic_name: clinicName || '', phone: phone || '',
+        accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
+      }
+    }
   });
   if (result.error) throw result.error;
 
