@@ -67,6 +67,14 @@
 - 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
 - 모든 화면 아래 푸터: Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
 
+## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
+- Admin → Dashboard = 맨 위 월 선택(◀ 월 ▶, 주문·매출 같이 사용) + "Orders" 구역 + "Revenue" 구역
+- 집계는 DB 함수만 (관리자 전용, 방콕 시간 기준 달, month 는 1~12): `admin_finance_month`, `admin_finance_trend`, `admin_outstanding_credits`, `admin_topups_export`
+- 입금 = 승인일(reviewed_at) 기준 VAT 포함 total. 사용 가치 = `credit_lot_usage`(restored_at 없음) × 묶음 unit_price (VAT 별도)
+- 현금 환불 금액은 `credit_history.amount_thb` (004 에서 추가, `admin_refund_cash` 가 저장)
+- 002 를 다시 실행하면 004 도 다시 실행 (admin_refund_cash 가 예전 모양으로 돌아가서)
+- CSV: UTF-8 BOM, 금액은 쉼표 없는 숫자, Tax ID 는 `="..."`, 수식 주입 방지(' 붙임), 파일명 `allabut-topups-YYYY-MM.csv`
+
 ## 제외 (나중에)
 - 세금계산서·영수증, 카드·온라인 자동 결제
 
@@ -97,6 +105,8 @@
 - `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
 - `cnc/cnc-admin.js` — 관리자 로직 (화면 코드 없음): 대시보드 집계, 주문 목록·상세, 단계 처리, 디자인 업로드, 배송, 취소·환불, 고객·크레딧
 - `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/settings`
+- `cnc/cnc-finance.js` — 매출 집계 RPC 호출, CSV 만들기·내려받기 (로직만)
+- `ui/page-admin-finance.js` — Dashboard 의 Revenue 구역 (`PageAdmin` 에 함수 덧붙임: 카드, ? 설명, 패키지 표, 상위 고객, SVG 그래프, CSV 버튼)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
 ## 사용 흐름 규칙

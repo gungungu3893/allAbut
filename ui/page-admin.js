@@ -131,8 +131,9 @@ var PageAdmin = {
   // ================================================================
   // Dashboard 탭
   // ================================================================
-  // 위쪽(지금 기준): 단계별 카드, Due soon
-  // 아래쪽(선택한 달): ◀ 월 ▶, 숫자 카드 5개, 일별 막대, 최근 12개월 추이, 그 달 완료 목록
+  // 맨 위: ◀ 월 ▶ (주문·매출이 같이 사용), 구역 이동 버튼
+  // Orders 구역: 지금 기준 단계별 카드·Due soon / 선택한 달 숫자 카드 5개·일별 막대·12개월 추이·완료 목록
+  // Revenue 구역: ui/page-admin-finance.js 의 financeHtml()
 
   ensureMonth: function () {
     if (this.dash.year == null) {
@@ -174,6 +175,9 @@ var PageAdmin = {
       d.error = err;
     }
     this.drawBody();
+    // 매출(Revenue) 구역 — 주문 통계와 따로 불러와요 (매출 쪽 오류가 주문 통계를 막지 않게)
+    await this.loadFinance(token);
+    if (token === this.loadToken) this.drawBody();
   },
 
   // 달 바꾸기 (미래 달로는 못 가요)
@@ -192,7 +196,9 @@ var PageAdmin = {
     var token = ++this.loadToken;
     d.monthData = null;
     d.trend = null;
+    this.fin.month = null;
     this.drawBody();
+    var fin = this.loadFinanceMonth(token);
     try {
       var res = await Promise.all([cncAdminMonthStats(year, month), cncAdminTrend(year, month)]);
       if (token !== this.loadToken) return;
@@ -204,6 +210,8 @@ var PageAdmin = {
       d.error = err;
     }
     this.drawBody();
+    await fin;
+    if (token === this.loadToken) this.drawBody();
   },
 
   monthLabel: function (year, month, short) {
@@ -218,6 +226,43 @@ var PageAdmin = {
     var self = this;
     var d = this.dash;
     if (d.error) return this.errorBox('PageAdmin.loadDash()', d.error);
+    var html = '';
+
+    // ----- 맨 위: 월 선택 (주문·매출 같이 사용) + 구역 이동 -----
+    html += this.monthNavHtml() +
+      '<div class="zone-jump">' +
+        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpZone(\'zone-orders\')"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</button>' +
+        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpZone(\'zone-revenue\')"><span aria-hidden="true">💰</span> ' + escHtml(t('fin_zone_revenue')) + '</button>' +
+      '</div>';
+
+    // ================= Orders 구역 =================
+    html += '<section class="dash-zone" id="zone-orders"><h2 class="zone-title"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</h2>';
+    html += this.ordersZoneHtml();
+    html += '</section>';
+
+    // ================= Revenue 구역 =================
+    html += '<section class="dash-zone" id="zone-revenue"><h2 class="zone-title"><span aria-hidden="true">💰</span> ' + escHtml(t('fin_zone_revenue')) +
+      ' <span class="zone-month">· ' + escHtml(this.monthLabel(d.year, d.month)) + '</span></h2>' +
+      '<p class="muted zone-note">' + escHtml(t('fin_zone_note')) + '</p>';
+    html += this.financeHtml();
+    html += '</section>';
+    return html;
+  },
+
+  // 월 선택 (◀ 2026년 11월 ▶)
+  monthNavHtml: function () {
+    var d = this.dash;
+    return '<div class="month-nav">' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
+      '<h2 class="month-title">' + escHtml(this.monthLabel(d.year, d.month)) + '</h2>' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(1)"' + (this.isCurrentMonth() ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
+      '</div>';
+  },
+
+  // Orders 구역 (지금 기준 단계별 + 선택한 달 주문 통계)
+  ordersZoneHtml: function () {
+    var self = this;
+    var d = this.dash;
     var html = '';
 
     // ----- 지금 기준 -----
@@ -251,11 +296,7 @@ var PageAdmin = {
     }
 
     // ----- 선택한 달 -----
-    html += '<div class="month-nav">' +
-      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
-      '<h2 class="month-title">' + escHtml(this.monthLabel(d.year, d.month)) + '</h2>' +
-      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(1)"' + (this.isCurrentMonth() ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
-      '</div>';
+    html += '<h3 class="section-label">' + escHtml(tf('fin_orders_month_fmt', { m: this.monthLabel(d.year, d.month) })) + '</h3>';
 
     var m = d.monthData;
     if (!m) return html + '<div class="card">' + uiLoading() + '</div>';
