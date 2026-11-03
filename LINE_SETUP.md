@@ -121,7 +121,9 @@ Supabase 대시보드 → **Database** → **Webhooks** (또는 **Integrations �
 5. **Start milling** → 고객 LINE 에 "가공을 시작했어요 (이제 취소할 수 없어요)"
 6. **Ship** → 고객 LINE 에 택배사·송장번호
 7. 고객 **수령 확인** → 관리자 LINE 에 📦
-8. Customers 탭에서 **+10** 크레딧 → 고객 LINE 에 💳
+8. Customers 탭에서 **+10** 크레딧 → 고객 LINE 에 💳 (남은 잔액 포함)
+9. 고객이 주문을 제출하면 → 고객 LINE 에 📝 주문 접수 완료 (사용 크레딧·남은 잔액)
+10. 고객이 접수 상태에서 직접 취소 → 고객 LINE 에 ↩️ 크레딧 환불 / Customers 탭에서 **-5** → ➖ 크레딧 조정
 
 ---
 
@@ -149,3 +151,6 @@ Supabase 대시보드 → **Database** → **Webhooks** (또는 **Integrations �
 - LINE 전송이 실패해도 주문 저장은 그대로 돼요 (함수는 항상 200).
 - 관리자가 **Mark as delivered** 를 직접 누른 경우에는 관리자에게 "고객 수령" 알림을 보내지 않아요.
 - 관리자 취소(Cancel & refund)는 주문 이력에 `admin_cancelled` 가 먼저 기록되고, 그 기록으로 "고객 취소"와 구분해요.
+- 크레딧 알림(`credit_history` INSERT): use(📝 주문 접수 완료) · refund(↩️ 환불) · adjust(➖ 조정) · charge(💳 충전) — 모두 남은 잔액(`credit_wallets.balance`) 포함.
+  고객의 주문 접수 알림은 이 'use' 로 보내고, `cnc_orders` INSERT 는 관리자에게만 보내요 (중복 방지).
+- 관리자 취소로 생긴 환불은 "allAbut 에서 취소" 카드에 환불 수량·남은 잔액이 이미 들어가서, 환불 카드를 따로 보내지 않아요.

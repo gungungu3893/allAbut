@@ -14,7 +14,9 @@
 //   - stage → done               📦 고객 수령 완료 (관리자가 직접 "Mark as delivered" 한 경우는 보내지 않음)
 //   - stage → cancelled (고객 취소) ❌
 // 고객(profiles.line_user_id, 연결 안 했으면 안 보냄)에게 (profiles.lang 언어, 9개 언어)
-//   - confirmed / design_ready / milling / shipped / 관리자 취소(환불) / 크레딧 충전
+//   - confirmed / design_ready / milling / shipped / 관리자 취소(환불 + 남은 잔액)
+//   - credit_history INSERT: use(주문 접수) / refund(환불) / adjust(조정) / charge(충전) — 모두 남은 잔액 포함
+//     (관리자 취소로 생긴 환불은 위 "관리자 취소" 카드에 이미 들어가서 따로 보내지 않아요)
 //
 // 원칙
 //   - UPDATE 인데 stage 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
@@ -53,6 +55,10 @@ type Texts = {
   shipped_title: string; shipped_body: string;
   cancel_title: string; cancel_body: string;
   charge_title: string; charge_body: string;
+  balance: string; used: string; amount: string;
+  use_title: string; use_body: string;
+  refund_title: string; refund_body: string;
+  adjust_title: string; adjust_body: string;
 };
 
 const T: Record<string, Texts> = {
@@ -65,6 +71,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 Your order has shipped', shipped_body: 'Please press "Received" on the website when the parcel arrives.',
     cancel_title: '❌ Order cancelled by allAbut', cancel_body: 'Your order was cancelled and the credits were returned to your balance.',
     charge_title: '💳 Credits added', charge_body: '{n} credits have been added to your balance.',
+    balance: 'Balance', used: 'Credits used', amount: 'Amount',
+    use_title: '📝 Order received', use_body: 'We received your order and used credits for it. You can follow the progress on the website.',
+    refund_title: '↩️ Credits refunded', refund_body: '{n} credits have been returned to your balance.',
+    adjust_title: '➖ Credits adjusted', adjust_body: 'Your credit balance has been adjusted by allAbut.',
   },
   ko: {
     open: 'allAbut 열기', order: '주문번호', patient: '환자', deadline: '납기', carrier: '택배사', tracking: '송장번호',
@@ -75,6 +85,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 배송을 시작했어요', shipped_body: '택배를 받으시면 웹사이트에서 "수령 확인"을 눌러 주세요.',
     cancel_title: '❌ allAbut에서 주문을 취소했어요', cancel_body: '주문이 취소되고 크레딧이 환불되었어요.',
     charge_title: '💳 크레딧이 충전되었어요', charge_body: '크레딧 {n}개가 충전되었어요.',
+    balance: '남은 잔액', used: '사용 크레딧', amount: '수량',
+    use_title: '📝 주문 접수 완료', use_body: '주문이 접수되어 크레딧을 사용했어요. 주문 진행 상황은 웹사이트에서 확인할 수 있어요.',
+    refund_title: '↩️ 크레딧 환불', refund_body: '크레딧 {n}개가 환불되었어요.',
+    adjust_title: '➖ 크레딧 조정', adjust_body: 'allAbut에서 크레딧 잔액을 조정했어요.',
   },
   th: {
     open: 'เปิด allAbut', order: 'คำสั่งงาน', patient: 'ผู้ป่วย', deadline: 'กำหนดส่ง', carrier: 'บริษัทขนส่ง', tracking: 'เลขพัสดุ',
@@ -85,6 +99,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 จัดส่งแล้ว', shipped_body: 'เมื่อได้รับพัสดุ กรุณากด "ได้รับแล้ว" บนเว็บไซต์',
     cancel_title: '❌ allAbut ยกเลิกคำสั่งงาน', cancel_body: 'คำสั่งงานถูกยกเลิกและคืนเครดิตเข้าบัญชีแล้ว',
     charge_title: '💳 เติมเครดิตแล้ว', charge_body: 'เติมเครดิต {n} เครดิตเข้าบัญชีแล้ว',
+    balance: 'ยอดคงเหลือ', used: 'เครดิตที่ใช้', amount: 'จำนวน',
+    use_title: '📝 ได้รับคำสั่งงานแล้ว', use_body: 'เราได้รับคำสั่งงานและหักเครดิตแล้ว สามารถติดตามความคืบหน้าได้บนเว็บไซต์',
+    refund_title: '↩️ คืนเครดิตแล้ว', refund_body: 'คืนเครดิต {n} เครดิตเข้าบัญชีแล้ว',
+    adjust_title: '➖ ปรับเครดิต', adjust_body: 'allAbut ได้ปรับยอดเครดิตของคุณ',
   },
   zh: {
     open: '打开 allAbut', order: '订单号', patient: '患者', deadline: '交期', carrier: '快递公司', tracking: '运单号',
@@ -95,6 +113,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 订单已发货', shipped_body: '收到包裹后，请在网站上点击“已收货”。',
     cancel_title: '❌ allAbut 已取消订单', cancel_body: '您的订单已取消，积分已退还。',
     charge_title: '💳 积分已充值', charge_body: '已为您充值 {n} 积分。',
+    balance: '剩余积分', used: '使用积分', amount: '数量',
+    use_title: '📝 订单已受理', use_body: '我们已收到您的订单并扣除积分。您可以在网站上查看订单进度。',
+    refund_title: '↩️ 积分已退还', refund_body: '已退还 {n} 积分到您的账户。',
+    adjust_title: '➖ 积分已调整', adjust_body: 'allAbut 已调整您的积分余额。',
   },
   vi: {
     open: 'Mở allAbut', order: 'Đơn hàng', patient: 'Bệnh nhân', deadline: 'Hạn giao', carrier: 'Đơn vị vận chuyển', tracking: 'Mã vận đơn',
@@ -105,6 +127,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 Đơn hàng đã được gửi', shipped_body: 'Khi nhận được hàng, vui lòng nhấn "Đã nhận" trên trang web.',
     cancel_title: '❌ allAbut đã hủy đơn hàng', cancel_body: 'Đơn hàng đã bị hủy và tín dụng đã được hoàn lại.',
     charge_title: '💳 Đã nạp tín dụng', charge_body: 'Đã nạp {n} tín dụng vào tài khoản của bạn.',
+    balance: 'Số dư', used: 'Tín dụng đã dùng', amount: 'Số lượng',
+    use_title: '📝 Đã nhận đơn hàng', use_body: 'Chúng tôi đã nhận đơn hàng và trừ tín dụng. Bạn có thể theo dõi tiến độ trên trang web.',
+    refund_title: '↩️ Đã hoàn tín dụng', refund_body: 'Đã hoàn {n} tín dụng vào tài khoản của bạn.',
+    adjust_title: '➖ Điều chỉnh tín dụng', adjust_body: 'allAbut đã điều chỉnh số dư tín dụng của bạn.',
   },
   es: {
     open: 'Abrir allAbut', order: 'Pedido', patient: 'Paciente', deadline: 'Fecha límite', carrier: 'Transportista', tracking: 'N.º de seguimiento',
@@ -115,6 +141,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 Su pedido ha sido enviado', shipped_body: 'Cuando reciba el paquete, pulse "Recibido" en el sitio web.',
     cancel_title: '❌ Pedido cancelado por allAbut', cancel_body: 'Su pedido fue cancelado y los créditos se devolvieron a su saldo.',
     charge_title: '💳 Créditos añadidos', charge_body: 'Se han añadido {n} créditos a su saldo.',
+    balance: 'Saldo', used: 'Créditos usados', amount: 'Cantidad',
+    use_title: '📝 Pedido recibido', use_body: 'Recibimos su pedido y se descontaron los créditos. Puede seguir el progreso en el sitio web.',
+    refund_title: '↩️ Créditos reembolsados', refund_body: 'Se devolvieron {n} créditos a su saldo.',
+    adjust_title: '➖ Créditos ajustados', adjust_body: 'allAbut ajustó su saldo de créditos.',
   },
   tr: {
     open: 'allAbut\'u aç', order: 'Sipariş', patient: 'Hasta', deadline: 'Teslim tarihi', carrier: 'Kargo firması', tracking: 'Takip no.',
@@ -125,6 +155,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 Siparişiniz kargoya verildi', shipped_body: 'Paket elinize ulaşınca web sitesinde "Teslim aldım" düğmesine basın.',
     cancel_title: '❌ Sipariş allAbut tarafından iptal edildi', cancel_body: 'Siparişiniz iptal edildi ve krediler bakiyenize iade edildi.',
     charge_title: '💳 Kredi yüklendi', charge_body: 'Bakiyenize {n} kredi yüklendi.',
+    balance: 'Kalan bakiye', used: 'Kullanılan kredi', amount: 'Miktar',
+    use_title: '📝 Sipariş alındı', use_body: 'Siparişinizi aldık ve krediler düşüldü. Siparişin durumunu web sitesinden takip edebilirsiniz.',
+    refund_title: '↩️ Kredi iade edildi', refund_body: 'Bakiyenize {n} kredi iade edildi.',
+    adjust_title: '➖ Kredi düzeltmesi', adjust_body: 'allAbut kredi bakiyenizi düzeltti.',
   },
   ar: {
     open: 'فتح allAbut', order: 'الطلب', patient: 'المريض', deadline: 'موعد التسليم', carrier: 'شركة الشحن', tracking: 'رقم التتبع',
@@ -135,6 +169,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 تم شحن طلبك', shipped_body: 'عند وصول الطرد، يرجى الضغط على "تم الاستلام" في الموقع.',
     cancel_title: '❌ ألغت allAbut الطلب', cancel_body: 'تم إلغاء طلبك وإعادة الرصيد إلى حسابك.',
     charge_title: '💳 تمت إضافة رصيد', charge_body: 'تمت إضافة {n} رصيد إلى حسابك.',
+    balance: 'الرصيد المتبقي', used: 'الرصيد المستخدم', amount: 'الكمية',
+    use_title: '📝 تم استلام الطلب', use_body: 'استلمنا طلبك وتم خصم الرصيد. يمكنك متابعة تقدم الطلب على الموقع.',
+    refund_title: '↩️ تم استرداد الرصيد', refund_body: 'تمت إعادة {n} رصيد إلى حسابك.',
+    adjust_title: '➖ تعديل الرصيد', adjust_body: 'قامت allAbut بتعديل رصيدك.',
   },
   fa: {
     open: 'باز کردن allAbut', order: 'سفارش', patient: 'بیمار', deadline: 'مهلت تحویل', carrier: 'شرکت حمل', tracking: 'کد رهگیری',
@@ -145,6 +183,10 @@ const T: Record<string, Texts> = {
     shipped_title: '🚚 سفارش شما ارسال شد', shipped_body: 'وقتی بسته رسید، لطفاً در سایت «دریافت شد» را بزنید.',
     cancel_title: '❌ allAbut سفارش را لغو کرد', cancel_body: 'سفارش شما لغو شد و اعتبار به حساب شما بازگردانده شد.',
     charge_title: '💳 اعتبار افزوده شد', charge_body: '{n} اعتبار به حساب شما افزوده شد.',
+    balance: 'اعتبار باقی‌مانده', used: 'اعتبار مصرف‌شده', amount: 'مقدار',
+    use_title: '📝 سفارش دریافت شد', use_body: 'سفارش شما دریافت شد و اعتبار کسر شد. پیشرفت سفارش را می‌توانید در سایت ببینید.',
+    refund_title: '↩️ اعتبار بازگردانده شد', refund_body: '{n} اعتبار به حساب شما بازگردانده شد.',
+    adjust_title: '➖ اصلاح اعتبار', adjust_body: 'allAbut اعتبار حساب شما را اصلاح کرد.',
   },
 };
 
@@ -296,7 +338,10 @@ async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' |
     title = x.cancel_title; body = x.cancel_body;
     rows.push([x.refunded, String(o.credits_used ?? 0) + ' ' + x.credits]);
     const last = lastEntry(o.review_history);
-    if (last && last.note) rows.push([x.reason, last.note]);
+    const reason = last && last.action === 'admin_cancelled' ? last.note
+      : ((o.review_history || []).slice().reverse().find((h: any) => h && h.action === 'admin_cancelled') || {}).note;
+    if (reason) rows.push([x.reason, reason]);
+    rows.push([x.balance, balanceText(x, await getBalance(o.user_id))]);
   }
 
   await push(p.line_user_id, flexCard({
@@ -305,17 +350,66 @@ async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' |
   }));
 }
 
-async function notifyCharge(h: any): Promise<void> {
+// 남은 잔액 (credit_wallets, 서버 관리 키로 읽기). 못 읽으면 null
+async function getBalance(userId: string): Promise<number | null> {
+  if (!userId) return null;
+  const { data, error } = await db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle();
+  if (error) { console.error('balance read failed', error); return null; }
+  return data ? Number(data.balance ?? 0) : 0;
+}
+
+function balanceText(x: Texts, balance: number | null): string {
+  return balance == null ? '—' : String(balance) + ' ' + x.credits;
+}
+
+// 관리자 취소로 생긴 환불인지 (그때는 "관리자 취소" 카드에 환불·잔액이 이미 들어가서 따로 보내지 않아요)
+async function isAdminCancelRefund(orderId: string): Promise<boolean> {
+  if (!orderId) return false;
+  const { data, error } = await db.from('cnc_orders').select('stage, review_history').eq('id', orderId).maybeSingle();
+  if (error || !data) return false;
+  return data.stage === 'cancelled' && isAdminCancel(data.review_history);
+}
+
+// credit_history INSERT → 고객 알림 (type 별)
+//   use    📝 주문 접수 완료 (주문번호, 사용 크레딧, 남은 잔액)
+//   refund ↩️ 크레딧 환불 (주문번호, 환불 수량, 남은 잔액) — 관리자 취소로 생긴 환불은 제외 (중복 방지)
+//   adjust ➖ 크레딧 조정 (수량 부호 포함, 사유, 남은 잔액)
+//   charge 💳 크레딧 충전 (수량, 남은 잔액)
+async function notifyCredit(h: any): Promise<void> {
+  const type = String(h.type || '');
+  if (!['use', 'refund', 'adjust', 'charge'].includes(type)) return;
+  const amount = Number(h.amount || 0);
+  if (type === 'charge' && amount <= 0) return;
+
   const p = await getProfile(h.user_id);
-  if (!p || !p.line_user_id) return;
+  if (!p || !p.line_user_id) return;   // LINE 연결 안 했으면 안 보내요
+  if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;
+
   const x = texts(p.lang);
-  const n = Number(h.amount || 0);
+  const balance = await getBalance(h.user_id);
+  const abs = Math.abs(amount);
   const desc = String(h.description || '').trim();
-  const body = x.charge_body.replace('{n}', String(n)) + (desc ? '\n' + desc : '');
-  const rows: Row[] = [[x.credits, '+' + n]];
+  let title = '', body = '';
+  const rows: Row[] = [];
+
+  if (type === 'use') {
+    title = x.use_title; body = x.use_body;
+    rows.push([x.order, h.order_id], [x.used, String(abs) + ' ' + x.credits]);
+  } else if (type === 'refund') {
+    title = x.refund_title; body = x.refund_body.replace('{n}', String(abs));
+    rows.push([x.order, h.order_id], [x.refunded, String(abs) + ' ' + x.credits]);
+  } else if (type === 'adjust') {
+    title = x.adjust_title; body = x.adjust_body;
+    rows.push([x.amount, (amount > 0 ? '+' : '') + String(amount) + ' ' + x.credits], [x.reason, desc]);
+  } else {
+    title = x.charge_title; body = x.charge_body.replace('{n}', String(abs)) + (desc ? '\n' + desc : '');
+    rows.push([x.credits, '+' + abs]);
+  }
+  rows.push([x.balance, balanceText(x, balance)]);
+
+  const alt = title + (h.order_id ? ' · ' + h.order_id : '') + ' · ' + x.balance + ': ' + balanceText(x, balance);
   await push(p.line_user_id, flexCard({
-    title: x.charge_title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL,
-    altText: x.charge_title + ' · +' + n,
+    title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL, altText: alt,
   }));
 }
 
@@ -327,15 +421,15 @@ async function handle(payload: any): Promise<void> {
   const { type, table, record, old_record } = payload ?? {};
   if (!record) return;
 
-  // 크레딧 충전
+  // 크레딧 사용 · 환불 · 조정 · 충전 → 고객
   if (table === 'credit_history') {
-    if (type === 'INSERT' && record.type === 'charge' && Number(record.amount) > 0) await notifyCharge(record);
+    if (type === 'INSERT') await notifyCredit(record);
     return;
   }
 
   if (table !== 'cnc_orders') return;
 
-  // 새 주문 → 관리자
+  // 새 주문 → 관리자만 (고객에게는 credit_history 'use' 로 "주문 접수 완료"를 보내요 — 중복 방지)
   if (type === 'INSERT') {
     await notifyAdmin('🆕 New order', record);
     return;
