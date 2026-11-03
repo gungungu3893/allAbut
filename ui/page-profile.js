@@ -253,12 +253,34 @@ var PageProfile = {
     }
   },
 
+  // 크레딧 묶음 목록: 충전일, 수량, 남은 수량, 만료일 (30일 이내 주황, 7일 이내 빨강)
+  lotsHtml: function () {
+    var lots = APP.lots;
+    var html = '<h3 class="detail-title">' + escHtml(t('lots_title')) + '</h3>';
+    if (!lots) return html + uiLoading();
+    if (!lots.length) return html + '<p class="muted">' + escHtml(t('lots_empty')) + '</p>';
+    return html + '<div class="table-wrap"><table class="table lots-table"><thead><tr>' +
+      '<th>' + escHtml(t('lots_charged')) + '</th><th>' + escHtml(t('lots_quantity')) + '</th><th>' + escHtml(t('lots_remaining')) + '</th><th>' + escHtml(t('lots_expires')) + '</th></tr></thead><tbody>' +
+      lots.map(function (l) {
+        var st = cncExpiryState(l.expires_at);
+        var days = cncDaysLeft(l.expires_at);
+        return '<tr class="' + (st ? 'lot-' + st : '') + '">' +
+          '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
+          '<td class="mono">' + formatNumber(l.quantity) + '</td>' +
+          '<td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
+          '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) +
+            (st ? ' <span class="lot-days">' + escHtml(tf('lots_days_left', { n: days })) + '</span>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  },
+
   drawCredits: function () {
     var box = document.getElementById('profile-credits');
     if (!box) return;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
       '<p class="big-number mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + ' <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
-      '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_charge_help')) + '</p>' +
+      '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
+      '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + '</a>' +
+      this.lotsHtml() +
       '<h3 class="detail-title">' + escHtml(t('credit_history_title')) + '</h3>';
 
     if (this.historyError) {

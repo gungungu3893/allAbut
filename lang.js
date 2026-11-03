@@ -146,3 +146,13 @@ function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// 금액: 21935 → "21,935.00 THB" (언어와 상관없이 쉼표 천 단위)
+function formatTHB(n) {
+  var v = Number(n || 0);
+  try {
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' THB';
+  } catch (e) {
+    return v.toFixed(2) + ' THB';
+  }
+}

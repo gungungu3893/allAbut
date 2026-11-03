@@ -371,7 +371,8 @@ var PageNew = {
         '<span class="tooth-info-text">' + escHtml(info) + '</span>' +
         (n ? '<button type="button" class="btn btn-outline btn-sm" onclick="PageNew.clearTeeth()">' + escHtml(t('clear_all')) + '</button>' : '') +
       '</div>' +
-      (short ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('insufficient_credits_msg')) + '</p>' : '') +
+      (short ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('insufficient_credits_msg')) + '</p>' +
+        '<a href="#/topup" class="btn btn-gold btn-sm">💳 ' + escHtml(t('topup_btn')) + '</a>' : '') +
       (n ? '<p class="selected-teeth">' + escHtml(t('selected_teeth')) + ': <span class="mono">' + d.teeth.map(function (x) { return '#' + x; }).join(', ') + '</span></p>' : '') +
       uiFieldError(e.teeth);
   },
@@ -688,7 +689,9 @@ var PageNew = {
       row('credits_use', formatNumber(need), true) +
       row('credits_current', bal != null ? formatNumber(bal) : '—', true) +
       row('credits_after', bal != null ? formatNumber(bal - need) : '—', true) +
-      (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('insufficient_credits_msg')) + '</p>' : '') +
+      (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('insufficient_credits_msg')) + '</p>' +
+        '<p class="topup-hint">' + escHtml(t('topup_draft_saved')) + '</p>' +
+        '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' : '') +
       '</div>';
 
     // 제출 진행 / 에러

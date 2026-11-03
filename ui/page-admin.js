@@ -1,6 +1,6 @@
 // ===== 관리자 화면 #/admin =====
-// 탭 3개: Orders(주문 처리) / Customers(고객·크레딧) / Dashboard(현황)
-// 주소: #/admin/orders, #/admin/customers, #/admin/dashboard (새로고침해도 같은 탭)
+// 탭 5개: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Settings(가격·결제 정보)
+// 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/settings (새로고침해도 같은 탭)
 // 데이터 처리는 cnc/cnc-admin.js 가 하고, 이 파일은 화면만 그려요.
 
 var PageAdmin = {
@@ -24,9 +24,17 @@ var PageAdmin = {
 
   TABS: [
     { id: 'orders', key: 'admin_tab_orders' },
+    { id: 'topups', key: 'admin_tab_topups' },
     { id: 'customers', key: 'admin_tab_customers' },
-    { id: 'dashboard', key: 'admin_tab_dashboard' }
+    { id: 'dashboard', key: 'admin_tab_dashboard' },
+    { id: 'settings', key: 'admin_tab_settings' }
   ],
+
+  // Top-ups 탭 상태
+  topups: { status: 'pending', rows: [], hasMore: false, loading: false, error: false },
+  topupDetail: null,     // { modal, row, busy, slipUrl, slipError }
+  // Settings 탭 상태
+  settingsTab: { packages: null, settings: null, error: false, saving: false },
 
   // ================================================================
   // 페이지 열기 / 다시 그리기 / 떠나기
@@ -89,7 +97,9 @@ var PageAdmin = {
 
   loadTab: function () {
     if (this.tab === 'orders') return this.loadOrders(false);
+    if (this.tab === 'topups') return this.loadTopups(false);
     if (this.tab === 'customers') return this.loadUsers();
+    if (this.tab === 'settings') return this.loadSettings();
     return this.loadDash();
   },
 
@@ -97,7 +107,9 @@ var PageAdmin = {
     var box = document.getElementById('admin-body');
     if (!box) return;
     if (this.tab === 'orders') box.innerHTML = this.ordersHtml();
+    else if (this.tab === 'topups') box.innerHTML = this.topupsHtml();
     else if (this.tab === 'customers') box.innerHTML = this.usersHtml();
+    else if (this.tab === 'settings') box.innerHTML = this.settingsHtml();
     else box.innerHTML = this.dashHtml();
   },
 
@@ -145,13 +157,15 @@ var PageAdmin = {
     try {
       var res = await Promise.all([
         cncAdminDashboardNow(),
+        cncAdminPendingTopupCount().catch(function () { return null; }),
         cncAdminMonthStats(d.year, d.month),
         cncAdminTrend(d.year, d.month)
       ]);
       if (token !== this.loadToken) return;
       d.now = res[0];
-      d.monthData = res[1];
-      d.trend = res[2];
+      d.pendingTopups = res[1];
+      d.monthData = res[2];
+      d.trend = res[3];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -208,6 +222,12 @@ var PageAdmin = {
     if (!d.now) {
       html += '<div class="card">' + uiLoading() + '</div>';
     } else {
+      if (d.pendingTopups != null) {
+        html += '<button type="button" class="admin-topup-card' + (d.pendingTopups ? ' has' : '') + '" onclick="PageAdmin.setTab(\'topups\')">' +
+          '<span class="admin-stage-count mono">' + formatNumber(d.pendingTopups) + '</span>' +
+          '<span class="admin-stage-name">💰 ' + escHtml(t('admin_pending_topups')) + '</span>' +
+          '<span class="arrow" aria-hidden="true">→</span></button>';
+      }
       html += '<h2 class="section-label">' + escHtml(t('admin_by_stage')) + '</h2>' +
         '<div class="admin-stage-cards">' + ADMIN_ACTIVE_STAGES.map(function (stage) {
           return '<button type="button" class="admin-stage-card stage-card-' + stage + '" onclick="PageAdmin.filterStage(\'' + stage + '\')">' +
@@ -938,9 +958,11 @@ var PageAdmin = {
       var res = await Promise.all([
         cncAdminCreditHistory(st.user.id, 100),
         cncAdminListOrders({ userId: st.user.id, stage: 'all', limit: 50 }),
-        cncAdminGetBalance(st.user.id)
+        cncAdminGetBalance(st.user.id),
+        cncAdminUserLots(st.user.id)
       ]);
       if (this.customer !== st) return;
+      st.lots = res[3];
       st.history = res[0];
       st.orders = res[1].rows;
       st.user.balance = res[2];
@@ -999,6 +1021,9 @@ var PageAdmin = {
       html += '<p class="error-text"><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(st.error)) + '</p>' +
         '<button type="button" class="btn btn-outline" onclick="PageAdmin.loadCustomer()">' + escHtml(t('btn_retry')) + '</button>';
     }
+
+    // 크레딧 묶음 + 환불 계산기
+    html += this.customerLotsHtml(st);
 
     // 크레딧 이력
     html += '<h3 class="detail-title">' + escHtml(t('credit_history_title')) + '</h3>';
@@ -1072,4 +1097,496 @@ var PageAdmin = {
     this.drawCustomer();
     this.loadCustomer();
   }
+,
+
+  // ================================================================
+  // Top-ups 탭 (입금 슬립 확인 → 승인 / 거절)
+  // ================================================================
+  TOPUP_STATUSES: ['pending', 'approved', 'rejected', 'cancelled', 'all'],
+
+  loadTopups: async function (more) {
+    var tp = this.topups;
+    var token = ++this.loadToken;
+    tp.loading = true;
+    tp.error = false;
+    if (!more) { tp.rows = []; tp.hasMore = false; }
+    if (!document.getElementById('admin-topups-list')) this.drawBody();
+    this.drawTopupsList();
+    try {
+      var res = await cncAdminListTopups({ status: tp.status, offset: more ? tp.rows.length : 0 });
+      if (token !== this.loadToken) return;
+      tp.rows = more ? tp.rows.concat(res.rows) : res.rows;
+      tp.hasMore = res.hasMore;
+    } catch (err) {
+      console.error(err);
+      if (token !== this.loadToken) return;
+      tp.error = err;
+    }
+    tp.loading = false;
+    this.drawTopupsList();
+  },
+
+  topupsHtml: function () {
+    var tp = this.topups;
+    return '<div class="orders-tools admin-tools">' +
+        '<div class="field">' +
+          '<label class="field-label" for="admin-topup-status">' + escHtml(t('admin_filter_stage')) + '</label>' +
+          '<select class="input" id="admin-topup-status" onchange="PageAdmin.setTopupStatus(this.value)">' +
+            this.TOPUP_STATUSES.map(function (st) {
+              return '<option value="' + st + '"' + (st === tp.status ? ' selected' : '') + '>' + escHtml(st === 'all' ? t('admin_filter_all') : t('topup_status_' + st)) + '</option>';
+            }).join('') +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div id="admin-topups-list"></div>';
+  },
+
+  setTopupStatus: function (value) {
+    this.topups.status = value;
+    this.loadTopups(false);
+  },
+
+  customerName: function (r) {
+    var c = r.customer || {};
+    return c.clinic_name || c.nickname || String(r.user_id || '').slice(0, 8);
+  },
+
+  drawTopupsList: function () {
+    var box = document.getElementById('admin-topups-list');
+    if (!box) return;
+    var tp = this.topups;
+    var self = this;
+    if (tp.error) { box.innerHTML = this.errorBox('PageAdmin.loadTopups(false)', tp.error); return; }
+    if (!tp.rows.length && tp.loading) { box.innerHTML = '<div class="card">' + uiLoading() + '</div>'; return; }
+    if (!tp.rows.length) { box.innerHTML = '<div class="card"><p class="empty-text">' + escHtml(t('admin_no_topups')) + '</p></div>'; return; }
+
+    var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
+      '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
+      '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('col_type')) + '</th></tr></thead><tbody>' +
+      tp.rows.map(function (r) {
+        return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
+          '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b></td>' +
+          '<td>' + escHtml(self.customerName(r)) + '</td>' +
+          '<td class="mono">' + formatNumber(r.credits) + '</td>' +
+          '<td class="mono nowrap">' + formatTHB(r.total) + '</td>' +
+          '<td class="nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
+          '<td>' + uiTopupBadge(r.status) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    var cards = '<ul class="admin-order-cards">' + tp.rows.map(function (r) {
+      return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
+        '<span class="order-top"><span class="order-id mono">' + escHtml(r.id) + '</span>' + uiTopupBadge(r.status) + '</span>' +
+        '<span class="admin-card-clinic">' + escHtml(self.customerName(r)) + '</span>' +
+        '<span class="order-meta"><span class="mono">' + formatNumber(r.credits) + ' ' + escHtml(t('credit_unit')) + '</span>' +
+        '<span class="mono">' + formatTHB(r.total) + '</span><span>' + escHtml(formatDateTime(r.created_at)) + '</span></span>' +
+        '</button></li>';
+    }).join('') + '</ul>';
+
+    box.innerHTML = table + cards +
+      (tp.hasMore ? '<div class="load-more"><button type="button" class="btn btn-outline btn-lg" onclick="PageAdmin.loadTopups(true)"' + (tp.loading ? ' disabled' : '') + '>' +
+        escHtml(tp.loading ? t('loading') : t('load_more')) + '</button></div>' : '');
+  },
+
+  openTopup: function (id) {
+    var row = this.topups.rows.filter(function (r) { return r.id === id; })[0];
+    if (!row) return;
+    var self = this;
+    var st = { row: row, busy: false, slipUrl: null, slipError: false, modal: null };
+    this.topupDetail = st;
+    st.modal = uiModal({
+      title: t('admin_topup_detail') + ' · ' + row.id,
+      body: uiLoading(),
+      wide: true,
+      onClose: function () { if (self.topupDetail === st) self.topupDetail = null; }
+    });
+    this.drawTopupDetail();
+    cncAdminSlipUrl(row.slip_path).then(function (url) {
+      st.slipUrl = url;
+      self.drawTopupDetail();
+    }).catch(function (err) {
+      console.error(err);
+      st.slipError = true;
+      self.drawTopupDetail();
+    });
+  },
+
+  drawTopupDetail: function () {
+    var st = this.topupDetail;
+    if (!st || !st.modal) return;
+    var body = st.modal.el.querySelector('.modal-body');
+    if (!body) return;
+    var r = st.row;
+    var dis = st.busy ? ' disabled' : '';
+    function row(labelKey, value, mono) {
+      return '<div class="review-row"><span class="review-label">' + escHtml(t(labelKey)) + '</span><span class="review-value' + (mono ? ' mono' : '') + '">' + value + '</span></div>';
+    }
+    var slip;
+    if (st.slipError) slip = '<p class="error-text">' + escHtml(t('stl_load_error')) + '</p>';
+    else if (!st.slipUrl) slip = uiLoading();
+    else if (fileKind(r.slip_path) === 'image' || /\.(webp|heic|heif)$/i.test(r.slip_path)) {
+      slip = '<a href="' + escHtml(st.slipUrl) + '" target="_blank" rel="noopener" class="slip-big"><img src="' + escHtml(st.slipUrl) + '" alt="' + escHtml(t('topup_slip_preview')) + '"></a>';
+    } else {
+      slip = '<a class="btn btn-outline" href="' + escHtml(st.slipUrl) + '" target="_blank" rel="noopener">📄 ' + escHtml(t('admin_open_slip')) + '</a>';
+    }
+
+    var actions = '';
+    if (r.status === 'pending') {
+      actions = '<div class="action-box highlight admin-actions">' +
+        (st.busy ? '<p><span class="spinner" aria-hidden="true"></span> ' + escHtml(t('admin_processing')) + '</p>'
+          : '<p>' + escHtml(t('admin_topup_check')) + '</p>' +
+            '<div class="action-row">' +
+              '<button type="button" class="btn btn-primary btn-lg" onclick="PageAdmin.approveTopup()"' + dis + '>✅ ' + escHtml(t('admin_approve')) + '</button>' +
+              '<button type="button" class="btn btn-outline btn-lg btn-discard" onclick="PageAdmin.rejectTopup()"' + dis + '>' + escHtml(t('admin_reject')) + '</button>' +
+            '</div>') +
+        '</div>';
+    } else if (r.status === 'rejected') {
+      actions = '<div class="action-box"><p>' + uiTopupBadge('rejected') + ' ' + escHtml(r.reject_reason || '') + '</p></div>';
+    } else {
+      actions = '<div class="action-box"><p>' + uiTopupBadge(r.status) + (r.reviewed_at ? ' · ' + escHtml(formatDateTime(r.reviewed_at)) : '') + '</p></div>';
+    }
+
+    body.innerHTML = '<div class="admin-detail">' + actions +
+      '<div class="admin-detail-grid">' +
+        '<section>' +
+          row('admin_customer', escHtml(this.customerName(r))) +
+          row('topup_package', formatNumber(r.credits) + ' ' + escHtml(t('credit_unit')), true) +
+          row('topup_each_label', formatTHB(r.unit_price), true) +
+          row('topup_subtotal', formatTHB(r.subtotal), true) +
+          row('topup_vat_label', formatTHB(r.vat_amount), true) +
+          row('topup_total', '<b>' + formatTHB(r.total) + '</b>', true) +
+          row('admin_requested', escHtml(formatDateTime(r.created_at))) +
+        '</section>' +
+        '<section><h3 class="detail-title">' + escHtml(t('admin_slip')) + '</h3>' + slip + '</section>' +
+      '</div></div>';
+  },
+
+  approveTopup: async function () {
+    var st = this.topupDetail;
+    if (!st || st.busy) return;
+    var r = st.row;
+    var ok = await uiConfirm({
+      title: t('admin_approve'),
+      message: tf('admin_approve_topup_msg', { n: formatNumber(r.credits), name: this.customerName(r), total: formatTHB(r.total) }),
+      okLabel: t('admin_approve')
+    });
+    if (!ok) return;
+    await this.runTopupAction(function () { return cncAdminApproveTopup(r.id); }, 'approved', 'admin_topup_approved');
+  },
+
+  rejectTopup: function () {
+    var self = this;
+    var st = this.topupDetail;
+    if (!st || st.busy) return;
+    var modal = uiModal({
+      title: t('admin_reject'),
+      body: '<div class="field"><label class="field-label" for="reject-topup-reason">' + escHtml(t('admin_reject_reason')) + ' <span class="required">*</span></label>' +
+        '<textarea class="input textarea" id="reject-topup-reason" rows="3" maxlength="500" placeholder="' + escHtml(t('admin_reject_reason_ph')) + '"></textarea>' +
+        '<div class="err-slot"></div></div>',
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: t('admin_reject'), kind: 'danger', onClick: async function (close) {
+          var ta = modal.el.querySelector('#reject-topup-reason');
+          var reason = ta.value.trim();
+          if (!reason) {
+            ta.classList.add('invalid');
+            modal.el.querySelector('.err-slot').innerHTML = uiFieldError('admin_cancel_reason_required');
+            ta.focus();
+            return;
+          }
+          close();
+          await self.runTopupAction(function () { return cncAdminRejectTopup(st.row.id, reason); }, 'rejected', 'admin_topup_rejected', reason);
+        } }
+      ]
+    });
+  },
+
+  runTopupAction: async function (fn, newStatus, successKey, reason) {
+    var st = this.topupDetail;
+    if (!st) return;
+    st.busy = true;
+    this.drawTopupDetail();
+    try {
+      await fn();
+      st.row.status = newStatus;
+      st.row.reviewed_at = new Date().toISOString();
+      if (reason) st.row.reject_reason = reason;
+      uiToast(t(successKey), 'success');
+    } catch (err) {
+      console.error(err);
+      uiToast(uiErrorMessage(err), 'error');
+    }
+    st.busy = false;
+    this.drawTopupDetail();
+    this.loadTopups(false);
+  },
+
+  // ================================================================
+  // Settings 탭 (패키지 가격 · 결제 정보)
+  // ================================================================
+  loadSettings: async function () {
+    var sx = this.settingsTab;
+    var token = ++this.loadToken;
+    sx.error = false;
+    this.drawBody();
+    try {
+      var res = await Promise.all([cncAdminListPackages(), cncGetPaymentSettings()]);
+      if (token !== this.loadToken) return;
+      sx.packages = res[0];
+      sx.settings = res[1];
+    } catch (err) {
+      console.error(err);
+      if (token !== this.loadToken) return;
+      sx.error = err;
+    }
+    this.drawBody();
+  },
+
+  settingsHtml: function () {
+    var sx = this.settingsTab;
+    if (sx.error) return this.errorBox('PageAdmin.loadSettings()', sx.error);
+    if (!sx.packages || !sx.settings) return '<div class="card">' + uiLoading() + '</div>';
+    var s = sx.settings;
+    var vat = Number(s.vat_rate || 0);
+
+    function input(id, labelKey, value, opts) {
+      opts = opts || {};
+      return '<div class="field' + (opts.span ? ' span-2' : '') + '"><label class="field-label" for="set-' + id + '">' + escHtml(t(labelKey)) + '</label>' +
+        (opts.textarea
+          ? '<textarea class="input textarea" id="set-' + id + '" rows="2" maxlength="500">' + escHtml(value || '') + '</textarea>'
+          : '<input class="input' + (opts.mono ? ' mono' : '') + '" id="set-' + id + '" type="' + (opts.type || 'text') + '"' + (opts.step ? ' step="' + opts.step + '"' : '') + ' maxlength="100" value="' + escHtml(value == null ? '' : value) + '">') +
+        (opts.help ? '<p class="field-help">' + escHtml(t(opts.help)) + '</p>' : '') +
+        '<div class="err-slot" data-err="' + id + '"></div></div>';
+    }
+
+    var payment = '<section class="card">' +
+      '<h2 class="card-title">' + escHtml(t('admin_payment_settings')) + '</h2>' +
+      '<form class="form-grid two" onsubmit="PageAdmin.saveSettings(event)" novalidate>' +
+        input('promptpay_id', 'topup_promptpay_id', s.promptpay_id, { mono: true, help: 'admin_promptpay_help' }) +
+        input('vat_rate', 'admin_vat_rate', s.vat_rate, { type: 'number', step: '0.01' }) +
+        input('bank_name', 'topup_bank', s.bank_name) +
+        input('account_name', 'topup_account_name', s.account_name) +
+        input('account_number', 'topup_account_number', s.account_number, { mono: true }) +
+        input('note', 'admin_payment_note', s.note, { textarea: true, span: true }) +
+        '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (sx.saving ? ' disabled' : '') + '>' + escHtml(sx.saving ? t('saving') : t('pe_save')) + '</button></div>' +
+      '</form></section>';
+
+    var rows = sx.packages.map(function (p, i) {
+      var price = cncPackagePrice(p, vat);
+      return '<tr data-pkg="' + i + '"' + (p.active ? '' : ' class="pkg-off"') + '>' +
+        '<td><input class="input mono" type="number" min="1" step="1" data-f="credits" value="' + escHtml(p.credits) + '" aria-label="' + escHtml(t('admin_pkg_credits')) + '"></td>' +
+        '<td><input class="input mono" type="number" min="0" step="0.01" data-f="unit_price" value="' + escHtml(p.unit_price) + '" aria-label="' + escHtml(t('topup_each_label')) + '"></td>' +
+        '<td class="mono nowrap">' + formatTHB(price.total) + '</td>' +
+        '<td><input class="input mono" type="number" step="1" data-f="sort_order" value="' + escHtml(p.sort_order) + '" aria-label="' + escHtml(t('admin_pkg_order')) + '"></td>' +
+        '<td><label class="checkbox"><input type="checkbox" data-f="active"' + (p.active ? ' checked' : '') + '> <span>' + escHtml(t('admin_pkg_active')) + '</span></label></td>' +
+        '<td><button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.savePackage(' + i + ')">' + escHtml(t('pe_save')) + '</button></td>' +
+        '</tr>';
+    }).join('');
+
+    var packages = '<section class="card">' +
+      '<div class="card-head"><h2 class="card-title">' + escHtml(t('admin_packages')) + '</h2>' +
+        '<button type="button" class="btn btn-outline" onclick="PageAdmin.addPackage()">+ ' + escHtml(t('admin_pkg_add')) + '</button></div>' +
+      '<p class="card-desc">' + escHtml(tf('admin_packages_help', { vat: formatNumber(vat) })) + '</p>' +
+      '<div class="table-wrap"><table class="table pkg-table"><thead><tr>' +
+        '<th>' + escHtml(t('admin_pkg_credits')) + '</th><th>' + escHtml(t('topup_each_label')) + '</th><th>' + escHtml(t('topup_total_vat')) + '</th>' +
+        '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '</section>';
+
+    return '<div class="admin-settings">' + payment + packages + '</div>';
+  },
+
+  saveSettings: async function (event) {
+    event.preventDefault();
+    var sx = this.settingsTab;
+    if (sx.saving) return;
+    var v = function (id) { return document.getElementById('set-' + id).value.trim(); };
+    var fields = { promptpay_id: v('promptpay_id'), bank_name: v('bank_name'), account_name: v('account_name'), account_number: v('account_number'), vat_rate: v('vat_rate'), note: v('note') };
+    var errs = {};
+    if (fields.promptpay_id && !isValidPromptPayId(fields.promptpay_id)) errs.promptpay_id = 'admin_err_promptpay';
+    var vat = Number(fields.vat_rate);
+    if (fields.vat_rate === '' || isNaN(vat) || vat < 0 || vat > 30) errs.vat_rate = 'admin_err_vat';
+    var slots = document.querySelectorAll('.admin-settings [data-err]');
+    for (var i = 0; i < slots.length; i++) slots[i].innerHTML = uiFieldError(errs[slots[i].getAttribute('data-err')]);
+    if (Object.keys(errs).length) return;
+    sx.saving = true;
+    try {
+      sx.settings = await cncAdminSaveSettings(fields);
+      uiToast(t('admin_settings_saved'), 'success');
+    } catch (err) {
+      console.error(err);
+      uiToast(uiErrorMessage(err), 'error');
+    }
+    sx.saving = false;
+    this.drawBody();
+  },
+
+  readPackageRow: function (i) {
+    var tr = document.querySelector('.pkg-table tr[data-pkg="' + i + '"]');
+    var p = this.settingsTab.packages[i];
+    if (!tr || !p) return null;
+    return {
+      id: p.id,
+      credits: tr.querySelector('[data-f="credits"]').value,
+      unit_price: tr.querySelector('[data-f="unit_price"]').value,
+      sort_order: tr.querySelector('[data-f="sort_order"]').value,
+      active: tr.querySelector('[data-f="active"]').checked
+    };
+  },
+
+  savePackage: async function (i) {
+    var data = this.readPackageRow(i);
+    if (!data) return;
+    var ok = await uiConfirm({
+      title: t('admin_packages'),
+      message: tf('admin_pkg_save_msg', { n: data.credits, price: formatTHB(data.unit_price) }),
+      okLabel: t('pe_save')
+    });
+    if (!ok) return;
+    try {
+      var saved = await cncAdminSavePackage(data);
+      this.settingsTab.packages[i] = saved;
+      uiToast(t('admin_settings_saved'), 'success');
+    } catch (err) {
+      console.error(err);
+      uiToast(err && err.code === 'DUPLICATE_PACKAGE' ? t('admin_err_duplicate_package') : uiErrorMessage(err), 'error');
+    }
+    this.loadSettings();
+  },
+
+  addPackage: function () {
+    var sx = this.settingsTab;
+    if (!sx.packages) return;
+    if (sx.packages.some(function (p) { return !p.id; })) return;   // 저장 안 한 새 줄이 이미 있으면
+    var maxOrder = sx.packages.reduce(function (m, p) { return Math.max(m, Number(p.sort_order) || 0); }, 0);
+    sx.packages.push({ id: null, credits: '', unit_price: '', sort_order: maxOrder + 1, active: true });
+    this.drawBody();
+    var inputs = document.querySelectorAll('.pkg-table tr:last-child [data-f="credits"]');
+    if (inputs[0]) inputs[0].focus();
+  },
+
+  // ================================================================
+  // 고객 상세: 크레딧 묶음 + 현금 환불 계산기
+  // ================================================================
+  customerLotsHtml: function (st) {
+    var html = '<h3 class="detail-title">' + escHtml(t('lots_title')) + '</h3>';
+    if (!st.lots) return html + uiLoading();
+    var lots = st.lots.filter(function (l) { return l.remaining > 0 && new Date(l.expires_at) > new Date(); });
+    if (!lots.length) html += '<p class="muted">' + escHtml(t('lots_empty')) + '</p>';
+    else html += '<div class="table-wrap"><table class="table lots-table"><thead><tr>' +
+      '<th>' + escHtml(t('lots_charged')) + '</th><th>' + escHtml(t('lots_quantity')) + '</th><th>' + escHtml(t('lots_remaining')) + '</th>' +
+      '<th>' + escHtml(t('topup_each_label')) + '</th><th>' + escHtml(t('lots_expires')) + '</th></tr></thead><tbody>' +
+      lots.map(function (l) {
+        var stt = cncExpiryState(l.expires_at);
+        return '<tr class="' + (stt ? 'lot-' + stt : '') + '"><td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
+          '<td class="mono">' + formatNumber(l.quantity) + '</td><td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
+          '<td class="mono nowrap">' + (Number(l.unit_price) ? formatTHB(l.unit_price) : '—') + '</td>' +
+          '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    // 환불 계산기
+    var rf = st.refund;
+    html += '<div class="refund-box">' +
+      '<div class="card-head"><h3 class="detail-title">🧮 ' + escHtml(t('admin_refund_calc')) + '</h3>' +
+        (rf ? '' : '<button type="button" class="btn btn-outline" onclick="PageAdmin.openRefund()">' + escHtml(t('admin_refund_open')) + '</button>') + '</div>' +
+      '<p class="muted">' + escHtml(t('admin_refund_rules')) + '</p>';
+    if (rf) {
+      if (rf.loading) html += uiLoading();
+      else if (rf.error) html += '<p class="error-text">' + escHtml(uiErrorMessage(rf.error)) + '</p>';
+      else {
+        var q = rf.quote;
+        html += '<div class="table-wrap"><table class="table refund-table"><thead><tr><th></th>' +
+          '<th>' + escHtml(t('lots_charged')) + '</th><th>' + escHtml(t('lots_remaining')) + '</th><th>' + escHtml(t('admin_refund_used')) + '</th>' +
+          '<th>' + escHtml(t('admin_refund_paid')) + '</th><th>' + escHtml(t('admin_refund_rule')) + '</th><th>' + escHtml(t('admin_refund_amount')) + '</th></tr></thead><tbody>' +
+          q.lots.map(function (l) {
+            var can = l.rule === 'full' || l.rule === 'recalculated';
+            return '<tr><td>' + (can ? '<input type="checkbox" class="refund-pick" data-lot="' + escHtml(l.lot_id) + '"' + (rf.selected[l.lot_id] ? ' checked' : '') + ' onchange="PageAdmin.pickRefundLot(this)" aria-label="' + escHtml(t('admin_refund_pick')) + '">' : '') + '</td>' +
+              '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + '</td>' +
+              '<td class="mono">' + formatNumber(l.remaining) + ' / ' + formatNumber(l.quantity) + '</td>' +
+              '<td class="mono">' + formatNumber(l.used) + '</td>' +
+              '<td class="mono nowrap">' + (Number(l.paid_total) ? formatTHB(l.paid_total) : '—') + '</td>' +
+              '<td><span class="badge refund-rule ' + escHtml(l.rule) + '">' + escHtml(t('refund_rule_' + l.rule)) + '</span></td>' +
+              '<td class="mono nowrap"><b>' + formatTHB(l.refundable) + '</b></td></tr>';
+          }).join('') + '</tbody></table></div>';
+        var max = this.refundMax(st);
+        html += '<div class="form-grid two refund-form">' +
+          '<div class="field"><label class="field-label" for="refund-amount">' + escHtml(t('admin_refund_amount')) + ' (THB)</label>' +
+            '<input class="input mono" id="refund-amount" type="number" min="0" step="0.01" value="' + (rf.amount != null ? escHtml(rf.amount) : max.toFixed(2)) + '"' + (rf.busy ? ' disabled' : '') + '>' +
+            '<p class="field-help">' + escHtml(tf('admin_refund_max', { amount: formatTHB(max) })) + '</p></div>' +
+          '<div class="field"><label class="field-label" for="refund-note">' + escHtml(t('col_description')) + '</label>' +
+            '<input class="input" id="refund-note" type="text" maxlength="200" placeholder="' + escHtml(t('admin_refund_note_ph')) + '"' + (rf.busy ? ' disabled' : '') + '></div>' +
+          '</div>' +
+          '<p class="notice notice-warn"><span aria-hidden="true">⚠</span> ' + escHtml(t('admin_refund_transfer_note')) + '</p>' +
+          '<button type="button" class="btn btn-danger" onclick="PageAdmin.recordRefund()"' + (rf.busy || !max ? ' disabled' : '') + '>' + escHtml(rf.busy ? t('admin_processing') : t('admin_refund_record')) + '</button>';
+      }
+    }
+    return html + '</div>';
+  },
+
+  openRefund: async function () {
+    var st = this.customer;
+    if (!st) return;
+    st.refund = { loading: true, quote: null, selected: {}, amount: null, busy: false, error: null };
+    this.drawCustomer();
+    try {
+      var q = await cncAdminRefundQuote(st.user.id);
+      if (this.customer !== st) return;
+      st.refund.quote = q;
+      (q.lots || []).forEach(function (l) { if (l.rule === 'full' || l.rule === 'recalculated') st.refund.selected[l.lot_id] = true; });
+    } catch (err) {
+      console.error(err);
+      st.refund.error = err;
+    }
+    st.refund.loading = false;
+    this.drawCustomer();
+  },
+
+  refundMax: function (st) {
+    var rf = st.refund;
+    if (!rf || !rf.quote) return 0;
+    return (rf.quote.lots || []).reduce(function (sum, l) { return sum + (rf.selected[l.lot_id] ? Number(l.refundable || 0) : 0); }, 0);
+  },
+
+  pickRefundLot: function (box) {
+    var st = this.customer;
+    if (!st || !st.refund) return;
+    st.refund.selected[box.getAttribute('data-lot')] = box.checked;
+    st.refund.amount = null;   // 고른 묶음이 바뀌면 최대 금액으로 다시 채워요
+    this.drawCustomer();
+  },
+
+  recordRefund: async function () {
+    var st = this.customer;
+    if (!st || !st.refund || st.refund.busy) return;
+    var rf = st.refund;
+    var el = st.modal.el;
+    var lotIds = Object.keys(rf.selected).filter(function (k) { return rf.selected[k]; });
+    var amount = Number(el.querySelector('#refund-amount').value);
+    var note = el.querySelector('#refund-note').value.trim();
+    var max = this.refundMax(st);
+    if (!lotIds.length) { uiToast(t('admin_err_no_lots'), 'error'); return; }
+    if (isNaN(amount) || amount < 0 || amount > max + 0.005) { uiToast(t('admin_err_amount_too_high'), 'error'); return; }
+    rf.amount = amount;
+    var credits = (rf.quote.lots || []).reduce(function (sum, l) { return sum + (rf.selected[l.lot_id] ? Number(l.remaining || 0) : 0); }, 0);
+    var ok = await uiConfirm({
+      title: t('admin_refund_record'),
+      message: tf('admin_refund_confirm', { amount: formatTHB(amount), n: credits, name: st.user.clinic_name || st.user.nickname || st.user.email }),
+      okLabel: t('admin_refund_record'),
+      danger: true
+    });
+    if (!ok) return;
+    rf.busy = true;
+    this.drawCustomer();
+    try {
+      var balance = await cncAdminRefundCash(st.user.id, lotIds, amount, note);
+      if (balance != null) { st.user.balance = balance; this.syncUserBalance(st.user.id, balance); }
+      uiToast(t('admin_refund_done'), 'success');
+      st.refund = null;
+    } catch (err) {
+      console.error(err);
+      rf.busy = false;
+      uiToast(uiErrorMessage(err), 'error');
+    }
+    this.drawCustomer();
+    this.loadCustomer();
+  }
+
 };

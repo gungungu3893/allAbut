@@ -96,11 +96,15 @@ var PageHome = {
         '<span class="home-card-desc">' + escHtml(t('home_new_order_desc')) + '</span>' +
         '<span class="home-card-arrow arrow" aria-hidden="true">→</span>' +
       '</a>' +
-      '<a href="#/profile" class="home-card">' +
-        '<span class="home-card-label">' + escHtml(t('home_credits')) + '</span>' +
-        '<span class="home-card-number mono">' + balance + '</span>' +
-        '<span class="home-card-desc">' + escHtml(t('credit_rule')) + '</span>' +
-      '</a>' +
+      '<div class="home-card home-card-credits">' +
+        '<a href="#/profile" class="home-card-link">' +
+          '<span class="home-card-label">' + escHtml(t('home_credits')) + '</span>' +
+          '<span class="home-card-number mono">' + balance + '</span>' +
+          '<span class="home-card-desc">' + escHtml(t('credit_rule')) + '</span>' +
+          (APP.expiringSoon ? '<span class="home-card-warn"><span aria-hidden="true">⏳</span> ' + escHtml(tf('credit_expiring_soon', { n: APP.expiringSoon })) + '</span>' : '') +
+        '</a>' +
+        '<a href="#/topup" class="btn btn-gold btn-sm home-topup-btn">' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
+      '</div>' +
       '<a href="#/orders" class="home-card">' +
         '<span class="home-card-label">' + escHtml(t('home_in_progress')) + '</span>' +
         '<span class="home-card-number mono">' + inProgress + '</span>' +

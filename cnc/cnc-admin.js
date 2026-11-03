@@ -435,3 +435,118 @@ async function cncAdminDownloadUrl(bucket, path, fileName) {
   if (result.error) throw result.error;
   return result.data.signedUrl;
 }
+
+
+// ================================================================
+// 8) 크레딧 충전 요청 (Top-ups) — 승인·거절은 DB 함수로만
+// ================================================================
+
+// 목록. status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'
+// 고객 이름은 profiles 에서 한 번에 읽어서 붙여요 (row.customer = { nickname, clinic_name })
+async function cncAdminListTopups(opts) {
+  opts = opts || {};
+  var limit = opts.limit || CNC_PAGE_SIZE;
+  var offset = opts.offset || 0;
+  var query = sb.from('topup_requests').select('*');
+  if (opts.status && opts.status !== 'all') query = query.eq('status', opts.status);
+  if (opts.userId) query = query.eq('user_id', opts.userId);
+  query = query.order('created_at', { ascending: opts.status === 'pending' });   // 대기 중은 오래된 것부터
+  var rows = cncCheck(await query.range(offset, offset + limit)) || [];
+  var page = rows.slice(0, limit);
+  var ids = page.map(function (r) { return r.user_id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+  if (ids.length) {
+    try {
+      var profiles = cncCheck(await sb.from('profiles').select('id, nickname, clinic_name').in('id', ids)) || [];
+      page.forEach(function (r) { r.customer = profiles.filter(function (p) { return p.id === r.user_id; })[0] || null; });
+    } catch (err) {
+      console.warn('Customer names failed:', err);
+    }
+  }
+  return { rows: page, hasMore: rows.length > limit };
+}
+
+async function cncAdminPendingTopupCount() {
+  var result = await sb.from('topup_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+  if (result.error) throw result.error;
+  return result.count || 0;
+}
+
+function cncAdminApproveTopup(id) {
+  return cncRpc('admin_approve_topup', { p_id: id });
+}
+
+function cncAdminRejectTopup(id, reason) {
+  return cncRpc('admin_reject_topup', { p_id: id, p_reason: String(reason || '').trim() });
+}
+
+// 입금 슬립 보기 주소 (비공개 버킷 topup-slips → 1시간 서명 URL)
+function cncAdminSlipUrl(path) {
+  return cncSignedUrl(TOPUP_SLIPS_BUCKET, path);
+}
+
+
+// ================================================================
+// 9) 설정: 크레딧 패키지 · 결제 정보 (관리자 RLS 로 직접 수정)
+// ================================================================
+
+// 모든 패키지 (판매 중지 포함)
+async function cncAdminListPackages() {
+  return cncCheck(await sb.from('credit_packages').select('*').order('sort_order', { ascending: true }).order('credits', { ascending: true })) || [];
+}
+
+// 저장: id 가 있으면 수정, 없으면 추가
+async function cncAdminSavePackage(pkg) {
+  var fields = {
+    credits: parseInt(pkg.credits, 10),
+    unit_price: Number(pkg.unit_price),
+    active: !!pkg.active,
+    sort_order: parseInt(pkg.sort_order, 10) || 0
+  };
+  if (!fields.credits || fields.credits < 1 || isNaN(fields.unit_price) || fields.unit_price < 0) throw cncError('INVALID_AMOUNT');
+  var result = pkg.id
+    ? await sb.from('credit_packages').update(fields).eq('id', pkg.id).select()
+    : await sb.from('credit_packages').insert(fields).select();
+  if (result.error) {
+    if (/duplicate|unique/i.test(String(result.error.message || ''))) throw cncError('DUPLICATE_PACKAGE', { cause: result.error });
+    throw cncError(cncErrorCode(result.error), { cause: result.error });
+  }
+  if (!result.data || !result.data.length) throw cncError('NOT_ADMIN');
+  return result.data[0];
+}
+
+async function cncAdminSaveSettings(fields) {
+  var clean = {
+    promptpay_id: String(fields.promptpay_id || '').trim(),
+    bank_name: String(fields.bank_name || '').trim(),
+    account_name: String(fields.account_name || '').trim(),
+    account_number: String(fields.account_number || '').trim(),
+    vat_rate: Number(fields.vat_rate),
+    note: String(fields.note || '').trim(),
+    updated_at: new Date().toISOString()
+  };
+  var result = await sb.from('payment_settings').update(clean).eq('id', 1).select();
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  if (!result.data || !result.data.length) throw cncError('NOT_ADMIN');
+  return result.data[0];
+}
+
+
+// ================================================================
+// 10) 고객의 크레딧 묶음 · 현금 환불 계산기
+// ================================================================
+
+// 고객의 묶음 (남은 것 먼저, 만료 빠른 순)
+async function cncAdminUserLots(userId) {
+  return cncCheck(await sb.from('credit_lots').select('*').eq('user_id', userId)
+    .order('expires_at', { ascending: true }).limit(200)) || [];
+}
+
+// 환불 계산 (계산만): { lots: [{ lot_id, rule, refundable, ... }], total_refundable, single_price, vat_rate }
+function cncAdminRefundQuote(userId) {
+  return cncRpc('admin_refund_quote', { p_user: userId });
+}
+
+// 환불 기록 (고른 묶음 → 0, 이력 'refund_cash'). 송금은 관리자가 직접
+function cncAdminRefundCash(userId, lotIds, amount, note) {
+  return cncRpc('admin_refund_cash', { p_user: userId, p_lot_ids: lotIds, p_amount: Number(amount), p_note: String(note || '').trim() });
+}

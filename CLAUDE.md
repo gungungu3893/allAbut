@@ -41,8 +41,22 @@
 - 1 치아 = 1 크레딧 (차감은 DB 함수 `create_cnc_order` 가 한 번에 처리)
 - 9개 언어: en ko th zh vi es tr ar fa (ar / fa 는 RTL)
 
+## 크레딧 · 충전 정책 (확정)
+- 가격 (VAT 7% 별도, 개당 THB): 1개 2,200 / 10개 2,050 / 30개 1,900 / 50개 1,750 / 100개 1,500
+  → `credit_packages` 테이블, 관리자 Settings 에서 수정. 금액 계산은 항상 DB 함수(`create_topup_request`)가 함
+- 결제: PromptPay QR(EMVCo 페이로드를 `cnc/promptpay.js` 가 직접 생성) + 계좌이체 → 입금 슬립(`topup-slips/{user_id}/...`, 10MB, 이미지·PDF) → 관리자 승인
+- 크레딧 묶음(`credit_lots`): 충전(승인)일로부터 12개월 유효, 사용은 먼저 만료되는 묶음부터 (FIFO, `credit_lot_usage` 에 주문별 기록)
+- 만료 30일·7일 전 LINE 알림, 만료되면 자동 소멸 + 이력 'expire' (pg_cron, 방콕 새벽 1시)
+- 주문 취소 크레딧은 원래 묶음으로 복구 (원래 유효기간 유지, 이미 만료된 묶음 몫은 복구 안 함 + 이력)
+- 관리자 지급(+) = 보너스 묶음 (12개월, 단가 0 = 현금 환불 불가), 차감(-) = FIFO
+- 현금 환불: 충전 14일 이내 + 미사용 = 전액 / 일부 사용 = 사용분을 1개 가격(2,200 + VAT)으로 재계산 후 잔액 / 만료·보너스·이전 잔액 불가.
+  관리자 화면에는 계산기(`admin_refund_quote`)와 기록(`admin_refund_cash`)만, 송금은 수동
+- `credit_wallets.balance` = 만료 안 된 묶음 remaining 합계 (DB 함수가 항상 맞춤). 화면은 계속 balance 를 읽음
+- SQL: `sql/002_credit_topups.sql`, 설정 안내: `TOPUP_SETUP.md`
+- 금액 표시는 `formatTHB()` (언어와 상관없이 21,935.00 THB)
+
 ## 제외 (나중에)
-- 세금계산서·영수증, 결제
+- 세금계산서·영수증, 카드·온라인 자동 결제
 
 ## 스택
 - Vanilla JS, HTML / CSS (Tailwind 는 쓰지 않음 — 직접 만든 CSS)
@@ -63,10 +77,12 @@
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대)
 - `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/admin` (새로고침해도 같은 페이지)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
+- `cnc/promptpay.js` — PromptPay QR 페이로드(EMVCo + CRC16), `promptPayPayload(id, amount)`
+- `ui/page-topup.js` — 크레딧 충전 `#/topup` (패키지 → QR·계좌 → 슬립 → 완료, 내 충전 내역)
 - `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)
 - `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
 - `cnc/cnc-admin.js` — 관리자 로직 (화면 코드 없음): 대시보드 집계, 주문 목록·상세, 단계 처리, 디자인 업로드, 배송, 취소·환불, 고객·크레딧
-- `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/customers`, `#/admin/dashboard`
+- `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/settings`
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
 ## 사용 흐름 규칙

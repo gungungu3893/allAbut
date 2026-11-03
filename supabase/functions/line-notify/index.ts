@@ -17,6 +17,9 @@
 //   - confirmed / design_ready / milling / shipped / 관리자 취소(환불 + 남은 잔액)
 //   - credit_history INSERT: use(주문 접수) / refund(환불) / adjust(조정) / charge(충전) — 모두 남은 잔액 포함
 //     (관리자 취소로 생긴 환불은 위 "관리자 취소" 카드에 이미 들어가서 따로 보내지 않아요)
+//   - credit_history 'expire': ⌛ 크레딧 만료 / 'charge' 에는 유효기간(만료일) 표시
+//   - topup_requests: INSERT → 관리자 💰 / rejected → 고객 (사유) / cancelled → 관리자
+//   - { type: 'EXPIRY_REMINDER', user_id, days, lots } (예약 작업) → 고객 ⏰ n개가 d일 후 만료
 //
 // 원칙
 //   - UPDATE 인데 stage 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
@@ -34,6 +37,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 
 const SITE_ORDERS_URL = 'https://gungungu3893.github.io/allAbut/#/orders';
 const SITE_ADMIN_URL = 'https://gungungu3893.github.io/allAbut/#/admin/orders';
+const SITE_ADMIN_TOPUPS_URL = 'https://gungungu3893.github.io/allAbut/#/admin/topups';
+const SITE_TOPUP_URL = 'https://gungungu3893.github.io/allAbut/#/topup';
+const SITE_PROFILE_URL = 'https://gungungu3893.github.io/allAbut/#/profile';
 
 const NAVY = '#001D4A';
 const GOLD = '#D4AF37';
@@ -59,6 +65,10 @@ type Texts = {
   use_title: string; use_body: string;
   refund_title: string; refund_body: string;
   adjust_title: string; adjust_body: string;
+  valid_until: string; request: string; total: string;
+  expire_title: string; expire_body: string;
+  reminder_title: string; reminder_body: string;
+  topup_rejected_title: string; topup_rejected_body: string;
 };
 
 const T: Record<string, Texts> = {
@@ -75,6 +85,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 Order received', use_body: 'We received your order and used credits for it. You can follow the progress on the website.',
     refund_title: '↩️ Credits refunded', refund_body: '{n} credits have been returned to your balance.',
     adjust_title: '➖ Credits adjusted', adjust_body: 'Your credit balance has been adjusted by allAbut.',
+    valid_until: 'Valid until', request: 'Request', total: 'Total',
+    expire_title: '⌛ Credits expired', expire_body: '{n} credits have expired (12 months after top-up).',
+    reminder_title: '⏰ {n} credits expire in {d} days', reminder_body: 'Please use them before {date}. Unused credits expire automatically.',
+    topup_rejected_title: '⚠️ Top-up not approved', topup_rejected_body: 'We could not confirm your payment. Please check the reason below and submit again.',
   },
   ko: {
     open: 'allAbut 열기', order: '주문번호', patient: '환자', deadline: '납기', carrier: '택배사', tracking: '송장번호',
@@ -89,6 +103,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 주문 접수 완료', use_body: '주문이 접수되어 크레딧을 사용했어요. 주문 진행 상황은 웹사이트에서 확인할 수 있어요.',
     refund_title: '↩️ 크레딧 환불', refund_body: '크레딧 {n}개가 환불되었어요.',
     adjust_title: '➖ 크레딧 조정', adjust_body: 'allAbut에서 크레딧 잔액을 조정했어요.',
+    valid_until: '유효기간', request: '요청번호', total: '총액',
+    expire_title: '⌛ 크레딧이 만료되었어요', expire_body: '크레딧 {n}개가 만료되었어요 (충전 후 12개월).',
+    reminder_title: '⏰ 크레딧 {n}개가 {d}일 후 만료돼요', reminder_body: '{date} 전에 사용해 주세요. 사용하지 않은 크레딧은 자동으로 소멸돼요.',
+    topup_rejected_title: '⚠️ 충전이 승인되지 않았어요', topup_rejected_body: '입금을 확인하지 못했어요. 아래 사유를 확인하고 다시 신청해 주세요.',
   },
   th: {
     open: 'เปิด allAbut', order: 'คำสั่งงาน', patient: 'ผู้ป่วย', deadline: 'กำหนดส่ง', carrier: 'บริษัทขนส่ง', tracking: 'เลขพัสดุ',
@@ -103,6 +121,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 ได้รับคำสั่งงานแล้ว', use_body: 'เราได้รับคำสั่งงานและหักเครดิตแล้ว สามารถติดตามความคืบหน้าได้บนเว็บไซต์',
     refund_title: '↩️ คืนเครดิตแล้ว', refund_body: 'คืนเครดิต {n} เครดิตเข้าบัญชีแล้ว',
     adjust_title: '➖ ปรับเครดิต', adjust_body: 'allAbut ได้ปรับยอดเครดิตของคุณ',
+    valid_until: 'ใช้ได้ถึง', request: 'คำขอ', total: 'ยอดรวม',
+    expire_title: '⌛ เครดิตหมดอายุ', expire_body: 'เครดิต {n} เครดิตหมดอายุแล้ว (12 เดือนหลังเติม)',
+    reminder_title: '⏰ เครดิต {n} เครดิตจะหมดอายุใน {d} วัน', reminder_body: 'กรุณาใช้ก่อนวันที่ {date} เครดิตที่ไม่ได้ใช้จะหมดอายุอัตโนมัติ',
+    topup_rejected_title: '⚠️ ไม่อนุมัติการเติมเครดิต', topup_rejected_body: 'เราไม่สามารถยืนยันการชำระเงินได้ กรุณาตรวจสอบเหตุผลด้านล่างแล้วส่งใหม่อีกครั้ง',
   },
   zh: {
     open: '打开 allAbut', order: '订单号', patient: '患者', deadline: '交期', carrier: '快递公司', tracking: '运单号',
@@ -117,6 +139,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 订单已受理', use_body: '我们已收到您的订单并扣除积分。您可以在网站上查看订单进度。',
     refund_title: '↩️ 积分已退还', refund_body: '已退还 {n} 积分到您的账户。',
     adjust_title: '➖ 积分已调整', adjust_body: 'allAbut 已调整您的积分余额。',
+    valid_until: '有效期至', request: '申请号', total: '总额',
+    expire_title: '⌛ 积分已过期', expire_body: '{n} 积分已过期（充值后 12 个月）。',
+    reminder_title: '⏰ {n} 积分将在 {d} 天后过期', reminder_body: '请在 {date} 前使用。未使用的积分将自动失效。',
+    topup_rejected_title: '⚠️ 充值未通过', topup_rejected_body: '我们无法确认您的付款。请查看以下原因后重新提交。',
   },
   vi: {
     open: 'Mở allAbut', order: 'Đơn hàng', patient: 'Bệnh nhân', deadline: 'Hạn giao', carrier: 'Đơn vị vận chuyển', tracking: 'Mã vận đơn',
@@ -131,6 +157,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 Đã nhận đơn hàng', use_body: 'Chúng tôi đã nhận đơn hàng và trừ tín dụng. Bạn có thể theo dõi tiến độ trên trang web.',
     refund_title: '↩️ Đã hoàn tín dụng', refund_body: 'Đã hoàn {n} tín dụng vào tài khoản của bạn.',
     adjust_title: '➖ Điều chỉnh tín dụng', adjust_body: 'allAbut đã điều chỉnh số dư tín dụng của bạn.',
+    valid_until: 'Hiệu lực đến', request: 'Yêu cầu', total: 'Tổng cộng',
+    expire_title: '⌛ Tín dụng đã hết hạn', expire_body: '{n} tín dụng đã hết hạn (12 tháng sau khi nạp).',
+    reminder_title: '⏰ {n} tín dụng sẽ hết hạn sau {d} ngày', reminder_body: 'Vui lòng sử dụng trước {date}. Tín dụng chưa dùng sẽ tự động hết hạn.',
+    topup_rejected_title: '⚠️ Yêu cầu nạp không được duyệt', topup_rejected_body: 'Chúng tôi không xác nhận được thanh toán. Vui lòng xem lý do bên dưới và gửi lại.',
   },
   es: {
     open: 'Abrir allAbut', order: 'Pedido', patient: 'Paciente', deadline: 'Fecha límite', carrier: 'Transportista', tracking: 'N.º de seguimiento',
@@ -145,6 +175,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 Pedido recibido', use_body: 'Recibimos su pedido y se descontaron los créditos. Puede seguir el progreso en el sitio web.',
     refund_title: '↩️ Créditos reembolsados', refund_body: 'Se devolvieron {n} créditos a su saldo.',
     adjust_title: '➖ Créditos ajustados', adjust_body: 'allAbut ajustó su saldo de créditos.',
+    valid_until: 'Válido hasta', request: 'Solicitud', total: 'Total',
+    expire_title: '⌛ Créditos vencidos', expire_body: '{n} créditos han vencido (12 meses después de la recarga).',
+    reminder_title: '⏰ {n} créditos vencen en {d} días', reminder_body: 'Úselos antes del {date}. Los créditos no usados vencen automáticamente.',
+    topup_rejected_title: '⚠️ Recarga no aprobada', topup_rejected_body: 'No pudimos confirmar su pago. Revise el motivo y envíelo de nuevo.',
   },
   tr: {
     open: 'allAbut\'u aç', order: 'Sipariş', patient: 'Hasta', deadline: 'Teslim tarihi', carrier: 'Kargo firması', tracking: 'Takip no.',
@@ -159,6 +193,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 Sipariş alındı', use_body: 'Siparişinizi aldık ve krediler düşüldü. Siparişin durumunu web sitesinden takip edebilirsiniz.',
     refund_title: '↩️ Kredi iade edildi', refund_body: 'Bakiyenize {n} kredi iade edildi.',
     adjust_title: '➖ Kredi düzeltmesi', adjust_body: 'allAbut kredi bakiyenizi düzeltti.',
+    valid_until: 'Geçerlilik', request: 'Talep', total: 'Toplam',
+    expire_title: '⌛ Kredilerin süresi doldu', expire_body: '{n} kredinin süresi doldu (yüklemeden 12 ay sonra).',
+    reminder_title: '⏰ {n} kredinin süresi {d} gün içinde dolacak', reminder_body: 'Lütfen bu tarihten önce kullanın: {date}. Kullanılmayan krediler otomatik olarak silinir.',
+    topup_rejected_title: '⚠️ Kredi yükleme onaylanmadı', topup_rejected_body: 'Ödemenizi doğrulayamadık. Lütfen aşağıdaki nedeni kontrol edip tekrar gönderin.',
   },
   ar: {
     open: 'فتح allAbut', order: 'الطلب', patient: 'المريض', deadline: 'موعد التسليم', carrier: 'شركة الشحن', tracking: 'رقم التتبع',
@@ -173,6 +211,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 تم استلام الطلب', use_body: 'استلمنا طلبك وتم خصم الرصيد. يمكنك متابعة تقدم الطلب على الموقع.',
     refund_title: '↩️ تم استرداد الرصيد', refund_body: 'تمت إعادة {n} رصيد إلى حسابك.',
     adjust_title: '➖ تعديل الرصيد', adjust_body: 'قامت allAbut بتعديل رصيدك.',
+    valid_until: 'صالح حتى', request: 'الطلب', total: 'الإجمالي',
+    expire_title: '⌛ انتهت صلاحية الرصيد', expire_body: 'انتهت صلاحية {n} رصيد (بعد 12 شهرًا من الشحن).',
+    reminder_title: '⏰ ستنتهي صلاحية {n} رصيد خلال {d} يوم', reminder_body: 'يرجى استخدامه قبل {date}. ينتهي الرصيد غير المستخدم تلقائيًا.',
+    topup_rejected_title: '⚠️ لم تتم الموافقة على الشحن', topup_rejected_body: 'لم نتمكن من تأكيد الدفع. يرجى مراجعة السبب أدناه والإرسال مرة أخرى.',
   },
   fa: {
     open: 'باز کردن allAbut', order: 'سفارش', patient: 'بیمار', deadline: 'مهلت تحویل', carrier: 'شرکت حمل', tracking: 'کد رهگیری',
@@ -187,6 +229,10 @@ const T: Record<string, Texts> = {
     use_title: '📝 سفارش دریافت شد', use_body: 'سفارش شما دریافت شد و اعتبار کسر شد. پیشرفت سفارش را می‌توانید در سایت ببینید.',
     refund_title: '↩️ اعتبار بازگردانده شد', refund_body: '{n} اعتبار به حساب شما بازگردانده شد.',
     adjust_title: '➖ اصلاح اعتبار', adjust_body: 'allAbut اعتبار حساب شما را اصلاح کرد.',
+    valid_until: 'معتبر تا', request: 'درخواست', total: 'مبلغ کل',
+    expire_title: '⌛ اعتبار منقضی شد', expire_body: '{n} اعتبار منقضی شد (12 ماه پس از شارژ).',
+    reminder_title: '⏰ {n} اعتبار تا {d} روز دیگر منقضی می‌شود', reminder_body: 'لطفاً پیش از {date} استفاده کنید. اعتبار استفاده‌نشده خودکار حذف می‌شود.',
+    topup_rejected_title: '⚠️ شارژ تأیید نشد', topup_rejected_body: 'پرداخت شما تأیید نشد. لطفاً دلیل زیر را بررسی و دوباره ارسال کنید.',
   },
 };
 
@@ -289,9 +335,9 @@ function lastRevisionNote(history: unknown): string {
   return last ? String(last.note || '') : '';
 }
 
-async function getProfile(userId: string): Promise<{ line_user_id: string | null; lang: string | null; clinic_name?: string | null } | null> {
+async function getProfile(userId: string): Promise<{ line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null } | null> {
   if (!userId) return null;
-  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name').eq('id', userId).maybeSingle();
+  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname').eq('id', userId).maybeSingle();
   if (error) { console.error('profile read failed', error); return null; }
   return data;
 }
@@ -377,8 +423,9 @@ async function isAdminCancelRefund(orderId: string): Promise<boolean> {
 //   charge 💳 크레딧 충전 (수량, 남은 잔액)
 async function notifyCredit(h: any): Promise<void> {
   const type = String(h.type || '');
-  if (!['use', 'refund', 'adjust', 'charge'].includes(type)) return;
   const amount = Number(h.amount || 0);
+  if (!['use', 'refund', 'adjust', 'charge', 'expire'].includes(type)) return;
+  if (type === 'expire' && amount >= 0) return;
   if (type === 'charge' && amount <= 0) return;
 
   const p = await getProfile(h.user_id);
@@ -401,9 +448,15 @@ async function notifyCredit(h: any): Promise<void> {
   } else if (type === 'adjust') {
     title = x.adjust_title; body = x.adjust_body;
     rows.push([x.amount, (amount > 0 ? '+' : '') + String(amount) + ' ' + x.credits], [x.reason, desc]);
+  } else if (type === 'expire') {
+    title = x.expire_title; body = x.expire_body.replace('{n}', String(abs));
+    rows.push([x.credits, '-' + abs]);
+    if (h.order_id) rows.push([x.order, h.order_id]);
   } else {
     title = x.charge_title; body = x.charge_body.replace('{n}', String(abs)) + (desc ? '\n' + desc : '');
     rows.push([x.credits, '+' + abs]);
+    const exp = await getLotExpiry(h.lot_id);
+    if (exp) rows.push([x.valid_until, exp]);
   }
   rows.push([x.balance, balanceText(x, balance)]);
 
@@ -414,12 +467,110 @@ async function notifyCredit(h: any): Promise<void> {
 }
 
 
+// 날짜 'YYYY-MM-DD' (방콕 시간)
+function ymd(v: unknown): string {
+  const d = new Date(String(v ?? ''));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+}
+
+// 금액: 21935 → "21,935.00 THB"
+function thb(v: unknown): string {
+  const n = Number(v ?? 0);
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' THB';
+}
+
+// 크레딧 묶음 만료일
+async function getLotExpiry(lotId: unknown): Promise<string> {
+  if (!lotId) return '';
+  const { data, error } = await db.from('credit_lots').select('expires_at').eq('id', String(lotId)).maybeSingle();
+  if (error || !data) return '';
+  return ymd(data.expires_at);
+}
+
+// 충전 요청 (topup_requests)
+//   INSERT                → 관리자: 💰 충전 요청
+//   UPDATE → rejected     → 고객: 충전 거절 + 사유
+//   UPDATE → cancelled    → 관리자: 짧게
+//   (승인은 credit_history 'charge' 로 고객에게 충전 알림이 가요)
+async function handleTopup(type: string, rec: any, old: any): Promise<void> {
+  if (type === 'INSERT') {
+    if (!LINE_ADMIN_USER_ID) return;
+    const p = await getProfile(rec.user_id);
+    const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
+    const title = '💰 Top-up request';
+    await push(LINE_ADMIN_USER_ID, flexCard({
+      title, body: 'Please check the payment slip and approve or reject.',
+      rows: [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
+      buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL,
+      altText: title + ' · ' + rec.id + ' · ' + who + ' · ' + thb(rec.total),
+    }));
+    return;
+  }
+  if (type !== 'UPDATE') return;
+  if (!rec.status || old?.status === rec.status) return;   // 상태가 안 바뀌었으면 보내지 않아요
+
+  if (rec.status === 'rejected') {
+    const p = await getProfile(rec.user_id);
+    if (!p || !p.line_user_id) return;
+    const x = texts(p.lang);
+    await push(p.line_user_id, flexCard({
+      title: x.topup_rejected_title, body: x.topup_rejected_body,
+      rows: [[x.request, rec.id], [x.credits, String(rec.credits)], [x.total, thb(rec.total)], [x.reason, rec.reject_reason]],
+      buttonLabel: x.open, url: SITE_TOPUP_URL,
+      altText: x.topup_rejected_title + ' · ' + rec.id,
+    }));
+    return;
+  }
+  if (rec.status === 'cancelled' && LINE_ADMIN_USER_ID) {
+    const title = '↩️ Top-up request cancelled by customer';
+    await push(LINE_ADMIN_USER_ID, flexCard({
+      title, rows: [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
+      buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
+    }));
+  }
+}
+
+// 만료 예정 알림 (예약 작업이 보내요): { type: 'EXPIRY_REMINDER', user_id, days, lots: [{ id, remaining, expires_at }] }
+async function handleReminder(payload: any): Promise<void> {
+  const lots = Array.isArray(payload.lots) ? payload.lots : [];
+  const n = lots.reduce((sum: number, l: any) => sum + Number(l?.remaining || 0), 0);
+  if (!payload.user_id || n <= 0) return;
+  const p = await getProfile(payload.user_id);
+  if (!p || !p.line_user_id) return;
+  const x = texts(p.lang);
+  const first = lots.map((l: any) => String(l?.expires_at || '')).filter(Boolean).sort()[0];
+  const date = ymd(first);
+  const days = first ? Math.max(1, Math.ceil((new Date(first).getTime() - Date.now()) / 86400000)) : Number(payload.days || 0);
+  const title = x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days));
+  const balance = await getBalance(payload.user_id);
+  await push(p.line_user_id, flexCard({
+    title, body: x.reminder_body.replace('{date}', date),
+    rows: [[x.credits, String(n)], [x.valid_until, date], [x.balance, balanceText(x, balance)]],
+    buttonLabel: x.open, url: SITE_PROFILE_URL,
+    altText: title,
+  }));
+}
+
+
 // ================================================================
 // 이벤트 → 알림
 // ================================================================
 async function handle(payload: any): Promise<void> {
   const { type, table, record, old_record } = payload ?? {};
+
+  // 만료 예정 알림 (DB 예약 작업 → pg_net)
+  if (type === 'EXPIRY_REMINDER') {
+    await handleReminder(payload);
+    return;
+  }
   if (!record) return;
+
+  // 충전 요청
+  if (table === 'topup_requests') {
+    await handleTopup(type, record, old_record);
+    return;
+  }
 
   // 크레딧 사용 · 환불 · 조정 · 충전 → 고객
   if (table === 'credit_history') {

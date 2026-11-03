@@ -24,7 +24,10 @@ var CNC_ERROR_CODES = [
   'CANNOT_CANCEL_AFTER_MILLING'   // DB 트리거 prevent_late_cancel: 가공 시작 후 취소 막기
 ];
 // 앱 안에서 만드는 에러 코드 (서버 메시지에서 찾지 않음)
-var CNC_APP_ERROR_CODES = ['UPLOAD_FAILED', 'NETWORK', 'STAGE_CHANGED', 'NO_FILES', 'FILE_TOO_LARGE', 'INVALID_AMOUNT', 'BALANCE_NEGATIVE'];
+var CNC_APP_ERROR_CODES = ['UPLOAD_FAILED', 'NETWORK', 'STAGE_CHANGED', 'NO_FILES', 'FILE_TOO_LARGE', 'INVALID_AMOUNT', 'BALANCE_NEGATIVE', 'DUPLICATE_PACKAGE'];
+// 충전·환불 관련 서버 에러 코드 (sql/002_credit_topups.sql)
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['PACKAGE_NOT_FOUND', 'SLIP_INVALID', 'SLIP_NOT_FOUND', 'TOO_MANY_PENDING', 'ALREADY_REVIEWED',
+  'AMOUNT_TOO_HIGH', 'LOT_NOT_REFUNDABLE', 'NO_LOTS', 'BALANCE_NEGATIVE', 'INVALID_AMOUNT']);
 
 
 // ================================================================
@@ -708,4 +711,110 @@ async function cncReloadProfile() {
   var data = cncCheck(await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
   if (data && window.APP) APP.profile = data;
   return data;
+}
+
+
+// ================================================================
+// 13) 크레딧 충전 (PromptPay + 입금 슬립) · 크레딧 묶음(유효기간)
+// ================================================================
+var TOPUP_SLIPS_BUCKET = 'topup-slips';
+var SLIP_MAX_BYTES = 10 * 1024 * 1024;                    // 10MB
+var SLIP_ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'];
+var CREDIT_EXPIRY_WARN_DAYS = 30;                          // 30일 이내 만료 → 주황
+var CREDIT_EXPIRY_DANGER_DAYS = 7;                         // 7일 이내 만료 → 빨강
+
+// 금액 계산 (화면 표시용 — 실제 청구 금액은 DB 함수가 다시 계산해요)
+function cncPackagePrice(pkg, vatRate) {
+  var subtotal = Number(pkg.credits) * Number(pkg.unit_price);
+  var vat = Math.round(subtotal * Number(vatRate || 0)) / 100;
+  return { subtotal: subtotal, vat: vat, total: Math.round((subtotal + vat) * 100) / 100 };
+}
+
+// 1개 가격 대비 할인율 (%), 1개 패키지가 없으면 0
+function cncPackageDiscount(pkg, packages) {
+  var single = (packages || []).filter(function (p) { return Number(p.credits) === 1; })[0];
+  var base = single ? Number(single.unit_price) : 0;
+  if (!base || Number(pkg.unit_price) >= base) return 0;
+  return Math.round((1 - Number(pkg.unit_price) / base) * 100);
+}
+
+// 판매 중인 패키지 (작은 것부터)
+async function cncGetPackages() {
+  var rows = cncCheck(await sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true })) || [];
+  return rows;
+}
+
+// 결제 정보 (PromptPay ID, 계좌, VAT %)
+async function cncGetPaymentSettings() {
+  var row = cncCheck(await sb.from('payment_settings').select('*').eq('id', 1).maybeSingle());
+  return row || { promptpay_id: '', bank_name: '', account_name: '', account_number: '', vat_rate: 7, note: '' };
+}
+
+// 슬립 파일 검사: '' 면 OK, 아니면 에러 번역 키
+function cncCheckSlipFile(file) {
+  if (!file) return 'topup_slip_required';
+  if (SLIP_ALLOWED_EXT.indexOf(fileExt(file.name)) === -1) return 'topup_slip_type';
+  if (!file.size) return 'topup_slip_type';
+  if (file.size > SLIP_MAX_BYTES) return 'topup_slip_size';
+  return '';
+}
+
+// 충전 요청: 슬립을 topup-slips/{user_id}/... 에 올리고 → DB 함수 create_topup_request (금액은 DB 가 계산)
+// 돌려주는 값: { id, credits, subtotal, vat_amount, total }
+async function cncCreateTopup(packageId, file) {
+  var uid = cncUserId();
+  if (!uid) throw cncError('NOT_LOGGED_IN');
+  var bad = cncCheckSlipFile(file);
+  if (bad) throw cncError('SLIP_INVALID', { key: bad });
+
+  var path = uid + '/' + Date.now().toString(36) + '_' + cncSafeFileName(file.name);
+  var up;
+  try {
+    up = await sb.storage.from(TOPUP_SLIPS_BUCKET).upload(path, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+  } catch (err) {
+    throw cncError('UPLOAD_FAILED', { fileName: file.name, cause: err });
+  }
+  if (up.error) throw cncError('UPLOAD_FAILED', { fileName: file.name, cause: up.error });
+
+  return cncRpc('create_topup_request', { p_package_id: packageId, p_slip_path: path });
+}
+
+// 내 충전 요청 목록 (최신순)
+async function cncListMyTopups(limit) {
+  return cncCheck(await sb.from('topup_requests').select('*').eq('user_id', cncUserId())
+    .order('created_at', { ascending: false }).limit(limit || 30)) || [];
+}
+
+function cncCancelTopup(id) {
+  return cncRpc('cancel_my_topup', { p_id: id });
+}
+
+// 내 크레딧 묶음 (남은 것, 만료 빠른 순)
+async function cncGetMyLots() {
+  var result = await sb.rpc('get_my_credit_lots');
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  return result.data || [];
+}
+
+// 남은 날짜 (오늘 기준, 올림)
+function cncDaysLeft(expiresAt) {
+  var t = new Date(expiresAt).getTime();
+  if (isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / 86400000);
+}
+
+// 만료 상태: 'danger'(7일 이내) / 'warn'(30일 이내) / ''
+function cncExpiryState(expiresAt) {
+  var d = cncDaysLeft(expiresAt);
+  if (d == null) return '';
+  if (d <= CREDIT_EXPIRY_DANGER_DAYS) return 'danger';
+  if (d <= CREDIT_EXPIRY_WARN_DAYS) return 'warn';
+  return '';
+}
+
+// 곧 만료되는 크레딧 수 (30일 이내)
+function cncExpiringSoon(lots) {
+  return (lots || []).reduce(function (sum, l) {
+    return sum + (cncExpiryState(l.expires_at) && l.remaining > 0 ? l.remaining : 0);
+  }, 0);
 }

@@ -108,11 +108,16 @@ function fontButtonsHtml() {
     '</div>';
 }
 
+// 크레딧 배지 (곧 만료되는 크레딧이 있으면 작은 주황 점) + "Top up" 버튼
 function creditBadgeHtml() {
   var bal = (window.APP && APP.balance != null) ? formatNumber(APP.balance) : '—';
-  return '<a href="#/profile" class="credit-badge" title="' + escHtml(t('credit_balance')) + '">' +
+  var soon = (window.APP && APP.expiringSoon) || 0;
+  return '<a href="#/profile" class="credit-badge" title="' + escHtml(soon ? tf('credit_expiring_soon', { n: soon }) : t('credit_balance')) + '">' +
     '<span aria-hidden="true">💳</span> <span class="credit-value mono">' + bal + '</span>' +
-    '<span class="credit-unit">' + escHtml(t('credit_unit')) + '</span></a>';
+    '<span class="credit-unit">' + escHtml(t('credit_unit')) + '</span>' +
+    '<span class="expiry-dot"' + (soon ? '' : ' hidden') + '><span class="sr-only">' + escHtml(tf('credit_expiring_soon', { n: soon })) + '</span></span>' +
+    '</a>' +
+    '<a href="#/topup" class="btn btn-gold btn-sm topup-btn" data-nav="topup">' + escHtml(t('topup_btn')) + '</a>';
 }
 
 // 헤더와 하단 탭 그리기 (언어를 바꾸면 다시 그려요)
@@ -146,6 +151,7 @@ function renderLayout() {
     '</div>' +
     // 펼치는 메뉴 (모바일·좁은 화면)
     '<div class="hdr-menu" id="hdr-menu" hidden>' +
+      '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
@@ -209,11 +215,25 @@ function updateCreditBadges() {
   var els = document.querySelectorAll('.credit-value');
   var text = (window.APP && APP.balance != null) ? formatNumber(APP.balance) : '—';
   for (var i = 0; i < els.length; i++) els[i].textContent = text;
+  var soon = (window.APP && APP.expiringSoon) || 0;
+  var dots = document.querySelectorAll('.expiry-dot');
+  for (var j = 0; j < dots.length; j++) {
+    dots[j].hidden = !soon;
+    var sr = dots[j].querySelector('.sr-only');
+    if (sr) sr.textContent = tf('credit_expiring_soon', { n: soon });
+    var badge = dots[j].closest('.credit-badge');
+    if (badge) badge.title = soon ? tf('credit_expiring_soon', { n: soon }) : t('credit_balance');
+  }
 }
 
 async function refreshBalance() {
   try {
-    APP.balance = await cncGetBalance();
+    var res = await Promise.all([cncGetBalance(), cncGetMyLots().catch(function () { return null; })]);
+    APP.balance = res[0];
+    if (res[1]) {
+      APP.lots = res[1];
+      APP.expiringSoon = cncExpiringSoon(res[1]);
+    }
   } catch (err) {
     console.error('Balance load failed:', err);
   }
@@ -405,7 +425,15 @@ function uiErrorMessage(err) {
     NO_FILES: 'admin_err_no_files',
     FILE_TOO_LARGE: 'admin_err_file_too_large',
     INVALID_AMOUNT: 'admin_err_amount',
-    BALANCE_NEGATIVE: 'admin_err_balance_negative'
+    BALANCE_NEGATIVE: 'admin_err_balance_negative',
+    PACKAGE_NOT_FOUND: 'topup_err_package',
+    SLIP_INVALID: 'topup_slip_required',
+    SLIP_NOT_FOUND: 'err_upload_failed',
+    TOO_MANY_PENDING: 'topup_err_too_many',
+    ALREADY_REVIEWED: 'admin_err_already_reviewed',
+    AMOUNT_TOO_HIGH: 'admin_err_amount_too_high',
+    LOT_NOT_REFUNDABLE: 'admin_err_lot_not_refundable',
+    NO_LOTS: 'admin_err_no_lots'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });
@@ -514,3 +542,11 @@ function uiPopover(btn, html) {
   el.querySelector('.popover-close').focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', closePopover);
+
+
+// ================================================================
+// 11) 충전 요청 상태 배지
+// ================================================================
+function uiTopupBadge(status) {
+  return '<span class="badge topup-' + escHtml(status) + '">' + escHtml(t('topup_status_' + status)) + '</span>';
+}
