@@ -196,7 +196,7 @@ var PageProfile = {
     var box = document.getElementById('profile-credits');
     if (!box) return;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
-      '<p class="big-number mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + ' <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+      '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
       '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
       '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + '</a>' +
       this.lotsHtml() +

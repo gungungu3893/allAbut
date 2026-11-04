@@ -285,7 +285,7 @@ Object.assign(PageAdmin, {
     box.innerHTML = '<ol class="audit-list">' + st.rows.map(function (r) {
       return '<li class="audit-item audit-' + escHtml(String(r.action).split('_')[0]) + '">' +
         '<div class="audit-head">' +
-          '<span class="audit-time mono">' + escHtml(formatDateTime(r.created_at)) + '</span>' +
+          '<span class="audit-time">' + escHtml(formatDateTime(r.created_at)) + '</span>' +
           '<span class="audit-actor"><span aria-hidden="true">👤</span> ' + escHtml(r.actor_name || '—') + '</span>' +
         '</div>' +
         '<p class="audit-what"><b>' + escHtml(self.auditLabel(r.action)) + '</b> ' + self.auditTargetHtml(r) + '</p>' +

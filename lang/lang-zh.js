@@ -937,6 +937,25 @@ LANG.zh = {
   lg_delete_confirm: '确定停止向 "{name}" 发送通知吗？之后可以用新代码重新连接。',
   lg_deleted: '群组已移除。',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: '当前：{stage}（{n}/{total}）',
+  home_todo_title: '需要您处理',
+  home_todo_design: '请查看设计',
+  home_todo_receive: '收到后，请确认收货',
+  home_todo_view_design: '查看设计',
+  home_expiring_fmt: '{n} 积分将在 {d} 天后过期',
+  todo_next: '下一步',
+  todo_design: '查看设计',
+  todo_design_btn: '查看设计',
+  todo_receive: '确认收货',
+  todo_receive_btn: '确认收货',
+  col_status: '状态',
+  dash_now_title: '待处理事项',
+  dash_status_title: '当前状态',
+  dash_monthly_title: '月度统计',
+  dash_waiting_orders: '待接收的新订单',
+  dash_due_soon: '即将到期',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -44,8 +44,11 @@
 - 색은 `css/landing.css` 의 `:root` 변수 한 곳에서 정의
 
 ## 폰트
-- IBM Plex Sans (본문), IBM Plex Mono (숫자·주문번호·라벨) — Google Fonts CDN
-- 태국어·아랍어·페르시아어는 IBM Plex Sans Thai / Arabic 로 보완
+- **IBM Plex Mono (`.mono`) 는 숫자·주문번호·요청번호·금액에만.** 글자가 들어간 문구(라벨, "5단계 중 1단계", 날짜처럼 월 이름이 나오는 것, 파일 이름, 단위 "크레딧")는 Mono 금지
+  - 숫자 + 단위는 `<span class="mono">24</span> <span>크레딧</span>` 처럼 나눠요
+- 그 밖의 모든 글자는 IBM Plex Sans + 언어별 대체 글꼴 (`--font-sans`): Thai → IBM Plex Sans Thai(→ Noto Sans Thai), 한국어 → IBM Plex Sans KR(→ Noto Sans KR), 아랍어·페르시아어 → IBM Plex Sans Arabic, 중국어 → Noto Sans SC·시스템 글꼴 — Google Fonts CDN
+- `--font-mono` 도 뒤에 Sans 대체 글꼴을 달아 둬서, 실수로 Mono 안에 글자가 들어가도 깨지지 않아요
+- 헤더 로고 31px, 5μm 위첨자 골드 최소 10px
 
 ## 확정 사항
 - 치아 32개 (FDI, 사랑니 포함)
@@ -82,7 +85,9 @@
 - 모든 화면 아래 푸터: Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
 
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
-- Admin → Dashboard = 맨 위 월 선택(◀ 월 ▶, 주문·매출 같이 사용) + "Orders" 구역 + "Revenue" 구역
+- Admin → Dashboard 순서: ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
+  → ② "현재 현황" (단계별 카드, 기한 임박 목록) → ③ 구분선 + ◀ 월 ▶ + "월별 통계" ([주문 | 매출] 탭 전환, 매출은 owner 만)
+- 섹션 제목은 얇은 글자 + 아래 골드 선 (`.dash-section-title`), 전환은 밑줄 탭 (`.dash-tab`)
 - 집계는 DB 함수만 (관리자 전용, 방콕 시간 기준 달, month 는 1~12): `admin_finance_month`, `admin_finance_trend`, `admin_outstanding_credits`, `admin_topups_export`
 - 입금 = 승인일(reviewed_at) 기준 VAT 포함 total. 사용 가치 = `credit_lot_usage`(restored_at 없음) × 묶음 unit_price (VAT 별도)
 - 현금 환불 금액은 `credit_history.amount_thb` (004 에서 추가, `admin_refund_cash` 가 저장)
@@ -126,6 +131,18 @@
 - `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회, 관리자 LINE 그룹·그룹 코드 (로직만)
 - `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
+
+## 화면 공통 부품 (디자인)
+- 단계 색은 `ui/layout.js` 의 `STAGE_COLORS` 한 곳 → `uiStageBadge(stage)` (홈·내 주문·관리자 공통), `uiStageStyle(stage)` (관리자 단계 카드 등)
+- 내 주문 카드: 윗줄 주문번호(Mono) · 배지 / 둘째 줄 환자 · 치아 수 · 납기 · 접수일 / 얇은 진행 줄 `uiStageProgress(stage)` + "현재: … (3/7)".
+  큰 7단계 진행 막대 `uiStageBar` 는 펼친 상세 안에만. 고객 할 일(디자인 확인·수령 확인, `cncOrderNeedsAction`)은 골드 세로줄 + "다음 할 일" + 바로가기
+- 진행 중 목록은 한 번에 모두 가져와 `cncSortProgress` (할 일 있는 주문 → 납기 빠른 순)
+- 홈 맨 위 "확인이 필요해요" (골드 테두리, `cncOrdersNeedingAction`), 크레딧 카드 "n크레딧이 m일 후 만료" (`cncExpiringSummary`)
+- 치아 선택(Step 2): 치아 모양 SVG 버튼 3종 (1~3 앞니 / 4~5 작은어금니 / 6~8 큰어금니), 위턱 뿌리 위·번호 아래, 아래턱 반대.
+  넓은 칸(600px 이상)은 한 턱 한 줄 + 아치(가운데가 앞으로), 좁으면 사분면마다 한 줄(8개). 선택 = 네이비 채움 + 흰 테두리 + ✓, 호버 = 골드 테두리.
+  `tooth-btn` + `onclick="PageNew.toggleTooth(n)"` 은 그대로 (테스트·포커스 유지가 이것을 써요)
+- 새 주문 3단(PC): 단계 목록 · 입력 카드 · 요약 카드의 윗선이 같게 (`.wizard > * { margin-top: 0 }`), 요약 카드는 sticky
+- 충전 패키지 선택 버튼: 기본 흰 바탕 + 네이비 테두리, 호버·Popular·Best value 카드만 네이비 채움
 
 ## 사용 흐름 규칙
 - 로그인(재로그인 포함) 성공 → 항상 `#/home`. 이 계정 첫 로그인이면 한 번 `#/guide` (`localStorage.allabut_guide_seen_{user_id}`). 로그인 상태 새로고침은 지금 페이지 유지

@@ -937,6 +937,25 @@ LANG.fa = {
   lg_delete_confirm: 'ارسال اعلان به «{name}» متوقف شود؟ می‌توانید دوباره با یک کد جدید آن را متصل کنید.',
   lg_deleted: 'گروه حذف شد.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'اکنون: {stage} ({n}/{total})',
+  home_todo_title: 'نیازمند اقدام شما',
+  home_todo_design: 'لطفاً طراحی را بررسی کنید',
+  home_todo_receive: 'پس از رسیدن سفارش، لطفاً دریافت را تأیید کنید',
+  home_todo_view_design: 'مشاهده طراحی',
+  home_expiring_fmt: '{n} اعتبار تا {d} روز دیگر منقضی می‌شود',
+  todo_next: 'مرحله بعد',
+  todo_design: 'بررسی طراحی',
+  todo_design_btn: 'بررسی طراحی',
+  todo_receive: 'تأیید دریافت',
+  todo_receive_btn: 'تأیید دریافت',
+  col_status: 'وضعیت',
+  dash_now_title: 'کارهای فوری',
+  dash_status_title: 'وضعیت فعلی',
+  dash_monthly_title: 'آمار ماهانه',
+  dash_waiting_orders: 'سفارش‌های جدید در انتظار',
+  dash_due_soon: 'مهلت نزدیک',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

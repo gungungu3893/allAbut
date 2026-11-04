@@ -937,6 +937,25 @@ LANG.vi = {
   lg_delete_confirm: 'Ngừng gửi thông báo đến "{name}"? Bạn có thể kết nối lại bằng mã mới.',
   lg_deleted: 'Đã xóa nhóm.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'Hiện tại: {stage} ({n}/{total})',
+  home_todo_title: 'Cần bạn xử lý',
+  home_todo_design: 'Vui lòng kiểm tra thiết kế',
+  home_todo_receive: 'Khi nhận được hàng, vui lòng xác nhận đã nhận',
+  home_todo_view_design: 'Xem thiết kế',
+  home_expiring_fmt: '{n} tín dụng sẽ hết hạn sau {d} ngày',
+  todo_next: 'Bước tiếp theo',
+  todo_design: 'Kiểm tra thiết kế',
+  todo_design_btn: 'Kiểm tra thiết kế',
+  todo_receive: 'Xác nhận đã nhận',
+  todo_receive_btn: 'Xác nhận đã nhận',
+  col_status: 'Trạng thái',
+  dash_now_title: 'Việc cần làm ngay',
+  dash_status_title: 'Tình trạng hiện tại',
+  dash_monthly_title: 'Thống kê theo tháng',
+  dash_waiting_orders: 'Đơn mới đang chờ',
+  dash_due_soon: 'Sắp đến hạn',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

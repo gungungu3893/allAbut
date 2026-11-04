@@ -1,5 +1,6 @@
 // ===== 홈 (대시보드) #/home =====
-// - 작성 중인 주문이 있으면 맨 위 노란 안내 바 (이어서 하기 / 삭제)
+// - 맨 위 "확인이 필요해요" 카드 (골드 테두리): 디자인 확인할 주문 · 수령 확인할 주문이 있을 때만
+// - 작성 중인 주문이 있으면 노란 안내 바 (이어서 하기 / 삭제)
 // - 그 아래 가이드 배너 (닫으면 작은 한 줄)
 // - 인사말
 // - 큰 카드 3개: 새 주문 / 크레딧 잔액 / 진행 중인 주문 수
@@ -7,12 +8,13 @@
 
 var PageHome = {
   main: null,
-  data: { recent: null, inProgress: null, error: false },
+  data: { recent: null, inProgress: null, todo: [], error: false },
+  busy: {},           // 수령 확인 처리 중인 주문
   loadToken: 0,
 
   render: function (main) {
     this.main = main;
-    this.data = { recent: null, inProgress: null, error: false };
+    this.data = { recent: null, inProgress: null, todo: [], error: false };
     this.draw();
     this.load();
     this.onBalance = this.draw.bind(this);
@@ -31,10 +33,12 @@ var PageHome = {
   load: async function () {
     var token = ++this.loadToken;
     try {
-      var results = await Promise.all([cncRecentOrders(5), cncCountInProgress(), refreshBalance()]);
+      var results = await Promise.all([cncRecentOrders(5), cncCountInProgress(), refreshBalance(),
+        cncOrdersNeedingAction().catch(function (err) { console.warn('todo load failed', err); return []; })]);
       if (token !== this.loadToken) return;
       this.data.recent = results[0];
       this.data.inProgress = results[1];
+      this.data.todo = results[3] || [];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -52,6 +56,9 @@ var PageHome = {
     var inProgress = d.inProgress != null ? formatNumber(d.inProgress) : '—';
 
     var html = '<div class="page page-home">';
+
+    // 확인이 필요해요 (맨 위)
+    html += this.todoHtml();
 
     // 작성 중인 주문 안내 (Continue → 새 주문에서 이어서 / Discard → 확인 후 삭제)
     if (cncHasDraft(APP.user.id)) {
@@ -95,7 +102,7 @@ var PageHome = {
           '<span class="home-card-label">' + escHtml(t('home_credits')) + '</span>' +
           '<span class="home-card-number mono">' + balance + '</span>' +
           '<span class="home-card-desc">' + escHtml(t('credit_rule')) + '</span>' +
-          (APP.expiringSoon ? '<span class="home-card-warn"><span aria-hidden="true">⏳</span> ' + escHtml(tf('credit_expiring_soon', { n: APP.expiringSoon })) + '</span>' : '') +
+          this.expiringHtml() +
         '</a>' +
         '<a href="#/topup" class="btn btn-gold btn-sm home-topup-btn">' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
       '</div>' +
@@ -132,6 +139,61 @@ var PageHome = {
     }
     html += '</section></div>';
     this.main.innerHTML = html;
+  },
+
+  // ----- 확인이 필요해요 -----
+  todoHtml: function () {
+    var self = this;
+    var list = this.data.todo || [];
+    if (!list.length) return '';
+    return '<section class="home-todo" aria-labelledby="home-todo-title">' +
+      '<h2 class="home-todo-title" id="home-todo-title"><span aria-hidden="true">🔔</span> ' + escHtml(t('home_todo_title')) + '</h2>' +
+      '<ul class="home-todo-list">' + list.map(function (o) {
+        var id = escHtml(o.id);
+        var busy = !!self.busy[o.id];
+        var isDesign = o.stage === 'design_ready';
+        return '<li class="home-todo-item">' +
+          '<div class="home-todo-text">' +
+            '<p class="home-todo-msg">' + escHtml(t(isDesign ? 'home_todo_design' : 'home_todo_receive')) + '</p>' +
+            '<p class="home-todo-meta"><span class="mono">' + id + '</span> · ' + escHtml(o.patient || '—') + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</p>' +
+          '</div>' +
+          (isDesign
+            ? '<button type="button" class="btn btn-primary" onclick="PageHome.openDesign(\'' + id + '\')">' + escHtml(t('home_todo_view_design')) + ' <span class="arrow" aria-hidden="true">→</span></button>'
+            : '<button type="button" class="btn btn-primary" onclick="PageHome.receive(\'' + id + '\')"' + (busy ? ' disabled' : '') + '>' + escHtml(busy ? t('admin_processing') : t('todo_receive_btn')) + '</button>') +
+          '</li>';
+      }).join('') + '</ul></section>';
+  },
+
+  // 디자인 보기 → 내 주문에서 그 주문을 펼쳐서 바로 보여줘요
+  openDesign: function (id) {
+    PageOrders.openId = id;
+    PageOrders.tab = 'progress';
+    navigate('orders');
+  },
+
+  // 수령 확인 (확인창 → 처리 → 목록 새로)
+  receive: async function (id) {
+    if (this.busy[id]) return;
+    var ok = await uiConfirm({ title: t('receive_btn'), message: t('receive_confirm_msg'), okLabel: t('receive_btn') });
+    if (!ok) return;
+    this.busy[id] = true;
+    this.draw();
+    try {
+      await cncCustomerAction(id, 'receive');
+      uiToast(t('received_msg'), 'success');
+    } catch (err) {
+      console.error(err);
+      uiToast(uiErrorMessage(err), 'error');
+    }
+    delete this.busy[id];
+    this.load();
+  },
+
+  // 크레딧 카드: "n크레딧이 m일 후 만료" (30일 이내 만료 예정이 있을 때만, 주황)
+  expiringHtml: function () {
+    var x = cncExpiringSummary(APP.lots);
+    if (!x) return '';
+    return '<span class="home-card-warn"><span aria-hidden="true">⏳</span> ' + escHtml(tf('home_expiring_fmt', { n: formatNumber(x.credits), d: x.days })) + '</span>';
   },
 
   continueDraft: function () {

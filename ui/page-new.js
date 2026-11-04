@@ -221,7 +221,7 @@ var PageNew = {
 
     document.getElementById('wiz-main').innerHTML =
       '<div class="wiz-head">' +
-        '<p class="wiz-step-label mono">' + escHtml(tf('step_of', { n: d.step, total: 5 })) + '</p>' +
+        '<p class="wiz-step-label">' + escHtml(tf('step_of', { n: d.step, total: 5 })) + '</p>' +
         '<div class="wiz-title-row">' +
           '<h2 class="wiz-title">' + escHtml(t(this.STEP_KEYS[d.step - 1])) + '</h2>' +
           '<button type="button" class="btn btn-outline btn-sm help-btn" aria-expanded="false" onclick="PageNew.showHelp(this)">' +
@@ -339,21 +339,20 @@ var PageNew = {
   step2: function () {
     var d = this.draft;
     var e = (this.check && this.check.errors) || {};
+    var self = this;
 
-    function half(list, label, side) {
-      return '<div class="tooth-half ' + side + '">' +
-        '<span class="tooth-side mono" aria-hidden="true">' + label + '</span>' +
+    // 사분면 하나 (8개). upper: 위턱(뿌리 위·번호 아래) / 아래턱(뿌리 아래·번호 위)
+    function quad(list, side, upper) {
+      return '<div class="tooth-quad ' + side + '">' +
+        '<span class="tooth-side" aria-hidden="true">' + (side === 'right' ? 'R' : 'L') + '</span>' +
         '<div class="tooth-row">' + list.map(function (n) {
-          var on = d.teeth.indexOf(n) !== -1;
-          return '<button type="button" class="tooth-btn mono' + (on ? ' selected' : '') + '" aria-pressed="' + on + '" ' +
-            'aria-label="' + escHtml(getToothName(n)) + '" title="' + escHtml(getToothName(n)) + '" ' +
-            'onclick="PageNew.toggleTooth(' + n + ')">' + n + '</button>';
+          return self.toothButtonHtml(n, upper, d.teeth.indexOf(n) !== -1);
         }).join('') + '</div></div>';
     }
-    function jaw(titleKey, right, left) {
-      return '<div class="jaw">' +
+    function jaw(titleKey, right, left, upper) {
+      return '<div class="jaw ' + (upper ? 'jaw-upper' : 'jaw-lower') + '" role="group" aria-label="' + escHtml(t(titleKey)) + '">' +
         '<p class="jaw-title">' + escHtml(t(titleKey)) + '</p>' +
-        '<div class="jaw-halves">' + half(right, 'R', 'right') + '<span class="jaw-mid" aria-hidden="true"></span>' + half(left, 'L', 'left') + '</div>' +
+        '<div class="jaw-arch">' + quad(right, 'right', upper) + '<span class="jaw-mid" aria-hidden="true"></span>' + quad(left, 'left', upper) + '</div>' +
         '</div>';
     }
 
@@ -365,9 +364,9 @@ var PageNew = {
     var short = APP.balance != null && n > APP.balance;
 
     return '<div class="tooth-chart" dir="ltr">' +
-        jaw('upper_jaw', FDI_UPPER_RIGHT, FDI_UPPER_LEFT) +
+        jaw('upper_jaw', FDI_UPPER_RIGHT, FDI_UPPER_LEFT, true) +
         '<hr class="jaw-divider">' +
-        jaw('lower_jaw', FDI_LOWER_RIGHT, FDI_LOWER_LEFT) +
+        jaw('lower_jaw', FDI_LOWER_RIGHT, FDI_LOWER_LEFT, false) +
       '</div>' +
       '<p class="tooth-legend">' + escHtml(t('tooth_rl_hint')) + '</p>' +
       '<div class="tooth-info' + (short ? ' warn' : '') + '" role="status">' +
@@ -378,6 +377,39 @@ var PageNew = {
         '<a href="#/topup" class="btn btn-gold btn-sm">💳 ' + escHtml(t('topup_btn')) + '</a>' : '') +
       (n ? '<p class="selected-teeth">' + escHtml(t('selected_teeth')) + ': <span class="mono">' + d.teeth.map(function (x) { return '#' + x; }).join(', ') + '</span></p>' : '') +
       uiFieldError(e.teeth);
+  },
+
+  // 치아 종류: 1~3 앞니(좁고 길게) / 4~5 작은어금니 / 6~8 큰어금니(넓고 둥글게)
+  toothKind: function (n) {
+    var pos = Number(n) % 10;
+    return pos <= 3 ? 'front' : (pos <= 5 ? 'premolar' : 'molar');
+  },
+
+  // 치아 모양 SVG (위턱 기준: 뿌리 위, 머리 아래. 아래턱은 CSS 로 위아래 뒤집어요)
+  TOOTH_PATHS: {
+    front: 'M15 31 C14.5 20 16.5 9 20 4 C23.5 9 25.5 20 25 31 C28.5 37 29.5 45 29 50 C28.5 55.5 24 57.5 20 57.5 C16 57.5 11.5 55.5 11 50 C10.5 45 11.5 37 15 31 Z',
+    premolar: 'M13.5 30 C13 19 16 9 20 5 C24 9 27 19 26.5 30 C30 35 32 43 31.5 49 C31 55 25.5 57.5 20 57.5 C14.5 57.5 9 55 8.5 49 C8 43 10 35 13.5 30 Z',
+    molar: 'M9 30 C8 20 9.5 11 12 6 C14.5 10 16 17 17 23 L23 23 C24 17 25.5 10 28 6 C30.5 11 32 20 31 30 C35.5 34 37 43 35.5 50 C34 56 27 58 20 58 C13 58 6 56 4.5 50 C3 43 4.5 34 9 30 Z'
+  },
+
+  // 치아 버튼: 모양 + 번호(위턱은 아래, 아래턱은 위) + 선택 ✓
+  toothButtonHtml: function (n, upper, on) {
+    var kind = this.toothKind(n);
+    var pos = Number(n) % 10;
+    // 완만한 아치: 가운데(1번)가 앞으로 — 위턱은 아래로, 아래턱은 위로 조금 (넓은 화면에서만, CSS 변수)
+    var arch = Math.round((pos - 1) * (pos - 1) * 0.45);
+    var svg = '<svg class="tooth-svg" viewBox="0 0 40 62" aria-hidden="true" focusable="false">' +
+      '<path class="tooth-shape" d="' + this.TOOTH_PATHS[kind] + '"/>' +
+      '<path class="tooth-cej" d="' + (kind === 'molar' ? 'M7 31 C15 34 25 34 33 31' : (kind === 'premolar' ? 'M11 31 C17 33.5 23 33.5 29 31' : 'M14 32 C18 34 22 34 26 32')) + '"/>' +
+      '</svg>';
+    var num = '<span class="tooth-num mono">' + n + '</span>';
+    return '<button type="button" class="tooth-btn tooth-' + kind + (upper ? ' upper' : ' lower') + (on ? ' selected' : '') + '" ' +
+      'style="--arch:' + arch + 'px" aria-pressed="' + on + '" ' +
+      'aria-label="' + escHtml(getToothName(n)) + '" title="' + escHtml(getToothName(n)) + '" ' +
+      'onclick="PageNew.toggleTooth(' + n + ')">' +
+      (upper ? svg + num : num + svg) +
+      '<span class="tooth-check" aria-hidden="true">✓</span>' +
+      '</button>';
   },
 
   toggleTooth: function (num) {
@@ -587,7 +619,7 @@ var PageNew = {
         return '<li class="file-row">' +
           '<span class="file-icon" aria-hidden="true">' + uiFileIcon(f.name) + '</span>' +
           '<span class="file-info"><span class="file-name">' + escHtml(f.name) + '</span>' +
-            '<span class="file-size mono">' + formatBytes(f.size) + (f.path ? ' · ' + escHtml(t('uploaded')) : '') + '</span></span>' +
+            '<span class="file-size"><span class="mono">' + formatBytes(f.size) + '</span>' + (f.path ? ' · ' + escHtml(t('uploaded')) : '') + '</span></span>' +
           '<span class="file-actions">' +
             '<button type="button" class="btn btn-outline btn-sm" onclick="PageNew.previewFile(\'' + f.id + '\')"><span aria-hidden="true">👁</span> ' + escHtml(t('btn_preview')) + '</button>' +
             '<button type="button" class="btn btn-outline btn-sm btn-danger-text" onclick="PageNew.removeFile(\'' + f.id + '\')"' + (this.submitting ? ' disabled' : '') + '><span aria-hidden="true">✕</span> ' + escHtml(t('btn_remove')) + '</button>' +
@@ -704,7 +736,7 @@ var PageNew = {
       var pct = p.phase === 'save' ? 100 : (p.total ? Math.round(p.done / p.total * 100) : 100);
       var text = p.phase === 'save' ? t('submit_saving') : tf('submit_uploading', { done: p.done, total: p.total });
       html += '<div class="progress-box" role="status" aria-live="polite">' +
-        '<p>' + escHtml(text) + (p.name && p.phase !== 'save' ? ' <span class="mono muted">' + escHtml(p.name) + '</span>' : '') + '</p>' +
+        '<p>' + escHtml(text) + (p.name && p.phase !== 'save' ? ' <span class="muted">' + escHtml(p.name) + '</span>' : '') + '</p>' +
         '<div class="progress"><div class="progress-fill" style="width:' + pct + '%"></div></div></div>';
     }
     if (this.submitError && !this.submitting) {

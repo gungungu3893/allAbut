@@ -937,6 +937,25 @@ LANG.ar = {
   lg_delete_confirm: 'إيقاف إرسال الإشعارات إلى "{name}"؟ يمكنك ربطها مجددًا برمز جديد.',
   lg_deleted: 'تمت إزالة المجموعة.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'الآن: {stage} ({n}/{total})',
+  home_todo_title: 'بانتظار إجرائك',
+  home_todo_design: 'يرجى مراجعة التصميم',
+  home_todo_receive: 'عند وصول الطلب، يرجى تأكيد الاستلام',
+  home_todo_view_design: 'عرض التصميم',
+  home_expiring_fmt: 'ينتهي {n} رصيد خلال {d} يوم',
+  todo_next: 'الخطوة التالية',
+  todo_design: 'مراجعة التصميم',
+  todo_design_btn: 'مراجعة التصميم',
+  todo_receive: 'تأكيد الاستلام',
+  todo_receive_btn: 'تأكيد الاستلام',
+  col_status: 'الحالة',
+  dash_now_title: 'مهام عاجلة الآن',
+  dash_status_title: 'الوضع الحالي',
+  dash_monthly_title: 'إحصاءات شهرية',
+  dash_waiting_orders: 'طلبات جديدة قيد الانتظار',
+  dash_due_soon: 'مستحقة قريبًا',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

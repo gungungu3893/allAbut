@@ -245,71 +245,86 @@ var PageAdmin = {
     }
   },
 
+  // 대시보드 순서
+  //   1) 지금 처리할 일: 대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로
+  //   2) 현재 현황: 단계별 주문 카드, 기한 임박 목록
+  //   3) 구분선 + ◀ 월 ▶ + "월별 통계" — (owner) [주문 | 매출] 탭으로 전환
   dashHtml: function () {
-    var self = this;
     var d = this.dash;
     if (d.error) return this.errorBox('PageAdmin.loadDash()', d.error);
-    var html = '';
+    var owner = cncHasRole('owner');
+    var zone = owner && d.zone === 'revenue' ? 'revenue' : 'orders';
+    var html = this.actionNowHtml() + this.currentStatusHtml();
 
-    // manager: 주문 통계만 / owner: 주문 + 매출
-    if (!cncHasRole('owner')) {
-      html += this.monthNavHtml();
-      html += '<section class="dash-zone" id="zone-orders"><h2 class="zone-title"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</h2>';
-      html += this.ordersZoneHtml();
-      html += '</section>';
-      return html;
+    html += '<div class="dash-monthly">' +
+      this.monthNavHtml() +
+      '<h2 class="dash-section-title">' + escHtml(t('dash_monthly_title')) + '</h2>';
+    if (owner) {
+      html += '<div class="dash-tabs" role="tablist" aria-label="' + escHtml(t('dash_monthly_title')) + '">' +
+        '<button type="button" role="tab" class="dash-tab' + (zone === 'orders' ? ' active' : '') + '" aria-selected="' + (zone === 'orders') + '" onclick="PageAdmin.setDashZone(\'orders\')">' +
+          '<span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</button>' +
+        '<button type="button" role="tab" class="dash-tab' + (zone === 'revenue' ? ' active' : '') + '" aria-selected="' + (zone === 'revenue') + '" onclick="PageAdmin.setDashZone(\'revenue\')">' +
+          '<span aria-hidden="true">💰</span> ' + escHtml(t('fin_zone_revenue')) + '</button>' +
+        '</div>';
     }
-
-    // ----- 맨 위: 월 선택 (주문·매출 같이 사용) + 구역 이동 -----
-    html += this.monthNavHtml() +
-      '<div class="zone-jump">' +
-        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpZone(\'zone-orders\')"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</button>' +
-        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpZone(\'zone-revenue\')"><span aria-hidden="true">💰</span> ' + escHtml(t('fin_zone_revenue')) + '</button>' +
-      '</div>';
-
-    // ================= Orders 구역 =================
-    html += '<section class="dash-zone" id="zone-orders"><h2 class="zone-title"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</h2>';
-    html += this.ordersZoneHtml();
-    html += '</section>';
-
-    // ================= Revenue 구역 =================
-    html += '<section class="dash-zone" id="zone-revenue"><h2 class="zone-title"><span aria-hidden="true">💰</span> ' + escHtml(t('fin_zone_revenue')) +
-      ' <span class="zone-month">· ' + escHtml(this.monthLabel(d.year, d.month)) + '</span></h2>' +
-      '<p class="muted zone-note">' + escHtml(t('fin_zone_note')) + '</p>';
-    html += this.financeHtml();
-    html += '</section>';
+    if (zone === 'orders') {
+      html += '<section class="dash-zone" id="zone-orders" role="tabpanel">' + this.monthlyOrdersHtml() + '</section>';
+    } else {
+      html += '<section class="dash-zone" id="zone-revenue" role="tabpanel">' +
+        '<p class="muted zone-note">' + escHtml(t('fin_zone_note')) + '</p>' + this.financeHtml() + '</section>';
+    }
+    html += '</div>';
     return html;
   },
 
-  // 월 선택 (◀ 2026년 11월 ▶)
-  monthNavHtml: function () {
-    var d = this.dash;
-    return '<div class="month-nav">' +
-      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
-      '<h2 class="month-title">' + escHtml(this.monthLabel(d.year, d.month)) + '</h2>' +
-      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(1)"' + (this.isCurrentMonth() ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
-      '</div>';
+  // 월별 통계 탭 바꾸기 (주문 / 매출)
+  setDashZone: function (zone) {
+    this.dash.zone = zone;
+    this.drawBody();
   },
 
-  // Orders 구역 (지금 기준 단계별 + 선택한 달 주문 통계)
-  ordersZoneHtml: function () {
+  // 1) 지금 처리할 일
+  actionNowHtml: function () {
+    var d = this.dash;
+    if (!d.now) return '';
+    function card(count, labelKey, onclick, cls) {
+      return '<button type="button" class="dash-action' + (count ? ' has' : '') + ' ' + (cls || '') + '" onclick="' + onclick + '">' +
+        '<span class="dash-action-count mono">' + formatNumber(count || 0) + '</span>' +
+        '<span class="dash-action-label">' + escHtml(t(labelKey)) + '</span>' +
+        '<span class="arrow" aria-hidden="true">→</span></button>';
+    }
+    var items = '';
+    if (cncHasRole('manager') && d.pendingTopups != null) items += card(d.pendingTopups, 'admin_pending_topups', "PageAdmin.setTab('topups')", 'dash-action-topups');
+    items += card(d.now.counts.submitted, 'dash_waiting_orders', "PageAdmin.filterStage('submitted')", 'dash-action-submitted');
+    items += card(d.now.due.length, 'dash_due_soon', 'PageAdmin.filterDue()', 'dash-action-due');
+    return '<section class="dash-section">' +
+      '<h2 class="dash-section-title">' + escHtml(t('dash_now_title')) + '</h2>' +
+      '<div class="dash-actions">' + items + '</div></section>';
+  },
+
+  // 기한 임박 → Orders 탭 (진행 중 · 납기 빠른 순)
+  filterDue: function () {
+    this.orders.stage = 'active';
+    this.orders.sort = 'deadline';
+    this.orders.search = '';
+    this.tab = 'orders';
+    history.replaceState(null, '', '#/admin/orders');
+    this.drawFrame();
+    this.loadOrders(false);
+  },
+
+  // 2) 현재 현황 (단계별 카드 + 기한 임박 목록)
+  currentStatusHtml: function () {
     var self = this;
     var d = this.dash;
-    var html = '';
-
+    var html = '<section class="dash-section"><h2 class="dash-section-title">' + escHtml(t('dash_status_title')) + '</h2>';
     // ----- 지금 기준 -----
     if (!d.now) {
       html += '<div class="card">' + uiLoading() + '</div>';
     } else {
-      if (d.pendingTopups != null) {
-        html += '<button type="button" class="admin-topup-card' + (d.pendingTopups ? ' has' : '') + '" onclick="PageAdmin.setTab(\'topups\')">' +
-          '<span class="admin-stage-count mono">' + formatNumber(d.pendingTopups) + '</span>' +
-          '<span class="admin-stage-name">💰 ' + escHtml(t('admin_pending_topups')) + '</span>' +
-          '<span class="arrow" aria-hidden="true">→</span></button>';
-      }
-      html += '<h2 class="section-label">' + escHtml(t('admin_by_stage')) + '</h2>' +
+      html += '<h3 class="section-label">' + escHtml(t('admin_by_stage')) + '</h3>' +
         '<div class="admin-stage-cards">' + ADMIN_ACTIVE_STAGES.map(function (stage) {
-          return '<button type="button" class="admin-stage-card stage-card-' + stage + '" onclick="PageAdmin.filterStage(\'' + stage + '\')">' +
+          return '<button type="button" class="admin-stage-card stage-card-' + stage + '" style="' + uiStageStyle(stage) + '" onclick="PageAdmin.filterStage(\'' + stage + '\')">' +
             '<span class="admin-stage-count mono">' + formatNumber(d.now.counts[stage]) + '</span>' +
             '<span class="admin-stage-name">' + escHtml(t('stage_' + stage)) + '</span>' +
             '</button>';
@@ -327,8 +342,14 @@ var PageAdmin = {
         '</section>';
     }
 
-    // ----- 선택한 달 -----
-    html += '<h3 class="section-label">' + escHtml(tf('fin_orders_month_fmt', { m: this.monthLabel(d.year, d.month) })) + '</h3>';
+    return html + '</section>';
+  },
+
+  // 3) 선택한 달 주문 통계
+  monthlyOrdersHtml: function () {
+    var self = this;
+    var d = this.dash;
+    var html = '';
 
     var m = d.monthData;
     if (!m) return html + '<div class="card">' + uiLoading() + '</div>';
@@ -394,6 +415,16 @@ var PageAdmin = {
       '</section>';
 
     return html;
+  },
+
+  // 월 선택 (◀ 2026년 11월 ▶)
+  monthNavHtml: function () {
+    var d = this.dash;
+    return '<div class="month-nav">' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
+      '<h2 class="month-title">' + escHtml(this.monthLabel(d.year, d.month)) + '</h2>' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftMonth(1)"' + (this.isCurrentMonth() ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
+      '</div>';
   },
 
   // 대시보드 카드 → Orders 탭에서 그 단계만
@@ -650,7 +681,7 @@ var PageAdmin = {
       var prog = st.progress;
       main = '<div class="progress-box" role="status"><p><span class="spinner" aria-hidden="true"></span> ' +
         escHtml(prog ? tf('admin_uploading', { done: prog.done, total: prog.total }) : t('admin_processing')) +
-        (prog && prog.name ? ' <span class="mono muted">' + escHtml(prog.name) + '</span>' : '') + '</p>' +
+        (prog && prog.name ? ' <span class="muted">' + escHtml(prog.name) + '</span>' : '') + '</p>' +
         (prog ? '<div class="progress"><div class="progress-fill" style="width:' + Math.round(prog.done / Math.max(prog.total, 1) * 100) + '%"></div></div>' : '') +
         '</div>';
     } else if (o.stage === 'submitted') {
@@ -1081,7 +1112,7 @@ var PageAdmin = {
       '</section>' +
       '<section class="credit-box">' +
         '<h3 class="review-title">' + escHtml(t('credit_balance')) + '</h3>' +
-        '<p class="big-number mono" id="cust-balance">' + formatNumber(u.balance) + ' <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+        '<p class="big-number" id="cust-balance"><span class="mono">' + formatNumber(u.balance) + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
         '<div class="field"><label class="field-label" for="cust-amount">' + escHtml(t('admin_credit_amount')) + '</label>' +
           '<input class="input mono" id="cust-amount" type="number" step="1" inputmode="numeric" placeholder="' + escHtml(t('admin_credit_amount_ph')) + '"' + dis + '>' +
           '<div class="err-slot" data-err="amount"></div></div>' +
@@ -1113,7 +1144,7 @@ var PageAdmin = {
       '<th>' + escHtml(t('col_description')) + '</th><th>' + escHtml(t('order_number')) + '</th></tr></thead><tbody>' +
       st.history.map(function (h) {
         var amount = Number(h.amount || 0);
-        return '<tr><td class="mono nowrap">' + escHtml(formatDateTime(h.created_at)) + '</td>' +
+        return '<tr><td class="nowrap">' + escHtml(formatDateTime(h.created_at)) + '</td>' +
           '<td><span class="badge credit-' + escHtml(h.type) + '">' + escHtml(t('credit_type_' + h.type)) + '</span></td>' +
           '<td class="mono nowrap ' + (amount >= 0 ? 'plus' : 'minus') + '">' + (amount > 0 ? '+' : '') + formatNumber(amount) + '</td>' +
           '<td>' + escHtml(h.description || '') + '</td><td class="mono nowrap">' + escHtml(h.order_id || '—') + '</td></tr>';
@@ -1241,7 +1272,7 @@ var PageAdmin = {
 
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
-      '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('col_type')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('col_status')) + '</th></tr></thead><tbody>' +
       tp.rows.map(function (r) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b></td>' +
@@ -1256,7 +1287,7 @@ var PageAdmin = {
       return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
         '<span class="order-top"><span class="order-id mono">' + escHtml(r.id) + '</span>' + uiTopupBadge(r.status) + '</span>' +
         '<span class="admin-card-clinic">' + escHtml(self.customerName(r)) + '</span>' +
-        '<span class="order-meta"><span class="mono">' + formatNumber(r.credits) + ' ' + escHtml(t('credit_unit')) + '</span>' +
+        '<span class="order-meta"><span><span class="mono">' + formatNumber(r.credits) + '</span> ' + escHtml(t('credit_unit')) + '</span>' +
         '<span class="mono">' + formatTHB(r.total) + '</span><span>' + escHtml(formatDateTime(r.created_at)) + '</span></span>' +
         '</button></li>';
     }).join('') + '</ul>';
@@ -1817,7 +1848,7 @@ var PageAdmin = {
     if (dl.error) html += '<p class="error-text">' + escHtml(uiErrorMessage(dl.error)) + '</p>';
     else if (!dl.rows) html += uiLoading();
     else if (!dl.rows.length) html += '<p class="muted">' + escHtml(t('admin_no_deletions')) + '</p>';
-    else html += '<div class="table-wrap"><table class="table"><thead><tr><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('delete_reason')) + '</th><th>' + escHtml(t('col_type')) + '</th><th></th></tr></thead><tbody>' +
+    else html += '<div class="table-wrap"><table class="table"><thead><tr><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('delete_reason')) + '</th><th>' + escHtml(t('col_status')) + '</th><th></th></tr></thead><tbody>' +
       dl.rows.map(function (r) {
         var c = r.customer || {};
         return '<tr><td class="nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +

@@ -937,6 +937,25 @@ LANG.tr = {
   lg_delete_confirm: '"{name}" grubuna bildirim gönderimi durdurulsun mu? Yeni bir kodla tekrar bağlayabilirsiniz.',
   lg_deleted: 'Grup kaldırıldı.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'Şu an: {stage} ({n}/{total})',
+  home_todo_title: 'İşleminizi bekleyenler',
+  home_todo_design: 'Lütfen tasarımı kontrol edin',
+  home_todo_receive: 'Ürün geldiğinde lütfen teslim aldığınızı onaylayın',
+  home_todo_view_design: 'Tasarımı gör',
+  home_expiring_fmt: '{n} kredinin süresi {d} gün içinde doluyor',
+  todo_next: 'Sonraki adım',
+  todo_design: 'Tasarımı kontrol edin',
+  todo_design_btn: 'Tasarımı kontrol et',
+  todo_receive: 'Teslim alındığını onaylayın',
+  todo_receive_btn: 'Teslim aldım',
+  col_status: 'Durum',
+  dash_now_title: 'Şimdi yapılacaklar',
+  dash_status_title: 'Mevcut durum',
+  dash_monthly_title: 'Aylık istatistikler',
+  dash_waiting_orders: 'Bekleyen yeni siparişler',
+  dash_due_soon: 'Teslim tarihi yaklaşan',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

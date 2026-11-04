@@ -937,6 +937,25 @@ LANG.en = {
   lg_delete_confirm: 'Stop sending notifications to "{name}"? You can connect it again with a new code.',
   lg_deleted: 'Group removed.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'Now: {stage} ({n}/{total})',
+  home_todo_title: 'Needs your attention',
+  home_todo_design: 'Please check the design',
+  home_todo_receive: 'When it arrives, please confirm receipt',
+  home_todo_view_design: 'View design',
+  home_expiring_fmt: '{n} credits expire in {d} days',
+  todo_next: 'Next step',
+  todo_design: 'Check the design',
+  todo_design_btn: 'Check design',
+  todo_receive: 'Confirm receipt',
+  todo_receive_btn: 'Confirm receipt',
+  col_status: 'Status',
+  dash_now_title: 'To do now',
+  dash_status_title: 'Current status',
+  dash_monthly_title: 'Monthly statistics',
+  dash_waiting_orders: 'New orders waiting',
+  dash_due_soon: 'Due soon',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

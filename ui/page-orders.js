@@ -1,9 +1,11 @@
 // ===== 내 주문 #/orders =====
 // - 탭: In Progress / Completed (취소된 주문은 Completed 에 회색으로)
 // - 검색: 주문번호 · 환자 ID
-// - 주문 카드: 주문번호, 날짜, 환자, 치아 수, 상태 배지, 진행 막대 ①~⑦
-// - 카드를 누르면 상세가 펼쳐져요: 치아 표, 메모, 파일, 배송 정보, 리뷰 이력, 단계별 버튼
-// - 최신순, "Load more" 로 20개씩
+// - 주문 카드 (간단하게): 윗줄 주문번호 · 상태 배지 / 둘째 줄 환자 · 치아 수 · 납기 · 접수일
+//   / 얇은 진행 줄(7칸) + "현재: 디자인 검토 (3/7)"
+//   / 고객이 할 일이 있으면 왼쪽 골드 세로줄 + "다음 할 일: …" + 바로가기 버튼
+// - 카드를 누르면 상세가 펼쳐져요: 큰 7단계 진행 막대, 치아 표, 메모, 파일, 배송 정보, 리뷰 이력, 단계별 버튼
+// - 진행 중: 할 일 있는 주문 → 납기 빠른 순 (한 번에 모두) / 완료: 최신순, "Load more" 로 20개씩
 
 var PageOrders = {
   main: null,
@@ -149,23 +151,46 @@ var PageOrders = {
   cardHtml: function (o) {
     var open = !!this.openIds[o.id];
     var cancelled = o.stage === 'cancelled';
-    return '<li class="order-card card' + (open ? ' open' : '') + (cancelled ? ' cancelled' : '') + '" id="order-' + escHtml(o.id) + '">' +
-      '<button type="button" class="order-summary" aria-expanded="' + open + '" onclick="PageOrders.toggle(\'' + escHtml(o.id) + '\')">' +
+    var todo = cncOrderNeedsAction(o);
+    var id = escHtml(o.id);
+    function meta(labelKey, value) {
+      return '<span class="order-meta-item"><span class="muted">' + escHtml(t(labelKey)) + '</span> ' + value + '</span>';
+    }
+    return '<li class="order-card card' + (open ? ' open' : '') + (cancelled ? ' cancelled' : '') + (todo ? ' has-todo' : '') + '" id="order-' + id + '">' +
+      '<button type="button" class="order-summary" aria-expanded="' + open + '" onclick="PageOrders.toggle(\'' + id + '\')">' +
         '<span class="order-top">' +
-          '<span class="order-id mono">' + escHtml(o.id) + '</span>' +
+          '<span class="order-id mono">' + id + '</span>' +
           uiStageBadge(o.stage) +
         '</span>' +
         '<span class="order-meta">' +
-          '<span><span class="muted">' + escHtml(t('order_date')) + '</span> ' + escHtml(formatDate(o.created_at)) + '</span>' +
-          '<span><span class="muted">' + escHtml(t('patient_label')) + '</span> ' + escHtml(o.patient || t('anonymous')) + '</span>' +
-          '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(o.teeth_count) + '</span></span>' +
-          '<span><span class="muted">' + escHtml(t('case_deadline_label')) + '</span> ' + escHtml(formatDate(o.deadline)) + '</span>' +
+          meta('patient_label', escHtml(o.patient || t('anonymous'))) +
+          meta('teeth_label', '<span class="mono">' + formatNumber(o.teeth_count) + '</span>') +
+          meta('case_deadline_label', escHtml(formatDate(o.deadline))) +
+          meta('order_date', escHtml(formatDate(o.created_at))) +
         '</span>' +
-        (cancelled ? '' : uiStageBar(o.stage)) +
+        (open || cancelled ? '' : uiStageProgress(o.stage)) +
         '<span class="order-toggle">' + escHtml(open ? t('hide_details') : t('show_details')) + ' <span aria-hidden="true">' + (open ? '▲' : '▼') + '</span></span>' +
       '</button>' +
-      (open ? '<div class="order-detail">' + this.detailHtml(o) + '</div>' : '') +
+      (todo && !open ? this.todoRowHtml(o) : '') +
+      (open ? '<div class="order-detail">' + (cancelled ? '' : '<div class="order-detail-bar">' + uiStageBar(o.stage) + '</div>') + this.detailHtml(o) + '</div>' : '') +
       '</li>';
+  },
+
+  // 다음 할 일 + 바로가기 (카드를 펼치고 할 일 상자로 이동)
+  todoRowHtml: function (o) {
+    var id = escHtml(o.id);
+    var key = o.stage === 'design_ready' ? 'todo_design' : 'todo_receive';
+    return '<div class="order-todo">' +
+      '<span class="order-todo-text"><span aria-hidden="true">👉</span> ' + escHtml(t('todo_next')) + ': <b>' + escHtml(t(key)) + '</b></span>' +
+      '<button type="button" class="btn btn-gold btn-sm" onclick="PageOrders.goTodo(\'' + id + '\')">' + escHtml(t(key + '_btn')) + ' <span class="arrow" aria-hidden="true">→</span></button>' +
+      '</div>';
+  },
+
+  goTodo: function (id) {
+    this.openIds[id] = true;
+    this.redrawCard(id);
+    var box = document.querySelector('#order-' + CSS.escape(id) + ' .action-box.highlight');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
 
   toggle: function (id) {

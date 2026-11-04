@@ -937,6 +937,25 @@ LANG.es = {
   lg_delete_confirm: '¿Dejar de enviar avisos a "{name}"? Puede conectarlo de nuevo con un código nuevo.',
   lg_deleted: 'Grupo quitado.',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'Ahora: {stage} ({n}/{total})',
+  home_todo_title: 'Requiere su atención',
+  home_todo_design: 'Revise el diseño, por favor',
+  home_todo_receive: 'Cuando llegue, confirme la recepción',
+  home_todo_view_design: 'Ver diseño',
+  home_expiring_fmt: '{n} créditos caducan en {d} días',
+  todo_next: 'Siguiente paso',
+  todo_design: 'Revisar el diseño',
+  todo_design_btn: 'Revisar diseño',
+  todo_receive: 'Confirmar recepción',
+  todo_receive_btn: 'Confirmar recepción',
+  col_status: 'Estado',
+  dash_now_title: 'Pendiente ahora',
+  dash_status_title: 'Estado actual',
+  dash_monthly_title: 'Estadísticas mensuales',
+  dash_waiting_orders: 'Pedidos nuevos en espera',
+  dash_due_soon: 'Vencen pronto',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

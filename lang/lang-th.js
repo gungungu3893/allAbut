@@ -937,6 +937,25 @@ LANG.th = {
   lg_delete_confirm: 'หยุดส่งการแจ้งเตือนไปยัง "{name}" ใช่หรือไม่? คุณเชื่อมต่อใหม่ได้ด้วยรหัสใหม่',
   lg_deleted: 'นำกลุ่มออกแล้ว',
 
+  // ----- Design polish: home / orders / topup / admin dashboard -----
+  stage_now_fmt: 'ตอนนี้: {stage} ({n}/{total})',
+  home_todo_title: 'รายการที่ต้องดำเนินการ',
+  home_todo_design: 'กรุณาตรวจแบบ',
+  home_todo_receive: 'เมื่อได้รับงานแล้ว กรุณากดยืนยันการรับ',
+  home_todo_view_design: 'ดูแบบ',
+  home_expiring_fmt: '{n} เครดิตจะหมดอายุใน {d} วัน',
+  todo_next: 'ขั้นตอนถัดไป',
+  todo_design: 'ตรวจแบบ',
+  todo_design_btn: 'ตรวจแบบ',
+  todo_receive: 'ยืนยันการรับ',
+  todo_receive_btn: 'ยืนยันการรับ',
+  col_status: 'สถานะ',
+  dash_now_title: 'งานที่ต้องทำตอนนี้',
+  dash_status_title: 'สถานะปัจจุบัน',
+  dash_monthly_title: 'สถิติรายเดือน',
+  dash_waiting_orders: 'คำสั่งงานใหม่ที่รอรับ',
+  dash_due_soon: 'ใกล้ถึงกำหนดส่ง',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

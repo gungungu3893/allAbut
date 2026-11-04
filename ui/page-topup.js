@@ -139,7 +139,7 @@ var PageTopup = {
             '<span><span>' + escHtml(tf('topup_vat', { n: formatNumber(vat) })) + '</span><span class="mono">' + formatTHB(price.vat) + '</span></span>' +
             '<span class="pkg-total"><span>' + escHtml(t('topup_total')) + '</span><span class="mono">' + formatTHB(price.total) + '</span></span>' +
           '</span>' +
-          '<span class="btn btn-primary pkg-choose">' + escHtml(t('topup_choose')) + '</span>' +
+          '<span class="btn pkg-choose">' + escHtml(t('topup_choose')) + '</span>' +
           '</button>';
       }).join('') + '</div>';
   },
@@ -354,7 +354,7 @@ var PageTopup = {
     } else {
       html += '<div class="table-wrap"><table class="table"><thead><tr>' +
         '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
-        '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('col_type')) + '</th><th></th></tr></thead><tbody>' +
+        '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('col_status')) + '</th><th></th></tr></thead><tbody>' +
         this.history.map(function (r) {
           return '<tr><td class="mono nowrap">' + escHtml(r.id) + '</td>' +
             '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +

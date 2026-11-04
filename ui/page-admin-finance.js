@@ -70,12 +70,6 @@ Object.assign(PageAdmin, {
     if (token === this.loadToken) this.drawBody();
   },
 
-  // 구역으로 이동 (위쪽 "Orders / Revenue" 버튼)
-  jumpZone: function (id) {
-    var el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-
   // 카드 옆 "?" 설명
   finHelp: function (btn, key) {
     uiPopover(btn, '<p>' + escHtml(t(key)) + '</p>');
@@ -159,7 +153,7 @@ Object.assign(PageAdmin, {
       small('fin_refunds', 'fin_help_refunds', escHtml(formatTHB(m.refunds.amount)),
         escHtml(tf('fin_cases_fmt', { n: formatNumber(m.refunds.count) })) + ' · ' + credits(m.refunds.credits)) +
       small('fin_expired', 'fin_help_expired', escHtml(formatTHB(m.expired.value)), credits(m.expired.credits)) +
-      small('fin_bonus', 'fin_help_bonus', credits(m.bonus.credits), '') +
+      small('fin_bonus', 'fin_help_bonus', escHtml(formatNumber(m.bonus.credits)), escHtml(t('credit_unit'))) +
       '</div>';
 
     // ----- 패키지별 판매 -----

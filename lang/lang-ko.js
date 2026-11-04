@@ -937,6 +937,25 @@ LANG.ko = {
   lg_delete_confirm: '"{name}"(으)로 알림 보내기를 중지할까요? 새 코드로 다시 연결할 수 있어요.',
   lg_deleted: '그룹을 삭제했어요.',
 
+  // ----- 디자인 다듬기: 홈 / 내 주문 / 충전 / 관리자 대시보드 -----
+  stage_now_fmt: '현재: {stage} ({n}/{total})',
+  home_todo_title: '확인이 필요해요',
+  home_todo_design: '디자인을 확인해 주세요',
+  home_todo_receive: '도착하면 수령 확인을 눌러 주세요',
+  home_todo_view_design: '디자인 보기',
+  home_expiring_fmt: '{n}크레딧이 {d}일 후 만료',
+  todo_next: '다음 할 일',
+  todo_design: '디자인 확인',
+  todo_design_btn: '디자인 확인하기',
+  todo_receive: '수령 확인',
+  todo_receive_btn: '수령 확인하기',
+  col_status: '상태',
+  dash_now_title: '지금 처리할 일',
+  dash_status_title: '현재 현황',
+  dash_monthly_title: '월별 통계',
+  dash_waiting_orders: '접수 대기 주문',
+  dash_due_soon: '기한 임박',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

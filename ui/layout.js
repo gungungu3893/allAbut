@@ -421,9 +421,43 @@ function uiFieldError(key, params) {
   return '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(tf(key, params)) + '</p>';
 }
 
-// 상태 배지
+// 단계 색 (상태 배지 · 관리자 단계 카드 · 진행 줄 공통)
+// 이 표 하나만 고치면 홈 · 내 주문 · 관리자 화면 색이 같이 바뀌어요
+//   fg: 배지 글자, bg: 배지 바탕, accent: 카드 왼쪽 선 · 강조
+var STAGE_COLORS = {
+  submitted:       { fg: '#1F3A68', bg: '#EEF2F7', accent: '#1F3A68' },
+  confirmed:       { fg: '#1E3A8A', bg: '#E0EAFF', accent: '#3B5BDB' },
+  design_ready:    { fg: '#7A4F01', bg: '#FFF1C2', accent: '#E0A800' },
+  design_revision: { fg: '#9A3412', bg: '#FFE4D5', accent: '#E8590C' },
+  approved:        { fg: '#166534', bg: '#DCFCE7', accent: '#2F9E44' },
+  milling:         { fg: '#075985', bg: '#E0F2FE', accent: '#1C7ED6' },
+  shipped:         { fg: '#5B21B6', bg: '#EDE9FE', accent: '#7048E8' },
+  done:            { fg: '#065F46', bg: '#D1FAE5', accent: '#0CA678' },
+  cancelled:       { fg: '#475467', bg: '#F2F4F7', accent: '#98A2B3' }
+};
+
+// style="..." 에 넣을 단계 색 변수 (--stage-fg, --stage-bg, --stage-accent)
+function uiStageStyle(stage) {
+  var c = STAGE_COLORS[stage] || STAGE_COLORS.submitted;
+  return '--stage-fg:' + c.fg + ';--stage-bg:' + c.bg + ';--stage-accent:' + c.accent;
+}
+
+// 상태 배지 (모든 화면 공통)
 function uiStageBadge(stage) {
-  return '<span class="badge stage-' + escHtml(stage) + '">' + escHtml(t('stage_' + stage)) + '</span>';
+  return '<span class="badge stage-badge stage-' + escHtml(stage) + '" style="' + uiStageStyle(stage) + '">' + escHtml(t('stage_' + stage)) + '</span>';
+}
+
+// 얇은 진행 줄 (7칸, 지난 칸·지금 칸 골드) + "현재: 디자인 검토 (3/7)" — 내 주문 카드용
+function uiStageProgress(stage) {
+  if (stage === 'cancelled') return '';
+  var idx = stageIndex(stage);
+  var total = ORDER_STAGES.length;
+  return '<span class="stage-progress" role="img" aria-label="' + escHtml(tf('stage_now_fmt', { stage: t('stage_' + stage), n: idx + 1, total: total })) + '">' +
+    '<span class="stage-progress-bar" aria-hidden="true">' + ORDER_STAGES.map(function (s, i) {
+      return '<span class="stage-progress-cell' + (i <= idx ? ' on' : '') + (i === idx ? ' current' : '') + '"></span>';
+    }).join('') + '</span>' +
+    '<span class="stage-progress-text" aria-hidden="true">' + escHtml(tf('stage_now_fmt', { stage: t('stage_' + stage), n: idx + 1, total: total })) + '</span>' +
+    '</span>';
 }
 
 // 가로 진행 막대 ①~⑦
@@ -553,7 +587,7 @@ function uiHistoryList(history, showNames) {
     return '<li class="timeline-item action-' + escHtml(action) + '">' +
       '<span class="timeline-dot" aria-hidden="true"></span>' +
       '<div class="timeline-body">' +
-        '<p class="timeline-head"><b>' + escHtml(label) + '</b> <span class="muted">· ' + escHtml(who) + ' · <span class="mono">' + escHtml(formatDateTime(h.date)) + '</span></span></p>' +
+        '<p class="timeline-head"><b>' + escHtml(label) + '</b> <span class="muted">· ' + escHtml(who) + ' · ' + escHtml(formatDateTime(h.date)) + '</span></p>' +
         (h.note ? '<p class="pre timeline-note">' + escHtml(h.note) + '</p>' : '') +
       '</div></li>';
   }).join('') + '</ol>';

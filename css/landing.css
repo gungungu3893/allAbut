@@ -25,8 +25,12 @@
   --focus: #2563EB;
 
   /* 글꼴 */
-  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Thai', 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* 글꼴 규칙
+     - Sans: 모든 글자 문구. 영어·베트남어 → IBM Plex Sans, 태국어 → Plex Sans Thai(→ Noto Sans Thai),
+             한국어 → Plex Sans KR(→ Noto Sans KR), 아랍어·페르시아어 → Plex Sans Arabic, 중국어 → Noto Sans SC·시스템 글꼴
+     - Mono: 숫자·주문번호·요청번호·금액에만 (.mono). 혹시 Mono 안에 글자가 섞여도 Mono 에 없는 글자는 위 Sans 글꼴로 보여요 */
+  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Thai', 'IBM Plex Sans KR', 'IBM Plex Sans Arabic', 'Noto Sans Thai', 'Noto Sans KR', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Thai', 'IBM Plex Sans KR', 'IBM Plex Sans Arabic', 'Noto Sans KR', 'Noto Sans SC', ui-monospace, monospace;
 
   --radius: 12px;
   --radius-sm: 8px;
@@ -118,9 +122,9 @@ a { color: inherit; }
 /* 로고는 언어가 RTL 이어도 항상 왼쪽→오른쪽 */
 .logo { direction: ltr; }
 
-/* ===== 슬로건 ===== */
+/* ===== 슬로건 (번역 문구라 Sans) ===== */
 .slogan {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   color: var(--gold);
   letter-spacing: 4px;

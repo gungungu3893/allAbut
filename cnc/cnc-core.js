@@ -512,9 +512,41 @@ async function cncListOrders(opts) {
   var q = cncCleanSearch(opts.search);
   if (q) query = query.or('id.ilike.*' + q + '*,patient.ilike.*' + q + '*');
 
+  // 진행 중: 한 번에 모두 가져와서 "할 일 있는 주문 → 납기 빠른 순" 으로 정렬 (진행 중 주문은 많지 않아요)
+  if (opts.tab === 'progress') {
+    var all = cncCheck(await query.limit(CNC_PROGRESS_MAX)) || [];
+    return { rows: cncSortProgress(all), hasMore: false };
+  }
+
   // 하나 더 가져와서 "더 있는지" 확인해요
   var rows = cncCheck(await query.range(offset, offset + limit)) || [];
   return { rows: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+// 진행 중 목록 최대 개수 (한 번에 정렬하려고 모두 가져와요)
+var CNC_PROGRESS_MAX = 300;
+// 고객이 할 일이 있는 단계: 디자인 확인 / 수령 확인
+var CUSTOMER_ACTION_STAGES = ['design_ready', 'shipped'];
+
+function cncOrderNeedsAction(o) {
+  return !!o && CUSTOMER_ACTION_STAGES.indexOf(o.stage) !== -1;
+}
+
+// 할 일 있는 주문 → 납기 빠른 순(납기 없으면 뒤) → 최신 접수 순
+function cncSortProgress(rows) {
+  return rows.slice().sort(function (a, b) {
+    var na = cncOrderNeedsAction(a) ? 0 : 1, nb = cncOrderNeedsAction(b) ? 0 : 1;
+    if (na !== nb) return na - nb;
+    var da = a.deadline || '9999-12-31', db = b.deadline || '9999-12-31';
+    if (da !== db) return da < db ? -1 : 1;
+    return a.created_at < b.created_at ? 1 : (a.created_at > b.created_at ? -1 : 0);
+  });
+}
+
+// 홈 "확인이 필요해요": 디자인 확인 · 수령 확인할 내 주문
+async function cncOrdersNeedingAction() {
+  var rows = cncCheck(await sb.from('cnc_orders').select('*').eq('user_id', cncUserId()).in('stage', CUSTOMER_ACTION_STAGES).order('created_at', { ascending: false }).limit(20)) || [];
+  return cncSortProgress(rows);
 }
 
 // 최근 주문 n개
@@ -810,6 +842,18 @@ function cncExpiryState(expiresAt) {
   if (d <= CREDIT_EXPIRY_DANGER_DAYS) return 'danger';
   if (d <= CREDIT_EXPIRY_WARN_DAYS) return 'warn';
   return '';
+}
+
+// 30일 이내 만료 예정: { credits: 개수, days: 가장 빠른 만료까지 남은 날 } (없으면 null)
+function cncExpiringSummary(lots) {
+  var credits = 0, days = null;
+  (lots || []).forEach(function (l) {
+    if (!(l.remaining > 0) || !cncExpiryState(l.expires_at)) return;
+    credits += l.remaining;
+    var d = cncDaysLeft(l.expires_at);
+    if (d != null && (days == null || d < days)) days = d;
+  });
+  return credits ? { credits: credits, days: Math.max(1, days || 1) } : null;
 }
 
 // 곧 만료되는 크레딧 수 (30일 이내)
