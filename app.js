@@ -164,6 +164,7 @@ function onSessionEnded() {
   }
   if (typeof stopRouterPage === 'function') stopRouterPage();
   if (typeof cncCloseViewer === 'function') cncCloseViewer();
+  if (window.LineConnect) LineConnect.reset();          // LINE 자동 확인 멈춤 + 연결 코드 지우기
   var modals = document.getElementById('modal-root');
   if (modals) modals.innerHTML = '';
   APP.user = null;

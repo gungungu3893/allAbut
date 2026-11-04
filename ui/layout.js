@@ -50,6 +50,7 @@ function applyFontScale() {
 function setFontScale(id) {
   try { localStorage.setItem(FONT_KEY, id); } catch (e) { /* 무시 */ }
   applyFontScale();
+  if (typeof fitHeader === 'function') fitHeader();
 }
 
 
@@ -137,6 +138,7 @@ function renderLayout() {
         }).join('') +
       '</nav>' +
       '<div class="hdr-right">' +
+        '<span class="hdr-line-slot">' + lineHeaderHtml() + '</span>' +
         creditBadgeHtml() +
         '<div class="hdr-wide">' +
           sessionBadgeHtml() +
@@ -169,7 +171,37 @@ function renderLayout() {
   applyFontScale();
   if (typeof updateSessionDisplays === 'function') updateSessionDisplays();
   if (window.currentRoute) setActiveNav(window.currentRoute);
+  fitHeader();
+  requestAnimationFrame(fitHeader);   // 화면이 보인 직후 한 번 더 (로그인 직후엔 아직 안 보일 수 있어요)
 }
+
+// 헤더가 한 줄에 안 들어가면 단계적으로 줄여요 (언어·글자 크기·관리자 메뉴·화면 폭에 따라 자동)
+//   fit-1: LINE 버튼 글자를 "LINE" 으로
+//   fit-2: 오른쪽 전체(타이머·언어·글자 크기·로그아웃)를 ☰ 메뉴로
+//   fit-3: Top up 버튼을 ☰ 메뉴로
+//   fit-4: 위쪽 메뉴 간격 좁게
+//   fit-5: 로고 조금 작게
+//   fit-6: (PC) 위쪽 메뉴 대신 아래 탭 메뉴, 로고의 작은 5μm 숨김
+var HEADER_FIT_LEVELS = 6;
+function fitHeader() {
+  var header = document.getElementById('app-header');
+  if (!header) return;
+  var inner = header.querySelector('.hdr-inner');
+  if (!inner || !inner.offsetParent) return;          // 화면에 안 보이면 (로그인 전) 건너뛰기
+  for (var i = 1; i <= HEADER_FIT_LEVELS; i++) header.classList.remove('fit-' + i);
+  document.body.classList.remove('hdr-tabbar');
+  for (var lv = 1; lv <= HEADER_FIT_LEVELS; lv++) {
+    if (inner.scrollWidth <= inner.clientWidth) break;
+    header.classList.add('fit-' + lv);
+  }
+  document.body.classList.toggle('hdr-tabbar', header.classList.contains('fit-6'));
+}
+var _fitTimer = null;
+window.addEventListener('resize', function () {
+  clearTimeout(_fitTimer);
+  _fitTimer = setTimeout(fitHeader, 80);
+});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitHeader(); });
 
 // 지금 페이지 메뉴 강조
 function setActiveNav(route) {
@@ -224,6 +256,7 @@ function updateCreditBadges() {
     var badge = dots[j].closest('.credit-badge');
     if (badge) badge.title = soon ? tf('credit_expiring_soon', { n: soon }) : t('credit_balance');
   }
+  fitHeader();   // 숫자가 길어지면 헤더 폭이 바뀌어요
 }
 
 async function refreshBalance() {

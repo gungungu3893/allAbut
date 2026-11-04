@@ -822,6 +822,22 @@ LANG.vi = {
   // ----- errors -----
   fin_err_missing: 'Số liệu doanh thu chưa được thiết lập. Hãy chạy sql/004_finance.sql trong Supabase SQL Editor (xem FINANCE_SETUP.md), rồi bấm Thử lại.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'Kết nối LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'Đã kết nối LINE',
+  line_banner_text: 'Nhận thông báo tiến độ đơn hàng qua LINE',
+  line_banner_btn: 'Kết nối',
+  line_banner_hide_title: 'Ẩn trong 7 ngày',
+  line_modal_title: 'Kết nối thông báo LINE',
+  line_modal_scan: 'Quét mã QR này bằng camera điện thoại hoặc ứng dụng LINE để kết bạn với allAbut.',
+  line_modal_or_click: 'Hoặc, nếu máy tính này có cài LINE:',
+  line_auto_check: 'Sau khi bạn gửi mã, cửa sổ này sẽ tự cập nhật.',
+  line_auto_stopped: 'Đã dừng kiểm tra tự động. Sau khi gửi mã, hãy bấm nút kiểm tra bên dưới.',
+  line_done_title: 'Đã kết nối LINE!',
+  line_done_text: 'Từ nay bạn sẽ nhận thông báo đơn hàng qua LINE.',
+  line_cta_text: 'Kết nối LINE để nhận thông báo tiến độ qua LINE.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

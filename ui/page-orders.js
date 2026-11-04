@@ -52,6 +52,7 @@ var PageOrders = {
     }
     this.main.innerHTML =
       '<div class="page page-orders">' +
+        lineBannerHtml() +
         '<div class="page-head">' +
           '<h1 class="page-title">' + escHtml(t('nav_orders')) + '</h1>' +
           '<a href="#/new" class="btn btn-primary">' + escHtml(t('home_new_order')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +

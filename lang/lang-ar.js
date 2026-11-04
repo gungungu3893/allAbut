@@ -822,6 +822,22 @@ LANG.ar = {
   // ----- errors -----
   fin_err_missing: 'أرقام الإيرادات غير مُعدّة بعد. شغّل sql/004_finance.sql في Supabase SQL Editor (راجع FINANCE_SETUP.md)، ثم اضغط إعادة المحاولة.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'ربط LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'تم الربط بـ LINE',
+  line_banner_text: 'استلم إشعارات تقدّم الطلبات على LINE',
+  line_banner_btn: 'ربط',
+  line_banner_hide_title: 'إخفاء لمدة 7 أيام',
+  line_modal_title: 'ربط إشعارات LINE',
+  line_modal_scan: 'امسح رمز QR هذا بكاميرا هاتفك أو بتطبيق LINE لإضافة allAbut كصديق.',
+  line_modal_or_click: 'أو إذا كان LINE مثبتًا على هذا الكمبيوتر:',
+  line_auto_check: 'بعد إرسال الرمز، ستتحدّث هذه النافذة تلقائيًا.',
+  line_auto_stopped: 'توقف التحقق التلقائي. بعد إرسال الرمز، اضغط زر التحقق بالأسفل.',
+  line_done_title: 'تم الربط بـ LINE!',
+  line_done_text: 'ستصلك الآن تحديثات الطلبات على LINE.',
+  line_cta_text: 'اربط LINE لتصلك تحديثات التقدّم على LINE.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

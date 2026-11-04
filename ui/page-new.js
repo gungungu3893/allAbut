@@ -160,8 +160,10 @@ var PageNew = {
 
     this.main.innerHTML =
       '<div class="page page-new">' +
+        // LINE 연결 안내 띠: 맨 위. 작성 중 주문 카드가 있으면 그 아래
+        (this.locked ? '' : lineBannerHtml()) +
         '<h1 class="page-title wiz-page-title">' + escHtml(t('nav_new')) + '</h1>' +
-        (this.locked ? this.draftCardHtml() : '') +
+        (this.locked ? this.draftCardHtml() + lineBannerHtml() : '') +
         '<div class="wizard' + (this.locked ? ' wiz-locked' : '') + '"' + (this.locked ? ' inert aria-hidden="true"' : '') + '>' +
           '<nav class="wiz-steps" aria-label="' + escHtml(t('order_steps')) + '" id="wiz-steps"></nav>' +
           '<div class="wiz-mobile-progress" id="wiz-mobile-progress"></div>' +
@@ -914,6 +916,7 @@ var PageNew = {
           '<p class="success-label">' + escHtml(t('order_number')) + '</p>' +
           '<p class="success-id mono">' + escHtml(s.id || '') + '</p>' +
           '<p class="success-text">' + escHtml(tf('order_success_detail', { n: s.teeth || 0, balance: formatNumber(s.balance != null ? s.balance : APP.balance) })) + '</p>' +
+          lineCtaHtml() +
           '<div class="success-actions">' +
             '<a href="#/orders" class="btn btn-primary btn-lg" onclick="PageOrders.openId=\'' + escHtml(s.id || '') + '\'">' + escHtml(t('view_my_orders')) + '</a>' +
             '<button type="button" class="btn btn-outline btn-lg" onclick="PageNew.startNew()">' + escHtml(t('new_order_btn')) + '</button>' +

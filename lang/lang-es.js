@@ -822,6 +822,22 @@ LANG.es = {
   // ----- errors -----
   fin_err_missing: 'Las cifras de ingresos aún no están configuradas. Ejecute sql/004_finance.sql en Supabase SQL Editor (vea FINANCE_SETUP.md) y luego pulse Reintentar.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'Conectar LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'Conectado a LINE',
+  line_banner_text: 'Reciba avisos del avance de sus pedidos en LINE',
+  line_banner_btn: 'Conectar',
+  line_banner_hide_title: 'Ocultar 7 días',
+  line_modal_title: 'Conectar notificaciones por LINE',
+  line_modal_scan: 'Escanee este código QR con la cámara del teléfono o la app LINE para agregar a allAbut como amigo.',
+  line_modal_or_click: 'O, si tiene LINE instalado en esta computadora:',
+  line_auto_check: 'Después de enviar el código, esta ventana se actualizará sola.',
+  line_auto_stopped: 'La comprobación automática se detuvo. Después de enviar el código, pulse el botón de comprobar de abajo.',
+  line_done_title: '¡LINE conectado!',
+  line_done_text: 'Ahora recibirá avisos de sus pedidos en LINE.',
+  line_cta_text: 'Conecte LINE para recibir avisos del avance en LINE.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

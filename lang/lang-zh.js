@@ -822,6 +822,22 @@ LANG.zh = {
   // ----- errors -----
   fin_err_missing: '收入数据尚未设置。请在 Supabase SQL Editor 中运行 sql/004_finance.sql（见 FINANCE_SETUP.md），然后点击“重试”。',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: '连接 LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: '已连接 LINE',
+  line_banner_text: '通过 LINE 接收订单进度通知',
+  line_banner_btn: '连接',
+  line_banner_hide_title: '隐藏 7 天',
+  line_modal_title: '连接 LINE 通知',
+  line_modal_scan: '用手机相机或 LINE 扫描此二维码，添加 allAbut 为好友。',
+  line_modal_or_click: '或者，如果这台电脑装有 LINE：',
+  line_auto_check: '发送代码后，此窗口会自动更新。',
+  line_auto_stopped: '自动检查已停止。发送代码后，请点击下方的查看按钮。',
+  line_done_title: '已连接 LINE！',
+  line_done_text: '今后您将通过 LINE 收到订单通知。',
+  line_cta_text: '连接 LINE，通过 LINE 接收进度通知。',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -822,6 +822,22 @@ LANG.en = {
   // ----- errors -----
   fin_err_missing: 'Revenue numbers are not set up yet. Run sql/004_finance.sql in the Supabase SQL Editor (see FINANCE_SETUP.md), then press Retry.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'Connect LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'LINE connected',
+  line_banner_text: 'Get order progress notifications on LINE',
+  line_banner_btn: 'Connect',
+  line_banner_hide_title: 'Hide for 7 days',
+  line_modal_title: 'Connect LINE notifications',
+  line_modal_scan: 'Scan this QR code with your phone camera or the LINE app to add allAbut as a friend.',
+  line_modal_or_click: 'Or, if LINE is installed on this computer:',
+  line_auto_check: 'After you send the code, this window updates by itself.',
+  line_auto_stopped: 'Automatic checking has stopped. After sending the code, press the check button below.',
+  line_done_title: 'LINE connected!',
+  line_done_text: 'You will now get order updates on LINE.',
+  line_cta_text: 'Connect LINE to get progress updates on LINE.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

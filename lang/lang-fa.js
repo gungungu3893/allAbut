@@ -822,6 +822,22 @@ LANG.fa = {
   // ----- errors -----
   fin_err_missing: 'ارقام درآمد هنوز راه‌اندازی نشده است. sql/004_finance.sql را در Supabase SQL Editor اجرا کنید (FINANCE_SETUP.md را ببینید)، سپس «تلاش دوباره» را بزنید.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'اتصال LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'به LINE متصل شد',
+  line_banner_text: 'اعلان‌های پیشرفت سفارش را در LINE دریافت کنید',
+  line_banner_btn: 'اتصال',
+  line_banner_hide_title: 'پنهان کردن برای 7 روز',
+  line_modal_title: 'اتصال اعلان‌های LINE',
+  line_modal_scan: 'این کد QR را با دوربین گوشی یا برنامه LINE اسکن کنید تا allAbut را به دوستان اضافه کنید.',
+  line_modal_or_click: 'یا اگر LINE روی این کامپیوتر نصب است:',
+  line_auto_check: 'پس از فرستادن کد، این پنجره خودش به‌روز می‌شود.',
+  line_auto_stopped: 'بررسی خودکار متوقف شد. پس از فرستادن کد، دکمه بررسی پایین را بزنید.',
+  line_done_title: 'به LINE متصل شد!',
+  line_done_text: 'از این پس اعلان‌های سفارش را در LINE دریافت می‌کنید.',
+  line_cta_text: 'برای دریافت اعلان پیشرفت در LINE، به LINE متصل شوید.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -822,6 +822,22 @@ LANG.tr = {
   // ----- errors -----
   fin_err_missing: 'Gelir rakamları henüz kurulmadı. sql/004_finance.sql dosyasını Supabase SQL Editor içinde çalıştırın (bkz. FINANCE_SETUP.md), sonra Tekrar dene\'ye basın.',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'LINE\'a bağlan',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'LINE\'a bağlandı',
+  line_banner_text: 'Sipariş durumu bildirimlerini LINE\'dan alın',
+  line_banner_btn: 'Bağlan',
+  line_banner_hide_title: '7 gün gizle',
+  line_modal_title: 'LINE bildirimlerini bağla',
+  line_modal_scan: 'allAbut\'u arkadaş olarak eklemek için bu QR kodu telefon kameranızla veya LINE uygulamasıyla tarayın.',
+  line_modal_or_click: 'Ya da bu bilgisayarda LINE yüklüyse:',
+  line_auto_check: 'Kodu gönderdikten sonra bu pencere kendiliğinden güncellenir.',
+  line_auto_stopped: 'Otomatik kontrol durdu. Kodu gönderdikten sonra aşağıdaki kontrol düğmesine basın.',
+  line_done_title: 'LINE\'a bağlandı!',
+  line_done_text: 'Artık sipariş güncellemelerini LINE\'dan alacaksınız.',
+  line_cta_text: 'Sipariş durumu güncellemelerini LINE\'dan almak için LINE\'a bağlanın.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

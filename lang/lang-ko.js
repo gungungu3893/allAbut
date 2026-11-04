@@ -822,6 +822,22 @@ LANG.ko = {
   // ----- errors -----
   fin_err_missing: '매출 데이터가 아직 설정되지 않았습니다. Supabase SQL Editor에서 sql/004_finance.sql을 실행한 다음(FINANCE_SETUP.md 참고) 다시 시도를 누르세요.',
 
+  // ----- LINE 연결: 헤더 / 안내 띠 / 모달 / 완료 카드 -----
+  line_hdr_connect: 'LINE 연결',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'LINE 연결됨',
+  line_banner_text: 'LINE으로 주문 진행 알림을 받아보세요',
+  line_banner_btn: '연결하기',
+  line_banner_hide_title: '7일 동안 숨기기',
+  line_modal_title: 'LINE 알림 연결',
+  line_modal_scan: '휴대폰 카메라나 LINE 앱으로 이 QR 코드를 찍어 allAbut 을 친구 추가하세요.',
+  line_modal_or_click: '이 컴퓨터에 LINE 이 설치돼 있다면:',
+  line_auto_check: '코드를 보내면 이 창이 저절로 바뀌어요.',
+  line_auto_stopped: '자동 확인이 멈췄어요. 코드를 보낸 뒤 아래 확인 버튼을 눌러 주세요.',
+  line_done_title: 'LINE 연결 완료!',
+  line_done_text: '이제 주문 진행 알림을 LINE으로 받을 수 있어요.',
+  line_cta_text: '진행 상황을 LINE으로 받으려면 연결하세요',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

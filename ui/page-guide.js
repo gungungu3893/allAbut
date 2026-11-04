@@ -73,6 +73,7 @@ var PageGuide = {
 
     this.main.innerHTML =
       '<div class="page page-guide">' +
+        lineBannerHtml() +
         '<h1 class="page-title"><span aria-hidden="true">📖</span> ' + escHtml(t('guide_title')) + '</h1>' +
         '<p class="page-desc">' + escHtml(t('guide_subtitle')) + '</p>' +
 

@@ -89,6 +89,7 @@ var PageTopup = {
   draw: function () {
     if (!this.main) return;
     var html = '<div class="page page-topup">' +
+      lineBannerHtml() +
       '<div class="page-head">' +
         '<h1 class="page-title"><span aria-hidden="true">💳</span> ' + escHtml(t('topup_title')) + '</h1>' +
         '<p class="topup-balance">' + escHtml(t('credit_balance')) + ': <b class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</b> ' + escHtml(t('credit_unit')) + '</p>' +
@@ -332,8 +333,8 @@ var PageTopup = {
       '<p class="success-label">' + escHtml(t('topup_request_no')) + '</p>' +
       '<p class="success-id mono">' + escHtml(d.id || '') + '</p>' +
       '<p class="success-text">' + escHtml(tf('topup_pkg_line', { n: formatNumber(d.credits || 0) })) + ' · ' + formatTHB(d.total || 0) + '</p>' +
+      lineCtaHtml() +
       '<div class="success-actions">' +
-        (linked ? '' : '<a href="#/profile" class="btn btn-line" onclick="PageProfile.scrollToLine = true">' + escHtml(t('line_home_btn')) + ' LINE</a>') +
         '<a href="#/home" class="btn btn-primary btn-lg">' + escHtml(t('nav_home')) + '</a>' +
       '</div>' +
       '</div>';

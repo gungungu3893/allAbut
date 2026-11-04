@@ -822,6 +822,22 @@ LANG.th = {
   // ----- errors -----
   fin_err_missing: 'ยังไม่ได้ตั้งค่าตัวเลขรายได้ ให้รัน sql/004_finance.sql ใน Supabase SQL Editor (ดู FINANCE_SETUP.md) แล้วกด ลองใหม่',
 
+  // ----- LINE connect: header / banner / modal / completion card -----
+  line_hdr_connect: 'เชื่อมต่อ LINE',
+  line_hdr_connect_short: 'LINE',
+  line_hdr_connected: 'เชื่อมต่อ LINE แล้ว',
+  line_banner_text: 'รับการแจ้งเตือนความคืบหน้าคำสั่งงานทาง LINE',
+  line_banner_btn: 'เชื่อมต่อ',
+  line_banner_hide_title: 'ซ่อน 7 วัน',
+  line_modal_title: 'เชื่อมต่อการแจ้งเตือนทาง LINE',
+  line_modal_scan: 'สแกน QR โค้ดนี้ด้วยกล้องมือถือหรือแอป LINE เพื่อเพิ่ม allAbut เป็นเพื่อน',
+  line_modal_or_click: 'หรือ ถ้าคอมพิวเตอร์เครื่องนี้มี LINE:',
+  line_auto_check: 'เมื่อส่งรหัสแล้ว หน้าต่างนี้จะอัปเดตเอง',
+  line_auto_stopped: 'หยุดตรวจสอบอัตโนมัติแล้ว หลังส่งรหัส กรุณากดปุ่มตรวจสอบด้านล่าง',
+  line_done_title: 'เชื่อมต่อ LINE แล้ว!',
+  line_done_text: 'ตอนนี้คุณจะได้รับการแจ้งเตือนคำสั่งงานทาง LINE',
+  line_cta_text: 'เชื่อมต่อ LINE เพื่อรับการแจ้งเตือนความคืบหน้าทาง LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -109,7 +109,8 @@
 - `cnc/cnc-data.js` — 브랜드 11종, VITA 14색, 주문 단계, FDI 32개, `getToothName()`, 파일 규칙
 - `cnc/cnc-core.js` — 화면 코드 없는 순수 로직: draft 저장/복원, 단계별 검사, 파일 규칙, cases 만들기, 업로드, 제출(RPC), 주문 조회, 고객 액션, 크레딧, 프로필 저장
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
-- `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대)
+- `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
+- `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
 - `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy` (새로고침해도 같은 페이지)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
 - `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
@@ -141,6 +142,9 @@
 - 보기용 주소는 `createSignedUrl` (1시간). 디자인 파일은 `cnc-designs` 버킷
 - 작성 중 주문(draft): `localStorage.allabut_cnc_draft_{user_id}` (파일은 이름만 저장)
 - 화면 폭: 모바일 → 1024px 이상 PC(헤더 메뉴, 새 주문 3단) → 1440px 이상 헤더 오른쪽 전체 (그 아래는 ☰ 메뉴)
+- 헤더가 한 줄에 안 들어가면 `fitHeader()` 가 단계적으로 줄임 (언어·글자 크기·관리자 메뉴·잔액 자릿수에 따라 자동):
+  fit-1 LINE 버튼 "LINE" 만 → fit-2 오른쪽 전체를 ☰ 메뉴로 → fit-3 Top up 을 ☰ 메뉴로 → fit-4 메뉴 간격 좁게 → fit-5 로고 작게 → fit-6 위쪽 메뉴 대신 아래 탭 + 5μm 숨김.
+  헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인
 
 ## 관리자 화면
 - 로그인할 때 `sb.rpc('is_admin')` → `APP.isAdmin`. 관리자만 헤더·하단 탭에 골드 "Admin" 메뉴
@@ -162,7 +166,14 @@
 - `profiles.line_user_id` 는 **LINE 알림 연결 전용** (U + 16진수 32자리). 웹앱은 이 칸을 직접 쓰지 않는다 (연결은 line-webhook, 해제는 `unlink_my_line()`).
   주문의 "LINE ID" 칸(`cnc_orders.line_id`)은 연락용 글자일 뿐, 프로필에 저장하지 않는다
 - 관리자 취소는 먼저 review_history 에 `{ action: 'admin_cancelled', by: 'admin' }` 을 붙인 뒤 `admin_cancel_cnc_order` → line-notify 가 고객 취소와 구분
-- 고객 화면: Profile 의 LINE notifications (친구추가 버튼·PC QR·연결 코드·상태 확인·해제), 홈의 작은 연결 안내
+- 고객 화면의 LINE 연결은 전부 공통 부품 `ui/line-connect.js` (`LineConnect`) 하나로:
+  - 연결 상태는 `LineConnect.isLinked()` (APP.profile 기준) 한 곳. 바뀌면 `LineConnect.refreshAll()` → 헤더·안내 띠·Profile 섹션·완료 카드 같이 갱신 + `linechange` 이벤트
+  - 헤더: 미연결 = 초록(#06C755) "LINE 연결" 버튼 → 연결 모달 / 연결됨 = 작은 초록 체크(툴팁 "LINE 연결됨") → Profile 의 LINE 섹션
+  - 안내 띠 `lineBannerHtml()`: Home·New Order·My Orders·Top up·Guide 맨 위 (작성 중 주문 카드가 있으면 그 아래). Hide → 7일 숨김 (`localStorage.allabut_line_banner_hidden_{user_id}`)
+  - 모달 `LineConnect.openModal()`: 연결 코드, 모바일은 Add friend 버튼이 가장 크게 / PC 는 QR 이 가장 크게. 열려 있는 동안 5초마다 연결 확인(최대 10분) → "✅ LINE 연결 완료!" 3초 후 닫힘. 닫으면 확인 중지
+  - Profile: `LineConnect.mountSection(box)` (3단계 안내, Add friend, PC QR, 코드 + Copy, 상태 확인, Disconnect)
+  - 주문 완료·충전 요청 완료 화면: 미연결이면 `lineCtaHtml()` 카드
+  - QR 라이브러리 `loadQrLib()` 도 이 파일에 (LINE QR·PromptPay QR 공용)
 
 ## Supabase
 - 테이블: `profiles`(+ clinic_name, address, phone, tax_id, line_user_id, lang), `admins`, `credit_wallets`,
