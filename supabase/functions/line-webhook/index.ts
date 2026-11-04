@@ -13,6 +13,13 @@
 //                          → 코드가 아닌 일반 메시지는 아직 연결 안 된 사람에게만 짧은 안내
 //  4) 답장은 reply API (replyToken) 로 보내요
 //
+// 관리자 LINE 그룹 (sql/005_team.sql)
+//  5) join(그룹·여러 명 채팅에 초대됨) → "Admin → Settings → LINE groups 에서 만든 GRP- 코드를 보내 주세요" (영어 + 태국어 + 한국어)
+//  6) 그룹 안 메시지가 GRP-XXXX 이고 유효한 코드면 → admin_notify_targets 에 그룹 저장(kind='group', line_id=groupId),
+//     코드 사용 처리 → "✅ 이 그룹에서 allAbut 관리자 알림을 받아요"
+//     (만료·사용한 코드면 짧은 안내. 그룹의 다른 메시지는 무시 — 고객 연결 코드 AB- 는 1:1 채팅에서만)
+//  7) leave(그룹에서 내보내짐) → 그 그룹 active=false
+//
 // 배포: Supabase 대시보드 → Edge Functions → 이름 "line-webhook" → Verify JWT 끄기 (LINE 은 Supabase 로그인 토큰이 없어요)
 // 비밀값(토큰·시크릿)은 코드에 쓰지 않고 Deno.env.get() 으로만 읽어요 (Supabase → Edge Functions → Secrets).
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 는 Supabase 가 자동으로 넣어 주는 서버 전용 값이에요.
@@ -46,6 +53,25 @@ const FOLLOW_TEXT = [
   'ยินดีต้อนรับสู่ allAbut! หากต้องการรับการแจ้งเตือนคำสั่งงาน กรุณาส่งรหัสเชื่อมต่อจากหน้าโปรไฟล์บนเว็บไซต์ allAbut (เช่น AB-7K2Q) มาที่แชทนี้',
   'allAbut 알림을 받으려면 allAbut 웹사이트 Profile 화면의 연결 코드(예: AB-7K2Q)를 이 채팅에 보내주세요.',
 ].join('\n\n') + '\n\n' + SITE_PROFILE_URL;
+
+// 그룹에 초대됐을 때
+const GROUP_JOIN_TEXT = [
+  'Hello! To receive allAbut admin notifications in this group, send the GRP- code created in Admin → Settings → LINE groups (e.g. GRP-7K2Q) here.',
+  'สวัสดีครับ หากต้องการรับการแจ้งเตือนผู้ดูแล allAbut ในกลุ่มนี้ กรุณาส่งรหัส GRP- ที่สร้างใน Admin → Settings → LINE groups (เช่น GRP-7K2Q) มาที่นี่',
+  '안녕하세요! 이 그룹에서 allAbut 관리자 알림을 받으려면 Admin → Settings → LINE groups 에서 만든 GRP- 코드(예: GRP-7K2Q)를 여기에 보내주세요.',
+].join('\n\n');
+
+const GROUP_LINKED_TEXT = [
+  '✅ This group will now receive allAbut admin notifications.',
+  '✅ กลุ่มนี้จะได้รับการแจ้งเตือนผู้ดูแล allAbut แล้ว',
+  '✅ 이 그룹에서 allAbut 관리자 알림을 받아요.',
+].join('\n\n');
+
+const GROUP_CODE_INVALID_TEXT = [
+  'This code is not valid or has expired (codes work for 30 minutes). Please create a new code in Admin → Settings → LINE groups.',
+  'รหัสนี้ใช้ไม่ได้หรือหมดอายุแล้ว (ใช้ได้ 30 นาที) กรุณาสร้างรหัสใหม่ใน Admin → Settings → LINE groups',
+  '코드가 맞지 않거나 만료됐어요 (30분 동안 유효). Admin → Settings → LINE groups 에서 새 코드를 만들어 주세요.',
+].join('\n\n');
 
 const NOT_FOUND_TEXT = [
   'We could not find this code. Please check the code on your Profile page and send it again.',
@@ -103,6 +129,33 @@ function normalizeCode(text: string): string | null {
   return m ? 'AB-' + m[1] : null;
 }
 
+// "grp-7k2q", "GRP 7K2Q", "grp7k2q" → "GRP-7K2Q" (형식이 아니면 null)
+function normalizeGroupCode(text: string): string | null {
+  const s = String(text || '').toUpperCase().replace(/\s+/g, '');
+  const m = /^GRP-?([A-Z0-9]{4})$/.exec(s);
+  return m ? 'GRP-' + m[1] : null;
+}
+
+// 그룹(C...) / 여러 명 채팅(R...) id
+function isLineGroupId(id: unknown): boolean {
+  return typeof id === 'string' && /^[CR][0-9a-f]{32}$/.test(id);
+}
+
+// 그룹 이름 (LINE API, 실패하면 빈 글자). 여러 명 채팅(room)은 이름이 없어요
+async function groupName(groupId: string): Promise<string> {
+  if (!groupId.startsWith('C')) return '';
+  try {
+    const res = await fetch(LINE_API_BASE + '/v2/bot/group/' + groupId + '/summary', {
+      headers: { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN },
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return String(data?.groupName || '').slice(0, 100);
+  } catch {
+    return '';
+  }
+}
+
 // LINE 사용자 id 모양 (U + 16진수 32자리)
 function isLineUserId(id: unknown): boolean {
   return typeof id === 'string' && /^U[0-9a-f]{32}$/.test(id);
@@ -127,9 +180,70 @@ async function reply(replyToken: string, text: string): Promise<void> {
 // 이벤트 처리
 // ================================================================
 
+// ----- 관리자 LINE 그룹 -----
+async function handleGroupEvent(ev: any, chatId: string, replyToken: string): Promise<void> {
+  // 그룹에 초대됨
+  if (ev.type === 'join') {
+    await reply(replyToken, GROUP_JOIN_TEXT);
+    return;
+  }
+
+  // 그룹에서 내보내짐 → 알림 끄기
+  if (ev.type === 'leave') {
+    const off = await db.from('admin_notify_targets').update({ active: false }).eq('line_id', chatId);
+    if (off.error) console.error('group deactivate failed', off.error);
+    return;
+  }
+
+  // 글자 메시지 중 GRP- 코드만 처리 (다른 메시지는 무시)
+  if (ev.type !== 'message' || ev.message?.type !== 'text') return;
+  const code = normalizeGroupCode(ev.message.text);
+  if (!code) return;
+
+  const { data: row, error } = await db.from('admin_group_link_codes')
+    .select('code, expires_at, used_at')
+    .eq('code', code)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+  if (error) console.error('group code lookup failed', error);
+  if (error || !row) {
+    await reply(replyToken, GROUP_CODE_INVALID_TEXT);
+    return;
+  }
+
+  // 그룹 저장 (이미 있던 그룹이면 다시 켜요)
+  const name = await groupName(chatId);
+  const save = await db.from('admin_notify_targets')
+    .upsert({ kind: 'group', line_id: chatId, name: name || 'LINE group', active: true }, { onConflict: 'line_id' })
+    .select('id')
+    .maybeSingle();
+  if (save.error) {
+    console.error('group save failed', save.error);
+    await reply(replyToken, GROUP_CODE_INVALID_TEXT);
+    return;
+  }
+
+  // 코드 사용 처리 (같은 코드를 다시 못 써요)
+  const used = await db.from('admin_group_link_codes')
+    .update({ used_at: new Date().toISOString(), target_id: save.data?.id ?? null })
+    .eq('code', code);
+  if (used.error) console.error('group code update failed', used.error);
+
+  await reply(replyToken, GROUP_LINKED_TEXT);
+}
+
 async function handleEvent(ev: any): Promise<void> {
   const userId: string = ev?.source?.userId ?? '';
   const replyToken: string = ev?.replyToken ?? '';
+
+  // 그룹·여러 명 채팅에서 온 이벤트 → 관리자 그룹 처리
+  const sourceType: string = ev?.source?.type ?? '';
+  if (sourceType === 'group' || sourceType === 'room') {
+    const chatId: string = (sourceType === 'group' ? ev.source.groupId : ev.source.roomId) ?? '';
+    if (isLineGroupId(chatId)) await handleGroupEvent(ev, chatId, replyToken);
+    return;
+  }
 
   // 친구추가
   if (ev.type === 'follow') {

@@ -1748,6 +1748,68 @@ body.consent-open { overflow: hidden; }
 }
 
 /* ================================================================
+   팀 · 작업 기록 · LINE 그룹 (관리자)
+   ================================================================ */
+.admin-role-tag { display: inline-block; margin-inline-start: 4px; padding: 0 6px; border-radius: 6px; background: rgba(0, 29, 74, 0.12); font-size: 0.8125em; font-weight: 700; }
+.admin-badge-lg .admin-role-tag { font-size: 0.75em; vertical-align: middle; }
+.notice-inline { margin: 0 0 14px; padding: 10px 14px; background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-sm); }
+.team-add-btn { align-self: end; }
+.role-legend { display: grid; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.role-legend p { margin: 0; color: var(--muted); }
+.role-chip { display: inline-block; min-width: 76px; padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: 0.875rem; text-align: center; color: #fff; }
+.role-chip.role-owner { background: var(--navy); }
+.role-chip.role-manager { background: #2563EB; }
+.role-chip.role-staff { background: #6B7280; }
+.team-table td { vertical-align: middle; }
+.team-table .team-name { font-weight: 600; margin-inline-end: 6px; }
+.team-table .team-role-select { min-width: 140px; }
+.team-email { overflow-wrap: anywhere; }
+
+.activity-tools { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.activity-tools .field { margin: 0; }
+.audit-list { list-style: none; margin: 0; padding: 0; }
+.audit-item { padding: 12px 0 12px 14px; border-bottom: 1px solid var(--border); border-inline-start: 4px solid var(--border-strong); margin-bottom: 4px; }
+.audit-item.audit-order { border-inline-start-color: var(--navy); }
+.audit-item.audit-topup, .audit-item.audit-refund { border-inline-start-color: var(--gold); }
+.audit-item.audit-credits { border-inline-start-color: #2563EB; }
+.audit-item.audit-team, .audit-item.audit-group { border-inline-start-color: #7C3AED; }
+.audit-item.audit-settings { border-inline-start-color: #6B7280; }
+.audit-head { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 0.9375rem; }
+.audit-actor { font-weight: 600; color: var(--navy); }
+.audit-what { margin: 4px 0 0; }
+.audit-detail { margin: 2px 0 0; overflow-wrap: anywhere; }
+.link-btn { background: none; border: 0; padding: 0; color: #1D4ED8; text-decoration: underline; cursor: pointer; font: inherit; min-height: 0; }
+.link-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.refund-locked { margin-top: 14px; }
+#line-groups .card-head { flex-wrap: wrap; gap: 10px; }
+#line-groups .card-head .card-title { min-width: 0; flex: 1 1 260px; }
+.admin-settings > * { min-width: 0; }
+
+.lg-code-box { margin: 14px 0; padding: 16px; border: 2px dashed #05893C; border-radius: var(--radius); background: #F6FBF7; display: grid; gap: 14px; }
+.lg-code-main { display: grid; justify-items: start; gap: 6px; }
+.lg-code { font-size: 2.5rem; font-weight: 700; letter-spacing: 3px; color: var(--navy); margin: 0; direction: ltr; unicode-bidi: isolate; user-select: all; }
+.lg-countdown { margin: 0; color: var(--muted); }
+.lg-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lg-steps li { display: flex; gap: 12px; align-items: center; }
+.lg-steps li p { margin: 0; font-weight: 600; color: var(--navy); }
+.lg-linked { border-style: solid; }
+.lg-linked-text { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--success); }
+.lg-expired { border-color: var(--border-strong); background: var(--bg); }
+.lg-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.lg-item { display: grid; gap: 10px; justify-items: start; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+.lg-item.lg-off { background: var(--bg); }
+.lg-item.lg-off .lg-name { color: var(--muted); }
+.lg-item-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.lg-name { margin: 0; }
+.lg-cats { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+
+@media (min-width: 640px) {
+  .activity-tools { grid-template-columns: 1fr 1fr 1.4fr; align-items: end; }
+  .lg-code-box { grid-template-columns: auto 1fr; align-items: center; }
+  .lg-code-box .line-auto { grid-column: 1 / -1; }
+}
+
+/* ================================================================
    넓은 화면
    ================================================================ */
 @media (min-width: 640px) {

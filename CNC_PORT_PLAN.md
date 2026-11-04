@@ -900,3 +900,27 @@ Dentalk 파일을 통째로 복사하지 않았고, 필요한 로직만 새로 �
 1. 사용 가치·만료 가치·미사용 잔액은 VAT 별도(구매 단가 기준), 입금 합계는 VAT 포함이에요.
 2. 004 이전에 만료된 기록 중 lot_id 가 없는 것은 수량만 세고 가치는 0 으로 계산해요.
 
+## 16. 9단계: 팀(직원) 권한 · 작업 기록 · 관리자 LINE 그룹 (2026-11-04)
+
+### 만든 것
+| 파일 | 내용 |
+|---|---|
+| `sql/005_team.sql` | admins 역할·이름, `admin_role`/`has_admin_role`/`admin_me`, RLS·Storage 역할 기준, 기존 관리자 함수의 권한 줄 바꿔 끼우기(저장소 밖 `admin_list_users`·profiles 관리자 규칙 포함), 작업 기록 + 트리거, by_name 트리거, 팀 함수, `admin_notify_targets`, `admin_group_link_codes`, `admin_create_group_code` |
+| `supabase/functions/line-webhook` | 그룹 join 안내, GRP 코드 → 그룹 저장, leave → 끄기 |
+| `supabase/functions/line-notify` | 관리자 알림을 카테고리별 그룹으로 (없으면 LINE_ADMIN_USER_ID), 직원 처리 알림 "… by 이름" |
+| `cnc/cnc-team.js`, `ui/page-admin-team.js` | 역할, Team 탭, Activity 탭, Settings → LINE groups (코드 30분 카운트다운, 5초마다 연결 확인) |
+| `ui/page-admin.js`, `ui/layout.js`, `app.js` | 역할별 탭·버튼, Admin 배지 역할, 타임라인 처리자 이름, 헤더 자동 맞춤을 화면이 처음 보일 때도 (ResizeObserver) |
+| `TEAM_SETUP.md` | SQL, LINE 그룹 참여 허용, 재배포, 그룹 연결, 직원 추가, 테스트 순서 |
+
+### 확인한 것
+- **SQL:** 로컬 PostgreSQL 16 에 002 → 003 → 004 → 005 → 005 → 002 → 003 → 004 → 005 순서로 실행해도 오류 없음. 저장소 밖 함수·규칙 흉내(admin_list_users, profiles 관리자 읽기)도 바뀌는지 확인.
+  시나리오: staff/manager/owner 권한(읽기·수정·함수 호출), 팀 추가(USER_NOT_FOUND·ALREADY_MEMBER·INVALID_ROLE), 마지막 owner·자기 제거 막기, by_name, 작업 기록 15종, 그룹 코드(형식·30분·최신 1개만), 고객은 기록·팀 정보 못 봄
+- **Edge Function:** line-webhook 25개 (그룹 13개 추가), line-notify 58개 (대상·카테고리·fallback·처리자 이름 11개 추가)
+- **웹:** 팀 65개 + LINE 연결 57 + 고객 88 + 관리자 57 + 충전 38 + 법적 문서 36 + 매출 48 통과
+- **실제 Supabase·LINE 에서는 실행하지 않았어요.**
+
+### 알아두실 점
+1. 직원 처리 알림("Confirmed by Ken")은 LINE 그룹이 연결돼 있을 때만 가요 (혼자 쓰는 동안 내 LINE 으로 내 행동이 다시 오지 않게).
+2. 역할을 바꾸면 그 직원은 다시 로그인해야 화면이 바뀌어요 (DB 권한은 바로 바뀜).
+3. 그룹 이름은 LINE 에서 읽어 와요. 여러 명 채팅(room)은 이름이 없어서 "LINE group" 으로 보여요.
+

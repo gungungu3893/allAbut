@@ -1,6 +1,9 @@
 // ===== 관리자 화면 #/admin =====
-// 탭 5개: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Settings(가격·결제 정보)
-// 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/settings (새로고침해도 같은 탭)
+// 탭 7개: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Activity(작업 기록) / Team(팀) / Settings(가격·결제·LINE 그룹)
+// 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/activity, #/admin/team, #/admin/settings
+// 역할(sql/005_team.sql)에 따라 탭·버튼이 보여요: staff = Orders·Activity / manager = + Top-ups·Customers·Dashboard(주문 통계) / owner = 전부
+// (권한 없는 탭 주소로 들어오면 Orders 로 — 실제 보호는 DB 규칙)
+// Team·Activity·LINE 그룹 화면은 ui/page-admin-team.js 에 있어요.
 // 데이터 처리는 cnc/cnc-admin.js 가 하고, 이 파일은 화면만 그려요.
 
 var PageAdmin = {
@@ -22,13 +25,25 @@ var PageAdmin = {
 
   searchTimer: null,
 
+  // min: 이 탭을 볼 수 있는 가장 낮은 역할
   TABS: [
-    { id: 'orders', key: 'admin_tab_orders' },
-    { id: 'topups', key: 'admin_tab_topups' },
-    { id: 'customers', key: 'admin_tab_customers' },
-    { id: 'dashboard', key: 'admin_tab_dashboard' },
-    { id: 'settings', key: 'admin_tab_settings' }
+    { id: 'orders', key: 'admin_tab_orders', min: 'staff' },
+    { id: 'topups', key: 'admin_tab_topups', min: 'manager' },
+    { id: 'customers', key: 'admin_tab_customers', min: 'manager' },
+    { id: 'dashboard', key: 'admin_tab_dashboard', min: 'manager' },
+    { id: 'activity', key: 'admin_tab_activity', min: 'staff' },
+    { id: 'team', key: 'admin_tab_team', min: 'owner' },
+    { id: 'settings', key: 'admin_tab_settings', min: 'owner' }
   ],
+
+  // 지금 역할로 볼 수 있는 탭
+  allowedTabs: function () {
+    return this.TABS.filter(function (x) { return cncHasRole(x.min); });
+  },
+
+  canSeeTab: function (id) {
+    return this.allowedTabs().some(function (x) { return x.id === id; });
+  },
 
   // Top-ups 탭 상태
   topups: { status: 'pending', rows: [], hasMore: false, loading: false, error: false },
@@ -44,7 +59,9 @@ var PageAdmin = {
   render: function (main) {
     this.main = main;
     var m = /^#\/admin\/([a-z]+)/.exec(location.hash || '');
-    this.tab = (m && this.TABS.some(function (x) { return x.id === m[1]; })) ? m[1] : 'orders';
+    this.tab = (m && this.canSeeTab(m[1])) ? m[1] : 'orders';
+    // 권한 없는 탭 주소로 들어왔으면 주소도 Orders 로
+    if (m && m[1] !== this.tab) history.replaceState(null, '', '#/admin/orders');
     this.drawFrame();
     this.loadTab();
   },
@@ -71,10 +88,10 @@ var PageAdmin = {
     this.main.innerHTML =
       '<div class="page page-admin">' +
         '<div class="page-head">' +
-          '<h1 class="page-title"><span class="admin-badge admin-badge-lg">' + escHtml(t('nav_admin')) + '</span> ' + escHtml(t('admin_title')) + '</h1>' +
+          '<h1 class="page-title"><span class="admin-badge admin-badge-lg">' + escHtml(t('nav_admin')) + adminRoleTagHtml() + '</span> ' + escHtml(t('admin_title')) + '</h1>' +
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button>' +
         '</div>' +
-        '<div class="seg admin-tabs" role="tablist">' + this.TABS.map(function (x) {
+        '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().map(function (x) {
           var on = self.tab === x.id;
           return '<button type="button" role="tab" class="seg-btn' + (on ? ' active' : '') + '" aria-selected="' + on + '" onclick="PageAdmin.setTab(\'' + x.id + '\')">' + escHtml(t(x.key)) + '</button>';
         }).join('') + '</div>' +
@@ -84,6 +101,7 @@ var PageAdmin = {
 
   setTab: function (id) {
     if (this.tab === id) return;
+    if (!this.canSeeTab(id)) return;
     this.tab = id;
     history.replaceState(null, '', '#/admin/' + id);   // 주소만 바꾸고 페이지는 다시 열지 않아요
     this.drawFrame();
@@ -102,6 +120,8 @@ var PageAdmin = {
     if (this.tab === 'topups') return this.loadTopups(false);
     if (this.tab === 'customers') return this.loadUsers();
     if (this.tab === 'settings') return this.loadSettings();
+    if (this.tab === 'activity') return this.loadActivity();
+    if (this.tab === 'team') return this.loadTeam();
     return this.loadDash();
   },
 
@@ -111,7 +131,9 @@ var PageAdmin = {
     if (this.tab === 'orders') box.innerHTML = this.ordersHtml();
     else if (this.tab === 'topups') box.innerHTML = this.topupsHtml();
     else if (this.tab === 'customers') box.innerHTML = this.usersHtml();
-    else if (this.tab === 'settings') box.innerHTML = this.settingsHtml();
+    else if (this.tab === 'settings') { box.innerHTML = this.settingsHtml(); this.drawLineGroups(); }
+    else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
+    else if (this.tab === 'team') box.innerHTML = this.teamHtml();
     else box.innerHTML = this.dashHtml();
   },
 
@@ -176,6 +198,7 @@ var PageAdmin = {
     }
     this.drawBody();
     // 매출(Revenue) 구역 — 주문 통계와 따로 불러와요 (매출 쪽 오류가 주문 통계를 막지 않게)
+    if (!cncHasRole('owner')) return;   // 매출은 owner 만
     await this.loadFinance(token);
     if (token === this.loadToken) this.drawBody();
   },
@@ -198,7 +221,7 @@ var PageAdmin = {
     d.trend = null;
     this.fin.month = null;
     this.drawBody();
-    var fin = this.loadFinanceMonth(token);
+    var fin = cncHasRole('owner') ? this.loadFinanceMonth(token) : Promise.resolve();
     try {
       var res = await Promise.all([cncAdminMonthStats(year, month), cncAdminTrend(year, month)]);
       if (token !== this.loadToken) return;
@@ -227,6 +250,15 @@ var PageAdmin = {
     var d = this.dash;
     if (d.error) return this.errorBox('PageAdmin.loadDash()', d.error);
     var html = '';
+
+    // manager: 주문 통계만 / owner: 주문 + 매출
+    if (!cncHasRole('owner')) {
+      html += this.monthNavHtml();
+      html += '<section class="dash-zone" id="zone-orders"><h2 class="zone-title"><span aria-hidden="true">📦</span> ' + escHtml(t('fin_zone_orders')) + '</h2>';
+      html += this.ordersZoneHtml();
+      html += '</section>';
+      return html;
+    }
 
     // ----- 맨 위: 월 선택 (주문·매출 같이 사용) + 구역 이동 -----
     html += this.monthNavHtml() +
@@ -602,7 +634,7 @@ var PageAdmin = {
       uiDesignVersions(cncOrderDesigns(o), function (vi, fi) { return 'PageAdmin.viewDesign(' + vi + ', ' + fi + ')'; });
 
     // 이력
-    html += '<h3 class="detail-title">' + escHtml(t('admin_history')) + '</h3>' + uiHistoryList(o.review_history);
+    html += '<h3 class="detail-title">' + escHtml(t('admin_history')) + '</h3>' + uiHistoryList(o.review_history, true);
 
     html += '</div>';
     body.innerHTML = html;
@@ -663,7 +695,9 @@ var PageAdmin = {
             '<button type="button" class="btn btn-outline" onclick="PageAdmin.doSetStage()"' + dis + '>' + escHtml(t('admin_change_stage_btn')) + '</button>' +
           '</div>' +
         '</div>' +
-        (canCancel
+        (!cncHasRole('manager')
+          ? '<p class="muted cancel-locked"><span aria-hidden="true">🔒</span> ' + escHtml(t('role_cancel_needs_manager')) + '</p>'
+          : canCancel
           ? '<button type="button" class="btn btn-outline btn-danger-text" onclick="PageAdmin.openCancel()"' + dis + '>' + escHtml(t('admin_cancel_refund')) + '</button>'
           : '<p class="muted cancel-locked"><span aria-hidden="true">🔒</span> ' + escHtml(t('admin_cancel_not_allowed')) + '</p>') +
       '</div></details>';
@@ -1438,7 +1472,7 @@ var PageAdmin = {
         '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '</section>';
 
-    return '<div class="admin-settings">' + this.companyHtml() + this.versionsHtml() + payment + packages + '</div>';
+    return '<div class="admin-settings">' + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment + packages + '</div>';
   },
 
   saveSettings: async function (event) {
@@ -1529,7 +1563,10 @@ var PageAdmin = {
           '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
-    // 환불 계산기
+    // 환불 계산기 (owner 만)
+    if (!cncHasRole('owner')) {
+      return html + '<p class="muted refund-locked"><span aria-hidden="true">🔒</span> ' + escHtml(t('role_refund_needs_owner')) + '</p>';
+    }
     var rf = st.refund;
     html += '<div class="refund-box">' +
       '<div class="card-head"><h3 class="detail-title">🧮 ' + escHtml(t('admin_refund_calc')) + '</h3>' +

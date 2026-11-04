@@ -77,6 +77,12 @@ var NAV_ITEMS = [
 // 관리자에게만 보이는 메뉴
 var ADMIN_NAV_ITEM = { route: 'admin', icon: '🛠', key: 'nav_admin', admin: true };
 
+// Admin 배지 옆 역할 (Owner / Manager / Staff)
+function adminRoleTagHtml() {
+  var role = window.APP && APP.adminRole;
+  return role ? ' <span class="admin-role-tag">' + escHtml(t('role_' + role)) + '</span>' : '';
+}
+
 // 지금 사용자에게 보여줄 메뉴 목록
 function navItems() {
   return (window.APP && APP.isAdmin) ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
@@ -133,7 +139,7 @@ function renderLayout() {
       '<nav class="hdr-nav" aria-label="Main">' +
         navItems().map(function (n) {
           return '<a href="#/' + n.route + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
-            (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + '</span>'
+            (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + adminRoleTagHtml() + '</span>'
               : (n.showIcon ? '<span aria-hidden="true">' + n.icon + '</span>&nbsp;' : '') + escHtml(t(n.key))) + '</a>';
         }).join('') +
       '</nav>' +
@@ -202,6 +208,24 @@ window.addEventListener('resize', function () {
   _fitTimer = setTimeout(fitHeader, 80);
 });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitHeader(); });
+// 헤더가 처음 화면에 보일 때·폭이 바뀔 때마다 다시 맞추기 (로그인 직후엔 아직 숨겨져 있어서 위의 호출이 건너뛰어질 수 있어요)
+if (window.ResizeObserver) {
+  (function () {
+    var lastW = -1;
+    var ro = new ResizeObserver(function (entries) {
+      var w = Math.round(entries[0].contentRect.width);
+      if (w === lastW) return;
+      lastW = w;
+      fitHeader();
+    });
+    function watch() {
+      var h = document.getElementById('app-header');
+      if (h) ro.observe(h);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+    else watch();
+  })();
+}
 
 // 지금 페이지 메뉴 강조
 function setActiveNav(route) {
@@ -468,7 +492,13 @@ function uiErrorMessage(err) {
     LOT_NOT_REFUNDABLE: 'admin_err_lot_not_refundable',
     NO_LOTS: 'admin_err_no_lots',
     VERSION_OUTDATED: 'consent_outdated',
-    DUPLICATE_VERSION: 'admin_err_duplicate_version'
+    DUPLICATE_VERSION: 'admin_err_duplicate_version',
+    USER_NOT_FOUND: 'team_err_user_not_found',
+    ALREADY_MEMBER: 'team_err_already_member',
+    INVALID_ROLE: 'team_err_invalid_role',
+    NOT_MEMBER: 'team_err_not_member',
+    LAST_OWNER: 'team_err_last_owner',
+    CANNOT_REMOVE_SELF: 'team_err_remove_self'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });
@@ -510,7 +540,8 @@ function uiDesignVersions(versions, viewCall) {
 }
 
 // 처리 이력 타임라인 (review_history)
-function uiHistoryList(history) {
+// showNames: 관리자 화면에서만 true → 처리한 직원 이름(by_name)을 보여줘요 (고객 화면은 "관리자")
+function uiHistoryList(history, showNames) {
   history = history || [];
   if (!history.length) return '<p class="muted">' + escHtml(t('history_empty')) + '</p>';
   return '<ol class="timeline">' + history.slice().reverse().map(function (h) {
@@ -518,7 +549,7 @@ function uiHistoryList(history) {
     var action = h.action || 'note';
     var label = t('review_' + action);
     if (label === 'review_' + action) label = action;   // 모르는 동작이면 그대로
-    var who = h.by === 'admin' ? t('by_admin') : t('by_customer');
+    var who = h.by === 'admin' ? (showNames && h.by_name ? h.by_name : t('by_admin')) : t('by_customer');
     return '<li class="timeline-item action-' + escHtml(action) + '">' +
       '<span class="timeline-dot" aria-hidden="true"></span>' +
       '<div class="timeline-body">' +

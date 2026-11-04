@@ -194,7 +194,8 @@ async function cncAdminGetOrder(id) {
 
 // 처리 이력 한 줄
 function cncAdminHistoryEntry(action, note) {
-  return { action: action, note: note || '', date: new Date().toISOString(), by: 'admin' };
+  // by_name 은 화면용 미리보기 — 실제 이름은 DB 트리거가 로그인한 직원으로 다시 채워요 (sql/005_team.sql)
+  return { action: action, note: note || '', date: new Date().toISOString(), by: 'admin', by_name: (window.APP && APP.adminName) || '' };
 }
 
 // 주문 고치기 (공통)

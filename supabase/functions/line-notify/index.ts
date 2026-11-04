@@ -8,7 +8,14 @@
 // 비밀값은 Deno.env.get() 으로만 읽어요. SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 는 Supabase 가 자동으로 넣어 주는 서버 전용 값.
 // 버튼 링크의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
 //
-// 관리자(LINE_ADMIN_USER_ID)에게 (영어)
+// 관리자 알림 받는 곳 (sql/005_team.sql)
+//   - admin_notify_targets 중 active 이고 그 카테고리를 고른 곳 전부 (LINE 그룹·사용자)
+//       orders  : 주문 관련 / topups : 충전·환불 / account : 계정 삭제 요청
+//   - 알림 대상이 하나도 없으면(아직 그룹을 연결 안 했거나 005 를 실행 안 했으면) 예전처럼 LINE_ADMIN_USER_ID 로 (안전장치)
+//   - 직원이 처리한 일(확인·디자인 업로드·가공·발송·완료 처리·관리자 취소·충전 승인/거절)은
+//     연결된 그룹에만 짧게 "Confirmed by Ken" 처럼 알려요 (LINE_ADMIN_USER_ID 로는 보내지 않아요)
+//
+// 관리자에게 (영어)
 //   - 새 주문(INSERT)            🆕
 //   - stage → approved           ✅ 고객이 디자인 승인
 //   - stage → design_revision    ✏️ 수정 요청 + 사유
@@ -294,7 +301,7 @@ function flexCard(opts: { title: string; body?: string; rows: Row[]; buttonLabel
 }
 
 async function push(to: string, message: unknown): Promise<void> {
-  if (!/^U[0-9a-f]{32}$/.test(to)) return;
+  if (!/^[UCR][0-9a-f]{32}$/.test(to)) return;   // 사용자(U) · 그룹(C) · 여러 명 채팅(R)
   try {
     const res = await fetch(LINE_API_BASE + '/v2/bot/message/push', {
       method: 'POST',
@@ -351,8 +358,42 @@ async function getProfile(userId: string): Promise<{ line_user_id: string | null
 // ================================================================
 // 관리자 알림 (영어)
 // ================================================================
+type Category = 'orders' | 'topups' | 'account';
+
+// 이 카테고리 관리자 알림을 받을 곳 (LINE id 목록)
+//   teamOnly = true  → 연결된 그룹·대상에만 (안전장치 LINE_ADMIN_USER_ID 로는 안 보냄)
+async function adminTargets(cat: Category, teamOnly = false): Promise<string[]> {
+  const fallback = teamOnly || !LINE_ADMIN_USER_ID ? [] : [LINE_ADMIN_USER_ID];
+  const { data, error } = await db.from('admin_notify_targets').select('line_id, categories').eq('active', true);
+  if (error) {
+    // 005 를 아직 실행 안 했으면 표가 없어요 → 예전처럼
+    console.error('notify targets read failed', error.message || error);
+    return fallback;
+  }
+  const rows: any[] = data ?? [];
+  if (!rows.length) return fallback;
+  return rows
+    .filter((r) => Array.isArray(r.categories) && r.categories.includes(cat))
+    .map((r) => String(r.line_id || ''))
+    .filter(Boolean);
+}
+
+async function pushAdmins(cat: Category, message: unknown, teamOnly = false): Promise<void> {
+  const targets = await adminTargets(cat, teamOnly);
+  for (const to of targets) await push(to, message);
+}
+
+// 처리자 이름 (팀 이름 → 닉네임). 모르면 빈 글자
+async function memberName(userId: unknown): Promise<string> {
+  if (!userId || typeof userId !== 'string') return '';
+  const a = await db.from('admins').select('display_name').eq('user_id', userId).maybeSingle();
+  const name = String(a.data?.display_name || '').trim();
+  if (name) return name;
+  const p = await getProfile(userId);
+  return String(p?.nickname || '').trim();
+}
+
 async function notifyAdmin(title: string, o: any, extraRows: Row[] = []): Promise<void> {
-  if (!LINE_ADMIN_USER_ID) return;
   const rows: Row[] = [
     ['Order', o.id],
     ['Clinic', o.clinic],
@@ -361,10 +402,48 @@ async function notifyAdmin(title: string, o: any, extraRows: Row[] = []): Promis
     ['Deadline', o.deadline],
     ...extraRows,
   ];
-  await push(LINE_ADMIN_USER_ID, flexCard({
+  await pushAdmins('orders', flexCard({
     title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_URL,
     altText: title + ' · ' + o.id + ' · ' + (o.clinic || ''),
   }));
+}
+
+// 직원이 처리한 주문 일 → 연결된 그룹에만 (예: "✔ Confirmed by Ken")
+const TEAM_ACTION_TITLES: Record<string, string> = {
+  confirmed: '✔ Confirmed by {name}',
+  design_ready: '🎨 Design uploaded by {name}',
+  milling: '⚙️ Milling started by {name}',
+  shipped: '🚚 Shipped by {name}',
+  done: '📦 Marked as delivered by {name}',
+  cancelled: '❌ Cancelled & refunded by {name}',
+};
+
+// 이번 변경에서 관리자가 새로 붙인 기록의 처리자 이름 (없으면 빈 글자)
+function newAdminActorName(record: any, old: any): string {
+  const now = Array.isArray(record?.review_history) ? record.review_history : [];
+  const before = Array.isArray(old?.review_history) ? old.review_history.length : now.length;
+  for (let i = now.length - 1; i >= before; i--) {
+    const h: any = now[i];
+    if (h && h.by === 'admin' && h.by_name) return String(h.by_name);
+  }
+  return '';
+}
+
+async function notifyTeamAction(record: any, old: any): Promise<void> {
+  const tpl = TEAM_ACTION_TITLES[record.stage];
+  const name = newAdminActorName(record, old);
+  if (!tpl || !name) return;
+  const title = tpl.replace('{name}', clean(name, 60));
+  const last = lastEntry(record.review_history);
+  const rows: Row[] = [['Order', record.id], ['Clinic', record.clinic], ['Patient', record.patient]];
+  if (record.stage === 'shipped' && (record.carrier || record.tracking_number)) {
+    rows.push(['Tracking', [record.carrier, record.tracking_number].filter(Boolean).join(' ')]);
+  }
+  if (last && last.note) rows.push(['Note', String(last.note)]);
+  await pushAdmins('orders', flexCard({
+    title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_URL,
+    altText: title + ' · ' + record.id,
+  }), true);
 }
 
 
@@ -500,11 +579,10 @@ async function getLotExpiry(lotId: unknown): Promise<string> {
 //   (승인은 credit_history 'charge' 로 고객에게 충전 알림이 가요)
 async function handleTopup(type: string, rec: any, old: any): Promise<void> {
   if (type === 'INSERT') {
-    if (!LINE_ADMIN_USER_ID) return;
     const p = await getProfile(rec.user_id);
     const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
     const title = '💰 Top-up request';
-    await push(LINE_ADMIN_USER_ID, flexCard({
+    await pushAdmins('topups', flexCard({
       title, body: 'Please check the payment slip and approve or reject.',
       rows: [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
       buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL,
@@ -514,6 +592,21 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
   }
   if (type !== 'UPDATE') return;
   if (!rec.status || old?.status === rec.status) return;   // 상태가 안 바뀌었으면 보내지 않아요
+
+  // 직원이 승인·거절 → 연결된 그룹에만 "Top-up approved by Ken"
+  if (rec.status === 'approved' || rec.status === 'rejected') {
+    const name = await memberName(rec.reviewed_by);
+    if (name) {
+      const p = await getProfile(rec.user_id);
+      const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
+      const title = (rec.status === 'approved' ? '💰 Top-up approved by ' : '🚫 Top-up rejected by ') + clean(name, 60);
+      const rows: Row[] = [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]];
+      if (rec.status === 'rejected') rows.push(['Reason', rec.reject_reason]);
+      await pushAdmins('topups', flexCard({
+        title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
+      }), true);
+    }
+  }
 
   if (rec.status === 'rejected') {
     const p = await getProfile(rec.user_id);
@@ -527,9 +620,9 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
     }));
     return;
   }
-  if (rec.status === 'cancelled' && LINE_ADMIN_USER_ID) {
+  if (rec.status === 'cancelled') {
     const title = '↩️ Top-up request cancelled by customer';
-    await push(LINE_ADMIN_USER_ID, flexCard({
+    await pushAdmins('topups', flexCard({
       title, rows: [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
       buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
     }));
@@ -560,14 +653,13 @@ async function handleReminder(payload: any): Promise<void> {
 
 // 계정 삭제 요청 (account_deletion_requests INSERT) → 관리자 (영어)
 async function handleDeletionRequest(rec: any): Promise<void> {
-  if (!LINE_ADMIN_USER_ID) return;
   const p = await getProfile(rec.user_id);
   const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
   const balance = await getBalance(rec.user_id);
   const { count } = await db.from('cnc_orders').select('id', { count: 'exact', head: true })
     .eq('user_id', rec.user_id).not('stage', 'in', '(done,cancelled)');
   const title = '🗑 Account deletion request';
-  await push(LINE_ADMIN_USER_ID, flexCard({
+  await pushAdmins('account', flexCard({
     title,
     body: 'Check open orders, remaining credits and tax records before deleting the account (Admin → Customers).',
     rows: [['Customer', who], ['Open orders', String(count ?? 0)], ['Credits', String(balance ?? 0)], ['Reason', rec.reason]],
@@ -654,6 +746,9 @@ async function handle(payload: any): Promise<void> {
       await notifyCustomer(record, 'shipped');
       break;
   }
+
+  // 직원이 처리한 일 → 연결된 그룹에 "… by 이름"
+  await notifyTeamAction(record, old_record);
 }
 
 

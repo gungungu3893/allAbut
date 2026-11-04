@@ -9,7 +9,9 @@ var APP = {
   user: null,      // Supabase 사용자 (id, email ...)
   profile: null,   // profiles 행
   balance: null,   // 크레딧 잔액
-  isAdmin: false   // 관리자인지 (sb.rpc('is_admin'))
+  isAdmin: false,  // 관리자(팀원)인지
+  adminRole: null, // 'owner' | 'manager' | 'staff' | null (sql/005_team.sql)
+  adminName: ''    // 팀에서 쓰는 내 이름
 };
 
 
@@ -88,9 +90,11 @@ async function enterApp() {
       return;
     }
     APP.user = session.user;
-    var loaded = await Promise.all([getProfile(), cncCheckAdmin(), cncGetLegalVersions(true).catch(function () { return null; })]);
+    var loaded = await Promise.all([getProfile(), cncLoadAdminMe(), cncGetLegalVersions(true).catch(function () { return null; })]);
     APP.profile = loaded[0];
-    APP.isAdmin = loaded[1];
+    APP.adminRole = loaded[1] ? loaded[1].role : null;
+    APP.adminName = loaded[1] ? loaded[1].name : '';
+    APP.isAdmin = !!APP.adminRole;
     APP.legal = loaded[2];
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
 
@@ -171,6 +175,8 @@ function onSessionEnded() {
   APP.profile = null;
   APP.balance = null;
   APP.isAdmin = false;
+  APP.adminRole = null;
+  APP.adminName = '';
   APP.needsConsent = false;
   APP.legal = null;
   APP.lots = null;
