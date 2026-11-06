@@ -96,7 +96,9 @@ var PageGuide = {
 
         '<div class="guide-cta">' +
           '<a href="#/new" class="btn btn-gold btn-lg">' + escHtml(t('guide_start_order')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
+          '<a href="#/contact" class="btn btn-outline btn-lg guide-contact-btn"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>' +
         '</div>' +
+        '<p class="guide-contact-note muted">' + escHtml(t('guide_contact_note')) + '</p>' +
       '</div>';
   }
 };

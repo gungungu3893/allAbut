@@ -66,6 +66,45 @@ async function cncGetCompany(force) {
   return _companyCache;
 }
 
+// ----------------------------------------------------------------
+// 문의 연락처 (company_settings 에서 — 하드코딩 금지)
+// ----------------------------------------------------------------
+// 값이 비어 있으면 그 항목은 화면에서 숨겨요. LINE ID 만 비어 있으면 기본 공식계정 @925caqxb
+var DEFAULT_CONTACT_LINE_ID = '@925caqxb';
+
+// { email, dpoEmail, phone, lineId, lineUrl, company, address }
+function cncContactInfo() {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  var clean = function (v) { return String(v == null ? '' : v).trim(); };
+  var lineId = clean(c.line_id) || DEFAULT_CONTACT_LINE_ID;
+  return {
+    email: clean(c.email),
+    dpoEmail: clean(c.dpo_email),
+    phone: clean(c.phone),
+    lineId: lineId,
+    lineUrl: cncLineUrl(lineId),
+    company: clean(c.company_name),
+    address: clean(c.address)
+  };
+}
+
+// LINE 친구추가 주소: @925caqxb → https://line.me/R/ti/p/@925caqxb (이상한 글자는 빼요)
+function cncLineUrl(lineId) {
+  var id = String(lineId || '').trim().replace(/[^@A-Za-z0-9._-]/g, '');
+  return 'https://line.me/R/ti/p/' + (id || DEFAULT_CONTACT_LINE_ID);
+}
+
+// mailto: 주소 (제목은 자동 입력, 글자는 URL 안전하게)
+function cncMailto(email, subject) {
+  var e = String(email || '').trim().replace(/[\s<>"]/g, '');
+  return 'mailto:' + e + (subject ? '?subject=' + encodeURIComponent(subject) : '');
+}
+
+// 전화 걸기 주소: tel:+66812345678
+function cncTelUrl(phone) {
+  return 'tel:' + String(phone || '').replace(/[^0-9+]/g, '');
+}
+
 // 문서별 최신 버전: { terms: { version, effective_date }, privacy: {...}, credit: {...} }
 async function cncGetLegalVersions(force) {
   if (_versionsCache && !force) return _versionsCache;

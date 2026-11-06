@@ -107,7 +107,7 @@ var PageTopup = {
     if (!box) return;
     if (this.loadError) {
       box.innerHTML = '<div class="card"><p class="error-text"><span aria-hidden="true">⚠</span> ' + escHtml(t('load_error')) + '</p>' +
-        '<button type="button" class="btn btn-outline" onclick="PageTopup.load()">' + escHtml(t('btn_retry')) + '</button></div>';
+        '<button type="button" class="btn btn-outline" onclick="PageTopup.load()">' + escHtml(t('btn_retry')) + '</button>' + uiContactHelpHtml() + '</div>';
       return;
     }
     if (!this.packages || !this.settings) { box.innerHTML = '<div class="card">' + uiLoading() + '</div>'; return; }
@@ -227,7 +227,7 @@ var PageTopup = {
             ' onchange="PageTopup.policyRead = this.checked; PageTopup.policyError = false"> <span>' +
             escHtml(t('topup_policy_read')).replace('{policy}', '<a href="#/credit-policy" target="_blank" rel="noopener">' + escHtml(t('legal_credit')) + '</a>') + '</span></label>' +
           (this.policyError ? uiFieldError('topup_policy_required') : '') +
-          (this.submitError ? '<div class="notice notice-error" role="alert"><p><span aria-hidden="true">⚠</span> ' + escHtml(this.errorText(this.submitError)) + '</p></div>' : '') +
+          (this.submitError ? '<div class="notice notice-error" role="alert"><p><span aria-hidden="true">⚠</span> ' + escHtml(this.errorText(this.submitError)) + '</p>' + uiContactHelpHtml() + '</div>' : '') +
           '<button type="button" class="btn btn-gold btn-lg btn-block" onclick="PageTopup.submit()"' + dis + '>' +
             (this.submitting ? '<span class="spinner" aria-hidden="true"></span> ' + escHtml(t('submitting')) : escHtml(t('topup_submit'))) + '</button>' +
         '</section>' +

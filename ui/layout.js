@@ -83,6 +83,22 @@ function adminRoleTagHtml() {
   return role ? ' <span class="admin-role-tag">' + escHtml(t('role_' + role)) + '</span>' : '';
 }
 
+// 푸터 문의 줄: "문의: support@… · LINE @925caqxb" (값은 company_settings, 비면 숨김)
+function footerContactHtml() {
+  if (typeof cncContactInfo !== 'function') return '';
+  var c = cncContactInfo();
+  var parts = [];
+  if (c.email) parts.push('<a href="' + escHtml(cncMailto(c.email)) + '" class="footer-email">' + escHtml(c.email) + '</a>');
+  parts.push('<a href="' + escHtml(c.lineUrl) + '" target="_blank" rel="noopener" class="footer-line">LINE ' + escHtml(c.lineId) + '</a>');
+  return '<p class="footer-contact"><a href="#/contact" class="footer-contact-label">' + escHtml(t('footer_contact')) + '</a>: ' +
+    parts.join(' <span aria-hidden="true">·</span> ') + '</p>';
+}
+
+// 에러 메시지 아래 "문제가 계속되면 문의하기" 링크
+function uiContactHelpHtml() {
+  return '<p class="help-contact"><a href="#/contact"><span aria-hidden="true">💁</span> ' + escHtml(t('help_contact_link')) + '</a></p>';
+}
+
 // 지금 사용자에게 보여줄 메뉴 목록
 function navItems() {
   return (window.APP && APP.isAdmin) ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
@@ -163,6 +179,7 @@ function renderLayout() {
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
+      '<a href="#/contact" class="btn btn-outline btn-block hdr-menu-contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>' +
       '<button type="button" class="btn btn-outline btn-block" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
     '</div>';
 
@@ -658,7 +675,8 @@ function uiTopupBadge(status) {
 function renderFooters() {
   var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
   var name = c.company_name || 'allAbut';
-  var html = '<nav class="footer-links" aria-label="' + escHtml(t('legal_documents')) + '">' +
+  var html = footerContactHtml() +
+    '<nav class="footer-links" aria-label="' + escHtml(t('legal_documents')) + '">' +
     LEGAL_DOCS_LIST.map(function (d) {
       return '<a href="#/' + d.route + '">' + escHtml(t(d.titleKey)) + '</a>';
     }).join('<span aria-hidden="true">·</span>') +
@@ -674,7 +692,7 @@ function renderFooters() {
 // 동의하기 전에는 주문·충전 등 앱을 쓸 수 없어요. 법적 문서 페이지와 Sign Out 은 가능해요.
 function updateConsentGate() {
   var need = !!(window.APP && APP.user && APP.needsConsent);
-  var onLegal = window.currentRoute && isLegalRoute(window.currentRoute);
+  var onLegal = window.currentRoute && (typeof isPublicRoute === 'function' ? isPublicRoute(window.currentRoute) : isLegalRoute(window.currentRoute));
   if (need && !onLegal) showConsentGate();
   else hideConsentGate();
 }

@@ -130,7 +130,7 @@ var PageOrders = {
 
     if (this.error) {
       html = '<div class="card"><p class="empty-text error-text"><span aria-hidden="true">⚠</span> ' + escHtml(t('load_error')) + '</p>' +
-        '<button type="button" class="btn btn-outline" onclick="PageOrders.load(false)">' + escHtml(t('btn_retry')) + '</button></div>';
+        '<button type="button" class="btn btn-outline" onclick="PageOrders.load(false)">' + escHtml(t('btn_retry')) + '</button>' + uiContactHelpHtml() + '</div>';
     } else if (!this.rows.length && this.loading) {
       html = '<div class="card">' + uiLoading() + '</div>';
     } else if (!this.rows.length) {
@@ -299,7 +299,20 @@ var PageOrders = {
     if ((o.review_history || []).length) {
       html += '<h3 class="detail-title">' + escHtml(t('review_history_label')) + '</h3>' + uiHistoryList(o.review_history);
     }
+    html += this.inquiryHtml(o);
     return html;
+  },
+
+  // 맨 아래 "이 주문 문의하기": 메일 제목에 주문번호 자동 입력 ("[CA261104-0008] 문의")
+  // 회사 이메일이 비어 있으면 문의하기 페이지로
+  inquiryHtml: function (o) {
+    var c = cncContactInfo();
+    var link = c.email
+      ? '<a class="btn btn-outline" href="' + escHtml(cncMailto(c.email, tf('contact_order_subject', { id: o.id }))) + '"><span aria-hidden="true">✉</span> ' + escHtml(t('contact_this_order')) + '</a>'
+      : '<a class="btn btn-outline" href="#/contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_this_order')) + '</a>';
+    return '<div class="order-inquiry">' +
+      '<p class="muted">' + escHtml(t('contact_order_hint')) + '</p>' + link +
+      '</div>';
   },
 
   findRow: function (id) {

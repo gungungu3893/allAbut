@@ -956,6 +956,28 @@ LANG.fa = {
   dash_waiting_orders: 'سفارش‌های جدید در انتظار',
   dash_due_soon: 'مهلت نزدیک',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: 'تماس',
+  contact_title: 'تماس با ما',
+  contact_subtitle: 'درباره سفارش‌ها، اعتبار یا حساب کاربری خود سؤالی دارید؟ با کمال میل کمک می‌کنیم.',
+  contact_note_order: 'برای سؤال درباره یک سفارش، لطفاً شماره سفارش را هم بنویسید (مثلاً CA261104-0008).',
+  contact_note_hours: 'در روزهای کاری (دوشنبه تا جمعه، به وقت بانکوک) پاسخ می‌دهیم، معمولاً ظرف 1 روز کاری.',
+  contact_general: 'سؤالات عمومی',
+  contact_general_desc: 'سفارش‌ها، طراحی، ارسال، اعتبار و پرداخت.',
+  contact_send_email: 'ارسال ایمیل',
+  contact_copy: 'کپی',
+  contact_copied: 'کپی شد.',
+  contact_line: 'پرسش در LINE',
+  contact_line_desc: 'allAbut را در LINE به‌عنوان دوست اضافه کنید و برای ما پیام بفرستید.',
+  contact_privacy: 'سؤالات حریم خصوصی',
+  contact_privacy_desc: 'درخواست‌های مربوط به داده‌های شخصی شما (مشاهده، اصلاح، حذف) طبق قانون PDPA تایلند.',
+  contact_company_title: 'اطلاعات شرکت',
+  help_contact_link: 'اگر مشکل ادامه داشت، با ما تماس بگیرید',
+  guide_contact_note: 'هنوز سؤالی دارید؟ از طریق ایمیل یا LINE با ما تماس بگیرید.',
+  contact_this_order: 'پرسش درباره این سفارش',
+  contact_order_hint: 'درباره این سفارش سؤالی دارید؟ شماره سفارش به‌طور خودکار در موضوع ایمیل درج می‌شود.',
+  contact_order_subject: '[{id}] سؤال',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

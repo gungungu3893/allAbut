@@ -956,6 +956,28 @@ LANG.es = {
   dash_waiting_orders: 'Pedidos nuevos en espera',
   dash_due_soon: 'Vencen pronto',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: 'Contacto',
+  contact_title: 'Contáctenos',
+  contact_subtitle: '¿Tiene preguntas sobre pedidos, créditos o su cuenta? Con gusto le ayudamos.',
+  contact_note_order: 'Si su consulta es sobre un pedido, indique el número de pedido (p. ej., CA261104-0008).',
+  contact_note_hours: 'Respondemos en días hábiles (lunes a viernes, hora de Bangkok), normalmente en 1 día hábil.',
+  contact_general: 'Consultas generales',
+  contact_general_desc: 'Pedidos, diseños, envíos, créditos y pagos.',
+  contact_send_email: 'Enviar correo',
+  contact_copy: 'Copiar',
+  contact_copied: 'Copiado.',
+  contact_line: 'Consultar por LINE',
+  contact_line_desc: 'Agregue a allAbut como amigo en LINE y envíenos un mensaje.',
+  contact_privacy: 'Consultas de privacidad',
+  contact_privacy_desc: 'Solicitudes sobre sus datos personales (acceso, corrección, eliminación) según la PDPA de Tailandia.',
+  contact_company_title: 'Empresa',
+  help_contact_link: 'Si el problema continúa, contáctenos',
+  guide_contact_note: '¿Aún tiene preguntas? Contáctenos por correo o LINE.',
+  contact_this_order: 'Consultar sobre este pedido',
+  contact_order_hint: '¿Preguntas sobre este pedido? El número de pedido se agrega automáticamente al asunto del correo.',
+  contact_order_subject: '[{id}] Consulta',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

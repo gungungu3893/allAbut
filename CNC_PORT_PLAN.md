@@ -942,3 +942,17 @@ Dentalk 파일을 통째로 복사하지 않았고, 필요한 로직만 새로 �
 - Playwright 디자인 테스트 48개 (글꼴 규칙: 한국어·태국어로 고객·관리자 전체 화면에서 Mono 안에 글자 없음, 로고 크기, 3단 윗선·sticky, 치아 32개·종류·방향·아치·키보드 Tab/Space·선택/호버 색, 정렬, 배지 색 일치, 대시보드 순서·이동, 360/390/768px 가로 넘침 없음)
 - 기존 테스트 모두 통과 (고객 91, 관리자 57, 매출 52, 충전 38, 법적 문서 36, LINE 연결 57, 팀 66)
 
+## 18. 11단계: 문의 연락처 (2026-11-06)
+
+### 만든 것
+| 파일 | 내용 |
+|---|---|
+| `cnc/cnc-legal.js` | `cncContactInfo()` (company_settings → email·dpo_email·line_id·phone·회사명·주소, LINE 기본 @925caqxb), `cncMailto`, `cncLineUrl`, `cncTelUrl` |
+| `ui/page-contact.js` | `#/contact` 카드 3개 + 안내 + 회사 정보, PC QR, 복사 버튼 (로그인 없이도) |
+| `ui/router.js` | `isPublicRoute()` — 법적 문서 + contact 를 로그인 전 screen-legal 에 |
+| `ui/layout.js` | 푸터 문의 줄 `footerContactHtml()`, ☰ 메뉴 "문의하기", `uiContactHelpHtml()`, 재동의 창이 떠도 문의하기는 열림 |
+| 화면 | 가이드 맨 아래 버튼, 주문 제출·업로드·충전 요청·목록 불러오기 에러 아래 문의 링크, 내 주문 상세 "이 주문 문의하기"(제목에 주문번호) |
+
+### 확인한 것
+- Playwright 문의 테스트 34개 (로그인 전 푸터·페이지, 빈 값 숨김·LINE 기본값·사용자 LINE ID, 로그인 후 메뉴·가이드·푸터, mailto 제목(영어·한국어), 에러 링크 3곳, 모바일, 9개 언어) + 기존 테스트 모두 통과
+

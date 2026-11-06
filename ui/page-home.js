@@ -122,7 +122,7 @@ var PageHome = {
 
     if (d.error) {
       html += '<p class="empty-text error-text"><span aria-hidden="true">⚠</span> ' + escHtml(t('load_error')) + '</p>' +
-        '<button type="button" class="btn btn-outline" onclick="PageHome.load()">' + escHtml(t('btn_retry')) + '</button>';
+        '<button type="button" class="btn btn-outline" onclick="PageHome.load()">' + escHtml(t('btn_retry')) + '</button>' + uiContactHelpHtml();
     } else if (d.recent === null) {
       html += uiLoading();
     } else if (!d.recent.length) {

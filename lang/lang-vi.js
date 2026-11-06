@@ -956,6 +956,28 @@ LANG.vi = {
   dash_waiting_orders: 'Đơn mới đang chờ',
   dash_due_soon: 'Sắp đến hạn',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: 'Liên hệ',
+  contact_title: 'Liên hệ với chúng tôi',
+  contact_subtitle: 'Bạn có câu hỏi về đơn hàng, tín dụng hoặc tài khoản? Chúng tôi sẵn lòng hỗ trợ.',
+  contact_note_order: 'Khi hỏi về đơn hàng, vui lòng ghi kèm mã đơn hàng (ví dụ: CA261104-0008).',
+  contact_note_hours: 'Chúng tôi trả lời vào ngày làm việc (thứ Hai–thứ Sáu, giờ Bangkok), thường trong vòng 1 ngày làm việc.',
+  contact_general: 'Câu hỏi chung',
+  contact_general_desc: 'Đơn hàng, thiết kế, giao hàng, tín dụng và thanh toán.',
+  contact_send_email: 'Gửi email',
+  contact_copy: 'Sao chép',
+  contact_copied: 'Đã sao chép.',
+  contact_line: 'Hỏi qua LINE',
+  contact_line_desc: 'Kết bạn với allAbut trên LINE và gửi tin nhắn cho chúng tôi.',
+  contact_privacy: 'Câu hỏi về quyền riêng tư',
+  contact_privacy_desc: 'Yêu cầu về dữ liệu cá nhân của bạn (xem, sửa, xóa) theo luật PDPA của Thái Lan.',
+  contact_company_title: 'Thông tin công ty',
+  help_contact_link: 'Nếu vẫn còn lỗi, hãy liên hệ với chúng tôi',
+  guide_contact_note: 'Vẫn còn thắc mắc? Hãy liên hệ với chúng tôi qua email hoặc LINE.',
+  contact_this_order: 'Hỏi về đơn hàng này',
+  contact_order_hint: 'Có câu hỏi về đơn hàng này? Mã đơn hàng sẽ được tự động thêm vào tiêu đề email.',
+  contact_order_subject: '[{id}] Câu hỏi',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

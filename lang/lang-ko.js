@@ -956,6 +956,28 @@ LANG.ko = {
   dash_waiting_orders: '접수 대기 주문',
   dash_due_soon: '기한 임박',
 
+  // ----- 문의: 푸터 줄, 문의하기 페이지, 도움 링크 -----
+  footer_contact: '문의',
+  contact_title: '문의하기',
+  contact_subtitle: '주문, 크레딧, 계정에 대해 궁금한 점이 있으면 언제든 연락 주세요.',
+  contact_note_order: '주문 관련 문의는 주문번호를 함께 보내주세요 (예: CA261104-0008).',
+  contact_note_hours: '영업일(월~금, 방콕 시간) 기준으로 답변드려요. 보통 1영업일 안에 답변해요.',
+  contact_general: '일반 문의',
+  contact_general_desc: '주문, 디자인, 배송, 크레딧, 결제',
+  contact_send_email: '메일 보내기',
+  contact_copy: '복사',
+  contact_copied: '복사했어요.',
+  contact_line: 'LINE 문의',
+  contact_line_desc: 'LINE 에서 allAbut 을 친구 추가하고 메시지를 보내주세요.',
+  contact_privacy: '개인정보 문의',
+  contact_privacy_desc: '태국 개인정보보호법(PDPA)에 따른 내 정보 열람·정정·삭제 요청',
+  contact_company_title: '회사 정보',
+  help_contact_link: '문제가 계속되면 문의하기',
+  guide_contact_note: '궁금한 점이 남아 있으면 이메일이나 LINE 으로 문의해 주세요.',
+  contact_this_order: '이 주문 문의하기',
+  contact_order_hint: '이 주문에 대해 궁금한 점이 있나요? 메일 제목에 주문번호가 자동으로 들어가요.',
+  contact_order_subject: '[{id}] 문의',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

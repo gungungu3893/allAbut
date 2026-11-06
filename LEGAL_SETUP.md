@@ -40,6 +40,7 @@ select doc, version, effective_date from legal_versions order by doc;   -- terms
    - Privacy contact (email): 개인정보 담당 이메일 (PDPA 요청 접수용, 비우면 대표 이메일 사용)
    - Phone, LINE ID (@925caqxb)
 3. **Save** → 푸터의 © 2026 회사명, 문서의 연락처·회사명이 바로 바뀌어요.
+   - 같은 값이 **문의하기 페이지(`#/contact`)와 모든 화면 푸터의 문의 줄**에도 쓰여요: Email(일반 문의), Privacy contact(개인정보 문의), LINE ID(비우면 @925caqxb), Phone·Company·Address(회사 정보). 비워 둔 항목은 화면에서 숨겨져요.
 
 ### 문서를 고친 뒤 (나중에)
 문서 내용은 저장소의 `legal/` 폴더 파일이에요 (`terms.en.js`, `terms.th.js`, `terms.ko.js` …).

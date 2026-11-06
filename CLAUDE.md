@@ -82,7 +82,15 @@
 - 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
 - 가입: 동의 체크 필수 → `accept_legal()`. 충전 결제: Credit & Refund Policy 읽음 체크 필수
 - 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
-- 모든 화면 아래 푸터: Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
+- 모든 화면 아래 푸터: 문의 줄("문의: 이메일 · LINE @id") + Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
+
+## 문의 연락처 (#/contact)
+- 연락처는 하드코딩 금지 → `company_settings` 의 email · dpo_email · line_id · phone (+ company_name · address) 를 `cncContactInfo()` 로 읽어요.
+  비어 있는 항목은 숨김, line_id 만 비면 기본 `@925caqxb` (`DEFAULT_CONTACT_LINE_ID`). 메일 주소는 `cncMailto(email, 제목)`, LINE 은 `cncLineUrl(id)`
+- `#/contact` (`ui/page-contact.js`) — 로그인 없이도 열림 (법적 문서처럼 screen-legal). 카드 3개: 📧 일반(email) / 💬 LINE(친구추가 + PC QR) / 🔒 개인정보(dpo_email), 주문번호 안내·답변 시간, 회사 정보
+- 들어가는 곳: 푸터 문의 줄, 헤더 ☰ 메뉴 "문의하기", 가이드 맨 아래 버튼, 주요 에러 아래 `uiContactHelpHtml()` ("문제가 계속되면 문의하기"),
+  내 주문 상세 맨 아래 "이 주문 문의하기" (mailto, 제목 `contact_order_subject` = "[주문번호] 문의")
+- 답변 시간 문구(`contact_note_hours`)는 실제 운영 시간에 맞게 9개 언어 파일에서 고쳐요
 
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
 - Admin → Dashboard 순서: ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
@@ -116,10 +124,11 @@
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
 - `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
-- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy` (새로고침해도 같은 페이지)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact` (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
 - `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
 - `ui/page-legal.js` — 법적 문서 페이지 (목차, 섹션 번호, 버전·시행일, 연락처, 인쇄)
+- `ui/page-contact.js` — 문의하기 `#/contact` (로그인 전·후 공통, 연락처는 company_settings)
 - `cnc/promptpay.js` — PromptPay QR 페이로드(EMVCo + CRC16), `promptPayPayload(id, amount)`
 - `ui/page-topup.js` — 크레딧 충전 `#/topup` (패키지 → QR·계좌 → 슬립 → 완료, 내 충전 내역)
 - `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)

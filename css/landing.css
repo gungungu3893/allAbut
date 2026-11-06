@@ -337,6 +337,8 @@ a { color: inherit; }
 body.in-app .public-footer { display: none; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; }
 .footer-copy { margin-top: 2px; }
+.public-footer .footer-contact { margin: 0 0 2px; color: rgba(255, 255, 255, 0.85); }
+.public-footer .footer-contact a { color: var(--gold); }
 
 /* 가입 동의 체크 */
 .auth-agree { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 8px; font-size: 0.9375rem; line-height: 1.5; color: var(--text); cursor: pointer; }

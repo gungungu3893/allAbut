@@ -956,6 +956,28 @@ LANG.en = {
   dash_waiting_orders: 'New orders waiting',
   dash_due_soon: 'Due soon',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: 'Contact',
+  contact_title: 'Contact us',
+  contact_subtitle: 'Questions about orders, credits or your account? We are happy to help.',
+  contact_note_order: 'For questions about an order, please include the order number (e.g. CA261104-0008).',
+  contact_note_hours: 'We reply on business days (Monday–Friday, Bangkok time), usually within 1 business day.',
+  contact_general: 'General questions',
+  contact_general_desc: 'Orders, designs, delivery, credits and payments.',
+  contact_send_email: 'Send email',
+  contact_copy: 'Copy',
+  contact_copied: 'Copied.',
+  contact_line: 'Ask on LINE',
+  contact_line_desc: 'Add allAbut as a friend on LINE and send us a message.',
+  contact_privacy: 'Privacy questions',
+  contact_privacy_desc: 'Requests about your personal data (access, correction, deletion) under Thailand\'s PDPA.',
+  contact_company_title: 'Company',
+  help_contact_link: 'If the problem continues, contact us',
+  guide_contact_note: 'Still have questions? Contact us by email or LINE.',
+  contact_this_order: 'Ask about this order',
+  contact_order_hint: 'Questions about this order? The order number is added to the email subject for you.',
+  contact_order_subject: '[{id}] Question',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

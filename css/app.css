@@ -1258,7 +1258,8 @@ select.input { cursor: pointer; }
 .guide-faq-item { border: 1px solid var(--border); border-radius: 10px; background: #fff; }
 .guide-faq-item summary { min-height: 52px; display: flex; align-items: center; padding: 8px 14px; font-weight: 600; cursor: pointer; color: var(--navy); }
 .guide-faq-item p { padding: 0 14px 14px; }
-.guide-cta { display: flex; justify-content: center; margin: 28px 0 8px; }
+.guide-cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 28px 0 8px; }
+.guide-contact-note { text-align: center; margin: 0 0 8px; }
 
 /* ===== 관리자 월별 대시보드 ===== */
 .month-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 26px 0 14px; padding-top: 18px; border-top: 2px solid var(--border); }
@@ -1886,6 +1887,36 @@ body.consent-open { overflow: hidden; }
   .activity-tools { grid-template-columns: 1fr 1fr 1.4fr; align-items: end; }
   .lg-code-box { grid-template-columns: auto 1fr; align-items: center; }
   .lg-code-box .line-auto { grid-column: 1 / -1; }
+}
+
+/* ================================================================
+   문의하기 #/contact · 푸터 문의 줄 · 에러 아래 문의 링크
+   ================================================================ */
+.footer-contact { margin: 0 0 4px; font-weight: 600; overflow-wrap: anywhere; }
+.footer-contact a { font-weight: 600; }
+.help-contact { margin: 8px 0 0; font-weight: 600; font-size: 0.9375rem; }
+.help-contact a { color: var(--navy); text-decoration: underline; }
+.order-inquiry { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-strong); }
+.order-inquiry .muted { margin: 0; flex: 1 1 240px; }
+.page-contact { max-width: 1040px; }
+.contact-notes { display: grid; gap: 6px; margin: 0 0 16px; padding: 12px 16px; background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-sm); }
+.contact-notes p { margin: 0; color: var(--navy); }
+.contact-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.contact-cards .card + .card { margin-top: 0; }
+.contact-card { display: flex; flex-direction: column; gap: 8px; }
+.contact-card-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--navy); }
+.contact-card-desc { margin: 0; color: var(--muted); }
+.contact-value { margin: 4px 0; font-size: 1.125rem; font-weight: 700; color: var(--navy); overflow-wrap: anywhere; }
+.contact-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.contact-qr-box { display: grid; justify-items: start; gap: 6px; margin-top: 8px; }
+.contact-qr-box[hidden] { display: none; }
+.contact-qr { padding: 8px; background: #fff; border: 1px solid var(--border); border-radius: 10px; }
+.contact-qr img, .contact-qr canvas { display: block; }
+.contact-company { margin-top: 16px; }
+.contact-company-name { margin: 0 0 4px; font-weight: 700; color: var(--navy); }
+.contact-company-line { margin: 2px 0; }
+@media (min-width: 900px) {
+  .contact-cards { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 }
 
 /* ================================================================

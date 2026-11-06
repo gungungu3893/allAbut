@@ -956,6 +956,28 @@ LANG.tr = {
   dash_waiting_orders: 'Bekleyen yeni siparişler',
   dash_due_soon: 'Teslim tarihi yaklaşan',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: 'İletişim',
+  contact_title: 'Bize ulaşın',
+  contact_subtitle: 'Siparişler, krediler veya hesabınızla ilgili sorularınız mı var? Yardımcı olmaktan memnuniyet duyarız.',
+  contact_note_order: 'Bir siparişle ilgili sorularınızda lütfen sipariş numarasını ekleyin (ör. CA261104-0008).',
+  contact_note_hours: 'İş günlerinde (Pazartesi–Cuma, Bangkok saati) yanıt veriyoruz, genellikle 1 iş günü içinde.',
+  contact_general: 'Genel sorular',
+  contact_general_desc: 'Siparişler, tasarımlar, teslimat, krediler ve ödemeler.',
+  contact_send_email: 'E-posta gönder',
+  contact_copy: 'Kopyala',
+  contact_copied: 'Kopyalandı.',
+  contact_line: 'LINE\'dan sorun',
+  contact_line_desc: 'LINE\'da allAbut\'u arkadaş olarak ekleyin ve bize mesaj gönderin.',
+  contact_privacy: 'Gizlilik soruları',
+  contact_privacy_desc: 'Tayland PDPA kapsamında kişisel verilerinizle ilgili talepler (erişim, düzeltme, silme).',
+  contact_company_title: 'Şirket bilgileri',
+  help_contact_link: 'Sorun devam ederse bize ulaşın',
+  guide_contact_note: 'Hâlâ sorunuz mu var? Bize e-posta veya LINE ile ulaşın.',
+  contact_this_order: 'Bu sipariş hakkında sor',
+  contact_order_hint: 'Bu siparişle ilgili sorunuz mu var? Sipariş numarası e-posta konusuna otomatik olarak eklenir.',
+  contact_order_subject: '[{id}] Soru',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

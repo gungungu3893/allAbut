@@ -1,6 +1,6 @@
 // ===== 해시 라우팅 =====
 // 주소 끝의 #/home, #/guide, #/new, #/orders, #/profile, #/topup, #/admin 을 보고 맞는 페이지를 그려요.
-// 법적 문서 #/terms, #/privacy, #/credit-policy 는 로그인 없이도 볼 수 있어요 (로그인 전에는 screen-legal 화면).
+// 법적 문서 #/terms, #/privacy, #/credit-policy 와 문의하기 #/contact 는 로그인 없이도 볼 수 있어요 (로그인 전에는 screen-legal 화면).
 // 주소에 페이지가 남아 있어서, 새로고침해도 같은 페이지가 다시 열려요.
 
 var ROUTES = {
@@ -13,7 +13,8 @@ var ROUTES = {
   admin: function () { return PageAdmin; },      // 관리자만 (아래 renderRoute 에서 확인)
   terms: function () { return PageLegal; },
   privacy: function () { return PageLegal; },
-  'credit-policy': function () { return PageLegal; }
+  'credit-policy': function () { return PageLegal; },
+  contact: function () { return PageContact; }   // 문의하기 (로그인 없이도)
 };
 
 window.currentRoute = null;
@@ -27,10 +28,15 @@ function parseRoute(hash) {
   return ROUTES[name] ? name : 'home';
 }
 
-// 주소가 지금 법적 문서인지
+// 로그인 없이 볼 수 있는 페이지인지 (법적 문서 + 문의하기)
+function isPublicRoute(name) {
+  return name === 'contact' || isLegalRoute(name);
+}
+
+// 주소가 지금 로그인 없이 볼 수 있는 페이지인지 (이름은 예전 그대로)
 function isLegalHash() {
   var m = /^#\/([a-z-]+)/.exec(location.hash || '');
-  return !!(m && isLegalRoute(m[1]));
+  return !!(m && isPublicRoute(m[1]));
 }
 
 function navigate(route) {
@@ -41,6 +47,7 @@ function navigate(route) {
 
 function pageTitle(name) {
   var doc = legalDocForRoute(name);
+  if (name === 'contact') return t('contact_title') + ' · allAbut';
   return (doc ? t(doc.titleKey) : t('nav_' + name)) + ' · allAbut';
 }
 
@@ -52,7 +59,7 @@ function renderPublicRoute() {
     var name = parseRoute(location.hash);
     if (currentPage && currentPage.leave) currentPage.leave();
     window.currentRoute = name;
-    currentPage = PageLegal;
+    currentPage = ROUTES[name]();
     publicPageActive = true;
     document.title = pageTitle(name);
     showScreen('legal');

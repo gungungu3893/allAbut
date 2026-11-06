@@ -744,6 +744,7 @@ var PageNew = {
         '<p><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(this.submitError)) + '</p>' +
         (cncErrorCode(this.submitError) === 'UPLOAD_FAILED' || cncErrorCode(this.submitError) === 'NETWORK' || cncErrorCode(this.submitError) === 'UNKNOWN'
           ? '<button type="button" class="btn btn-primary" onclick="PageNew.submit()">' + escHtml(t('btn_retry')) + '</button>' : '') +
+        uiContactHelpHtml() +
         '</div>';
     }
     html += '<p class="submit-note">' + escHtml(t('custom_submit_note')) + '</p>';

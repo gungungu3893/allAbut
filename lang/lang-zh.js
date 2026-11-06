@@ -956,6 +956,28 @@ LANG.zh = {
   dash_waiting_orders: '待接收的新订单',
   dash_due_soon: '即将到期',
 
+  // ----- Contact: footer line, contact page, help links -----
+  footer_contact: '联系',
+  contact_title: '联系我们',
+  contact_subtitle: '对订单、点数或账户有疑问？我们很乐意为您解答。',
+  contact_note_order: '咨询订单问题时，请附上订单号（例如 CA261104-0008）。',
+  contact_note_hours: '我们在工作日（周一至周五，曼谷时间）回复，通常在 1 个工作日内。',
+  contact_general: '一般咨询',
+  contact_general_desc: '订单、设计、配送、点数和付款。',
+  contact_send_email: '发送邮件',
+  contact_copy: '复制',
+  contact_copied: '已复制。',
+  contact_line: '通过 LINE 咨询',
+  contact_line_desc: '在 LINE 上添加 allAbut 为好友，并给我们发消息。',
+  contact_privacy: '隐私咨询',
+  contact_privacy_desc: '根据泰国 PDPA 提出的个人数据请求（查阅、更正、删除）。',
+  contact_company_title: '公司信息',
+  help_contact_link: '如果问题仍未解决，请联系我们',
+  guide_contact_note: '还有疑问？请通过邮件或 LINE 联系我们。',
+  contact_this_order: '咨询此订单',
+  contact_order_hint: '对此订单有疑问？订单号会自动填入邮件标题。',
+  contact_order_subject: '[{id}] 咨询',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
