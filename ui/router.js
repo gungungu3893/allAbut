@@ -1,6 +1,6 @@
 // ===== 해시 라우팅 =====
 // 주소 끝의 #/home, #/guide, #/new, #/orders, #/profile, #/topup, #/admin 을 보고 맞는 페이지를 그려요.
-// 법적 문서 #/terms, #/privacy, #/credit-policy 와 문의하기 #/contact 는 로그인 없이도 볼 수 있어요 (로그인 전에는 screen-legal 화면).
+// 법적 문서 #/terms, #/privacy, #/credit-policy, 문의하기 #/contact, 회사소개 #/about 은 로그인 없이도 볼 수 있어요 (로그인 전에는 screen-legal 화면).
 // 주소에 페이지가 남아 있어서, 새로고침해도 같은 페이지가 다시 열려요.
 
 var ROUTES = {
@@ -14,7 +14,8 @@ var ROUTES = {
   terms: function () { return PageLegal; },
   privacy: function () { return PageLegal; },
   'credit-policy': function () { return PageLegal; },
-  contact: function () { return PageContact; }   // 문의하기 (로그인 없이도)
+  contact: function () { return PageContact; },  // 문의하기 (로그인 없이도)
+  about: function () { return PageAbout; }       // 회사소개 (로그인 없이도)
 };
 
 window.currentRoute = null;
@@ -28,9 +29,9 @@ function parseRoute(hash) {
   return ROUTES[name] ? name : 'home';
 }
 
-// 로그인 없이 볼 수 있는 페이지인지 (법적 문서 + 문의하기)
+// 로그인 없이 볼 수 있는 페이지인지 (법적 문서 + 문의하기 + 회사소개)
 function isPublicRoute(name) {
-  return name === 'contact' || isLegalRoute(name);
+  return name === 'contact' || name === 'about' || isLegalRoute(name);
 }
 
 // 주소가 지금 로그인 없이 볼 수 있는 페이지인지 (이름은 예전 그대로)
@@ -48,6 +49,7 @@ function navigate(route) {
 function pageTitle(name) {
   var doc = legalDocForRoute(name);
   if (name === 'contact') return t('contact_title') + ' · allAbut';
+  if (name === 'about') return t('about_meta_title');
   return (doc ? t(doc.titleKey) : t('nav_' + name)) + ' · allAbut';
 }
 

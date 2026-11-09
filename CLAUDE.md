@@ -92,6 +92,17 @@
   내 주문 상세 맨 아래 "이 주문 문의하기" (mailto, 제목 `contact_order_subject` = "[주문번호] 문의")
 - 답변 시간 문구(`contact_note_hours`)는 실제 운영 시간에 맞게 9개 언어 파일에서 고쳐요
 
+## 회사소개 (#/about, sql/007_company_profile.sql)
+- `ui/page-about.js` — 로그인 없이도 열림 (screen-legal). 로그인 상태면 앱 화면 안에서. 최대 너비 1120px, Hero 만 다크(#06090f→#001D4A) + 치수선 장식
+- 순서: Hero → 01 About → 02 Why allAbut(강점 5개, 선 아이콘 SVG `ABOUT_ICONS`) → 03 Products(`ABOUT_PRODUCTS`, img 를 채우면 사진 자리 생김) → 04 How to order(`wiz_step1~5` 재사용) → 05 Delivery & guarantee → 06 Contact
+- 섹션 번호 01~ 은 보이는 섹션만 순서대로. 값이 빈 줄·칩·섹션은 숨김
+- 규격 글자(`ABOUT_SPEC_TOKENS`: 5μm, ASTM F136, Grade 23, Ti-6Al-4V ELI, ISO 13485)는 번역문 안에서 찾아 Mono 골드 → **번역할 때 이 글자는 그대로 둔다**
+- 회사 값은 `company_settings` 만 (`cncCompanyProfile(lang)`): founded_year, implant_brands(쉼표), lead_time·delivery·remake_policy (jsonb `{en, th, ko, ...}`, 지금 언어 → en 순으로, `cncLocalizedText`)
+- 관리자 Settings → Company info 아래 "About page" 칸 (en/th/ko 입력, 다른 언어 값은 저장할 때 보존). 007 실행 전이면 안내만 보이고 기존 칸 저장은 그대로 동작 (`cncHasCompanyProfile()`)
+- SEO: 페이지가 열려 있는 동안 title·description·og 태그(언어별, og:url 은 `SITE_URL`) + JSON-LD Organization, 떠나면 원래대로
+- 스크롤 등장 애니메이션은 IntersectionObserver + `.about-animate` (prefers-reduced-motion 이면 안 붙임)
+- 들어가는 곳: 랜딩 Start Order 아래 "About allAbut", 헤더 ☰ 메뉴, 푸터 맨 앞 "About"
+
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
 - Admin → Dashboard 순서: ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
   → ② "현재 현황" (단계별 카드, 기한 임박 목록) → ③ 구분선 + ◀ 월 ▶ + "월별 통계" ([주문 | 매출] 탭 전환, 매출은 owner 만)
@@ -124,11 +135,12 @@
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
 - `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
-- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact` (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about` (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
 - `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
 - `ui/page-legal.js` — 법적 문서 페이지 (목차, 섹션 번호, 버전·시행일, 연락처, 인쇄)
 - `ui/page-contact.js` — 문의하기 `#/contact` (로그인 전·후 공통, 연락처는 company_settings)
+- `ui/page-about.js` — 회사소개 `#/about` (로그인 전·후 공통, 회사 값은 company_settings)
 - `cnc/promptpay.js` — PromptPay QR 페이로드(EMVCo + CRC16), `promptPayPayload(id, amount)`
 - `ui/page-topup.js` — 크레딧 충전 `#/topup` (패키지 → QR·계좌 → 슬립 → 완료, 내 충전 내역)
 - `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)

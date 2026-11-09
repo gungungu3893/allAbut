@@ -105,6 +105,73 @@ function cncTelUrl(phone) {
   return 'tel:' + String(phone || '').replace(/[^0-9+]/g, '');
 }
 
+// ----------------------------------------------------------------
+// 회사소개 #/about (company_settings 의 sql/007 칸들)
+// ----------------------------------------------------------------
+// 언어별로 다르게 쓸 수 있는 칸 (jsonb: { "en": "...", "th": "...", "ko": "..." })
+var COMPANY_LOCALIZED_FIELDS = ['lead_time', 'delivery', 'remake_policy'];
+// 관리자 화면에서 따로 입력칸을 주는 언어 (나머지 언어는 en 값을 보여줘요)
+var COMPANY_INPUT_LANGS = ['en', 'th', 'ko'];
+var DEFAULT_FOUNDED_YEAR = 2026;
+
+// sql/007 을 실행했는지 (회사 정보에 founded_year 칸이 있는지)
+function cncHasCompanyProfile() {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  return Object.prototype.hasOwnProperty.call(c, 'founded_year');
+}
+
+// 언어별 값 고르기: 지금 언어 → en → (글자 하나면 그대로). 없으면 ''
+//   value: { en: '...', ko: '...' } 또는 '...' (예전처럼 글자 하나)
+function cncLocalizedText(value, lang) {
+  if (value == null) return '';
+  if (typeof value === 'string') {
+    var str = value.trim();
+    if (str.charAt(0) === '{') { try { return cncLocalizedText(JSON.parse(str), lang); } catch (e) { /* 그냥 글자 */ } }
+    return str;
+  }
+  if (typeof value !== 'object') return String(value).trim();
+  var pick = function (k) { return typeof value[k] === 'string' ? value[k].trim() : ''; };
+  return pick(lang) || pick('en');
+}
+
+// 관리자 입력 → 저장할 모양 { en: '...', th: '...' } (빈 언어는 빼요)
+function cncCleanLocalized(obj) {
+  var out = {};
+  if (obj && typeof obj === 'object') {
+    Object.keys(obj).forEach(function (k) {
+      if (!/^[a-z]{2}$/.test(k)) return;
+      var v = String(obj[k] == null ? '' : obj[k]).trim().slice(0, 500);
+      if (v) out[k] = v;
+    });
+  }
+  return out;
+}
+
+// "Osstem, Straumann ,, Nobel" → ['Osstem', 'Straumann', 'Nobel'] (같은 이름은 한 번만)
+function cncCleanBrands(text) {
+  var seen = {};
+  return String(text || '').split(/[,，、\n]/).map(function (b) { return b.trim().slice(0, 60); }).filter(function (b) {
+    var k = b.toLowerCase();
+    if (!b || seen[k]) return false;
+    seen[k] = true;
+    return true;
+  }).slice(0, 40);
+}
+
+// 회사소개 페이지에 쓸 값 (비어 있으면 '' / [])
+//   { foundedYear, brands: [...], leadTime, delivery, remakePolicy }
+function cncCompanyProfile(lang) {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  var year = parseInt(c.founded_year, 10);
+  return {
+    foundedYear: (year >= 1900 && year <= 2100) ? year : DEFAULT_FOUNDED_YEAR,
+    brands: cncCleanBrands(c.implant_brands),
+    leadTime: cncLocalizedText(c.lead_time, lang),
+    delivery: cncLocalizedText(c.delivery, lang),
+    remakePolicy: cncLocalizedText(c.remake_policy, lang)
+  };
+}
+
 // 문서별 최신 버전: { terms: { version, effective_date }, privacy: {...}, credit: {...} }
 async function cncGetLegalVersions(force) {
   if (_versionsCache && !force) return _versionsCache;
@@ -167,6 +234,13 @@ async function cncAdminSaveCompany(fields) {
   ['company_name', 'address', 'tax_id', 'email', 'phone', 'line_id', 'dpo_email'].forEach(function (k) {
     clean[k] = String(fields[k] || '').trim();
   });
+  // 회사소개(#/about) 칸 — sql/007 을 실행한 뒤에만 보내요 (안 하면 없는 칸이라 저장 전체가 실패해서)
+  if (cncHasCompanyProfile()) {
+    clean.implant_brands = cncCleanBrands(fields.implant_brands).join(', ');
+    COMPANY_LOCALIZED_FIELDS.forEach(function (k) { clean[k] = cncCleanLocalized(fields[k]); });
+    var year = parseInt(fields.founded_year, 10);
+    clean.founded_year = (year >= 1900 && year <= 2100) ? year : null;
+  }
   clean.updated_at = new Date().toISOString();
   var r = await sb.from('company_settings').update(clean).eq('id', 1).select();
   if (r.error) throw cncError(cncErrorCode(r.error), { cause: r.error });

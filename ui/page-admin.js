@@ -1747,8 +1747,48 @@ var PageAdmin = {
         input('email', 'email_label', c.email, { type: 'email' }) +
         input('dpo_email', 'legal_dpo_email', c.dpo_email, { type: 'email' }) +
         input('line_id', 'line_id_label', c.line_id) +
+        this.aboutFieldsHtml(c) +
         '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (saving ? ' disabled' : '') + '>' + escHtml(saving ? t('saving') : t('pe_save')) + '</button></div>' +
       '</form></section>';
+  },
+
+  // 회사소개(#/about) 입력칸 — sql/007 을 실행하기 전이면 안내만
+  //   설립 연도 · 호환 임플란트 시스템(쉼표) · 제작 기간/배송/재제작 정책 (en / th / ko 칸, 나머지 언어는 en)
+  aboutFieldsHtml: function (c) {
+    var head = '<div class="span-2 co-about-head">' +
+      '<h3 class="co-about-title">' + escHtml(t('admin_about_title')) + '</h3>' +
+      '<p class="card-desc">' + escHtml(t('admin_about_help')) + ' <a href="#/about" class="co-about-open">' + escHtml(t('admin_about_open')) + ' <span class="arrow" aria-hidden="true">→</span></a></p>' +
+    '</div>';
+    if (!cncHasCompanyProfile()) {
+      return head + '<p class="span-2 notice-box" id="co-about-need-sql">' + escHtml(t('admin_about_need_sql')) + '</p>';
+    }
+    var langName = function (code) {
+      var l = (typeof LANGUAGES !== 'undefined' ? LANGUAGES : []).filter(function (x) { return x.code === code; })[0];
+      return l ? l.name : code;
+    };
+    var localized = function (field, labelKey) {
+      var val = c[field];
+      if (typeof val === 'string') { try { val = JSON.parse(val); } catch (e) { val = { en: val }; } }
+      val = (val && typeof val === 'object') ? val : {};
+      return '<fieldset class="span-2 co-lang-group" data-co-field="' + field + '">' +
+        '<legend class="field-label">' + escHtml(t(labelKey)) + '</legend>' +
+        '<div class="co-lang-grid">' + COMPANY_INPUT_LANGS.map(function (code) {
+          return '<label class="co-lang-field"><span class="co-lang-name">' + escHtml(langName(code)) + '</span>' +
+            '<textarea class="input co-lang-input" id="co-' + field + '-' + code + '" rows="2" maxlength="500">' + escHtml(val[code] || '') + '</textarea></label>';
+        }).join('') + '</div>' +
+        '<p class="field-hint">' + escHtml(t('admin_lang_fallback')) + '</p>' +
+      '</fieldset>';
+    };
+    return head +
+      '<div class="field"><label class="field-label" for="co-founded_year">' + escHtml(t('admin_founded_year')) + '</label>' +
+        '<input class="input mono" id="co-founded_year" type="number" inputmode="numeric" min="1900" max="2100" step="1" value="' + escHtml(c.founded_year == null ? '' : String(c.founded_year)) + '">' +
+        '<div class="err-slot" data-co-err="founded_year"></div></div>' +
+      '<div class="field span-2"><label class="field-label" for="co-implant_brands">' + escHtml(t('admin_implant_brands')) + '</label>' +
+        '<input class="input" id="co-implant_brands" type="text" maxlength="1000" value="' + escHtml(c.implant_brands || '') + '">' +
+        '<p class="field-hint">' + escHtml(t('admin_implant_brands_hint')) + '</p></div>' +
+      localized('lead_time', 'about_lead_time') +
+      localized('delivery', 'about_delivery') +
+      localized('remake_policy', 'about_remake');
   },
 
   saveCompany: async function (event) {
@@ -1759,6 +1799,25 @@ var PageAdmin = {
     var fields = { company_name: v('company_name'), address: v('address'), tax_id: v('tax_id'), phone: v('phone'), email: v('email'), dpo_email: v('dpo_email'), line_id: v('line_id') };
     var errs = {};
     ['email', 'dpo_email'].forEach(function (k) { if (fields[k] && !isValidEmail(fields[k])) errs[k] = 'err_email_invalid'; });
+    // 회사소개 칸 (sql/007 실행 후에만 화면에 있어요)
+    if (document.getElementById('co-founded_year')) {
+      fields.founded_year = v('founded_year');
+      fields.implant_brands = v('implant_brands');
+      COMPANY_LOCALIZED_FIELDS.forEach(function (f) {
+        fields[f] = {};
+        COMPANY_INPUT_LANGS.forEach(function (code) { fields[f][code] = v(f + '-' + code); });
+      });
+      // 나머지 언어(zh·vi 등)에 SQL 로 직접 넣어 둔 값은 지우지 않고 그대로 둬요
+      var prev = sx.company || {};
+      COMPANY_LOCALIZED_FIELDS.forEach(function (f) {
+        var old = prev[f];
+        if (old && typeof old === 'object') Object.keys(old).forEach(function (code) {
+          if (COMPANY_INPUT_LANGS.indexOf(code) === -1 && !(code in fields[f])) fields[f][code] = old[code];
+        });
+      });
+      var y = fields.founded_year;
+      if (y && !(/^\d{4}$/.test(y) && +y >= 1900 && +y <= 2100)) errs.founded_year = 'about_err_year';
+    }
     var slots = document.querySelectorAll('[data-co-err]');
     for (var i = 0; i < slots.length; i++) slots[i].innerHTML = uiFieldError(errs[slots[i].getAttribute('data-co-err')]);
     if (Object.keys(errs).length) return;

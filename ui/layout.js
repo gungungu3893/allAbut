@@ -179,6 +179,7 @@ function renderLayout() {
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
+      '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
       '<a href="#/contact" class="btn btn-outline btn-block hdr-menu-contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>' +
       '<button type="button" class="btn btn-outline btn-block" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
     '</div>';
@@ -670,16 +671,16 @@ function uiTopupBadge(status) {
 
 
 // ================================================================
-// 12) 하단 푸터 (모든 화면): Terms · Privacy · Credit & Refund Policy · © 2026 회사명
+// 12) 하단 푸터 (모든 화면): About · Terms · Privacy · Credit & Refund Policy · © 2026 회사명
 // ================================================================
 function renderFooters() {
   var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
   var name = c.company_name || 'allAbut';
   var html = footerContactHtml() +
     '<nav class="footer-links" aria-label="' + escHtml(t('legal_documents')) + '">' +
-    LEGAL_DOCS_LIST.map(function (d) {
+    ['<a href="#/about" class="footer-about">' + escHtml(t('about_nav')) + '</a>'].concat(LEGAL_DOCS_LIST.map(function (d) {
       return '<a href="#/' + d.route + '">' + escHtml(t(d.titleKey)) + '</a>';
-    }).join('<span aria-hidden="true">·</span>') +
+    })).join('<span aria-hidden="true">·</span>') +
     '</nav><p class="footer-copy">© 2026 ' + escHtml(name) + '</p>';
   var els = document.querySelectorAll('.site-footer');
   for (var i = 0; i < els.length; i++) els[i].innerHTML = html;

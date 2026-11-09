@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>allAbut 5μm</title>
   <meta name="description" content="allAbut — Precision CNC custom abutment ordering">
+  <!-- 공유 미리보기 기본값 (회사소개 #/about 을 열면 ui/page-about.js 가 언어별로 바꿔요) -->
+  <meta property="og:title" content="allAbut 5μm — Precision custom abutments">
+  <meta property="og:description" content="Custom abutments machined on implant-fixture-grade CNC in Bangkok. 5μm precision, Grade 23 titanium, ISO 13485.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="allAbut">
 
   <!-- Google Fonts: IBM Plex Sans (본문) + IBM Plex Mono (숫자·주문번호·라벨) -->
   <!-- 태국어·아랍어·페르시아어 글자는 IBM Plex Sans Thai / Arabic 로 보완해요 -->
@@ -42,6 +47,9 @@
 
       <!-- 주문 시작 버튼 -->
       <button type="button" class="cta-btn" onclick="handleStartOrder()" data-i18n="start_order">Start Order</button>
+
+      <!-- 회사소개 링크 (로그인 없이 #/about) -->
+      <a href="#/about" class="landing-about-link"><span data-i18n="about_link">About allAbut</span> <span class="arrow" aria-hidden="true">→</span></a>
 
     </section>
 
@@ -134,7 +142,7 @@
     </section>
 
 
-    <!-- ========== 4. 법적 문서 (로그인 없이 보기: #/terms, #/privacy, #/credit-policy) ========== -->
+    <!-- ========== 4. 로그인 없이 보는 페이지 (#/terms, #/privacy, #/credit-policy, #/contact, #/about) ========== -->
     <section class="screen screen-app screen-legal" id="screen-legal">
       <header class="app-header legal-header">
         <div class="hdr-inner">
@@ -224,6 +232,7 @@
   <script src="ui/page-topup.js"></script>
   <script src="ui/page-legal.js"></script>
   <script src="ui/page-contact.js"></script>
+  <script src="ui/page-about.js"></script>
   <script src="ui/page-admin.js"></script>
   <script src="ui/page-admin-finance.js"></script>
   <script src="ui/page-admin-team.js"></script>
