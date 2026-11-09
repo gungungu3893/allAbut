@@ -64,6 +64,7 @@ function renderPublicRoute() {
     currentPage = ROUTES[name]();
     publicPageActive = true;
     document.title = pageTitle(name);
+    setActiveNav(name);   // 로그인 전 헤더의 "회사소개" 강조
     showScreen('legal');
     window.scrollTo(0, 0);
     currentPage.render(main);

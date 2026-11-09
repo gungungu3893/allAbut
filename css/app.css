@@ -2038,7 +2038,7 @@ body.consent-open { overflow: hidden; }
   .hdr-menu { display: none !important; }
 }
 
-/* 헤더가 넘칠 때 단계적으로 줄이기 (ui/layout.js 의 fitHeader 가 fit-1 ~ fit-4 를 붙여요) */
+/* 헤더가 넘칠 때 단계적으로 줄이기 (ui/layout.js 의 fitHeader 가 fit-1 ~ fit-7 을 붙여요) */
 #app-header.fit-1 .hdr-line-label { display: none; }
 #app-header.fit-1 .hdr-line-label-short { display: inline; }
 #app-header.fit-1 .hdr-line-btn { padding: 0 10px; }
@@ -2053,9 +2053,14 @@ body.consent-open { overflow: hidden; }
 #app-header.fit-5 .hdr-logo .logo { font-size: 25px; }
 #app-header.fit-5 .hdr-inner { gap: 8px; }
 #app-header.fit-5 .credit-badge, #app-header.fit-5 .hdr-menu-btn, #app-header.fit-5 .hdr-line-btn { padding: 0 8px; }
-/* fit-6: 위쪽 메뉴 대신 아래 탭 메뉴 (PC 에서도 한 줄에 안 들어갈 때) */
-#app-header.fit-6 .hdr-nav { display: none; }
-#app-header.fit-6 .logo-um { display: none; }
+/* fit-6: 위쪽 메뉴 글자 조금 작게, 가이드 아이콘·Admin 역할 글자·크레딧 단위 숨김 */
+#app-header.fit-6 .hdr-link { font-size: 0.9375rem; padding: 0 6px; }
+#app-header.fit-6 .hdr-link[data-nav="guide"] span[aria-hidden] { display: none; }
+#app-header.fit-6 .admin-role-tag { display: none; }
+#app-header.fit-6 .credit-badge .credit-unit { display: none; }
+/* fit-7: 위쪽 메뉴 대신 아래 탭 메뉴 (PC 에서도 한 줄에 안 들어갈 때) */
+#app-header.fit-7 .hdr-nav { display: none; }
+#app-header.fit-7 .logo-um { display: none; }
 body.hdr-tabbar .app-tabbar { display: grid; }
 body.hdr-tabbar .app-main { padding-bottom: 110px; }
 
@@ -2257,4 +2262,68 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 @media print {
   .about-hero { background: #fff; color: #000; }
   .about-animate .about-reveal { opacity: 1; transform: none; }
+}
+
+/* ================================================================
+   회사소개 메뉴 (위쪽 메뉴 줄 · ☰ 메뉴 · 랜딩 · 로그인 전 헤더)
+   ================================================================ */
+/* ☰ 메뉴의 회사소개: 위쪽 메뉴 줄이 보이는 PC 에서는 숨김 (fit-7 로 메뉴 줄이 사라지면 다시 보임) */
+@media (min-width: 1024px) {
+  .hdr-menu .hdr-menu-about { display: none; }
+  body.hdr-tabbar .hdr-menu .hdr-menu-about { display: flex; }
+}
+.hdr-menu-about.active { border-color: var(--gold); font-weight: 700; }
+
+/* 로그인 전 헤더 (법적 문서·문의하기·회사소개): 로고 옆 "회사소개" */
+.legal-about-link { display: inline-flex; min-height: 52px; padding: 0 12px; }
+.screen-legal .legal-header .hdr-right { margin-inline-start: auto; }
+/* 아주 좁은 화면: 로고 · 회사소개 · 로그인은 한 줄, 언어 선택만 둘째 줄 오른쪽으로 */
+@media (max-width: 419px) {
+  .screen-legal .legal-header .hdr-inner { flex-wrap: wrap; row-gap: 0; }
+  .legal-about-link { padding: 0 6px; font-size: 1rem; }
+  .screen-legal .legal-header .hdr-right { display: contents; }
+  .screen-legal .legal-header .hdr-right > .btn { margin-inline-start: auto; }
+  .screen-legal .legal-header .public-lang-light { order: 5; flex-basis: 100%; justify-content: flex-end; padding-bottom: 6px; }
+  .screen-legal .legal-header .public-lang-light select { max-width: none; }
+}
+
+/* 랜딩 상단 메뉴 줄 */
+.landing-nav {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.14);
+}
+.landing-nav-logo { font-size: 26px; }
+.landing-nav-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.landing-nav-link {
+  display: inline-flex; align-items: center; min-height: 52px; padding: 0 12px;
+  color: #E6EAF2; text-decoration: none; font-size: 1rem; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.landing-nav-link:hover, .landing-nav-link:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
+.landing-lang.public-lang { position: static; }
+.landing-nav-signin {
+  min-height: 44px; padding: 0 18px; white-space: nowrap;
+  background: transparent; color: var(--gold); font-weight: 600; font-size: 1rem;
+  border: 1.5px solid var(--gold); border-radius: 8px; cursor: pointer;
+}
+.landing-nav-signin:hover { background: var(--gold); color: var(--navy); }
+#screen-landing { padding-top: 104px; }
+/* 좁은 화면: 로고 · 회사소개 · 로그인은 한 줄, 언어 선택만 둘째 줄 오른쪽으로 */
+@media (max-width: 479px) {
+  .landing-nav { padding: 6px 12px 8px; gap: 6px; align-items: flex-start; }
+  .landing-nav-logo { font-size: 22px; margin-top: 15px; }
+  .landing-nav-right { flex-wrap: wrap; justify-content: flex-end; row-gap: 2px; }
+  .landing-nav-link { padding: 0 8px; }
+  .landing-nav-signin { padding: 0 12px; }
+  .landing-lang.public-lang { order: 3; flex-basis: 100%; justify-content: flex-end; }
+  #screen-landing { padding-top: 150px; }
+}
+
+/* 하단 탭의 회사소개: 모바일에서는 숨김(☰ 메뉴 맨 위에 있어요), PC 에서 아래 탭을 쓸 때(fit-7)만 보임 */
+.tab-link.tab-pc-only { display: none; }
+@media (min-width: 1024px) {
+  body.hdr-tabbar .tab-link.tab-pc-only { display: flex; }
+  body.hdr-tabbar .app-tabbar { grid-template-columns: none !important; grid-auto-flow: column; grid-auto-columns: 1fr; }
 }

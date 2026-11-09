@@ -101,7 +101,9 @@
 - 관리자 Settings → Company info 아래 "About page" 칸 (en/th/ko 입력, 다른 언어 값은 저장할 때 보존). 007 실행 전이면 안내만 보이고 기존 칸 저장은 그대로 동작 (`cncHasCompanyProfile()`)
 - SEO: 페이지가 열려 있는 동안 title·description·og 태그(언어별, og:url 은 `SITE_URL`) + JSON-LD Organization, 떠나면 원래대로
 - 스크롤 등장 애니메이션은 IntersectionObserver + `.about-animate` (prefers-reduced-motion 이면 안 붙임)
-- 들어가는 곳: 랜딩 Start Order 아래 "About allAbut", 헤더 ☰ 메뉴, 푸터 맨 앞 "About"
+- 들어가는 곳: PC 위쪽 메뉴 줄 "홈" 바로 오른쪽(`NAV_ITEMS` 의 about, `noTab`), 모바일은 ☰ 메뉴 맨 위 첫 항목(하단 탭에는 없음, PC 에서 fit-7 로 아래 탭을 쓸 때만 탭에도),
+  랜딩 상단 메뉴 줄(로고 · 회사소개 · 언어 · 로그인) + Start Order 아래 "About allAbut", 로그인 전 헤더(로고 옆), 푸터 맨 앞 "About".
+  #/about 이면 메뉴가 굵게 + 골드 밑줄 (`setActiveNav`, 로그인 전 화면도). 좁은 화면(420px 미만)은 로고 · 회사소개 · 로그인 한 줄 + 언어 선택은 둘째 줄
 
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
 - Admin → Dashboard 순서: ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
@@ -183,7 +185,7 @@
 - 작성 중 주문(draft): `localStorage.allabut_cnc_draft_{user_id}` (파일은 이름만 저장)
 - 화면 폭: 모바일 → 1024px 이상 PC(헤더 메뉴, 새 주문 3단) → 1440px 이상 헤더 오른쪽 전체 (그 아래는 ☰ 메뉴)
 - 헤더가 한 줄에 안 들어가면 `fitHeader()` 가 단계적으로 줄임 (언어·글자 크기·관리자 메뉴·잔액 자릿수에 따라 자동):
-  fit-1 LINE 버튼 "LINE" 만 → fit-2 오른쪽 전체를 ☰ 메뉴로 → fit-3 Top up 을 ☰ 메뉴로 → fit-4 메뉴 간격 좁게 → fit-5 로고 작게 → fit-6 위쪽 메뉴 대신 아래 탭 + 5μm 숨김.
+  fit-1 LINE 버튼 "LINE" 만 → fit-2 오른쪽 전체를 ☰ 메뉴로 → fit-3 Top up 을 ☰ 메뉴로 → fit-4 메뉴 간격 좁게 → fit-5 로고 작게 → fit-6 메뉴 글자 조금 작게 + 가이드 아이콘·역할 글자·크레딧 단위 숨김 → fit-7 위쪽 메뉴 대신 아래 탭(회사소개 탭 포함) + 5μm 숨김.
   헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인
 
 ## 팀 권한 · 작업 기록 (sql/005_team.sql, 설정 안내: TEAM_SETUP.md)

@@ -30,12 +30,19 @@
     <!-- ========== 1. 랜딩 화면 (다크 + 골드 로고) ========== -->
     <section class="screen screen-dark" id="screen-landing">
 
-      <!-- 언어 선택 -->
-      <label class="public-lang">
-        <span aria-hidden="true">🌐</span>
-        <span class="sr-only" data-i18n="language">Language</span>
-        <select onchange="setLang(this.value)"></select>
-      </label>
+      <!-- 상단 메뉴 줄: 로고 · 회사소개 · 언어 · 로그인 -->
+      <header class="landing-nav">
+        <span class="logo landing-nav-logo" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
+        <nav class="landing-nav-right" aria-label="Main">
+          <a href="#/about" class="landing-nav-link" data-i18n="about_nav">About</a>
+          <label class="public-lang landing-lang">
+            <span aria-hidden="true">🌐</span>
+            <span class="sr-only" data-i18n="language">Language</span>
+            <select onchange="setLang(this.value)"></select>
+          </label>
+          <button type="button" class="landing-nav-signin" onclick="handleStartOrder()" data-i18n="btn_sign_in">Sign In</button>
+        </nav>
+      </header>
 
       <!-- 로고 -->
       <div class="logo" aria-label="allAbut 5μm">
@@ -149,6 +156,7 @@
           <a href="#/" class="hdr-logo" onclick="leaveLegalPage(event)">
             <span class="logo logo-light" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
           </a>
+          <a href="#/about" class="hdr-link legal-about-link" data-nav="about" data-i18n="about_nav">About</a>
           <div class="hdr-right">
             <label class="lang-select public-lang-light">
               <span aria-hidden="true">🌐</span>

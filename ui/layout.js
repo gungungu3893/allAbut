@@ -67,8 +67,10 @@ function logoHtml() {
 // ================================================================
 // 4) 헤더 + 하단 탭
 // ================================================================
+// noTab: 모바일 하단 탭에는 넣지 않아요 (자리가 부족해서 → ☰ 메뉴 맨 위에 대신 있어요)
 var NAV_ITEMS = [
   { route: 'home', icon: '🏠', key: 'nav_home' },
+  { route: 'about', icon: '🏢', key: 'about_nav', noTab: true },   // 회사소개 (홈 바로 오른쪽)
   { route: 'guide', icon: '📖', key: 'nav_guide', showIcon: true },
   { route: 'new', icon: '➕', key: 'nav_new' },
   { route: 'orders', icon: '📋', key: 'nav_orders' },
@@ -175,19 +177,22 @@ function renderLayout() {
     '</div>' +
     // 펼치는 메뉴 (모바일·좁은 화면)
     '<div class="hdr-menu" id="hdr-menu" hidden>' +
+      // 회사소개: 메뉴 맨 위 첫 번째 (위쪽 메뉴 줄이 보이는 PC 에서는 CSS 로 숨겨요 — 거기엔 이미 있어서)
+      '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about" data-nav="about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
       '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
-      '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
       '<a href="#/contact" class="btn btn-outline btn-block hdr-menu-contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>' +
       '<button type="button" class="btn btn-outline btn-block" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
     '</div>';
 
+  // 모바일 하단 탭: noTab(회사소개)은 기본으로 숨김. PC 에서 위쪽 메뉴 대신 아래 탭을 쓸 때(fit-7)만 CSS 로 보여요
   var items = navItems();
-  tabbar.style.gridTemplateColumns = 'repeat(' + items.length + ', 1fr)';
+  var shown = items.filter(function (n) { return !n.noTab; });
+  tabbar.style.gridTemplateColumns = 'repeat(' + shown.length + ', 1fr)';
   tabbar.innerHTML = items.map(function (n) {
-    return '<a href="#/' + n.route + '" class="tab-link" data-nav="' + n.route + '">' +
+    return '<a href="#/' + n.route + '" class="tab-link' + (n.noTab ? ' tab-pc-only' : '') + '" data-nav="' + n.route + '">' +
       '<span class="tab-icon" aria-hidden="true">' + n.icon + '</span>' +
       '<span class="tab-label">' + escHtml(t(n.key)) + '</span></a>';
   }).join('');
@@ -205,8 +210,9 @@ function renderLayout() {
 //   fit-3: Top up 버튼을 ☰ 메뉴로
 //   fit-4: 위쪽 메뉴 간격 좁게
 //   fit-5: 로고 조금 작게
-//   fit-6: (PC) 위쪽 메뉴 대신 아래 탭 메뉴, 로고의 작은 5μm 숨김
-var HEADER_FIT_LEVELS = 6;
+//   fit-6: 위쪽 메뉴 글자 조금 작게 + 가이드 아이콘·Admin 역할 글자·크레딧 단위 숨김 (회사소개까지 메뉴가 7개라)
+//   fit-7: (PC) 위쪽 메뉴 대신 아래 탭 메뉴(이때는 회사소개 탭도 보여요), 로고의 작은 5μm 숨김
+var HEADER_FIT_LEVELS = 7;
 function fitHeader() {
   var header = document.getElementById('app-header');
   if (!header) return;
@@ -218,7 +224,7 @@ function fitHeader() {
     if (inner.scrollWidth <= inner.clientWidth) break;
     header.classList.add('fit-' + lv);
   }
-  document.body.classList.toggle('hdr-tabbar', header.classList.contains('fit-6'));
+  document.body.classList.toggle('hdr-tabbar', header.classList.contains('fit-' + HEADER_FIT_LEVELS));
 }
 var _fitTimer = null;
 window.addEventListener('resize', function () {
