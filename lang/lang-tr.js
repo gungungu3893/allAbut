@@ -978,6 +978,14 @@ LANG.tr = {
   contact_order_hint: 'Bu siparişle ilgili sorunuz mu var? Sipariş numarası e-posta konusuna otomatik olarak eklenir.',
   contact_order_subject: '[{id}] Soru',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'Müşteri bildirimi kopyaları',
+  admin_line_filter: 'Müşteri LINE',
+  admin_line_all: 'Tüm müşteriler',
+  admin_line_unlinked_only: 'Yalnızca LINE bağlı olmayanlar',
+  admin_line_linked: 'LINE bağlı',
+  admin_line_unlinked: 'LINE yok',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -978,6 +978,14 @@ LANG.ko = {
   contact_order_hint: '이 주문에 대해 궁금한 점이 있나요? 메일 제목에 주문번호가 자동으로 들어가요.',
   contact_order_subject: '[{id}] 문의',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: '고객 알림 사본',
+  admin_line_filter: '고객 LINE',
+  admin_line_all: '모든 고객',
+  admin_line_unlinked_only: 'LINE 미연결 고객만',
+  admin_line_linked: 'LINE 연결됨',
+  admin_line_unlinked: 'LINE 미연결',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

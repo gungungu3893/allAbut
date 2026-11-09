@@ -16,7 +16,7 @@ var PageAdmin = {
   // Dashboard 탭 상태 (now: 지금 기준, month: 선택한 달, trend: 최근 12개월)
   dash: { year: null, month: null, now: null, monthData: null, trend: null, error: false },
   // Customers 탭 상태
-  users: { rows: null, search: '', error: false },
+  users: { rows: null, search: '', error: false, lineFilter: 'all' },   // lineFilter: 'all' | 'unlinked'
 
   // 열려 있는 주문 상세
   detail: null,     // { modal, id, order, profile, busy, progress, error }
@@ -994,6 +994,11 @@ var PageAdmin = {
           '<input class="input" id="admin-user-search" type="search" maxlength="60" value="' + escHtml(this.users.search) + '" ' +
             'placeholder="' + escHtml(t('admin_search_users')) + '" oninput="PageAdmin.onUserSearch(this.value)">' +
         '</div>' +
+        '<div class="field admin-line-filter"><label class="field-label" for="admin-line-filter">' + escHtml(t('admin_line_filter')) + '</label>' +
+          '<select class="input" id="admin-line-filter" onchange="PageAdmin.setLineFilter(this.value)">' +
+            '<option value="all"' + (this.users.lineFilter === 'all' ? ' selected' : '') + '>' + escHtml(t('admin_line_all')) + '</option>' +
+            '<option value="unlinked"' + (this.users.lineFilter === 'unlinked' ? ' selected' : '') + '>' + escHtml(t('admin_line_unlinked_only')) + '</option>' +
+          '</select></div>' +
       '</div>' +
       '<div id="admin-users-list"></div>';
   },
@@ -1003,9 +1008,22 @@ var PageAdmin = {
     this.drawUsersList();
   },
 
+  setLineFilter: function (value) {
+    this.users.lineFilter = value;
+    this.drawUsersList();
+  },
+
+  // LINE 연결 표시 (✅ 연결됨 / ❌ 미연결 + 글자)
+  lineStatusHtml: function (u) {
+    return u.line_linked
+      ? '<span class="line-status ok" title="' + escHtml(t('admin_line_linked')) + '"><span aria-hidden="true">✅</span> ' + escHtml(t('admin_line_linked')) + '</span>'
+      : '<span class="line-status no" title="' + escHtml(t('admin_line_unlinked')) + '"><span aria-hidden="true">❌</span> ' + escHtml(t('admin_line_unlinked')) + '</span>';
+  },
+
   filteredUsers: function () {
     var q = this.users.search.trim().toLowerCase();
     var rows = this.users.rows || [];
+    if (this.users.lineFilter === 'unlinked') rows = rows.filter(function (u) { return !u.line_linked; });
     if (!q) return rows;
     return rows.filter(function (u) {
       return [u.email, u.nickname, u.clinic_name, u.phone].some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
@@ -1017,16 +1035,17 @@ var PageAdmin = {
     if (!box) return;
     if (this.users.error) { box.innerHTML = this.errorBox('PageAdmin.loadUsers()', this.users.error); return; }
     if (!this.users.rows) { box.innerHTML = '<div class="card">' + uiLoading() + '</div>'; return; }
+    var self = this;
     var rows = this.filteredUsers();
     if (!rows.length) { box.innerHTML = '<div class="card"><p class="empty-text">' + escHtml(t('admin_no_users')) + '</p></div>'; return; }
 
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('email_label')) + '</th><th>' + escHtml(t('nickname_label')) + '</th><th>' + escHtml(t('clinic_name')) + '</th>' +
-      '<th>' + escHtml(t('phone_label')) + '</th><th>' + escHtml(t('credit_balance')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('phone_label')) + '</th><th>LINE</th><th>' + escHtml(t('credit_balance')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
       rows.map(function (u) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
           '<td>' + escHtml(u.email) + '</td><td>' + escHtml(u.nickname) + '</td><td>' + escHtml(u.clinic_name) + '</td>' +
-          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="mono"><b>' + formatNumber(u.balance) + '</b></td>' +
+          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td><td class="mono"><b>' + formatNumber(u.balance) + '</b></td>' +
           '<td class="nowrap">' + escHtml(formatDate(u.created_at)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
@@ -1035,7 +1054,7 @@ var PageAdmin = {
         '<span class="order-top"><span class="admin-card-clinic">' + escHtml(u.clinic_name || u.nickname || u.email) + '</span>' +
         '<span class="credit-badge-sm mono">💳 ' + formatNumber(u.balance) + '</span></span>' +
         '<span class="order-meta"><span>' + escHtml(u.email) + '</span><span>' + escHtml(u.nickname) + '</span>' +
-        '<span class="mono">' + escHtml(u.phone) + '</span></span></button></li>';
+        '<span class="mono">' + escHtml(u.phone) + '</span>' + self.lineStatusHtml(u) + '</span></button></li>';
     }).join('') + '</ul>';
 
     box.innerHTML = '<p class="muted admin-count">' + escHtml(tf('admin_users_count', { n: rows.length })) + '</p>' + table + cards;

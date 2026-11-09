@@ -956,3 +956,13 @@ Dentalk 파일을 통째로 복사하지 않았고, 필요한 로직만 새로 �
 ### 확인한 것
 - Playwright 문의 테스트 34개 (로그인 전 푸터·페이지, 빈 값 숨김·LINE 기본값·사용자 LINE ID, 로그인 후 메뉴·가이드·푸터, mailto 제목(영어·한국어), 에러 링크 3곳, 모바일, 9개 언어) + 기존 테스트 모두 통과
 
+## 19. 12단계: 고객 LINE 알림 사본 → 관리자 그룹 (2026-11-09)
+
+| 파일 | 내용 |
+|---|---|
+| `supabase/functions/line-notify` | `sendCustomerCopy()` — 고객 알림 12종을 고객 LINE 연결 여부와 상관없이 "📋 Customer notice copy" 로 `customer_copy` 대상에게 (고객명·이메일·요약·처리자·LINE 상태·미연결이면 전화번호). 충전 승인 사본엔 승인 직원, 보너스는 "Bonus". 사본 받는 그룹엔 "… by 이름" 카드 생략 |
+| `sql/006_customer_copy.sql` | 켜진 그룹에 customer_copy 추가, 새 그룹 기본값에 포함 |
+| 관리자 화면 | Settings → LINE groups 에 "Customer notice copies" 체크, Customers 탭 LINE ✅/❌ + 미연결만 필터 |
+
+확인: line-notify 80개 (사본 22개 추가: 12종 이벤트, 연결/미연결·전화, 처리자, 중복 없음, 이미 관리자 알림 가는 6종은 사본 없음, customer_copy 미선택·대상 없음 fallback), line-webhook 25, SQL 006 두 번 실행·005 재실행 후 유지, 관리자 화면 12개 + 기존 브라우저 테스트 전부 통과
+

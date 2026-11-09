@@ -204,6 +204,12 @@
 - `supabase/functions/line-notify/index.ts` — DB Webhook → LINE. 헤더 `x-notify-secret` 확인, 관리자(영어)·고객(9개 언어) Flex 카드
   - 관리자 알림 받는 곳: `admin_notify_targets` 중 active + 카테고리(orders / topups / account). 대상이 하나도 없을 때만 `LINE_ADMIN_USER_ID` (안전장치)
   - 직원이 처리한 일(by_name 있는 새 기록, 충전 승인/거절의 reviewed_by)은 연결된 그룹에만 "Confirmed by Ken" 카드
+  - **고객 알림 사본** (카테고리 `customer_copy`, sql/006_customer_copy.sql): 고객에게 가는 알림(confirmed·design_ready·milling·shipped·관리자 취소,
+    credit_history charge·use·refund·adjust·expire, EXPIRY_REMINDER, 충전 거절)은 고객 LINE 연결 여부와 상관없이 `sendCustomerCopy()` 로
+    "📋 Customer notice copy" 카드를 관리자에게도 보냄 (고객명 + 이메일, 내용 요약, 처리자, ✅ Sent to customer LINE / ❌ not connected + 전화번호).
+    관리자 알림이 이미 가는 일(새 주문·고객 승인·수정 요청·수령·고객 취소·충전 요청)은 사본 없음.
+    사본에 처리자가 들어가는 일은, 사본을 받는 그룹에 "… by 이름" 카드를 따로 안 보냄 (중복 방지). 대상이 하나도 없으면 LINE_ADMIN_USER_ID
+- 관리자 Customers 탭: LINE 연결 표시(✅/❌, profiles.line_user_id) + "LINE 미연결 고객만" 필터
 - **비밀값은 코드·저장소에 절대 쓰지 않는다.** Edge Function 안에서 `Deno.env.get()` 으로만 (Secrets: LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, LINE_ADMIN_USER_ID, NOTIFY_SECRET).
   SUPABASE_SERVICE_ROLE_KEY 는 Edge Function 에서만, 브라우저 코드에는 절대 넣지 않는다
 - `profiles.line_user_id` 는 **LINE 알림 연결 전용** (U + 16진수 32자리). 웹앱은 이 칸을 직접 쓰지 않는다 (연결은 line-webhook, 해제는 `unlink_my_line()`).

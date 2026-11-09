@@ -14,6 +14,12 @@
 //   - 알림 대상이 하나도 없으면(아직 그룹을 연결 안 했거나 005 를 실행 안 했으면) 예전처럼 LINE_ADMIN_USER_ID 로 (안전장치)
 //   - 직원이 처리한 일(확인·디자인 업로드·가공·발송·완료 처리·관리자 취소·충전 승인/거절)은
 //     연결된 그룹에만 짧게 "Confirmed by Ken" 처럼 알려요 (LINE_ADMIN_USER_ID 로는 보내지 않아요)
+//   - 고객 알림 사본 (카테고리 customer_copy, sql/006_customer_copy.sql):
+//     고객에게 가는 알림(확인·디자인·가공·발송·관리자 취소·충전·사용·환불·조정·만료·만료 예정·충전 거절)은
+//     고객 LINE 연결 여부와 상관없이 "📋 Customer notice copy" 카드로 관리자에게도 보내요
+//     (고객 · 이메일 · 내용 요약 · "✅ Sent to customer LINE" / "❌ Customer LINE not connected — contact directly" + 전화번호)
+//     사본에 처리자 이름이 들어가는 일은, 사본을 받는 그룹에 "Confirmed by Ken" 카드를 따로 보내지 않아요 (중복 방지)
+//     대상이 하나도 없으면 LINE_ADMIN_USER_ID 로 (안전장치)
 //
 // 관리자에게 (영어)
 //   - 새 주문(INSERT)            🆕
@@ -264,10 +270,11 @@ function clean(v: unknown, max = 300): string {
   return s ? s.slice(0, max) : '—';
 }
 
-function flexCard(opts: { title: string; body?: string; rows: Row[]; buttonLabel: string; url: string; altText: string }) {
-  const contents: any[] = [
-    { type: 'text', text: clean(opts.title, 120), weight: 'bold', size: 'lg', color: NAVY, wrap: true },
-  ];
+function flexCard(opts: { title: string; body?: string; rows: Row[]; buttonLabel: string; url: string; altText: string; label?: string }) {
+  const contents: any[] = [];
+  // 맨 위 작은 라벨 (예: "📋 Customer notice copy")
+  if (opts.label) contents.push({ type: 'text', text: clean(opts.label, 60), size: 'xs', color: '#8A6D12', weight: 'bold', wrap: true });
+  contents.push({ type: 'text', text: clean(opts.title, 120), weight: 'bold', size: 'lg', color: NAVY, wrap: true, margin: opts.label ? 'sm' : 'none' });
   if (opts.body) contents.push({ type: 'text', text: clean(opts.body, 1000), size: 'md', color: '#333333', wrap: true, margin: 'md' });
   if (opts.rows.length) {
     contents.push({ type: 'separator', margin: 'lg' });
@@ -347,9 +354,11 @@ function lastRevisionNote(history: unknown): string {
   return last ? String(last.note || '') : '';
 }
 
-async function getProfile(userId: string): Promise<{ line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null } | null> {
+type Profile = { line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null; phone?: string | null };
+
+async function getProfile(userId: string): Promise<Profile | null> {
   if (!userId) return null;
-  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname').eq('id', userId).maybeSingle();
+  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone').eq('id', userId).maybeSingle();
   if (error) { console.error('profile read failed', error); return null; }
   return data;
 }
@@ -358,7 +367,7 @@ async function getProfile(userId: string): Promise<{ line_user_id: string | null
 // ================================================================
 // 관리자 알림 (영어)
 // ================================================================
-type Category = 'orders' | 'topups' | 'account';
+type Category = 'orders' | 'topups' | 'account' | 'customer_copy';
 
 // 이 카테고리 관리자 알림을 받을 곳 (LINE id 목록)
 //   teamOnly = true  → 연결된 그룹·대상에만 (안전장치 LINE_ADMIN_USER_ID 로는 안 보냄)
@@ -378,9 +387,54 @@ async function adminTargets(cat: Category, teamOnly = false): Promise<string[]> 
     .filter(Boolean);
 }
 
-async function pushAdmins(cat: Category, message: unknown, teamOnly = false): Promise<void> {
+async function pushAdmins(cat: Category, message: unknown, teamOnly = false, except: string[] = []): Promise<void> {
   const targets = await adminTargets(cat, teamOnly);
+  for (const to of targets) {
+    if (except.includes(to)) continue;   // 이미 사본으로 같은 일을 받은 곳은 빼요
+    await push(to, message);
+  }
+}
+
+// ================================================================
+// 고객 알림 사본 (관리자용, 영어)
+// ================================================================
+// LINE 사용자 id 모양이면 연결된 것
+function isLinkedProfile(p: Profile | null): boolean {
+  return !!(p && typeof p.line_user_id === 'string' && /^U[0-9a-f]{32}$/.test(p.line_user_id));
+}
+
+// 고객 이메일 (auth.users, 서버 관리 키). 못 읽으면 빈 글자
+async function customerEmail(userId: string): Promise<string> {
+  if (!userId) return '';
+  try {
+    const { data, error } = await db.auth.admin.getUserById(userId);
+    if (error) { console.error('email read failed', error.message || error); return ''; }
+    return String(data?.user?.email || '');
+  } catch (err) {
+    console.error('email read error', err);
+    return '';
+  }
+}
+
+// 사본 보내기 → 사본을 받은 곳 목록 (직원 처리 카드를 중복으로 보내지 않으려고 돌려줘요)
+//   title: 영어 요약 제목 / rows: 내용 요약 / actor: 처리한 직원 이름 (있으면)
+async function sendCustomerCopy(userId: string, p: Profile | null, title: string, rows: Row[], url: string, actor = ''): Promise<string[]> {
+  const targets = await adminTargets('customer_copy');
+  if (!targets.length) return [];
+  const linked = isLinkedProfile(p);
+  const email = await customerEmail(userId);
+  const name = (p && (p.clinic_name || p.nickname)) || String(userId || '').slice(0, 8);
+  const all: Row[] = [['Customer', email ? name + ' (' + email + ')' : name], ...rows];
+  if (actor) all.push(['Handled by', actor]);
+  all.push(['Customer LINE', linked ? '✅ Sent to customer LINE' : '❌ Customer LINE not connected — contact directly']);
+  if (!linked && p && p.phone) all.push(['Phone', String(p.phone)]);
+  const message = flexCard({
+    label: '📋 Customer notice copy',
+    title, rows: all, buttonLabel: 'Open admin', url,
+    altText: '📋 Customer notice copy · ' + title + ' · ' + name,
+  });
   for (const to of targets) await push(to, message);
+  return targets;
 }
 
 // 처리자 이름 (팀 이름 → 닉네임). 모르면 빈 글자
@@ -429,7 +483,7 @@ function newAdminActorName(record: any, old: any): string {
   return '';
 }
 
-async function notifyTeamAction(record: any, old: any): Promise<void> {
+async function notifyTeamAction(record: any, old: any, except: string[] = []): Promise<void> {
   const tpl = TEAM_ACTION_TITLES[record.stage];
   const name = newAdminActorName(record, old);
   if (!tpl || !name) return;
@@ -443,41 +497,66 @@ async function notifyTeamAction(record: any, old: any): Promise<void> {
   await pushAdmins('orders', flexCard({
     title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_URL,
     altText: title + ' · ' + record.id,
-  }), true);
+  }), true, except);
 }
 
 
 // ================================================================
 // 고객 알림 (고객 언어)
 // ================================================================
-async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' | 'shipped' | 'cancel'): Promise<void> {
+const COPY_ORDER_TITLES: Record<string, string> = {
+  confirmed: '✔ Order confirmed',
+  design: '🎨 Design ready — waiting for customer review',
+  milling: '⚙️ Milling started',
+  shipped: '🚚 Order shipped',
+  cancel: '❌ Order cancelled by admin — credits refunded',
+};
+
+// 주문 단계 알림 → 고객(연결돼 있으면) + 관리자 사본. 사본을 받은 곳 목록을 돌려줘요
+async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' | 'shipped' | 'cancel', actor = ''): Promise<string[]> {
   const p = await getProfile(o.user_id);
-  if (!p || !p.line_user_id) return;   // LINE 연결 안 했으면 안 보내요
-  const x = texts(p.lang);
-  const rows: Row[] = [[x.order, o.id], [x.patient, o.patient]];
-  let title = '', body = '';
+  const linked = isLinkedProfile(p);
+  const last = lastEntry(o.review_history);
+  const reason = kind === 'cancel'
+    ? (last && last.action === 'admin_cancelled' ? last.note
+      : ((o.review_history || []).slice().reverse().find((h: any) => h && h.action === 'admin_cancelled') || {}).note)
+    : '';
+  const balance = kind === 'cancel' ? await getBalance(o.user_id) : null;
 
-  if (kind === 'confirmed') { title = x.confirmed_title; body = x.confirmed_body; rows.push([x.deadline, o.deadline]); }
-  if (kind === 'design') { title = x.design_title; body = x.design_body; }
-  if (kind === 'milling') { title = x.milling_title; body = x.milling_body; rows.push([x.deadline, o.deadline]); }
-  if (kind === 'shipped') {
-    title = x.shipped_title; body = x.shipped_body;
-    rows.push([x.carrier, o.carrier], [x.tracking, o.tracking_number]);
+  // 고객 (고객 언어) — LINE 연결했을 때만
+  if (linked && p) {
+    const x = texts(p.lang);
+    const rows: Row[] = [[x.order, o.id], [x.patient, o.patient]];
+    let title = '', body = '';
+    if (kind === 'confirmed') { title = x.confirmed_title; body = x.confirmed_body; rows.push([x.deadline, o.deadline]); }
+    if (kind === 'design') { title = x.design_title; body = x.design_body; }
+    if (kind === 'milling') { title = x.milling_title; body = x.milling_body; rows.push([x.deadline, o.deadline]); }
+    if (kind === 'shipped') {
+      title = x.shipped_title; body = x.shipped_body;
+      rows.push([x.carrier, o.carrier], [x.tracking, o.tracking_number]);
+    }
+    if (kind === 'cancel') {
+      title = x.cancel_title; body = x.cancel_body;
+      rows.push([x.refunded, String(o.credits_used ?? 0) + ' ' + x.credits]);
+      if (reason) rows.push([x.reason, reason]);
+      rows.push([x.balance, balanceText(x, balance)]);
+    }
+    await push(p.line_user_id as string, flexCard({
+      title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL,
+      altText: title + ' · ' + o.id,
+    }));
   }
+
+  // 관리자 사본 (영어)
+  const rows: Row[] = [['Order', o.id], ['Patient', o.patient], ['Teeth', String(o.teeth_count ?? '')]];
+  if (kind === 'confirmed' || kind === 'milling') rows.push(['Deadline', o.deadline]);
+  if (kind === 'shipped') rows.push(['Carrier', o.carrier], ['Tracking', o.tracking_number]);
   if (kind === 'cancel') {
-    title = x.cancel_title; body = x.cancel_body;
-    rows.push([x.refunded, String(o.credits_used ?? 0) + ' ' + x.credits]);
-    const last = lastEntry(o.review_history);
-    const reason = last && last.action === 'admin_cancelled' ? last.note
-      : ((o.review_history || []).slice().reverse().find((h: any) => h && h.action === 'admin_cancelled') || {}).note;
-    if (reason) rows.push([x.reason, reason]);
-    rows.push([x.balance, balanceText(x, await getBalance(o.user_id))]);
+    rows.push(['Refunded', String(o.credits_used ?? 0) + ' credits']);
+    if (reason) rows.push(['Reason', reason]);
+    rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
   }
-
-  await push(p.line_user_id, flexCard({
-    title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL,
-    altText: title + ' · ' + o.id,
-  }));
+  return await sendCustomerCopy(o.user_id, p, COPY_ORDER_TITLES[kind], rows, SITE_ADMIN_URL, actor);
 }
 
 // 남은 잔액 (credit_wallets, 서버 관리 키로 읽기). 못 읽으면 null
@@ -500,54 +579,95 @@ async function isAdminCancelRefund(orderId: string): Promise<boolean> {
   return data.stage === 'cancelled' && isAdminCancel(data.review_history);
 }
 
-// credit_history INSERT → 고객 알림 (type 별)
+// credit_history INSERT → 고객 알림 (type 별) + 관리자 사본
 //   use    📝 주문 접수 완료 (주문번호, 사용 크레딧, 남은 잔액)
 //   refund ↩️ 크레딧 환불 (주문번호, 환불 수량, 남은 잔액) — 관리자 취소로 생긴 환불은 제외 (중복 방지)
 //   adjust ➖ 크레딧 조정 (수량 부호 포함, 사유, 남은 잔액)
-//   charge 💳 크레딧 충전 (수량, 남은 잔액)
+//   charge 💳 크레딧 충전 (수량, 남은 잔액) — 충전 승인이면 사본에 승인한 직원 이름
+//   expire ⌛ 크레딧 만료
+const COPY_CREDIT_TITLES: Record<string, string> = {
+  use: '📝 Order received — credits used',
+  refund: '↩️ Credits refunded',
+  adjust: '➖ Credits adjusted',
+  charge: '💳 Credits added',
+  expire: '⌛ Credits expired',
+};
+
+// 충전 묶음이면 그 충전 요청 { id, reviewed_by } (보너스 지급이면 null)
+async function lotTopup(lotId: unknown): Promise<{ id: string; reviewed_by: string | null } | null> {
+  if (!lotId) return null;
+  const { data } = await db.from('credit_lots').select('topup_id, source').eq('id', String(lotId)).maybeSingle();
+  if (!data || !data.topup_id) return null;
+  const t = await db.from('topup_requests').select('id, reviewed_by').eq('id', String(data.topup_id)).maybeSingle();
+  return t.data ? { id: String(t.data.id), reviewed_by: t.data.reviewed_by ?? null } : { id: String(data.topup_id), reviewed_by: null };
+}
+
 async function notifyCredit(h: any): Promise<void> {
   const type = String(h.type || '');
   const amount = Number(h.amount || 0);
   if (!['use', 'refund', 'adjust', 'charge', 'expire'].includes(type)) return;
   if (type === 'expire' && amount >= 0) return;
   if (type === 'charge' && amount <= 0) return;
+  if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;   // "관리자 취소" 카드·사본에 이미 들어가요
 
   const p = await getProfile(h.user_id);
-  if (!p || !p.line_user_id) return;   // LINE 연결 안 했으면 안 보내요
-  if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;
-
-  const x = texts(p.lang);
+  const linked = isLinkedProfile(p);
   const balance = await getBalance(h.user_id);
   const abs = Math.abs(amount);
   const desc = String(h.description || '').trim();
-  let title = '', body = '';
-  const rows: Row[] = [];
+  const exp = type === 'charge' ? await getLotExpiry(h.lot_id) : '';
 
-  if (type === 'use') {
-    title = x.use_title; body = x.use_body;
-    rows.push([x.order, h.order_id], [x.used, String(abs) + ' ' + x.credits]);
-  } else if (type === 'refund') {
-    title = x.refund_title; body = x.refund_body.replace('{n}', String(abs));
-    rows.push([x.order, h.order_id], [x.refunded, String(abs) + ' ' + x.credits]);
-  } else if (type === 'adjust') {
-    title = x.adjust_title; body = x.adjust_body;
-    rows.push([x.amount, (amount > 0 ? '+' : '') + String(amount) + ' ' + x.credits], [x.reason, desc]);
-  } else if (type === 'expire') {
-    title = x.expire_title; body = x.expire_body.replace('{n}', String(abs));
-    rows.push([x.credits, '-' + abs]);
-    if (h.order_id) rows.push([x.order, h.order_id]);
-  } else {
-    title = x.charge_title; body = x.charge_body.replace('{n}', String(abs)) + (desc ? '\n' + desc : '');
-    rows.push([x.credits, '+' + abs]);
-    const exp = await getLotExpiry(h.lot_id);
-    if (exp) rows.push([x.valid_until, exp]);
+  // 고객 (고객 언어) — LINE 연결했을 때만
+  if (linked && p) {
+    const x = texts(p.lang);
+    let title = '', body = '';
+    const rows: Row[] = [];
+    if (type === 'use') {
+      title = x.use_title; body = x.use_body;
+      rows.push([x.order, h.order_id], [x.used, String(abs) + ' ' + x.credits]);
+    } else if (type === 'refund') {
+      title = x.refund_title; body = x.refund_body.replace('{n}', String(abs));
+      rows.push([x.order, h.order_id], [x.refunded, String(abs) + ' ' + x.credits]);
+    } else if (type === 'adjust') {
+      title = x.adjust_title; body = x.adjust_body;
+      rows.push([x.amount, (amount > 0 ? '+' : '') + String(amount) + ' ' + x.credits], [x.reason, desc]);
+    } else if (type === 'expire') {
+      title = x.expire_title; body = x.expire_body.replace('{n}', String(abs));
+      rows.push([x.credits, '-' + abs]);
+      if (h.order_id) rows.push([x.order, h.order_id]);
+    } else {
+      title = x.charge_title; body = x.charge_body.replace('{n}', String(abs)) + (desc ? '\n' + desc : '');
+      rows.push([x.credits, '+' + abs]);
+      if (exp) rows.push([x.valid_until, exp]);
+    }
+    rows.push([x.balance, balanceText(x, balance)]);
+    const alt = title + (h.order_id ? ' · ' + h.order_id : '') + ' · ' + x.balance + ': ' + balanceText(x, balance);
+    await push(p.line_user_id as string, flexCard({
+      title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL, altText: alt,
+    }));
   }
-  rows.push([x.balance, balanceText(x, balance)]);
 
-  const alt = title + (h.order_id ? ' · ' + h.order_id : '') + ' · ' + x.balance + ': ' + balanceText(x, balance);
-  await push(p.line_user_id, flexCard({
-    title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL, altText: alt,
-  }));
+  // 관리자 사본 (영어)
+  const rows: Row[] = [];
+  if (h.order_id) rows.push(['Order', h.order_id]);
+  rows.push(['Credits', (amount > 0 ? '+' : '') + String(amount)]);
+  let actor = '';
+  let url = SITE_ADMIN_CUSTOMERS_URL;
+  if (type === 'charge') {
+    const tp = await lotTopup(h.lot_id);
+    if (tp) {
+      rows.push(['Top-up', tp.id]);
+      actor = await memberName(tp.reviewed_by);
+      url = SITE_ADMIN_TOPUPS_URL;
+    } else {
+      rows.push(['Type', 'Bonus (added by admin)']);
+    }
+    if (exp) rows.push(['Valid until', exp]);
+  }
+  if (desc && type !== 'use') rows.push(['Note', desc]);
+  rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
+  if (h.order_id) url = SITE_ADMIN_URL;
+  await sendCustomerCopy(h.user_id, p, COPY_CREDIT_TITLES[type], rows, url, actor);
 }
 
 
@@ -594,6 +714,7 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
   if (!rec.status || old?.status === rec.status) return;   // 상태가 안 바뀌었으면 보내지 않아요
 
   // 직원이 승인·거절 → 연결된 그룹에만 "Top-up approved by Ken"
+  //   (고객 알림 사본을 받는 그룹은 사본에 승인·거절한 직원 이름이 들어가서 이 카드는 빼요)
   if (rec.status === 'approved' || rec.status === 'rejected') {
     const name = await memberName(rec.reviewed_by);
     if (name) {
@@ -602,22 +723,28 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
       const title = (rec.status === 'approved' ? '💰 Top-up approved by ' : '🚫 Top-up rejected by ') + clean(name, 60);
       const rows: Row[] = [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]];
       if (rec.status === 'rejected') rows.push(['Reason', rec.reject_reason]);
+      const copyTargets = await adminTargets('customer_copy', true);
       await pushAdmins('topups', flexCard({
         title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
-      }), true);
+      }), true, copyTargets);
     }
   }
 
+  // 충전 거절 → 고객(연결돼 있으면) + 관리자 사본
   if (rec.status === 'rejected') {
     const p = await getProfile(rec.user_id);
-    if (!p || !p.line_user_id) return;
-    const x = texts(p.lang);
-    await push(p.line_user_id, flexCard({
-      title: x.topup_rejected_title, body: x.topup_rejected_body,
-      rows: [[x.request, rec.id], [x.credits, String(rec.credits)], [x.total, thb(rec.total)], [x.reason, rec.reject_reason]],
-      buttonLabel: x.open, url: SITE_TOPUP_URL,
-      altText: x.topup_rejected_title + ' · ' + rec.id,
-    }));
+    if (isLinkedProfile(p) && p) {
+      const x = texts(p.lang);
+      await push(p.line_user_id as string, flexCard({
+        title: x.topup_rejected_title, body: x.topup_rejected_body,
+        rows: [[x.request, rec.id], [x.credits, String(rec.credits)], [x.total, thb(rec.total)], [x.reason, rec.reject_reason]],
+        buttonLabel: x.open, url: SITE_TOPUP_URL,
+        altText: x.topup_rejected_title + ' · ' + rec.id,
+      }));
+    }
+    await sendCustomerCopy(rec.user_id, p, '🚫 Top-up request rejected',
+      [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)], ['Reason', rec.reject_reason]],
+      SITE_ADMIN_TOPUPS_URL, await memberName(rec.reviewed_by));
     return;
   }
   if (rec.status === 'cancelled') {
@@ -635,19 +762,23 @@ async function handleReminder(payload: any): Promise<void> {
   const n = lots.reduce((sum: number, l: any) => sum + Number(l?.remaining || 0), 0);
   if (!payload.user_id || n <= 0) return;
   const p = await getProfile(payload.user_id);
-  if (!p || !p.line_user_id) return;
-  const x = texts(p.lang);
   const first = lots.map((l: any) => String(l?.expires_at || '')).filter(Boolean).sort()[0];
   const date = ymd(first);
   const days = first ? Math.max(1, Math.ceil((new Date(first).getTime() - Date.now()) / 86400000)) : Number(payload.days || 0);
-  const title = x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days));
   const balance = await getBalance(payload.user_id);
-  await push(p.line_user_id, flexCard({
-    title, body: x.reminder_body.replace('{date}', date),
-    rows: [[x.credits, String(n)], [x.valid_until, date], [x.balance, balanceText(x, balance)]],
-    buttonLabel: x.open, url: SITE_PROFILE_URL,
-    altText: title,
-  }));
+  if (isLinkedProfile(p) && p) {
+    const x = texts(p.lang);
+    const title = x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days));
+    await push(p.line_user_id as string, flexCard({
+      title, body: x.reminder_body.replace('{date}', date),
+      rows: [[x.credits, String(n)], [x.valid_until, date], [x.balance, balanceText(x, balance)]],
+      buttonLabel: x.open, url: SITE_PROFILE_URL,
+      altText: title,
+    }));
+  }
+  await sendCustomerCopy(payload.user_id, p, '⏰ ' + n + ' credits expire in ' + days + ' days',
+    [['Credits', String(n)], ['Valid until', date], ['Balance', balance == null ? '—' : String(balance) + ' credits']],
+    SITE_ADMIN_CUSTOMERS_URL);
 }
 
 
@@ -713,6 +844,10 @@ async function handle(payload: any): Promise<void> {
   const to = record.stage;
   if (!to || from === to) return;   // 단계가 안 바뀌었으면 보내지 않아요
 
+  // 이번 변경을 한 직원 이름 (고객 알림 사본에 넣어요)
+  const actor = newAdminActorName(record, old_record);
+  let copied: string[] = [];   // 고객 알림 사본을 받은 곳 → 그곳에는 "… by 이름" 카드를 따로 안 보내요
+
   switch (to) {
     // 관리자에게
     case 'approved':
@@ -728,27 +863,27 @@ async function handle(payload: any): Promise<void> {
       break;
     }
     case 'cancelled':
-      if (isAdminCancel(record.review_history)) await notifyCustomer(record, 'cancel');
+      if (isAdminCancel(record.review_history)) copied = await notifyCustomer(record, 'cancel', actor);
       else await notifyAdmin('❌ Customer cancelled the order', record, [['Refunded', String(record.credits_used ?? 0) + ' credits']]);
       break;
 
-    // 고객에게
+    // 고객에게 (+ 관리자 사본)
     case 'confirmed':
-      await notifyCustomer(record, 'confirmed');
+      copied = await notifyCustomer(record, 'confirmed', actor);
       break;
     case 'design_ready':
-      await notifyCustomer(record, 'design');
+      copied = await notifyCustomer(record, 'design', actor);
       break;
     case 'milling':
-      await notifyCustomer(record, 'milling');
+      copied = await notifyCustomer(record, 'milling', actor);
       break;
     case 'shipped':
-      await notifyCustomer(record, 'shipped');
+      copied = await notifyCustomer(record, 'shipped', actor);
       break;
   }
 
-  // 직원이 처리한 일 → 연결된 그룹에 "… by 이름"
-  await notifyTeamAction(record, old_record);
+  // 직원이 처리한 일 → 연결된 그룹에 "… by 이름" (사본을 이미 받은 그룹은 빼요)
+  await notifyTeamAction(record, old_record, copied);
 }
 
 

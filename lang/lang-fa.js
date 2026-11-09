@@ -978,6 +978,14 @@ LANG.fa = {
   contact_order_hint: 'درباره این سفارش سؤالی دارید؟ شماره سفارش به‌طور خودکار در موضوع ایمیل درج می‌شود.',
   contact_order_subject: '[{id}] سؤال',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'رونوشت اعلان‌های مشتری',
+  admin_line_filter: 'LINE مشتری',
+  admin_line_all: 'همه مشتریان',
+  admin_line_unlinked_only: 'فقط مشتریان بدون LINE',
+  admin_line_linked: 'LINE متصل است',
+  admin_line_unlinked: 'LINE متصل نیست',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

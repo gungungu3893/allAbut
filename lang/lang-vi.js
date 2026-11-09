@@ -978,6 +978,14 @@ LANG.vi = {
   contact_order_hint: 'Có câu hỏi về đơn hàng này? Mã đơn hàng sẽ được tự động thêm vào tiêu đề email.',
   contact_order_subject: '[{id}] Câu hỏi',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'Bản sao thông báo khách hàng',
+  admin_line_filter: 'LINE của khách hàng',
+  admin_line_all: 'Tất cả khách hàng',
+  admin_line_unlinked_only: 'Chỉ khách chưa kết nối LINE',
+  admin_line_linked: 'Đã kết nối LINE',
+  admin_line_unlinked: 'Chưa kết nối LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

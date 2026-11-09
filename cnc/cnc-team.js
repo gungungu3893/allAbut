@@ -95,7 +95,7 @@ async function cncAdminListAudit(filters) {
 // ----------------------------------------------------------------
 // 관리자 LINE 알림 대상 · 그룹 코드 (owner)
 // ----------------------------------------------------------------
-var NOTIFY_CATEGORIES = ['orders', 'topups', 'account'];
+var NOTIFY_CATEGORIES = ['orders', 'topups', 'account', 'customer_copy'];   // customer_copy: 고객 알림 사본 (sql/006)
 var GROUP_CODE_POLL_MS = 5000;     // 5초마다 연결됐는지 확인
 
 async function cncAdminListNotifyTargets() {

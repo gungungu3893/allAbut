@@ -978,6 +978,14 @@ LANG.en = {
   contact_order_hint: 'Questions about this order? The order number is added to the email subject for you.',
   contact_order_subject: '[{id}] Question',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'Customer notice copies',
+  admin_line_filter: 'Customer LINE',
+  admin_line_all: 'All customers',
+  admin_line_unlinked_only: 'Only customers without LINE',
+  admin_line_linked: 'LINE connected',
+  admin_line_unlinked: 'No LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

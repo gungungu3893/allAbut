@@ -63,7 +63,8 @@ LINE 공식계정은 기본으로 그룹에 들어가지 못하게 되어 있어
    - ② 그룹에 **allAbut 공식계정(@925caqxb) 초대** → 그룹에 안내 메시지가 와요
    - ③ 그룹 채팅에 **코드를 그대로 보내기** (예: `GRP-7K2Q`)
 4. 그룹에 "✅ 이 그룹에서 allAbut 관리자 알림을 받아요" 답장이 오고, 컴퓨터 화면도 몇 초 안에 저절로 "연결됨" 으로 바뀌어요
-5. 그룹마다 받을 알림을 고를 수 있어요: **Orders**(주문) / **Top-ups & refunds**(충전·환불) / **Account deletion requests**(계정 삭제 요청), **On** 으로 켜기/끄기, **Remove group** 으로 삭제
+5. 그룹마다 받을 알림을 고를 수 있어요: **Orders**(주문) / **Top-ups & refunds**(충전·환불) / **Account deletion requests**(계정 삭제 요청) / **Customer notice copies**(고객 알림 사본 — 고객에게 간 LINE 알림의 사본, 고객 LINE 미연결이면 "❌ … contact directly" + 전화번호), **On** 으로 켜기/끄기, **Remove group** 으로 삭제
+   - 고객 알림 사본은 `sql/006_customer_copy.sql` 을 실행하면 지금 켜져 있는 그룹과 새 그룹에 자동으로 켜져요
 
 - 그룹이 하나라도 연결돼 켜져 있으면 관리자 알림은 **그룹으로만** 가요 (LINE_ADMIN_USER_ID 로는 안 가요).
 - 공식계정을 그룹에서 내보내면 그 그룹 알림은 자동으로 꺼져요. 다시 연결하려면 새 코드를 만들어 보내세요.

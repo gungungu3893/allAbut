@@ -748,6 +748,12 @@ select.input { cursor: pointer; }
    내 주문
    ================================================================ */
 .orders-tools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+/* 관리자 고객 목록: LINE 연결 표시 · 미연결만 보기 */
+.admin-line-filter { margin: 0; min-width: 200px; }
+.admin-line-filter .field-label { margin-bottom: 4px; }
+.line-status { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 0.9375rem; white-space: nowrap; }
+.line-status.ok { color: var(--success); }
+.line-status.no { color: var(--danger); }
 .seg { display: inline-flex; background: #E9EDF3; padding: 4px; border-radius: 12px; }
 .seg-btn {
   min-height: 48px;

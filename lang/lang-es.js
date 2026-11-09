@@ -978,6 +978,14 @@ LANG.es = {
   contact_order_hint: '¿Preguntas sobre este pedido? El número de pedido se agrega automáticamente al asunto del correo.',
   contact_order_subject: '[{id}] Consulta',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'Copias de avisos al cliente',
+  admin_line_filter: 'LINE del cliente',
+  admin_line_all: 'Todos los clientes',
+  admin_line_unlinked_only: 'Solo clientes sin LINE',
+  admin_line_linked: 'LINE conectado',
+  admin_line_unlinked: 'Sin LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -978,6 +978,14 @@ LANG.ar = {
   contact_order_hint: 'هل لديك سؤال حول هذا الطلب؟ يُضاف رقم الطلب إلى عنوان البريد تلقائيًا.',
   contact_order_subject: '[{id}] استفسار',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: 'نسخ إشعارات العملاء',
+  admin_line_filter: 'LINE العميل',
+  admin_line_all: 'كل العملاء',
+  admin_line_unlinked_only: 'العملاء غير المرتبطين بـ LINE فقط',
+  admin_line_linked: 'LINE مرتبط',
+  admin_line_unlinked: 'غير مرتبط بـ LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

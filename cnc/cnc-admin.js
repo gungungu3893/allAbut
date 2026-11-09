@@ -380,7 +380,8 @@ function cncAdminNormalizeUser(r) {
     clinic_name: r.clinic_name || '',
     phone: r.phone || '',
     balance: balance == null ? 0 : Number(balance),
-    created_at: r.created_at || r.joined_at || null
+    created_at: r.created_at || r.joined_at || null,
+    line_linked: cncIsLineLinked(r)   // admin_list_users 가 line_user_id 를 주면 바로, 아니면 아래에서 profiles 로 채워요
   };
 }
 
@@ -392,9 +393,22 @@ async function cncAdminListUsers() {
     throw cncError(cncErrorCode(err), { cause: err });
   }
   if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
-  return (result.data || []).map(cncAdminNormalizeUser).sort(function (a, b) {
+  var users = (result.data || []).map(cncAdminNormalizeUser).sort(function (a, b) {
     return String(b.created_at || '').localeCompare(String(a.created_at || ''));
   });
+  // 고객 LINE 연결 여부: profiles.line_user_id (manager 이상은 고객 프로필을 읽을 수 있어요)
+  try {
+    var ids = users.map(function (u) { return u.id; }).filter(Boolean);
+    var linked = {};
+    for (var i = 0; i < ids.length; i += 200) {
+      var rows = cncCheck(await sb.from('profiles').select('id, line_user_id').in('id', ids.slice(i, i + 200))) || [];
+      rows.forEach(function (p) { linked[p.id] = cncIsLineLinked(p); });
+    }
+    users.forEach(function (u) { if (u.id in linked) u.line_linked = linked[u.id]; });
+  } catch (err) {
+    console.warn('LINE status load failed', err);
+  }
+  return users;
 }
 
 // 크레딧 충전(+) / 차감(-) → 새 잔액

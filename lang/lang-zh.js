@@ -978,6 +978,14 @@ LANG.zh = {
   contact_order_hint: '对此订单有疑问？订单号会自动填入邮件标题。',
   contact_order_subject: '[{id}] 咨询',
 
+  // ----- 고객 알림 사본 · 고객 LINE 상태 -----
+  lg_cat_customer_copy: '客户通知副本',
+  admin_line_filter: '客户 LINE',
+  admin_line_all: '全部客户',
+  admin_line_unlinked_only: '仅未连接 LINE 的客户',
+  admin_line_linked: '已连接 LINE',
+  admin_line_unlinked: '未连接 LINE',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
