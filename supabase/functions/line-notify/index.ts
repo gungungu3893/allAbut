@@ -21,6 +21,12 @@
 //     사본에 처리자 이름이 들어가는 일은, 사본을 받는 그룹에 "Confirmed by Ken" 카드를 따로 보내지 않아요 (중복 방지)
 //     대상이 하나도 없으면 LINE_ADMIN_USER_ID 로 (안전장치)
 //
+// 관리자 카드 색 (ADMIN_NOTICE_STYLES 한 곳에서 종류별 색·아이콘·라벨)
+//   헤더 배경 = 종류 색 + 큰 "🆕 NEW ORDER" + 오른쪽 작은 allAbut / 주요 값(주문번호·금액)·버튼도 같은 색
+//   고객 알림 사본: 흰 헤더 + 종류 색 굵은 테두리·글씨 "📋 COPY · 💳 CREDITS ADDED", 고객 LINE 미연결이면 본문 맨 위 빨간 띠
+//   altText(알림 미리보기)도 "🆕 NEW ORDER · CA261109-0012" 처럼 아이콘 + 라벨로 시작
+//   고객에게 가는 카드는 예전 디자인(네이비 헤더 + 골드 allAbut) 그대로
+//
 // 관리자에게 (영어)
 //   - 새 주문(INSERT)            🆕
 //   - stage → approved           ✅ 고객이 디자인 승인
@@ -61,6 +67,46 @@ const SITE_PROFILE_URL = SITE_URL + '/#/profile';
 
 const NAVY = '#001D4A';
 const GOLD = '#D4AF37';
+
+// ================================================================
+// 관리자 알림 카드 종류별 색 · 아이콘 · 라벨 (색을 바꿀 때는 여기만 고치면 돼요)
+// ================================================================
+//   파랑 = 새 주문·주문 접수 / 초록 = 고객 승인·수령 / 주황 = 수정 요청 / 빨강 = 취소·계정 삭제
+//   골드 = 충전 요청·충전 / 보라 = 환불·조정 / 회색 = 만료·만료 예정·충전 거절·충전 취소
+//   청록 = 직원 처리 진행(확인·디자인 업로드·가공·발송·완료 처리)
+const ADMIN_NOTICE_STYLES = {
+  new_order:        { color: '#1D4ED8', icon: '🆕', label: 'NEW ORDER' },
+  credits_used:     { color: '#1D4ED8', icon: '📝', label: 'ORDER RECEIVED' },
+  approved:         { color: '#15803D', icon: '✅', label: 'DESIGN APPROVED' },
+  received:         { color: '#15803D', icon: '📦', label: 'RECEIVED' },
+  revision:         { color: '#EA580C', icon: '✏️', label: 'REVISION REQUEST' },
+  cancelled:        { color: '#B91C1C', icon: '❌', label: 'ORDER CANCELLED' },
+  account_deletion: { color: '#B91C1C', icon: '🗑', label: 'ACCOUNT DELETION' },
+  topup_request:    { color: '#B8860B', icon: '💰', label: 'TOP-UP REQUEST' },
+  topup_approved:   { color: '#B8860B', icon: '💰', label: 'TOP-UP APPROVED' },
+  charge:           { color: '#B8860B', icon: '💳', label: 'CREDITS ADDED' },
+  refund:           { color: '#7C3AED', icon: '↩️', label: 'REFUND' },
+  adjust:           { color: '#7C3AED', icon: '➖', label: 'CREDIT ADJUSTED' },
+  expire:           { color: '#4B5563', icon: '⌛', label: 'CREDITS EXPIRED' },
+  expiry_reminder:  { color: '#4B5563', icon: '⏰', label: 'EXPIRY REMINDER' },
+  topup_rejected:   { color: '#4B5563', icon: '🚫', label: 'TOP-UP REJECTED' },
+  topup_cancelled:  { color: '#4B5563', icon: '🚫', label: 'TOP-UP CANCELLED' },
+  order_confirmed:  { color: '#0E7490', icon: '✔', label: 'ORDER CONFIRMED' },
+  design_uploaded:  { color: '#0E7490', icon: '🎨', label: 'DESIGN UPLOADED' },
+  milling:          { color: '#0E7490', icon: '⚙️', label: 'MILLING STARTED' },
+  shipped:          { color: '#0E7490', icon: '🚚', label: 'SHIPPED' },
+  marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED' },
+};
+type NoticeType = keyof typeof ADMIN_NOTICE_STYLES;
+
+// 같은 색으로 강조하는 값 (주문번호 · 금액 등)
+const ADMIN_HIGHLIGHT_ROWS = ['Order', 'Request', 'Top-up', 'Total', 'Credits', 'Refunded'];
+
+// "🆕 NEW ORDER" (사본은 "📋 COPY · 🆕 NEW ORDER")
+function noticeHeading(type: NoticeType, copy = false): string {
+  const st = ADMIN_NOTICE_STYLES[type];
+  return (copy ? '📋 COPY · ' : '') + st.icon + ' ' + st.label;
+}
 
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -307,6 +353,67 @@ function flexCard(opts: { title: string; body?: string; rows: Row[]; buttonLabel
   };
 }
 
+// 관리자 카드 (종류별 색)
+//   type: ADMIN_NOTICE_STYLES 의 키 / headline: 본문 맨 위 한 줄 (없으면 생략) / copy: 고객 알림 사본 / unlinked: 고객 LINE 미연결 (사본만)
+function adminCard(opts: { type: NoticeType; headline?: string; body?: string; rows: Row[]; url: string; altExtra?: string; copy?: boolean; unlinked?: boolean; buttonLabel?: string }) {
+  const st = ADMIN_NOTICE_STYLES[opts.type];
+  const heading = noticeHeading(opts.type, !!opts.copy);
+  const header = opts.copy
+    // 사본: 흰 헤더 + 종류 색 굵은 테두리·글씨
+    ? {
+      type: 'box', layout: 'horizontal', backgroundColor: '#FFFFFF', borderColor: st.color, borderWidth: '3px', cornerRadius: '6px', paddingAll: '12px',
+      contents: [
+        { type: 'text', text: heading, color: st.color, weight: 'bold', size: 'md', wrap: true, flex: 5 },
+        { type: 'text', text: 'allAbut', color: st.color, size: 'xxs', align: 'end', gravity: 'top', flex: 2 },
+      ],
+    }
+    : {
+      type: 'box', layout: 'horizontal', backgroundColor: st.color, paddingAll: '14px',
+      contents: [
+        { type: 'text', text: heading, color: '#FFFFFF', weight: 'bold', size: 'lg', wrap: true, flex: 5 },
+        { type: 'text', text: 'allAbut', color: '#FFFFFF', size: 'xxs', align: 'end', gravity: 'top', flex: 2 },
+      ],
+    };
+
+  const contents: any[] = [];
+  // 사본 + 고객 LINE 미연결 → 본문 맨 위 빨간 띠
+  if (opts.copy && opts.unlinked) {
+    contents.push({
+      type: 'box', layout: 'vertical', backgroundColor: '#FEE2E2', cornerRadius: '6px', paddingAll: '8px',
+      contents: [{ type: 'text', text: '❌ Customer LINE not connected', color: '#B91C1C', weight: 'bold', size: 'sm', wrap: true }],
+    });
+  }
+  if (opts.headline) contents.push({ type: 'text', text: clean(opts.headline, 120), weight: 'bold', size: 'md', color: NAVY, wrap: true, margin: contents.length ? 'md' : 'none' });
+  if (opts.body) contents.push({ type: 'text', text: clean(opts.body, 1000), size: 'sm', color: '#333333', wrap: true, margin: 'md' });
+  if (opts.rows.length) {
+    if (contents.length) contents.push({ type: 'separator', margin: 'lg' });
+    contents.push({
+      type: 'box', layout: 'vertical', margin: contents.length ? 'lg' : 'none', spacing: 'sm',
+      contents: opts.rows.map(([label, value]) => ({
+        type: 'box', layout: 'baseline', spacing: 'sm',
+        contents: [
+          { type: 'text', text: clean(label, 40), size: 'sm', color: '#6B7280', flex: 2, wrap: true },
+          { type: 'text', text: clean(value), size: 'sm', color: ADMIN_HIGHLIGHT_ROWS.includes(label) ? st.color : NAVY, weight: 'bold', flex: 4, wrap: true },
+        ],
+      })),
+    });
+  }
+  const alt = heading + (opts.altExtra ? ' · ' + opts.altExtra : '');
+  return {
+    type: 'flex',
+    altText: clean(alt, 380),
+    contents: {
+      type: 'bubble',
+      header: header,
+      body: { type: 'box', layout: 'vertical', backgroundColor: '#FFFFFF', contents },
+      footer: {
+        type: 'box', layout: 'vertical',
+        contents: [{ type: 'button', style: 'primary', color: st.color, height: 'sm', action: { type: 'uri', label: clean(opts.buttonLabel || 'Open admin', 40), uri: opts.url } }],
+      },
+    },
+  };
+}
+
 async function push(to: string, message: unknown): Promise<void> {
   if (!/^[UCR][0-9a-f]{32}$/.test(to)) return;   // 사용자(U) · 그룹(C) · 여러 명 채팅(R)
   try {
@@ -417,8 +524,8 @@ async function customerEmail(userId: string): Promise<string> {
 }
 
 // 사본 보내기 → 사본을 받은 곳 목록 (직원 처리 카드를 중복으로 보내지 않으려고 돌려줘요)
-//   title: 영어 요약 제목 / rows: 내용 요약 / actor: 처리한 직원 이름 (있으면)
-async function sendCustomerCopy(userId: string, p: Profile | null, title: string, rows: Row[], url: string, actor = ''): Promise<string[]> {
+//   type: 카드 색 종류 / headline: 영어 요약 한 줄 / rows: 내용 요약 / actor: 처리한 직원 이름 (있으면)
+async function sendCustomerCopy(userId: string, p: Profile | null, type: NoticeType, headline: string, rows: Row[], url: string, actor = ''): Promise<string[]> {
   const targets = await adminTargets('customer_copy');
   if (!targets.length) return [];
   const linked = isLinkedProfile(p);
@@ -428,10 +535,10 @@ async function sendCustomerCopy(userId: string, p: Profile | null, title: string
   if (actor) all.push(['Handled by', actor]);
   all.push(['Customer LINE', linked ? '✅ Sent to customer LINE' : '❌ Customer LINE not connected — contact directly']);
   if (!linked && p && p.phone) all.push(['Phone', String(p.phone)]);
-  const message = flexCard({
-    label: '📋 Customer notice copy',
-    title, rows: all, buttonLabel: 'Open admin', url,
-    altText: '📋 Customer notice copy · ' + title + ' · ' + name,
+  const orderId = (rows.find((r) => r[0] === 'Order' || r[0] === 'Request') || [])[1];
+  const message = adminCard({
+    type, copy: true, unlinked: !linked, headline, rows: all, url,
+    altExtra: (orderId ? orderId + ' · ' : '') + name,
   });
   for (const to of targets) await push(to, message);
   return targets;
@@ -447,7 +554,7 @@ async function memberName(userId: unknown): Promise<string> {
   return String(p?.nickname || '').trim();
 }
 
-async function notifyAdmin(title: string, o: any, extraRows: Row[] = []): Promise<void> {
+async function notifyAdmin(type: NoticeType, headline: string, o: any, extraRows: Row[] = []): Promise<void> {
   const rows: Row[] = [
     ['Order', o.id],
     ['Clinic', o.clinic],
@@ -456,20 +563,24 @@ async function notifyAdmin(title: string, o: any, extraRows: Row[] = []): Promis
     ['Deadline', o.deadline],
     ...extraRows,
   ];
-  await pushAdmins('orders', flexCard({
-    title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_URL,
-    altText: title + ' · ' + o.id + ' · ' + (o.clinic || ''),
+  await pushAdmins('orders', adminCard({
+    type, headline, rows, url: SITE_ADMIN_URL,
+    altExtra: o.id + ' · ' + (o.clinic || ''),
   }));
 }
 
 // 직원이 처리한 주문 일 → 연결된 그룹에만 (예: "✔ Confirmed by Ken")
 const TEAM_ACTION_TITLES: Record<string, string> = {
-  confirmed: '✔ Confirmed by {name}',
-  design_ready: '🎨 Design uploaded by {name}',
-  milling: '⚙️ Milling started by {name}',
-  shipped: '🚚 Shipped by {name}',
-  done: '📦 Marked as delivered by {name}',
-  cancelled: '❌ Cancelled & refunded by {name}',
+  confirmed: 'Confirmed by {name}',
+  design_ready: 'Design uploaded by {name}',
+  milling: 'Milling started by {name}',
+  shipped: 'Shipped by {name}',
+  done: 'Marked as delivered by {name}',
+  cancelled: 'Cancelled & refunded by {name}',
+};
+const TEAM_ACTION_TYPES: Record<string, NoticeType> = {
+  confirmed: 'order_confirmed', design_ready: 'design_uploaded', milling: 'milling',
+  shipped: 'shipped', done: 'marked_done', cancelled: 'cancelled',
 };
 
 // 이번 변경에서 관리자가 새로 붙인 기록의 처리자 이름 (없으면 빈 글자)
@@ -494,9 +605,9 @@ async function notifyTeamAction(record: any, old: any, except: string[] = []): P
     rows.push(['Tracking', [record.carrier, record.tracking_number].filter(Boolean).join(' ')]);
   }
   if (last && last.note) rows.push(['Note', String(last.note)]);
-  await pushAdmins('orders', flexCard({
-    title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_URL,
-    altText: title + ' · ' + record.id,
+  await pushAdmins('orders', adminCard({
+    type: TEAM_ACTION_TYPES[record.stage], headline: title, rows, url: SITE_ADMIN_URL,
+    altExtra: record.id + ' · ' + title,
   }), true, except);
 }
 
@@ -505,11 +616,14 @@ async function notifyTeamAction(record: any, old: any, except: string[] = []): P
 // 고객 알림 (고객 언어)
 // ================================================================
 const COPY_ORDER_TITLES: Record<string, string> = {
-  confirmed: '✔ Order confirmed',
-  design: '🎨 Design ready — waiting for customer review',
-  milling: '⚙️ Milling started',
-  shipped: '🚚 Order shipped',
-  cancel: '❌ Order cancelled by admin — credits refunded',
+  confirmed: 'Order confirmed',
+  design: 'Design ready — waiting for customer review',
+  milling: 'Milling started',
+  shipped: 'Order shipped',
+  cancel: 'Order cancelled by admin — credits refunded',
+};
+const COPY_ORDER_TYPES: Record<string, NoticeType> = {
+  confirmed: 'order_confirmed', design: 'design_uploaded', milling: 'milling', shipped: 'shipped', cancel: 'cancelled',
 };
 
 // 주문 단계 알림 → 고객(연결돼 있으면) + 관리자 사본. 사본을 받은 곳 목록을 돌려줘요
@@ -556,7 +670,7 @@ async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' |
     if (reason) rows.push(['Reason', reason]);
     rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
   }
-  return await sendCustomerCopy(o.user_id, p, COPY_ORDER_TITLES[kind], rows, SITE_ADMIN_URL, actor);
+  return await sendCustomerCopy(o.user_id, p, COPY_ORDER_TYPES[kind], COPY_ORDER_TITLES[kind], rows, SITE_ADMIN_URL, actor);
 }
 
 // 남은 잔액 (credit_wallets, 서버 관리 키로 읽기). 못 읽으면 null
@@ -586,11 +700,14 @@ async function isAdminCancelRefund(orderId: string): Promise<boolean> {
 //   charge 💳 크레딧 충전 (수량, 남은 잔액) — 충전 승인이면 사본에 승인한 직원 이름
 //   expire ⌛ 크레딧 만료
 const COPY_CREDIT_TITLES: Record<string, string> = {
-  use: '📝 Order received — credits used',
-  refund: '↩️ Credits refunded',
-  adjust: '➖ Credits adjusted',
-  charge: '💳 Credits added',
-  expire: '⌛ Credits expired',
+  use: 'Order received — credits used',
+  refund: 'Credits refunded',
+  adjust: 'Credits adjusted',
+  charge: 'Credits added',
+  expire: 'Credits expired',
+};
+const COPY_CREDIT_TYPES: Record<string, NoticeType> = {
+  use: 'credits_used', refund: 'refund', adjust: 'adjust', charge: 'charge', expire: 'expire',
 };
 
 // 충전 묶음이면 그 충전 요청 { id, reviewed_by } (보너스 지급이면 null)
@@ -667,7 +784,7 @@ async function notifyCredit(h: any): Promise<void> {
   if (desc && type !== 'use') rows.push(['Note', desc]);
   rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
   if (h.order_id) url = SITE_ADMIN_URL;
-  await sendCustomerCopy(h.user_id, p, COPY_CREDIT_TITLES[type], rows, url, actor);
+  await sendCustomerCopy(h.user_id, p, COPY_CREDIT_TYPES[type], COPY_CREDIT_TITLES[type], rows, url, actor);
 }
 
 
@@ -701,12 +818,11 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
   if (type === 'INSERT') {
     const p = await getProfile(rec.user_id);
     const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
-    const title = '💰 Top-up request';
-    await pushAdmins('topups', flexCard({
-      title, body: 'Please check the payment slip and approve or reject.',
+    await pushAdmins('topups', adminCard({
+      type: 'topup_request', body: 'Please check the payment slip and approve or reject.',
       rows: [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
-      buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL,
-      altText: title + ' · ' + rec.id + ' · ' + who + ' · ' + thb(rec.total),
+      url: SITE_ADMIN_TOPUPS_URL,
+      altExtra: rec.id + ' · ' + who + ' · ' + thb(rec.total),
     }));
     return;
   }
@@ -720,12 +836,13 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
     if (name) {
       const p = await getProfile(rec.user_id);
       const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
-      const title = (rec.status === 'approved' ? '💰 Top-up approved by ' : '🚫 Top-up rejected by ') + clean(name, 60);
+      const title = (rec.status === 'approved' ? 'Top-up approved by ' : 'Top-up rejected by ') + clean(name, 60);
       const rows: Row[] = [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]];
       if (rec.status === 'rejected') rows.push(['Reason', rec.reject_reason]);
       const copyTargets = await adminTargets('customer_copy', true);
-      await pushAdmins('topups', flexCard({
-        title, rows, buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
+      await pushAdmins('topups', adminCard({
+        type: rec.status === 'approved' ? 'topup_approved' : 'topup_rejected', headline: title, rows, url: SITE_ADMIN_TOPUPS_URL,
+        altExtra: rec.id + ' · ' + title,
       }), true, copyTargets);
     }
   }
@@ -742,16 +859,16 @@ async function handleTopup(type: string, rec: any, old: any): Promise<void> {
         altText: x.topup_rejected_title + ' · ' + rec.id,
       }));
     }
-    await sendCustomerCopy(rec.user_id, p, '🚫 Top-up request rejected',
+    await sendCustomerCopy(rec.user_id, p, 'topup_rejected', 'Top-up request rejected',
       [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)], ['Reason', rec.reject_reason]],
       SITE_ADMIN_TOPUPS_URL, await memberName(rec.reviewed_by));
     return;
   }
   if (rec.status === 'cancelled') {
-    const title = '↩️ Top-up request cancelled by customer';
-    await pushAdmins('topups', flexCard({
-      title, rows: [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
-      buttonLabel: 'Open admin', url: SITE_ADMIN_TOPUPS_URL, altText: title + ' · ' + rec.id,
+    await pushAdmins('topups', adminCard({
+      type: 'topup_cancelled', headline: 'Top-up request cancelled by customer',
+      rows: [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
+      url: SITE_ADMIN_TOPUPS_URL, altExtra: rec.id,
     }));
   }
 }
@@ -776,7 +893,7 @@ async function handleReminder(payload: any): Promise<void> {
       altText: title,
     }));
   }
-  await sendCustomerCopy(payload.user_id, p, '⏰ ' + n + ' credits expire in ' + days + ' days',
+  await sendCustomerCopy(payload.user_id, p, 'expiry_reminder', n + ' credits expire in ' + days + ' days',
     [['Credits', String(n)], ['Valid until', date], ['Balance', balance == null ? '—' : String(balance) + ' credits']],
     SITE_ADMIN_CUSTOMERS_URL);
 }
@@ -789,13 +906,12 @@ async function handleDeletionRequest(rec: any): Promise<void> {
   const balance = await getBalance(rec.user_id);
   const { count } = await db.from('cnc_orders').select('id', { count: 'exact', head: true })
     .eq('user_id', rec.user_id).not('stage', 'in', '(done,cancelled)');
-  const title = '🗑 Account deletion request';
-  await pushAdmins('account', flexCard({
-    title,
+  await pushAdmins('account', adminCard({
+    type: 'account_deletion',
     body: 'Check open orders, remaining credits and tax records before deleting the account (Admin → Customers).',
     rows: [['Customer', who], ['Open orders', String(count ?? 0)], ['Credits', String(balance ?? 0)], ['Reason', rec.reason]],
-    buttonLabel: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL,
-    altText: title + ' · ' + who,
+    url: SITE_ADMIN_CUSTOMERS_URL,
+    altExtra: who,
   }));
 }
 
@@ -835,7 +951,7 @@ async function handle(payload: any): Promise<void> {
 
   // 새 주문 → 관리자만 (고객에게는 credit_history 'use' 로 "주문 접수 완료"를 보내요 — 중복 방지)
   if (type === 'INSERT') {
-    await notifyAdmin('🆕 New order', record);
+    await notifyAdmin('new_order', '', record);
     return;
   }
 
@@ -851,20 +967,20 @@ async function handle(payload: any): Promise<void> {
   switch (to) {
     // 관리자에게
     case 'approved':
-      await notifyAdmin('✅ Customer approved the design', record);
+      await notifyAdmin('approved', 'Customer approved the design', record);
       break;
     case 'design_revision':
-      await notifyAdmin('✏️ Customer requested design changes', record, [['Request', lastRevisionNote(record.review_history)]]);
+      await notifyAdmin('revision', 'Customer requested design changes', record, [['Change request', lastRevisionNote(record.review_history)]]);
       break;
     case 'done': {
       const last = lastEntry(record.review_history);
       if (last && last.action === 'marked_done') break;   // 관리자가 직접 완료 처리한 경우는 알리지 않아요
-      await notifyAdmin('📦 Customer received the order', record);
+      await notifyAdmin('received', 'Customer received the order', record);
       break;
     }
     case 'cancelled':
       if (isAdminCancel(record.review_history)) copied = await notifyCustomer(record, 'cancel', actor);
-      else await notifyAdmin('❌ Customer cancelled the order', record, [['Refunded', String(record.credits_used ?? 0) + ' credits']]);
+      else await notifyAdmin('cancelled', 'Customer cancelled the order', record, [['Refunded', String(record.credits_used ?? 0) + ' credits']]);
       break;
 
     // 고객에게 (+ 관리자 사본)

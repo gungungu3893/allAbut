@@ -1888,6 +1888,13 @@ body.consent-open { overflow: hidden; }
 .lg-item-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
 .lg-name { margin: 0; }
 .lg-cats { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+/* 알림 색 안내 */
+.lg-legend { margin: 4px 0 14px; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.lg-legend summary { cursor: pointer; font-weight: 700; color: var(--navy); min-height: 32px; display: flex; align-items: center; }
+.lg-legend-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 16px; }
+.lg-legend-list li { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: var(--navy); }
+.lg-chip { flex: 0 0 auto; width: 22px; height: 16px; border-radius: 4px; }
+.lg-chip-copy { background: #fff; border: 3px solid #0E7490; }
 
 @media (min-width: 640px) {
   .activity-tools { grid-template-columns: 1fr 1fr 1.4fr; align-items: end; }

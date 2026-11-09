@@ -986,6 +986,18 @@ LANG.tr = {
   admin_line_linked: 'LINE bağlı',
   admin_line_unlinked: 'LINE yok',
 
+  // ----- 알림 색 안내 -----
+  lg_legend_title: 'Bildirim renkleri',
+  lg_legend_new: 'Yeni sipariş · sipariş alındı',
+  lg_legend_good: 'Tasarım onaylandı · teslim alındı',
+  lg_legend_revision: 'Değişiklik talebi',
+  lg_legend_cancel: 'Sipariş iptali · hesap silme',
+  lg_legend_money: 'Yükleme talebi · kredi eklendi',
+  lg_legend_refund: 'İade · kredi düzeltmesi',
+  lg_legend_gray: 'Süresi doldu · süre hatırlatması · yükleme reddedildi/iptal',
+  lg_legend_team: 'Personel işlemi (onay · tasarım · frezeleme · kargo)',
+  lg_legend_copy: 'Beyaz başlık + renkli çerçeve = müşteri bildirimi kopyası',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -986,6 +986,18 @@ LANG.vi = {
   admin_line_linked: 'Đã kết nối LINE',
   admin_line_unlinked: 'Chưa kết nối LINE',
 
+  // ----- 알림 색 안내 -----
+  lg_legend_title: 'Màu thông báo',
+  lg_legend_new: 'Đơn mới · đã nhận đơn',
+  lg_legend_good: 'Đã duyệt thiết kế · đã nhận hàng',
+  lg_legend_revision: 'Yêu cầu sửa',
+  lg_legend_cancel: 'Hủy đơn · xóa tài khoản',
+  lg_legend_money: 'Yêu cầu nạp · đã cộng credit',
+  lg_legend_refund: 'Hoàn tiền · điều chỉnh credit',
+  lg_legend_gray: 'Hết hạn · sắp hết hạn · từ chối/hủy nạp',
+  lg_legend_team: 'Nhân viên xử lý (xác nhận · thiết kế · gia công · gửi hàng)',
+  lg_legend_copy: 'Tiêu đề trắng + viền màu = bản sao thông báo khách hàng',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

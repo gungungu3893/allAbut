@@ -986,6 +986,18 @@ LANG.zh = {
   admin_line_linked: '已连接 LINE',
   admin_line_unlinked: '未连接 LINE',
 
+  // ----- 알림 색 안내 -----
+  lg_legend_title: '通知颜色说明',
+  lg_legend_new: '新订单 · 订单已接收',
+  lg_legend_good: '设计已批准 · 已收货',
+  lg_legend_revision: '修改请求',
+  lg_legend_cancel: '订单取消 · 账户删除',
+  lg_legend_money: '充值申请 · 点数已充值',
+  lg_legend_refund: '退款 · 点数调整',
+  lg_legend_gray: '已过期 · 即将过期 · 充值被拒/取消',
+  lg_legend_team: '员工处理（确认 · 设计 · 加工 · 发货）',
+  lg_legend_copy: '白色标题 + 彩色边框 = 客户通知副本',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

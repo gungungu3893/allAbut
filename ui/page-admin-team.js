@@ -392,7 +392,8 @@ Object.assign(PageAdmin, {
 
     var html = '<div class="card-head"><h2 class="card-title"><span class="line-logo" aria-hidden="true">LINE</span> ' + escHtml(t('lg_title')) + '</h2>' +
       '<button type="button" class="btn btn-line" onclick="PageAdmin.createGroupCode()">' + escHtml(t('lg_create_code')) + '</button></div>' +
-      '<p class="card-desc">' + escHtml(t('lg_desc')) + '</p>';
+      '<p class="card-desc">' + escHtml(t('lg_desc')) + '</p>' +
+      this.lgLegendHtml();
 
     // 코드 상자
     if (lg.code) {
@@ -440,6 +441,16 @@ Object.assign(PageAdmin, {
       }).join('') + '</ul>';
     }
     box.innerHTML = html;
+  },
+
+  // 알림 색 안내 (색 칩 + 종류)
+  lgLegendHtml: function () {
+    return '<details class="lg-legend" open><summary>' + escHtml(t('lg_legend_title')) + '</summary>' +
+      '<ul class="lg-legend-list">' + ADMIN_NOTICE_LEGEND.map(function (x) {
+        return '<li><span class="lg-chip" style="background:' + x.color + '" aria-hidden="true"></span>' + escHtml(t(x.key)) + '</li>';
+      }).join('') +
+      '<li><span class="lg-chip lg-chip-copy" aria-hidden="true"></span>' + escHtml(t('lg_legend_copy')) + '</li>' +
+      '</ul></details>';
   },
 
   groupById: function (id) {

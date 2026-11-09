@@ -96,7 +96,20 @@ async function cncAdminListAudit(filters) {
 // 관리자 LINE 알림 대상 · 그룹 코드 (owner)
 // ----------------------------------------------------------------
 var NOTIFY_CATEGORIES = ['orders', 'topups', 'account', 'customer_copy'];   // customer_copy: 고객 알림 사본 (sql/006)
-var GROUP_CODE_POLL_MS = 5000;     // 5초마다 연결됐는지 확인
+var GROUP_CODE_POLL_MS = 5000;   // 5초마다 연결됐는지 확인
+
+// 관리자 LINE 알림 카드 색 안내 (Settings → LINE groups 의 범례)
+// ⚠️ supabase/functions/line-notify/index.ts 의 ADMIN_NOTICE_STYLES 색과 같게 맞춰 주세요
+var ADMIN_NOTICE_LEGEND = [
+  { color: '#1D4ED8', key: 'lg_legend_new' },
+  { color: '#15803D', key: 'lg_legend_good' },
+  { color: '#EA580C', key: 'lg_legend_revision' },
+  { color: '#B91C1C', key: 'lg_legend_cancel' },
+  { color: '#B8860B', key: 'lg_legend_money' },
+  { color: '#7C3AED', key: 'lg_legend_refund' },
+  { color: '#4B5563', key: 'lg_legend_gray' },
+  { color: '#0E7490', key: 'lg_legend_team' }
+];
 
 async function cncAdminListNotifyTargets() {
   return cncCheck(await sb.from('admin_notify_targets').select('*').order('created_at', { ascending: true })) || [];

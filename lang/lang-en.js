@@ -986,6 +986,18 @@ LANG.en = {
   admin_line_linked: 'LINE connected',
   admin_line_unlinked: 'No LINE',
 
+  // ----- 알림 색 안내 -----
+  lg_legend_title: 'Notification colours',
+  lg_legend_new: 'New order · order received',
+  lg_legend_good: 'Design approved · received',
+  lg_legend_revision: 'Revision request',
+  lg_legend_cancel: 'Order cancelled · account deletion',
+  lg_legend_money: 'Top-up request · credits added',
+  lg_legend_refund: 'Refund · credit adjusted',
+  lg_legend_gray: 'Expired · expiry reminder · top-up rejected or cancelled',
+  lg_legend_team: 'Staff progress (confirmed · design · milling · shipped)',
+  lg_legend_copy: 'White header with coloured border = copy of a customer notice',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
