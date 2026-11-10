@@ -996,7 +996,7 @@ LANG.ar = {
   lg_legend_refund: 'استرداد · تعديل الرصيد',
   lg_legend_gray: 'منتهي · تذكير بالانتهاء · رفض/إلغاء الشحن',
   lg_legend_team: 'إجراء الموظفين (تأكيد · تصميم · تفريز · شحن)',
-  lg_legend_copy: 'ترويسة بيضاء بإطار ملوّن = نسخة من إشعار العميل',
+  lg_legend_copy: 'وسم "COPY OF CUSTOMER NOTICE" = نسخة من إشعار العميل',
 
   // ----- 회사소개 #/about -----
   about_nav: 'من نحن',

@@ -98,7 +98,7 @@ async function cncAdminListAudit(filters) {
 var NOTIFY_CATEGORIES = ['orders', 'topups', 'account', 'customer_copy'];   // customer_copy: 고객 알림 사본 (sql/006)
 var GROUP_CODE_POLL_MS = 5000;   // 5초마다 연결됐는지 확인
 
-// 관리자 LINE 알림 카드 색 안내 (Settings → LINE groups 의 범례)
+// 관리자 LINE 알림 카드 색 안내 (Settings → LINE groups 의 범례) — 영수증 카드의 제목 글씨 색
 // ⚠️ supabase/functions/line-notify/index.ts 의 ADMIN_NOTICE_STYLES 색과 같게 맞춰 주세요
 var ADMIN_NOTICE_LEGEND = [
   { color: '#1D4ED8', key: 'lg_legend_new' },

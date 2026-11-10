@@ -116,7 +116,9 @@ Supabase 대시보드 → **Database** → **Webhooks** (또는 **Integrations �
 4. "✅ 연결되었어요" 답장이 오면 성공 → 웹에서 **I've sent it — check status** → **Connected to LINE** 표시
 
 ### 5-2. 알림 테스트
-1. 고객 계정으로 새 주문 제출 → **관리자 LINE** 에 🆕 New order 카드
+1. 고객 계정으로 새 주문 제출 → **관리자 LINE** 에 흰 영수증 모양 "New order" 카드 (파랑 제목, 맨 위 로고)
+   - 맨 위 로고가 안 보이면: 브라우저에서 `https://allabut.com/assets/brand/line-icon.png` 가 열리는지 확인 (사이트 배포가 끝나야 보여요)
+   - 카드 모양 샘플: `docs/flex-samples/` (LINE Flex Message Simulator 에 붙여서 미리보기)
 2. 관리자 화면에서 **Confirm order** → **고객 LINE** 에 "주문이 확인되었어요"
 3. **Upload design** → 고객 LINE 에 "디자인을 확인해 주세요"
 4. 고객이 **디자인 승인** → 관리자 LINE 에 ✅ / **수정 요청** → ✏️ + 사유

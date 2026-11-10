@@ -996,7 +996,7 @@ LANG.ko = {
   lg_legend_refund: '환불 · 크레딧 조정',
   lg_legend_gray: '만료 · 만료 예정 · 충전 거절/취소',
   lg_legend_team: '직원 처리 (확인 · 디자인 · 가공 · 발송)',
-  lg_legend_copy: '흰 헤더 + 색 테두리 = 고객 알림 사본',
+  lg_legend_copy: '"COPY OF CUSTOMER NOTICE" 표시 = 고객 알림 사본',
 
   // ----- 회사소개 #/about -----
   about_nav: '회사소개',

@@ -996,7 +996,7 @@ LANG.vi = {
   lg_legend_refund: 'Hoàn tiền · điều chỉnh credit',
   lg_legend_gray: 'Hết hạn · sắp hết hạn · từ chối/hủy nạp',
   lg_legend_team: 'Nhân viên xử lý (xác nhận · thiết kế · gia công · gửi hàng)',
-  lg_legend_copy: 'Tiêu đề trắng + viền màu = bản sao thông báo khách hàng',
+  lg_legend_copy: 'Nhãn "COPY OF CUSTOMER NOTICE" = bản sao thông báo khách hàng',
 
   // ----- 회사소개 #/about -----
   about_nav: 'Giới thiệu',

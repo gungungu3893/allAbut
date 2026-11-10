@@ -996,7 +996,7 @@ LANG.en = {
   lg_legend_refund: 'Refund · credit adjusted',
   lg_legend_gray: 'Expired · expiry reminder · top-up rejected or cancelled',
   lg_legend_team: 'Staff progress (confirmed · design · milling · shipped)',
-  lg_legend_copy: 'White header with coloured border = copy of a customer notice',
+  lg_legend_copy: '"COPY OF CUSTOMER NOTICE" label = copy of a customer notice',
 
   // ----- 회사소개 #/about -----
   about_nav: 'About',

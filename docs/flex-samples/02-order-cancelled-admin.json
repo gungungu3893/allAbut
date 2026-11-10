@@ -1,0 +1,463 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "styles": {
+    "body": {
+      "backgroundColor": "#FFFFFF"
+    },
+    "footer": {
+      "backgroundColor": "#FFFFFF"
+    }
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "paddingAll": "20px",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://allabut.com/assets/brand/line-icon.png",
+        "size": "48px",
+        "aspectRatio": "1:1",
+        "aspectMode": "cover",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "Order cancelled",
+        "wrap": true,
+        "size": "lg",
+        "weight": "bold",
+        "color": "#B91C1C",
+        "align": "center",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "allAbut · Order notice",
+        "wrap": true,
+        "size": "xs",
+        "color": "#6B7280",
+        "align": "center",
+        "margin": "xs"
+      },
+      {
+        "type": "text",
+        "text": "CA261110-0012",
+        "wrap": true,
+        "size": "md",
+        "weight": "bold",
+        "color": "#111827",
+        "align": "center",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "10 NOV 2026 / 05:31 PM",
+        "wrap": true,
+        "size": "xs",
+        "color": "#6B7280",
+        "align": "center",
+        "margin": "xs"
+      },
+      {
+        "type": "separator",
+        "margin": "lg",
+        "color": "#E5E7EB"
+      },
+      {
+        "type": "text",
+        "text": "Customer cancelled the order. Credits were returned.",
+        "wrap": true,
+        "size": "sm",
+        "color": "#111827",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "Clinic",
+        "wrap": true,
+        "size": "sm",
+        "weight": "bold",
+        "color": "#111827",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": "Bright Smile Dental Clinic",
+            "wrap": true,
+            "size": "sm",
+            "weight": "bold",
+            "color": "#111827"
+          },
+          {
+            "type": "text",
+            "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
+            "wrap": true,
+            "size": "xs",
+            "color": "#6B7280",
+            "margin": "xs"
+          },
+          {
+            "type": "text",
+            "text": "02-123-4567",
+            "wrap": true,
+            "size": "xs",
+            "color": "#6B7280",
+            "margin": "xs"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "text": "Case",
+        "wrap": true,
+        "size": "sm",
+        "weight": "bold",
+        "color": "#111827",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "margin": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "Patient",
+                "wrap": true,
+                "size": "sm",
+                "color": "#6B7280",
+                "weight": "regular",
+                "flex": 5,
+                "gravity": "center"
+              },
+              {
+                "type": "text",
+                "text": "HN-20481",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "weight": "bold",
+                "align": "end",
+                "flex": 5,
+                "gravity": "center"
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "margin": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "Deadline",
+                "wrap": true,
+                "size": "sm",
+                "color": "#6B7280",
+                "weight": "regular",
+                "flex": 5,
+                "gravity": "center"
+              },
+              {
+                "type": "text",
+                "text": "2026-11-20",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "weight": "bold",
+                "align": "end",
+                "flex": 5,
+                "gravity": "center"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "text": "Teeth",
+        "wrap": true,
+        "size": "sm",
+        "weight": "bold",
+        "color": "#111827",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "margin": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "#36",
+                "wrap": true,
+                "size": "sm",
+                "weight": "bold",
+                "color": "#111827",
+                "flex": 2
+              },
+              {
+                "type": "text",
+                "text": "Osstem TS III",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "flex": 6
+              },
+              {
+                "type": "text",
+                "text": "A2",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "weight": "bold",
+                "align": "end",
+                "flex": 2
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "margin": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "#37",
+                "wrap": true,
+                "size": "sm",
+                "weight": "bold",
+                "color": "#111827",
+                "flex": 2
+              },
+              {
+                "type": "text",
+                "text": "Osstem TS III",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "flex": 6
+              },
+              {
+                "type": "text",
+                "text": "A2",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "weight": "bold",
+                "align": "end",
+                "flex": 2
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "margin": "sm",
+            "contents": [
+              {
+                "type": "text",
+                "text": "#46",
+                "wrap": true,
+                "size": "sm",
+                "weight": "bold",
+                "color": "#111827",
+                "flex": 2
+              },
+              {
+                "type": "text",
+                "text": "Straumann BLT",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "flex": 6
+              },
+              {
+                "type": "text",
+                "text": "A3",
+                "wrap": true,
+                "size": "sm",
+                "color": "#111827",
+                "weight": "bold",
+                "align": "end",
+                "flex": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "separator",
+        "margin": "lg",
+        "color": "#E5E7EB"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": "Credits used",
+            "wrap": true,
+            "size": "sm",
+            "color": "#6B7280",
+            "weight": "regular",
+            "flex": 5,
+            "gravity": "center"
+          },
+          {
+            "type": "text",
+            "text": "3",
+            "wrap": true,
+            "size": "sm",
+            "color": "#111827",
+            "weight": "bold",
+            "align": "end",
+            "flex": 5,
+            "gravity": "center"
+          }
+        ]
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": "Refunded",
+            "wrap": true,
+            "size": "sm",
+            "color": "#6B7280",
+            "weight": "regular",
+            "flex": 5,
+            "gravity": "center"
+          },
+          {
+            "type": "text",
+            "text": "+3",
+            "wrap": true,
+            "size": "sm",
+            "color": "#111827",
+            "weight": "bold",
+            "align": "end",
+            "flex": 5,
+            "gravity": "center"
+          }
+        ]
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#E5E7EB"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "spacing": "md",
+        "margin": "md",
+        "contents": [
+          {
+            "type": "text",
+            "text": "Credit balance",
+            "wrap": true,
+            "size": "md",
+            "color": "#111827",
+            "weight": "bold",
+            "flex": 1,
+            "gravity": "center"
+          },
+          {
+            "type": "text",
+            "text": "97",
+            "size": "xl",
+            "color": "#111827",
+            "weight": "bold",
+            "align": "end",
+            "flex": 0,
+            "gravity": "center"
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "paddingTop": "0px",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "borderWidth": "1px",
+        "borderColor": "#D1D5DB",
+        "cornerRadius": "8px",
+        "paddingAll": "12px",
+        "action": {
+          "type": "uri",
+          "label": "Open admin",
+          "uri": "https://allabut.com/#/admin/orders"
+        },
+        "contents": [
+          {
+            "type": "text",
+            "text": "Open admin",
+            "wrap": true,
+            "size": "sm",
+            "weight": "bold",
+            "color": "#111827",
+            "align": "center"
+          }
+        ]
+      },
+      {
+        "type": "separator",
+        "margin": "lg",
+        "color": "#E5E7EB"
+      },
+      {
+        "type": "text",
+        "text": "This is an automatic notification from allAbut.",
+        "wrap": true,
+        "size": "xxs",
+        "color": "#6B7280",
+        "align": "center",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "allAbut Co., Ltd. · Tax ID 0105569012345 · allabut.com",
+        "wrap": true,
+        "size": "xxs",
+        "color": "#6B7280",
+        "align": "center",
+        "margin": "xs"
+      }
+    ]
+  }
+}

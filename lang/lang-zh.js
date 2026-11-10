@@ -996,7 +996,7 @@ LANG.zh = {
   lg_legend_refund: '退款 · 点数调整',
   lg_legend_gray: '已过期 · 即将过期 · 充值被拒/取消',
   lg_legend_team: '员工处理（确认 · 设计 · 加工 · 发货）',
-  lg_legend_copy: '白色标题 + 彩色边框 = 客户通知副本',
+  lg_legend_copy: '“COPY OF CUSTOMER NOTICE” 标签 = 客户通知副本',
 
   // ----- 회사소개 #/about -----
   about_nav: '关于我们',

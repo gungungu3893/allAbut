@@ -996,7 +996,7 @@ LANG.fa = {
   lg_legend_refund: 'بازپرداخت · تنظیم اعتبار',
   lg_legend_gray: 'منقضی · یادآوری انقضا · رد/لغو شارژ',
   lg_legend_team: 'اقدام کارکنان (تأیید · طراحی · فرزکاری · ارسال)',
-  lg_legend_copy: 'سربرگ سفید با حاشیه رنگی = رونوشت اعلان مشتری',
+  lg_legend_copy: 'برچسب «COPY OF CUSTOMER NOTICE» = رونوشت اعلان مشتری',
 
   // ----- 회사소개 #/about -----
   about_nav: 'درباره ما',

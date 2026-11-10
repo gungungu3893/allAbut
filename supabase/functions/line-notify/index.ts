@@ -1,50 +1,40 @@
 // ================================================================
-// line-notify — allAbut DB → LINE 알림
+// line-notify — allAbut DB → LINE 알림 (영수증 스타일 카드)
 // ================================================================
-// Supabase Database Webhook 이 cnc_orders(INSERT·UPDATE), credit_history(INSERT) 가 바뀔 때 이 함수를 불러요.
+// Supabase Database Webhook 이 cnc_orders(INSERT·UPDATE), credit_history(INSERT), topup_requests(INSERT·UPDATE),
+// account_deletion_requests(INSERT) 가 바뀔 때, 그리고 만료 예정 예약 작업(EXPIRY_REMINDER)이 이 함수를 불러요.
 // 들어오는 값: { type: 'INSERT' | 'UPDATE', table, record, old_record }
 //
 // 보안: Verify JWT 는 끄고 배포해요. 대신 요청 헤더 x-notify-secret 이 NOTIFY_SECRET 과 같아야만 동작 (다르면 401)
 // 비밀값은 Deno.env.get() 으로만 읽어요. SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 는 Supabase 가 자동으로 넣어 주는 서버 전용 값.
-// 버튼 링크의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
+// 버튼 링크·로고 이미지의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
+//
+// ── 카드 모양: 모든 알림이 buildReceiptCard() 하나를 써요 (LINE MAN 영수증 같은 흰 카드) ──
+//   1) 상단 가운데: 로고 아이콘(SITE_URL/assets/brand/line-icon.png) → 제목(종류별 색 글씨) → "allAbut · Order notice"
+//      → (고객 알림 사본이면 "COPY OF CUSTOMER NOTICE") → 문서번호(주문·충전 요청 번호) → 날짜·시간(방콕) → 구분선
+//   2) 섹션(있는 것만): Clinic(치과명 + 주소·전화) / Case(환자·납기) / Teeth("#36  Osstem  A2", 최대 6줄 + "+n more") / 이벤트별 상세
+//   3) 합계(영수증의 Total 처럼): 작은 줄들 + 마지막 줄 크게 — 주문·크레딧은 "Credit balance 97", 충전은 "Total ฿21,935.00"
+//   4) 하단: 테두리만 있는 버튼 1개 + 구분선 아래 "This is an automatic notification from allAbut." + 회사명 · Tax ID · allabut.com
+//   altText(알림 미리보기) = "제목 · 문서번호" (사본은 앞에 "COPY · ")
 //
 // 관리자 알림 받는 곳 (sql/005_team.sql)
 //   - admin_notify_targets 중 active 이고 그 카테고리를 고른 곳 전부 (LINE 그룹·사용자)
-//       orders  : 주문 관련 / topups : 충전·환불 / account : 계정 삭제 요청
-//   - 알림 대상이 하나도 없으면(아직 그룹을 연결 안 했거나 005 를 실행 안 했으면) 예전처럼 LINE_ADMIN_USER_ID 로 (안전장치)
+//       orders  : 주문 관련 / topups : 충전·환불 / account : 계정 삭제 요청 / customer_copy : 고객 알림 사본 (sql/006)
+//   - 알림 대상이 하나도 없으면 예전처럼 LINE_ADMIN_USER_ID 로 (안전장치)
 //   - 직원이 처리한 일(확인·디자인 업로드·가공·발송·완료 처리·관리자 취소·충전 승인/거절)은
-//     연결된 그룹에만 짧게 "Confirmed by Ken" 처럼 알려요 (LINE_ADMIN_USER_ID 로는 보내지 않아요)
-//   - 고객 알림 사본 (카테고리 customer_copy, sql/006_customer_copy.sql):
-//     고객에게 가는 알림(확인·디자인·가공·발송·관리자 취소·충전·사용·환불·조정·만료·만료 예정·충전 거절)은
-//     고객 LINE 연결 여부와 상관없이 "📋 Customer notice copy" 카드로 관리자에게도 보내요
-//     (고객 · 이메일 · 내용 요약 · "✅ Sent to customer LINE" / "❌ Customer LINE not connected — contact directly" + 전화번호)
+//     연결된 그룹에만 "Confirmed by Ken" 카드 (LINE_ADMIN_USER_ID 로는 보내지 않아요)
+//   - 고객 알림 사본: 고객에게 가는 알림은 고객 LINE 연결 여부와 상관없이 관리자에게도 사본 카드
+//     (COPY OF CUSTOMER NOTICE 라벨, 고객 이메일, 처리자, LINE 미연결이면 빨간 글씨 + 전화번호)
 //     사본에 처리자 이름이 들어가는 일은, 사본을 받는 그룹에 "Confirmed by Ken" 카드를 따로 보내지 않아요 (중복 방지)
-//     대상이 하나도 없으면 LINE_ADMIN_USER_ID 로 (안전장치)
 //
-// 관리자 카드 색 (ADMIN_NOTICE_STYLES 한 곳에서 종류별 색·아이콘·라벨)
-//   헤더 배경 = 종류 색 + 큰 "🆕 NEW ORDER" + 오른쪽 작은 allAbut / 주요 값(주문번호·금액)·버튼도 같은 색
-//   고객 알림 사본: 흰 헤더 + 종류 색 굵은 테두리·글씨 "📋 COPY · 💳 CREDITS ADDED", 고객 LINE 미연결이면 본문 맨 위 빨간 띠
-//   altText(알림 미리보기)도 "🆕 NEW ORDER · CA261109-0012" 처럼 아이콘 + 라벨로 시작
-//   고객에게 가는 카드는 예전 디자인(네이비 헤더 + 골드 allAbut) 그대로
-//
-// 관리자에게 (영어)
-//   - 새 주문(INSERT)            🆕
-//   - stage → approved           ✅ 고객이 디자인 승인
-//   - stage → design_revision    ✏️ 수정 요청 + 사유
-//   - stage → done               📦 고객 수령 완료 (관리자가 직접 "Mark as delivered" 한 경우는 보내지 않음)
-//   - stage → cancelled (고객 취소) ❌
-// 고객(profiles.line_user_id, 연결 안 했으면 안 보냄)에게 (profiles.lang 언어, 9개 언어)
-//   - confirmed / design_ready / milling / shipped / 관리자 취소(환불 + 남은 잔액)
-//   - credit_history INSERT: use(주문 접수) / refund(환불) / adjust(조정) / charge(충전) — 모두 남은 잔액 포함
-//     (관리자 취소로 생긴 환불은 위 "관리자 취소" 카드에 이미 들어가서 따로 보내지 않아요)
-//   - credit_history 'expire': ⌛ 크레딧 만료 / 'charge' 에는 유효기간(만료일) 표시
-//   - topup_requests: INSERT → 관리자 💰 / rejected → 고객 (사유) / cancelled → 관리자
-//   - { type: 'EXPIRY_REMINDER', user_id, days, lots } (예약 작업) → 고객 ⏰ n개가 d일 후 만료
-//   - account_deletion_requests INSERT → 관리자 🗑 계정 삭제 요청 (진행 중 주문 수, 남은 크레딧)
+// 관리자에게 (영어): 새 주문 / 고객 디자인 승인 / 수정 요청(사유) / 고객 수령 / 고객 취소 / 충전 요청 / 충전 취소 / 계정 삭제 요청
+// 고객에게 (profiles.lang, 9개 언어, LINE 연결했을 때만): 확인 / 디자인 확인 요청 / 가공 / 발송 / 관리자 취소(환불 + 잔액)
+//   / 크레딧 use·refund·adjust·charge·expire / 충전 거절 / 만료 예정
 //
 // 원칙
-//   - UPDATE 인데 stage 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
+//   - UPDATE 인데 stage(또는 status) 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
 //   - LINE 전송이 실패해도 console.error 로 남기고 200 을 돌려줘요 (DB 작업을 막지 않게)
+//   - LINE Flex 의 text 는 빈 글자를 못 받아요 → 값이 빈 줄은 아예 빼요
 
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
@@ -58,55 +48,55 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 
 // 사이트 주소: Supabase Secrets 에 SITE_URL 이 있으면 그것, 없으면 정식 도메인 (끝의 / 는 떼요)
 const SITE_URL = (Deno.env.get('SITE_URL') || 'https://allabut.com').replace(/\/+$/, '');
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, '');
 const SITE_ORDERS_URL = SITE_URL + '/#/orders';
 const SITE_ADMIN_URL = SITE_URL + '/#/admin/orders';
 const SITE_ADMIN_TOPUPS_URL = SITE_URL + '/#/admin/topups';
 const SITE_ADMIN_CUSTOMERS_URL = SITE_URL + '/#/admin/customers';
 const SITE_TOPUP_URL = SITE_URL + '/#/topup';
 const SITE_PROFILE_URL = SITE_URL + '/#/profile';
+// 카드 맨 위 로고 (사이트에 올라가 있는 공개 이미지, 192×192 PNG — assets/brand/line-icon.png)
+const LOGO_URL = SITE_URL + '/assets/brand/line-icon.png';
 
-const NAVY = '#001D4A';
-const GOLD = '#D4AF37';
+// 영수증 카드 색
+const INK = '#111827';     // 진한 글씨
+const GRAY = '#6B7280';    // 회색 글씨
+const LINE_GRAY = '#E5E7EB'; // 구분선
+const NAVY = '#001D4A';    // 고객 알림 제목
+const RED = '#B91C1C';     // 고객 취소·거절 제목, LINE 미연결 경고
 
 // ================================================================
-// 관리자 알림 카드 종류별 색 · 아이콘 · 라벨 (색을 바꿀 때는 여기만 고치면 돼요)
+// 관리자 알림 종류별 제목 · 색 (색을 바꿀 때는 여기만 고치면 돼요)
 // ================================================================
+//   제목 글씨에만 색을 써요 (헤더를 색으로 채우지 않아요)
 //   파랑 = 새 주문·주문 접수 / 초록 = 고객 승인·수령 / 주황 = 수정 요청 / 빨강 = 취소·계정 삭제
 //   골드 = 충전 요청·충전 / 보라 = 환불·조정 / 회색 = 만료·만료 예정·충전 거절·충전 취소
 //   청록 = 직원 처리 진행(확인·디자인 업로드·가공·발송·완료 처리)
+//   ⚠️ 관리자 화면 범례 cnc/cnc-team.js 의 ADMIN_NOTICE_LEGEND 색과 같게 맞춰 주세요
 const ADMIN_NOTICE_STYLES = {
-  new_order:        { color: '#1D4ED8', icon: '🆕', label: 'NEW ORDER' },
-  credits_used:     { color: '#1D4ED8', icon: '📝', label: 'ORDER RECEIVED' },
-  approved:         { color: '#15803D', icon: '✅', label: 'DESIGN APPROVED' },
-  received:         { color: '#15803D', icon: '📦', label: 'RECEIVED' },
-  revision:         { color: '#EA580C', icon: '✏️', label: 'REVISION REQUEST' },
-  cancelled:        { color: '#B91C1C', icon: '❌', label: 'ORDER CANCELLED' },
-  account_deletion: { color: '#B91C1C', icon: '🗑', label: 'ACCOUNT DELETION' },
-  topup_request:    { color: '#B8860B', icon: '💰', label: 'TOP-UP REQUEST' },
-  topup_approved:   { color: '#B8860B', icon: '💰', label: 'TOP-UP APPROVED' },
-  charge:           { color: '#B8860B', icon: '💳', label: 'CREDITS ADDED' },
-  refund:           { color: '#7C3AED', icon: '↩️', label: 'REFUND' },
-  adjust:           { color: '#7C3AED', icon: '➖', label: 'CREDIT ADJUSTED' },
-  expire:           { color: '#4B5563', icon: '⌛', label: 'CREDITS EXPIRED' },
-  expiry_reminder:  { color: '#4B5563', icon: '⏰', label: 'EXPIRY REMINDER' },
-  topup_rejected:   { color: '#4B5563', icon: '🚫', label: 'TOP-UP REJECTED' },
-  topup_cancelled:  { color: '#4B5563', icon: '🚫', label: 'TOP-UP CANCELLED' },
-  order_confirmed:  { color: '#0E7490', icon: '✔', label: 'ORDER CONFIRMED' },
-  design_uploaded:  { color: '#0E7490', icon: '🎨', label: 'DESIGN UPLOADED' },
-  milling:          { color: '#0E7490', icon: '⚙️', label: 'MILLING STARTED' },
-  shipped:          { color: '#0E7490', icon: '🚚', label: 'SHIPPED' },
-  marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED' },
+  new_order:        { color: '#1D4ED8', icon: '🆕', label: 'NEW ORDER',        title: 'New order' },
+  credits_used:     { color: '#1D4ED8', icon: '📝', label: 'ORDER RECEIVED',   title: 'Order received' },
+  approved:         { color: '#15803D', icon: '✅', label: 'DESIGN APPROVED',  title: 'Design approved' },
+  received:         { color: '#15803D', icon: '📦', label: 'RECEIVED',         title: 'Order received by customer' },
+  revision:         { color: '#EA580C', icon: '✏️', label: 'REVISION REQUEST', title: 'Revision request' },
+  cancelled:        { color: '#B91C1C', icon: '❌', label: 'ORDER CANCELLED',  title: 'Order cancelled' },
+  account_deletion: { color: '#B91C1C', icon: '🗑', label: 'ACCOUNT DELETION', title: 'Account deletion request' },
+  topup_request:    { color: '#B8860B', icon: '💰', label: 'TOP-UP REQUEST',   title: 'Top-up request' },
+  topup_approved:   { color: '#B8860B', icon: '💰', label: 'TOP-UP APPROVED',  title: 'Top-up approved' },
+  charge:           { color: '#B8860B', icon: '💳', label: 'CREDITS ADDED',    title: 'Credits added' },
+  refund:           { color: '#7C3AED', icon: '↩️', label: 'REFUND',           title: 'Credits refunded' },
+  adjust:           { color: '#7C3AED', icon: '➖', label: 'CREDIT ADJUSTED',  title: 'Credits adjusted' },
+  expire:           { color: '#4B5563', icon: '⌛', label: 'CREDITS EXPIRED',  title: 'Credits expired' },
+  expiry_reminder:  { color: '#4B5563', icon: '⏰', label: 'EXPIRY REMINDER',  title: 'Credits expiring soon' },
+  topup_rejected:   { color: '#4B5563', icon: '🚫', label: 'TOP-UP REJECTED',  title: 'Top-up rejected' },
+  topup_cancelled:  { color: '#4B5563', icon: '🚫', label: 'TOP-UP CANCELLED', title: 'Top-up cancelled' },
+  order_confirmed:  { color: '#0E7490', icon: '✔', label: 'ORDER CONFIRMED',   title: 'Order confirmed' },
+  design_uploaded:  { color: '#0E7490', icon: '🎨', label: 'DESIGN UPLOADED',  title: 'Design ready for review' },
+  milling:          { color: '#0E7490', icon: '⚙️', label: 'MILLING STARTED',  title: 'Milling started' },
+  shipped:          { color: '#0E7490', icon: '🚚', label: 'SHIPPED',          title: 'Order shipped' },
+  marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED', title: 'Marked as delivered' },
 };
 type NoticeType = keyof typeof ADMIN_NOTICE_STYLES;
-
-// 같은 색으로 강조하는 값 (주문번호 · 금액 등)
-const ADMIN_HIGHLIGHT_ROWS = ['Order', 'Request', 'Top-up', 'Total', 'Credits', 'Refunded'];
-
-// "🆕 NEW ORDER" (사본은 "📋 COPY · 🆕 NEW ORDER")
-function noticeHeading(type: NoticeType, copy = false): string {
-  const st = ADMIN_NOTICE_STYLES[type];
-  return (copy ? '📋 COPY · ' : '') + st.icon + ' ' + st.label;
-}
 
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -114,7 +104,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 
 // ================================================================
-// 고객 메시지 문구 (9개 언어, 없는 언어는 en)
+// 고객 메시지 문구 (9개 언어, 없는 언어는 en) — 관리자·사본 카드는 en 을 써요
 // ================================================================
 type Texts = {
   open: string; order: string; patient: string; deadline: string; carrier: string; tracking: string;
@@ -304,116 +294,432 @@ function texts(lang: unknown): Texts {
   return (typeof lang === 'string' && T[lang]) ? T[lang] : T.en;
 }
 
+// 영수증 카드 문구 (9개 언어, 없는 언어는 en)
+type ReceiptTexts = {
+  notice_order: string; notice_credit: string; notice_topup: string;
+  sec_clinic: string; sec_case: string; sec_teeth: string; sec_details: string; sec_shipping: string;
+  more: string; credit_balance: string; subtotal: string; vat: string; paid: string;
+  view_order: string; view_credits: string; view_topup: string; auto_note: string;
+  added: string; adjusted: string; expired: string; package: string; unit_price: string;
+};
+const R: Record<string, ReceiptTexts> = {
+  en: {
+    notice_order: 'Order notice', notice_credit: 'Credit notice', notice_topup: 'Top-up notice',
+    sec_clinic: 'Clinic', sec_case: 'Case', sec_teeth: 'Teeth', sec_details: 'Details', sec_shipping: 'Shipping',
+    more: '+{n} more', credit_balance: 'Credit balance', subtotal: 'Subtotal', vat: 'VAT {r}%', paid: 'Paid',
+    view_order: 'View order', view_credits: 'View credits', view_topup: 'View top-up', auto_note: 'This is an automatic notification from allAbut.',
+    added: 'Credits added', adjusted: 'Adjusted', expired: 'Expired', package: 'Package', unit_price: 'Unit price',
+  },
+  ko: {
+    notice_order: '주문 알림', notice_credit: '크레딧 알림', notice_topup: '충전 알림',
+    sec_clinic: '치과', sec_case: '케이스', sec_teeth: '치아', sec_details: '상세', sec_shipping: '배송',
+    more: '+{n}개 더', credit_balance: '크레딧 잔액', subtotal: '공급가액', vat: 'VAT {r}%', paid: '결제 금액',
+    view_order: '주문 보기', view_credits: '크레딧 보기', view_topup: '충전 내역 보기', auto_note: 'allAbut 자동 알림입니다.',
+    added: '충전 크레딧', adjusted: '조정', expired: '만료', package: '패키지', unit_price: '단가',
+  },
+  th: {
+    notice_order: 'แจ้งเตือนคำสั่งงาน', notice_credit: 'แจ้งเตือนเครดิต', notice_topup: 'แจ้งเตือนการเติมเครดิต',
+    sec_clinic: 'คลินิก', sec_case: 'เคส', sec_teeth: 'ซี่ฟัน', sec_details: 'รายละเอียด', sec_shipping: 'การจัดส่ง',
+    more: '+อีก {n} รายการ', credit_balance: 'เครดิตคงเหลือ', subtotal: 'ยอดก่อน VAT', vat: 'VAT {r}%', paid: 'ยอดชำระ',
+    view_order: 'ดูคำสั่งงาน', view_credits: 'ดูเครดิต', view_topup: 'ดูการเติมเครดิต', auto_note: 'นี่คือการแจ้งเตือนอัตโนมัติจาก allAbut',
+    added: 'เครดิตที่เติม', adjusted: 'ปรับปรุง', expired: 'หมดอายุ', package: 'แพ็กเกจ', unit_price: 'ราคาต่อหน่วย',
+  },
+  zh: {
+    notice_order: '订单通知', notice_credit: '积分通知', notice_topup: '充值通知',
+    sec_clinic: '诊所', sec_case: '病例', sec_teeth: '牙位', sec_details: '详情', sec_shipping: '配送',
+    more: '另有 {n} 项', credit_balance: '积分余额', subtotal: '小计', vat: '增值税 {r}%', paid: '已付金额',
+    view_order: '查看订单', view_credits: '查看积分', view_topup: '查看充值', auto_note: '这是 allAbut 的自动通知。',
+    added: '充值积分', adjusted: '调整', expired: '过期', package: '套餐', unit_price: '单价',
+  },
+  vi: {
+    notice_order: 'Thông báo đơn hàng', notice_credit: 'Thông báo tín dụng', notice_topup: 'Thông báo nạp tín dụng',
+    sec_clinic: 'Phòng khám', sec_case: 'Ca', sec_teeth: 'Răng', sec_details: 'Chi tiết', sec_shipping: 'Giao hàng',
+    more: '+{n} mục khác', credit_balance: 'Số dư tín dụng', subtotal: 'Tạm tính', vat: 'VAT {r}%', paid: 'Đã thanh toán',
+    view_order: 'Xem đơn hàng', view_credits: 'Xem tín dụng', view_topup: 'Xem yêu cầu nạp', auto_note: 'Đây là thông báo tự động từ allAbut.',
+    added: 'Tín dụng đã nạp', adjusted: 'Điều chỉnh', expired: 'Hết hạn', package: 'Gói', unit_price: 'Đơn giá',
+  },
+  es: {
+    notice_order: 'Aviso de pedido', notice_credit: 'Aviso de créditos', notice_topup: 'Aviso de recarga',
+    sec_clinic: 'Clínica', sec_case: 'Caso', sec_teeth: 'Dientes', sec_details: 'Detalles', sec_shipping: 'Envío',
+    more: '+{n} más', credit_balance: 'Saldo de créditos', subtotal: 'Subtotal', vat: 'IVA {r}%', paid: 'Pagado',
+    view_order: 'Ver pedido', view_credits: 'Ver créditos', view_topup: 'Ver recarga', auto_note: 'Esta es una notificación automática de allAbut.',
+    added: 'Créditos añadidos', adjusted: 'Ajuste', expired: 'Vencidos', package: 'Paquete', unit_price: 'Precio unitario',
+  },
+  tr: {
+    notice_order: 'Sipariş bildirimi', notice_credit: 'Kredi bildirimi', notice_topup: 'Yükleme bildirimi',
+    sec_clinic: 'Klinik', sec_case: 'Vaka', sec_teeth: 'Dişler', sec_details: 'Ayrıntılar', sec_shipping: 'Kargo',
+    more: '+{n} daha', credit_balance: 'Kredi bakiyesi', subtotal: 'Ara toplam', vat: 'KDV %{r}', paid: 'Ödenen',
+    view_order: 'Siparişi görüntüle', view_credits: 'Kredileri görüntüle', view_topup: 'Yüklemeyi görüntüle', auto_note: 'Bu, allAbut\'tan otomatik bir bildirimdir.',
+    added: 'Yüklenen kredi', adjusted: 'Düzeltme', expired: 'Süresi doldu', package: 'Paket', unit_price: 'Birim fiyat',
+  },
+  ar: {
+    notice_order: 'إشعار طلب', notice_credit: 'إشعار رصيد', notice_topup: 'إشعار شحن الرصيد',
+    sec_clinic: 'العيادة', sec_case: 'الحالة', sec_teeth: 'الأسنان', sec_details: 'التفاصيل', sec_shipping: 'الشحن',
+    more: '+{n} أخرى', credit_balance: 'الرصيد المتبقي', subtotal: 'المجموع الفرعي', vat: 'ضريبة القيمة المضافة {r}%', paid: 'المدفوع',
+    view_order: 'عرض الطلب', view_credits: 'عرض الرصيد', view_topup: 'عرض الشحن', auto_note: 'هذا إشعار تلقائي من allAbut.',
+    added: 'الرصيد المضاف', adjusted: 'تعديل', expired: 'منتهي', package: 'الباقة', unit_price: 'سعر الوحدة',
+  },
+  fa: {
+    notice_order: 'اعلان سفارش', notice_credit: 'اعلان اعتبار', notice_topup: 'اعلان شارژ',
+    sec_clinic: 'کلینیک', sec_case: 'کیس', sec_teeth: 'دندان‌ها', sec_details: 'جزئیات', sec_shipping: 'ارسال',
+    more: '+{n} مورد دیگر', credit_balance: 'موجودی اعتبار', subtotal: 'جمع جزء', vat: 'مالیات {r}%', paid: 'پرداخت‌شده',
+    view_order: 'مشاهده سفارش', view_credits: 'مشاهده اعتبار', view_topup: 'مشاهده شارژ', auto_note: 'این یک اعلان خودکار از allAbut است.',
+    added: 'اعتبار افزوده', adjusted: 'اصلاح', expired: 'منقضی', package: 'بسته', unit_price: 'قیمت واحد',
+  },
+};
+
+function rtexts(lang: unknown): ReceiptTexts {
+  return (typeof lang === 'string' && R[lang]) ? R[lang] : R.en;
+}
+
+// 관리자·사본 카드용 영어 문구 묶음
+const EN = { x: T.en, r: R.en };
+type Lang = { x: Texts; r: ReceiptTexts };
+function langOf(lang: unknown): Lang { return { x: texts(lang), r: rtexts(lang) }; }
+
 
 // ================================================================
-// Flex Message 카드
+// 도구
 // ================================================================
 type Row = [string, string];
 
-// LINE Flex 의 text 는 빈 글자를 받지 않아요 → '—'
-function clean(v: unknown, max = 300): string {
-  const s = String(v ?? '').trim();
-  return s ? s.slice(0, max) : '—';
+// 글자 정리 (빈 값이면 빈 글자)
+function str(v: unknown, max = 300): string {
+  return String(v ?? '').trim().slice(0, max);
 }
 
-function flexCard(opts: { title: string; body?: string; rows: Row[]; buttonLabel: string; url: string; altText: string; label?: string }) {
-  const contents: any[] = [];
-  // 맨 위 작은 라벨 (예: "📋 Customer notice copy")
-  if (opts.label) contents.push({ type: 'text', text: clean(opts.label, 60), size: 'xs', color: '#8A6D12', weight: 'bold', wrap: true });
-  contents.push({ type: 'text', text: clean(opts.title, 120), weight: 'bold', size: 'lg', color: NAVY, wrap: true, margin: opts.label ? 'sm' : 'none' });
-  if (opts.body) contents.push({ type: 'text', text: clean(opts.body, 1000), size: 'md', color: '#333333', wrap: true, margin: 'md' });
-  if (opts.rows.length) {
-    contents.push({ type: 'separator', margin: 'lg' });
-    contents.push({
-      type: 'box', layout: 'vertical', margin: 'lg', spacing: 'sm',
-      contents: opts.rows.map(([label, value]) => ({
-        type: 'box', layout: 'baseline', spacing: 'sm',
-        contents: [
-          { type: 'text', text: clean(label, 40), size: 'sm', color: '#6B7280', flex: 2, wrap: true },
-          { type: 'text', text: clean(value), size: 'sm', color: NAVY, weight: 'bold', flex: 4, wrap: true },
-        ],
-      })),
-    });
+// 문구 앞의 이모지·기호 떼기 ("📋 Order confirmed" → "Order confirmed") — 영수증 제목은 글자만
+function plainTitle(s: string): string {
+  return String(s || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
+
+// 값이 있는 줄만
+function rowsOf(rows: Row[]): Row[] {
+  return rows.filter((r) => str(r[0]) && str(r[1]));
+}
+
+function safeEqual(a: string, b: string): boolean {
+  if (!a || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// 날짜 'YYYY-MM-DD' (방콕 시간)
+function ymd(v: unknown): string {
+  const d = new Date(String(v ?? ''));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+}
+
+// 영수증 날짜·시간 (방콕): "10 NOV 2026 / 08:59 AM"
+function stamp(v?: unknown): string {
+  let d = v ? new Date(String(v)) : new Date();
+  if (isNaN(d.getTime())) d = new Date();
+  const p: Record<string, string> = {};
+  for (const x of new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Bangkok', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+  }).formatToParts(d)) p[x.type] = x.value;
+  return `${p.day} ${String(p.month).toUpperCase()} ${p.year} / ${p.hour}:${p.minute} ${String(p.dayPeriod || '').toUpperCase()}`;
+}
+
+// 금액: 21935 → "฿21,935.00"
+function baht(v: unknown): string {
+  const n = Number(v ?? 0);
+  return '฿' + (isFinite(n) ? n : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// VAT 비율 (vat_amount / subtotal) → 7
+function vatRate(subtotal: unknown, vat: unknown): number {
+  const s = Number(subtotal || 0), v = Number(vat || 0);
+  return s > 0 ? Math.round((v / s) * 100) : 7;
+}
+
+function signed(n: number): string {
+  return (n > 0 ? '+' : '') + String(n);
+}
+
+function lastEntry(history: unknown): any {
+  return Array.isArray(history) && history.length ? history[history.length - 1] : null;
+}
+
+// 관리자 취소인지: 마지막 두 줄 안에 관리자 취소 기록이 있으면
+function isAdminCancel(history: unknown): boolean {
+  if (!Array.isArray(history) || !history.length) return false;
+  const tail = history.slice(-2);
+  return tail.some((h: any) => h && (h.action === 'admin_cancelled' || (h.by === 'admin' && /cancel/.test(String(h.action || '')))));
+}
+
+// 관리자 취소 사유
+function adminCancelReason(history: unknown): string {
+  if (!Array.isArray(history)) return '';
+  const h = history.slice().reverse().find((e: any) => e && e.action === 'admin_cancelled');
+  return h ? str(h.note) : '';
+}
+
+// 가장 최근 수정 요청 사유
+function lastRevisionNote(history: unknown): string {
+  if (!Array.isArray(history)) return '';
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h: any = history[i];
+    if (h && h.action === 'rejected') return str(h.note);
   }
+  const last = lastEntry(history);
+  return last ? str(last.note) : '';
+}
+
+// 주문의 치아 목록 [{ tooth, brand, color }] (cases[0].teeth)
+function orderTeeth(o: any): { tooth: string; brand: string; shade: string }[] {
+  const c = Array.isArray(o?.cases) ? o.cases[0] : null;
+  const list = c && Array.isArray(c.teeth) ? c.teeth : [];
+  return list.map((t: any) => ({
+    tooth: str(t?.tooth ?? t?.number, 4),
+    brand: str(t?.brand, 40),
+    shade: str(t?.color ?? t?.shade, 12),
+  })).filter((t: any) => t.tooth);
+}
+
+
+// ================================================================
+// 영수증 카드 (모든 알림이 이것 하나를 써요)
+// ================================================================
+type ClinicInfo = {
+  name: string;                 // 굵게
+  lines?: string[];             // 주소·전화·이메일 (회색 작은 글씨)
+  warning?: string[];           // 빨간 작은 글씨 (사본: 고객 LINE 미연결)
+  info?: string;                // 회색 작은 글씨 한 줄 (사본: 고객 LINE 으로 보냄)
+};
+type Section = {
+  title?: string;
+  clinic?: ClinicInfo;
+  rows?: Row[];                 // 라벨 왼쪽 회색 / 값 오른쪽 진한 글씨
+  teeth?: { tooth: string; brand: string; shade: string }[];
+  moreTpl?: string;             // "+{n} more"
+  text?: string;                // 긴 글 (예: 수정 요청 사유)
+};
+type ReceiptOpts = {
+  title: string;                // 알림 종류 이름 (색 글씨)
+  color: string;
+  subtitle: string;             // "allAbut · Order notice"
+  copyLabel?: string;           // "COPY OF CUSTOMER NOTICE"
+  docNo?: string;               // 주문번호 · 충전 요청 번호
+  when?: unknown;               // 날짜·시간 (없으면 지금)
+  message?: string;             // 짧은 안내 글
+  sections: Section[];
+  totals?: { rows?: Row[]; final?: Row };
+  button: { label: string; url: string };
+  autoNote: string;             // "This is an automatic notification from allAbut."
+  company: string;              // "allAbut Co., Ltd. · Tax ID 0105… · allabut.com"
+  altPrefix?: string;           // altText 앞 (사본: "COPY · ")
+};
+
+function textNode(text: string, o: Record<string, unknown> = {}) {
+  return { type: 'text', text: str(text, 1000) || '—', wrap: true, ...o };
+}
+
+// 라벨 ─ 값 한 줄 (값은 오른쪽 정렬)
+function kvRow(label: string, value: string, o: { big?: boolean; color?: string } = {}) {
   return {
-    type: 'flex',
-    altText: clean(opts.altText, 380),
-    contents: {
-      type: 'bubble',
-      header: {
-        type: 'box', layout: 'vertical', backgroundColor: NAVY, paddingAll: '14px',
-        contents: [{ type: 'text', text: 'allAbut', color: GOLD, weight: 'bold', size: 'xl' }],
-      },
-      body: { type: 'box', layout: 'vertical', contents },
-      footer: {
-        type: 'box', layout: 'vertical',
-        contents: [{ type: 'button', style: 'primary', color: NAVY, height: 'sm', action: { type: 'uri', label: clean(opts.buttonLabel, 40), uri: opts.url } }],
-      },
-    },
+    type: 'box', layout: 'horizontal', spacing: 'md', margin: o.big ? 'md' : 'sm',
+    contents: [
+      textNode(label, { size: o.big ? 'md' : 'sm', color: o.big ? INK : GRAY, weight: o.big ? 'bold' : 'regular', flex: o.big ? 1 : 5, gravity: 'center' }),
+      // 마지막 큰 줄(합계·잔액)의 값은 글자 너비만큼 (flex 0) → 금액이 두 줄로 꺾이지 않아요
+      o.big
+        ? { type: 'text', text: str(value, 40) || '—', size: 'xl', color: o.color || INK, weight: 'bold', align: 'end', flex: 0, gravity: 'center' }
+        : textNode(value, { size: 'sm', color: o.color || INK, weight: 'bold', align: 'end', flex: 5, gravity: 'center' }),
+    ],
   };
 }
 
-// 관리자 카드 (종류별 색)
-//   type: ADMIN_NOTICE_STYLES 의 키 / headline: 본문 맨 위 한 줄 (없으면 생략) / copy: 고객 알림 사본 / unlinked: 고객 LINE 미연결 (사본만)
-function adminCard(opts: { type: NoticeType; headline?: string; body?: string; rows: Row[]; url: string; altExtra?: string; copy?: boolean; unlinked?: boolean; buttonLabel?: string }) {
-  const st = ADMIN_NOTICE_STYLES[opts.type];
-  const heading = noticeHeading(opts.type, !!opts.copy);
-  const header = opts.copy
-    // 사본: 흰 헤더 + 종류 색 굵은 테두리·글씨
-    ? {
-      type: 'box', layout: 'horizontal', backgroundColor: '#FFFFFF', borderColor: st.color, borderWidth: '3px', cornerRadius: '6px', paddingAll: '12px',
-      contents: [
-        { type: 'text', text: heading, color: st.color, weight: 'bold', size: 'md', wrap: true, flex: 5 },
-        { type: 'text', text: 'allAbut', color: st.color, size: 'xxs', align: 'end', gravity: 'top', flex: 2 },
-      ],
+function sectionNodes(s: Section): any[] {
+  const out: any[] = [];
+  const body: any[] = [];
+  if (s.clinic) {
+    body.push(textNode(s.clinic.name, { size: 'sm', weight: 'bold', color: INK }));
+    for (const l of (s.clinic.lines || []).filter((x) => str(x))) body.push(textNode(l, { size: 'xs', color: GRAY, margin: 'xs' }));
+    for (const w of (s.clinic.warning || []).filter((x) => str(x))) body.push(textNode(w, { size: 'xs', color: RED, weight: 'bold', margin: 'sm' }));
+    if (s.clinic.info) body.push(textNode(s.clinic.info, { size: 'xs', color: GRAY, margin: 'sm' }));
+  }
+  for (const [k, v] of rowsOf(s.rows || [])) body.push(kvRow(k, v));
+  if (s.teeth && s.teeth.length) {
+    const shown = s.teeth.slice(0, 6);
+    for (const t of shown) {
+      body.push({
+        type: 'box', layout: 'horizontal', spacing: 'md', margin: 'sm',
+        contents: [
+          textNode('#' + t.tooth, { size: 'sm', weight: 'bold', color: INK, flex: 2 }),
+          textNode(t.brand || '—', { size: 'sm', color: INK, flex: 6 }),
+          textNode(t.shade || '—', { size: 'sm', color: INK, weight: 'bold', align: 'end', flex: 2 }),
+        ],
+      });
     }
-    : {
-      type: 'box', layout: 'horizontal', backgroundColor: st.color, paddingAll: '14px',
-      contents: [
-        { type: 'text', text: heading, color: '#FFFFFF', weight: 'bold', size: 'lg', wrap: true, flex: 5 },
-        { type: 'text', text: 'allAbut', color: '#FFFFFF', size: 'xxs', align: 'end', gravity: 'top', flex: 2 },
-      ],
-    };
+    if (s.teeth.length > shown.length) {
+      body.push(textNode((s.moreTpl || '+{n} more').replace('{n}', String(s.teeth.length - shown.length)), { size: 'xs', color: GRAY, margin: 'sm' }));
+    }
+  }
+  if (s.text) body.push(textNode(s.text, { size: 'sm', color: INK, margin: 'sm' }));
+  if (!body.length) return out;
+  if (s.title) out.push(textNode(s.title, { size: 'sm', weight: 'bold', color: INK, margin: 'lg' }));
+  out.push({ type: 'box', layout: 'vertical', margin: s.title ? 'sm' : 'lg', contents: body });
+  return out;
+}
 
-  const contents: any[] = [];
-  // 사본 + 고객 LINE 미연결 → 본문 맨 위 빨간 띠
-  if (opts.copy && opts.unlinked) {
-    contents.push({
-      type: 'box', layout: 'vertical', backgroundColor: '#FEE2E2', cornerRadius: '6px', paddingAll: '8px',
-      contents: [{ type: 'text', text: '❌ Customer LINE not connected', color: '#B91C1C', weight: 'bold', size: 'sm', wrap: true }],
-    });
+function buildReceiptCard(o: ReceiptOpts) {
+  const top: any[] = [
+    { type: 'image', url: LOGO_URL, size: '48px', aspectRatio: '1:1', aspectMode: 'cover', align: 'center' },
+    textNode(o.title, { size: 'lg', weight: 'bold', color: o.color, align: 'center', margin: 'md' }),
+    textNode(o.subtitle, { size: 'xs', color: GRAY, align: 'center', margin: 'xs' }),
+  ];
+  if (o.copyLabel) top.push(textNode(o.copyLabel, { size: 'xxs', color: GRAY, weight: 'bold', align: 'center', margin: 'lg' }));
+  if (o.docNo) top.push(textNode(o.docNo, { size: 'md', weight: 'bold', color: INK, align: 'center', margin: o.copyLabel ? 'xs' : 'lg' }));
+  top.push(textNode(stamp(o.when), { size: 'xs', color: GRAY, align: 'center', margin: 'xs' }));
+
+  const body: any[] = [...top, { type: 'separator', margin: 'lg', color: LINE_GRAY }];
+  if (o.message) body.push(textNode(o.message, { size: 'sm', color: INK, margin: 'lg' }));
+  for (const s of o.sections) body.push(...sectionNodes(s));
+
+  const tRows = rowsOf(o.totals?.rows || []);
+  const final = o.totals?.final && str(o.totals.final[1]) ? o.totals.final : null;
+  if (tRows.length || final) {
+    body.push({ type: 'separator', margin: 'lg', color: LINE_GRAY });
+    for (const [k, v] of tRows) body.push(kvRow(k, v));
+    if (final) {
+      if (tRows.length) body.push({ type: 'separator', margin: 'md', color: LINE_GRAY });
+      body.push(kvRow(final[0], final[1], { big: true }));
+    }
   }
-  if (opts.headline) contents.push({ type: 'text', text: clean(opts.headline, 120), weight: 'bold', size: 'md', color: NAVY, wrap: true, margin: contents.length ? 'md' : 'none' });
-  if (opts.body) contents.push({ type: 'text', text: clean(opts.body, 1000), size: 'sm', color: '#333333', wrap: true, margin: 'md' });
-  if (opts.rows.length) {
-    if (contents.length) contents.push({ type: 'separator', margin: 'lg' });
-    contents.push({
-      type: 'box', layout: 'vertical', margin: contents.length ? 'lg' : 'none', spacing: 'sm',
-      contents: opts.rows.map(([label, value]) => ({
-        type: 'box', layout: 'baseline', spacing: 'sm',
-        contents: [
-          { type: 'text', text: clean(label, 40), size: 'sm', color: '#6B7280', flex: 2, wrap: true },
-          { type: 'text', text: clean(value), size: 'sm', color: ADMIN_HIGHLIGHT_ROWS.includes(label) ? st.color : NAVY, weight: 'bold', flex: 4, wrap: true },
-        ],
-      })),
-    });
-  }
-  const alt = heading + (opts.altExtra ? ' · ' + opts.altExtra : '');
+
+  const footer = {
+    type: 'box', layout: 'vertical', paddingTop: '0px',
+    contents: [
+      // 테두리만 있는 버튼 (Flex 기본 버튼은 테두리 모양이 없어서 상자 + 동작으로 만들어요)
+      {
+        type: 'box', layout: 'vertical', borderWidth: '1px', borderColor: '#D1D5DB', cornerRadius: '8px', paddingAll: '12px',
+        action: { type: 'uri', label: str(o.button.label, 40) || 'Open', uri: o.button.url },
+        contents: [textNode(o.button.label, { size: 'sm', weight: 'bold', color: INK, align: 'center' })],
+      },
+      { type: 'separator', margin: 'lg', color: LINE_GRAY },
+      textNode(o.autoNote, { size: 'xxs', color: GRAY, align: 'center', margin: 'md' }),
+      textNode(o.company, { size: 'xxs', color: GRAY, align: 'center', margin: 'xs' }),
+    ],
+  };
+
+  const alt = (o.altPrefix || '') + o.title + (o.docNo ? ' · ' + o.docNo : '');
   return {
     type: 'flex',
-    altText: clean(alt, 380),
+    altText: str(alt, 380) || 'allAbut',
     contents: {
-      type: 'bubble',
-      header: header,
-      body: { type: 'box', layout: 'vertical', backgroundColor: '#FFFFFF', contents },
-      footer: {
-        type: 'box', layout: 'vertical',
-        contents: [{ type: 'button', style: 'primary', color: st.color, height: 'sm', action: { type: 'uri', label: clean(opts.buttonLabel || 'Open admin', 40), uri: opts.url } }],
-      },
+      type: 'bubble', size: 'mega',
+      styles: { body: { backgroundColor: '#FFFFFF' }, footer: { backgroundColor: '#FFFFFF' } },
+      body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: body },
+      footer,
     },
   };
 }
 
+
+// ================================================================
+// DB 읽기
+// ================================================================
+type Profile = { line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null; phone?: string | null; address?: string | null };
+
+async function getProfile(userId: string): Promise<Profile | null> {
+  if (!userId) return null;
+  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone, address').eq('id', userId).maybeSingle();
+  if (error) { console.error('profile read failed', error); return null; }
+  return data;
+}
+
+// LINE 사용자 id 모양이면 연결된 것
+function isLinkedProfile(p: Profile | null): boolean {
+  return !!(p && typeof p.line_user_id === 'string' && /^U[0-9a-f]{32}$/.test(p.line_user_id));
+}
+
+function profileName(p: Profile | null, userId: string): string {
+  return str((p && (p.clinic_name || p.nickname)) || '') || String(userId || '').slice(0, 8);
+}
+
+// 남은 잔액 (credit_wallets). 못 읽으면 null
+async function getBalance(userId: string): Promise<number | null> {
+  if (!userId) return null;
+  const { data, error } = await db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle();
+  if (error) { console.error('balance read failed', error); return null; }
+  return data ? Number(data.balance ?? 0) : 0;
+}
+
+async function getOrder(orderId: unknown): Promise<any | null> {
+  if (!orderId) return null;
+  const { data, error } = await db.from('cnc_orders').select('*').eq('id', String(orderId)).maybeSingle();
+  if (error) { console.error('order read failed', error); return null; }
+  return data;
+}
+
+// 회사 정보 (카드 맨 아래 줄) — 5분 동안 기억
+let _company: { at: number; line: string } | null = null;
+async function companyLine(): Promise<string> {
+  if (_company && Date.now() - _company.at < 5 * 60 * 1000) return _company.line;
+  let name = '', tax = '';
+  try {
+    const { data, error } = await db.from('company_settings').select('company_name, tax_id').eq('id', 1).maybeSingle();
+    if (!error && data) { name = str(data.company_name, 120); tax = str(data.tax_id, 40); }
+  } catch (err) {
+    console.error('company read failed', err);
+  }
+  const line = [name || 'allAbut', tax ? 'Tax ID ' + tax : '', SITE_HOST].filter(Boolean).join(' · ');
+  _company = { at: Date.now(), line };
+  return line;
+}
+
+// 고객 이메일 (auth.users, 서버 관리 키). 못 읽으면 빈 글자
+async function customerEmail(userId: string): Promise<string> {
+  if (!userId) return '';
+  try {
+    const { data, error } = await db.auth.admin.getUserById(userId);
+    if (error) { console.error('email read failed', error.message || error); return ''; }
+    return String(data?.user?.email || '');
+  } catch (err) {
+    console.error('email read error', err);
+    return '';
+  }
+}
+
+// 처리자 이름 (팀 이름 → 닉네임). 모르면 빈 글자
+async function memberName(userId: unknown): Promise<string> {
+  if (!userId || typeof userId !== 'string') return '';
+  const a = await db.from('admins').select('display_name').eq('user_id', userId).maybeSingle();
+  const name = str(a.data?.display_name);
+  if (name) return name;
+  const p = await getProfile(userId);
+  return str(p?.nickname);
+}
+
+// 크레딧 묶음 만료일
+async function getLotExpiry(lotId: unknown): Promise<string> {
+  if (!lotId) return '';
+  const { data, error } = await db.from('credit_lots').select('expires_at').eq('id', String(lotId)).maybeSingle();
+  if (error || !data) return '';
+  return ymd(data.expires_at);
+}
+
+// 충전 묶음이면 그 충전 요청 (보너스 지급이면 null)
+async function lotTopup(lotId: unknown): Promise<any | null> {
+  if (!lotId) return null;
+  const { data } = await db.from('credit_lots').select('topup_id, source').eq('id', String(lotId)).maybeSingle();
+  if (!data || !data.topup_id) return null;
+  const t = await db.from('topup_requests').select('*').eq('id', String(data.topup_id)).maybeSingle();
+  return t.data ? t.data : { id: String(data.topup_id), reviewed_by: null };
+}
+
+// 관리자 취소로 생긴 환불인지 (그때는 "관리자 취소" 카드에 이미 들어가서 따로 보내지 않아요)
+async function isAdminCancelRefund(orderId: string): Promise<boolean> {
+  const o = await getOrder(orderId);
+  return !!o && o.stage === 'cancelled' && isAdminCancel(o.review_history);
+}
+
+
+// ================================================================
+// LINE 보내기 · 관리자 알림 대상
+// ================================================================
 async function push(to: string, message: unknown): Promise<void> {
   if (!/^[UCR][0-9a-f]{32}$/.test(to)) return;   // 사용자(U) · 그룹(C) · 여러 명 채팅(R)
   try {
@@ -428,52 +734,6 @@ async function push(to: string, message: unknown): Promise<void> {
   }
 }
 
-
-// ================================================================
-// 도구
-// ================================================================
-function safeEqual(a: string, b: string): boolean {
-  if (!a || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-function lastEntry(history: unknown): any {
-  return Array.isArray(history) && history.length ? history[history.length - 1] : null;
-}
-
-// 관리자 취소인지: 마지막 이력이 admin_cancelled 인지 (마지막 두 줄 안의 취소 기록이 관리자 것이면 관리자 취소로 봐요)
-function isAdminCancel(history: unknown): boolean {
-  if (!Array.isArray(history) || !history.length) return false;
-  const tail = history.slice(-2);
-  return tail.some((h: any) => h && (h.action === 'admin_cancelled' || (h.by === 'admin' && /cancel/.test(String(h.action || '')))));
-}
-
-// 가장 최근 수정 요청 사유
-function lastRevisionNote(history: unknown): string {
-  if (!Array.isArray(history)) return '';
-  for (let i = history.length - 1; i >= 0; i--) {
-    const h: any = history[i];
-    if (h && h.action === 'rejected') return String(h.note || '');
-  }
-  const last = lastEntry(history);
-  return last ? String(last.note || '') : '';
-}
-
-type Profile = { line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null; phone?: string | null };
-
-async function getProfile(userId: string): Promise<Profile | null> {
-  if (!userId) return null;
-  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone').eq('id', userId).maybeSingle();
-  if (error) { console.error('profile read failed', error); return null; }
-  return data;
-}
-
-
-// ================================================================
-// 관리자 알림 (영어)
-// ================================================================
 type Category = 'orders' | 'topups' | 'account' | 'customer_copy';
 
 // 이 카테고리 관리자 알림을 받을 곳 (LINE id 목록)
@@ -482,8 +742,7 @@ async function adminTargets(cat: Category, teamOnly = false): Promise<string[]> 
   const fallback = teamOnly || !LINE_ADMIN_USER_ID ? [] : [LINE_ADMIN_USER_ID];
   const { data, error } = await db.from('admin_notify_targets').select('line_id, categories').eq('active', true);
   if (error) {
-    // 005 를 아직 실행 안 했으면 표가 없어요 → 예전처럼
-    console.error('notify targets read failed', error.message || error);
+    console.error('notify targets read failed', error.message || error);   // 005 를 아직 실행 안 했으면 표가 없어요 → 예전처럼
     return fallback;
   }
   const rows: any[] = data ?? [];
@@ -502,74 +761,142 @@ async function pushAdmins(cat: Category, message: unknown, teamOnly = false, exc
   }
 }
 
+
 // ================================================================
-// 고객 알림 사본 (관리자용, 영어)
+// 카드 내용 만들기 (주문 · 크레딧 · 충전) — 관리자·사본은 EN, 고객은 고객 언어
 // ================================================================
-// LINE 사용자 id 모양이면 연결된 것
-function isLinkedProfile(p: Profile | null): boolean {
-  return !!(p && typeof p.line_user_id === 'string' && /^U[0-9a-f]{32}$/.test(p.line_user_id));
+// 사본 정보 (관리자에게 가는 고객 알림 사본)
+type CopyInfo = { name: string; email: string; linked: boolean; phone: string; actor: string };
+
+// 공통 꼬리 (자동 알림 문구 + 회사 줄)
+async function footerOf(L: Lang) {
+  return { autoNote: L.r.auto_note, company: await companyLine() };
 }
 
-// 고객 이메일 (auth.users, 서버 관리 키). 못 읽으면 빈 글자
-async function customerEmail(userId: string): Promise<string> {
-  if (!userId) return '';
-  try {
-    const { data, error } = await db.auth.admin.getUserById(userId);
-    if (error) { console.error('email read failed', error.message || error); return ''; }
-    return String(data?.user?.email || '');
-  } catch (err) {
-    console.error('email read error', err);
-    return '';
+// Clinic 섹션: 주문이면 주문의 치과·주소·전화, 아니면 프로필. 사본이면 이메일 + LINE 연결 상태
+function clinicSection(L: Lang, name: string, lines: string[], copy?: CopyInfo): Section {
+  const c: ClinicInfo = { name: name || '—', lines: [...lines] };
+  if (copy) {
+    if (copy.email) c.lines!.push(copy.email);
+    if (!copy.linked) c.warning = ['Customer LINE not connected — please contact directly' + (copy.phone ? ' · ' + copy.phone : '')];
+    else c.info = 'Sent to customer LINE';
   }
+  return { title: L.r.sec_clinic, clinic: c };
 }
 
-// 사본 보내기 → 사본을 받은 곳 목록 (직원 처리 카드를 중복으로 보내지 않으려고 돌려줘요)
-//   type: 카드 색 종류 / headline: 영어 요약 한 줄 / rows: 내용 요약 / actor: 처리한 직원 이름 (있으면)
-async function sendCustomerCopy(userId: string, p: Profile | null, type: NoticeType, headline: string, rows: Row[], url: string, actor = ''): Promise<string[]> {
+// 주문 영수증
+//   details: 이벤트별 정보 (송장·수정 요청 사유·취소 사유·처리자)
+//   refunded: 취소 → 환불 줄
+async function orderReceipt(L: Lang, o: any, opt: {
+  title: string; color: string; message?: string; details?: Section; refunded?: boolean; balance?: number | null;
+  copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
+}) {
+  const sections: Section[] = [
+    clinicSection(L, str(o.clinic) || (opt.copy ? opt.copy.name : ''), [str(o.addr), str(o.phone)], opt.copy),
+    { title: L.r.sec_case, rows: [[L.x.patient, str(o.patient, 60)], [L.x.deadline, str(o.deadline, 20)]] },
+    { title: L.r.sec_teeth, teeth: orderTeeth(o), moreTpl: L.r.more },
+  ];
+  if (opt.details) sections.push(opt.details);
+  const used = Number(o.credits_used ?? o.teeth_count ?? 0);
+  const tRows: Row[] = [[L.x.used, String(used)]];
+  if (opt.refunded) tRows.push([L.x.refunded, '+' + used]);
+  return buildReceiptCard({
+    title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_order,
+    copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
+    docNo: str(o.id, 40), when: opt.when, message: opt.message, sections,
+    totals: { rows: tRows, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)] },
+    button: opt.button, ...(await footerOf(L)),
+  });
+}
+
+// 충전 요청 영수증 (패키지 · 공급가액 · VAT · 합계)
+async function topupReceipt(L: Lang, rec: any, p: Profile | null, opt: {
+  title: string; color: string; message?: string; details?: Row[]; copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
+}) {
+  const sections: Section[] = [
+    clinicSection(L, profileName(p, rec.user_id), [str(p?.address), str(p?.phone)], opt.copy),
+    {
+      title: L.r.sec_details,
+      rows: [[L.r.package, String(rec.credits ?? '') + ' ' + (L.x === T.en ? 'credits' : L.x.credits)], [L.r.unit_price, rec.unit_price != null ? baht(rec.unit_price) : ''], ...(opt.details || [])],
+    },
+  ];
+  const tRows: Row[] = [];
+  if (rec.subtotal != null) tRows.push([L.r.subtotal, baht(rec.subtotal)]);
+  if (rec.vat_amount != null) tRows.push([L.r.vat.replace('{r}', String(vatRate(rec.subtotal, rec.vat_amount))), baht(rec.vat_amount)]);
+  return buildReceiptCard({
+    title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_topup,
+    copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
+    docNo: str(rec.id, 40), when: opt.when, message: opt.message, sections,
+    totals: { rows: tRows, final: [L.x.total, baht(rec.total)] },
+    button: opt.button, ...(await footerOf(L)),
+  });
+}
+
+// 크레딧 영수증 (use · refund · adjust · charge · expire · 만료 예정)
+async function creditReceipt(L: Lang, opt: {
+  title: string; color: string; message?: string; docNo?: string; userId: string; p: Profile | null; order?: any | null;
+  details?: Row[]; amounts: Row[]; balance: number | null; copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
+}) {
+  const o = opt.order;
+  const sections: Section[] = [
+    o ? clinicSection(L, str(o.clinic) || profileName(opt.p, opt.userId), [str(o.addr), str(o.phone)], opt.copy)
+      : clinicSection(L, profileName(opt.p, opt.userId), [str(opt.p?.address), str(opt.p?.phone)], opt.copy),
+  ];
+  if (o) {
+    sections.push({ title: L.r.sec_case, rows: [[L.x.patient, str(o.patient, 60)], [L.x.deadline, str(o.deadline, 20)]] });
+    sections.push({ title: L.r.sec_teeth, teeth: orderTeeth(o), moreTpl: L.r.more });
+  }
+  if (opt.details && rowsOf(opt.details).length) sections.push({ title: L.r.sec_details, rows: opt.details });
+  return buildReceiptCard({
+    title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_credit,
+    copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
+    docNo: opt.docNo, when: opt.when, message: opt.message, sections,
+    totals: { rows: opt.amounts, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)] },
+    button: opt.button, ...(await footerOf(L)),
+  });
+}
+
+// 고객 카드 제목 색: 네이비, 취소·거절만 빨강
+function customerColor(kind: string): string {
+  return kind === 'cancel' || kind === 'topup_rejected' ? RED : NAVY;
+}
+
+
+// ================================================================
+// 고객 알림 사본 보내기 (관리자용, 영어) → 사본을 받은 곳 목록
+// ================================================================
+//   build: CopyInfo 를 받아 카드를 만드는 함수 (주문·크레딧·충전 영수증을 그대로 재사용)
+async function sendCustomerCopy(userId: string, p: Profile | null, actor: string, build: (c: CopyInfo) => Promise<unknown>): Promise<string[]> {
   const targets = await adminTargets('customer_copy');
   if (!targets.length) return [];
-  const linked = isLinkedProfile(p);
-  const email = await customerEmail(userId);
-  const name = (p && (p.clinic_name || p.nickname)) || String(userId || '').slice(0, 8);
-  const all: Row[] = [['Customer', email ? name + ' (' + email + ')' : name], ...rows];
-  if (actor) all.push(['Handled by', actor]);
-  all.push(['Customer LINE', linked ? '✅ Sent to customer LINE' : '❌ Customer LINE not connected — contact directly']);
-  if (!linked && p && p.phone) all.push(['Phone', String(p.phone)]);
-  const orderId = (rows.find((r) => r[0] === 'Order' || r[0] === 'Request') || [])[1];
-  const message = adminCard({
-    type, copy: true, unlinked: !linked, headline, rows: all, url,
-    altExtra: (orderId ? orderId + ' · ' : '') + name,
-  });
+  const copy: CopyInfo = {
+    name: profileName(p, userId), email: await customerEmail(userId), linked: isLinkedProfile(p),
+    phone: str(p?.phone), actor,
+  };
+  const message = await build(copy);
   for (const to of targets) await push(to, message);
   return targets;
 }
 
-// 처리자 이름 (팀 이름 → 닉네임). 모르면 빈 글자
-async function memberName(userId: unknown): Promise<string> {
-  if (!userId || typeof userId !== 'string') return '';
-  const a = await db.from('admins').select('display_name').eq('user_id', userId).maybeSingle();
-  const name = String(a.data?.display_name || '').trim();
-  if (name) return name;
-  const p = await getProfile(userId);
-  return String(p?.nickname || '').trim();
+// 사본 상세 줄에 처리자 추가
+function withActor(rows: Row[], actor: string): Row[] {
+  return actor ? [...rows, ['Handled by', actor]] : rows;
 }
 
-async function notifyAdmin(type: NoticeType, headline: string, o: any, extraRows: Row[] = []): Promise<void> {
-  const rows: Row[] = [
-    ['Order', o.id],
-    ['Clinic', o.clinic],
-    ['Patient', o.patient],
-    ['Teeth', String(o.teeth_count ?? '')],
-    ['Deadline', o.deadline],
-    ...extraRows,
-  ];
-  await pushAdmins('orders', adminCard({
-    type, headline, rows, url: SITE_ADMIN_URL,
-    altExtra: o.id + ' · ' + (o.clinic || ''),
+
+// ================================================================
+// 주문 → 관리자 (영어)
+// ================================================================
+async function notifyAdmin(type: NoticeType, o: any, opt: { message?: string; details?: Section; refunded?: boolean } = {}): Promise<void> {
+  const st = ADMIN_NOTICE_STYLES[type];
+  const balance = await getBalance(o.user_id);
+  await pushAdmins('orders', await orderReceipt(EN, o, {
+    title: st.title, color: st.color, message: opt.message, details: opt.details, refunded: opt.refunded, balance,
+    button: { label: 'Open admin', url: SITE_ADMIN_URL }, when: type === 'new_order' ? o.created_at : undefined,
   }));
 }
 
-// 직원이 처리한 주문 일 → 연결된 그룹에만 (예: "✔ Confirmed by Ken")
+// 직원이 처리한 주문 일 → 연결된 그룹에만 (예: "Confirmed by Ken")
 const TEAM_ACTION_TITLES: Record<string, string> = {
   confirmed: 'Confirmed by {name}',
   design_ready: 'Design uploaded by {name}',
@@ -598,282 +925,210 @@ async function notifyTeamAction(record: any, old: any, except: string[] = []): P
   const tpl = TEAM_ACTION_TITLES[record.stage];
   const name = newAdminActorName(record, old);
   if (!tpl || !name) return;
-  const title = tpl.replace('{name}', clean(name, 60));
+  const title = tpl.replace('{name}', str(name, 60));
   const last = lastEntry(record.review_history);
-  const rows: Row[] = [['Order', record.id], ['Clinic', record.clinic], ['Patient', record.patient]];
-  if (record.stage === 'shipped' && (record.carrier || record.tracking_number)) {
-    rows.push(['Tracking', [record.carrier, record.tracking_number].filter(Boolean).join(' ')]);
-  }
-  if (last && last.note) rows.push(['Note', String(last.note)]);
-  await pushAdmins('orders', adminCard({
-    type: TEAM_ACTION_TYPES[record.stage], headline: title, rows, url: SITE_ADMIN_URL,
-    altExtra: record.id + ' · ' + title,
+  const rows: Row[] = [];
+  if (record.stage === 'shipped') rows.push([EN.x.carrier, str(record.carrier)], [EN.x.tracking, str(record.tracking_number)]);
+  if (last && last.note) rows.push(['Note', str(last.note)]);
+  const balance = await getBalance(record.user_id);
+  await pushAdmins('orders', await orderReceipt(EN, record, {
+    title, color: ADMIN_NOTICE_STYLES[TEAM_ACTION_TYPES[record.stage]].color,
+    details: rows.length ? { title: record.stage === 'shipped' ? EN.r.sec_shipping : EN.r.sec_details, rows } : undefined,
+    refunded: record.stage === 'cancelled', balance,
+    button: { label: 'Open admin', url: SITE_ADMIN_URL },
   }), true, except);
 }
 
 
 // ================================================================
-// 고객 알림 (고객 언어)
+// 주문 → 고객 (고객 언어) + 관리자 사본
 // ================================================================
-const COPY_ORDER_TITLES: Record<string, string> = {
-  confirmed: 'Order confirmed',
-  design: 'Design ready — waiting for customer review',
-  milling: 'Milling started',
-  shipped: 'Order shipped',
-  cancel: 'Order cancelled by admin — credits refunded',
-};
-const COPY_ORDER_TYPES: Record<string, NoticeType> = {
+type OrderKind = 'confirmed' | 'design' | 'milling' | 'shipped' | 'cancel';
+const COPY_ORDER_TYPES: Record<OrderKind, NoticeType> = {
   confirmed: 'order_confirmed', design: 'design_uploaded', milling: 'milling', shipped: 'shipped', cancel: 'cancelled',
 };
+const ORDER_TEXT_KEYS: Record<OrderKind, [keyof Texts, keyof Texts]> = {
+  confirmed: ['confirmed_title', 'confirmed_body'], design: ['design_title', 'design_body'], milling: ['milling_title', 'milling_body'],
+  shipped: ['shipped_title', 'shipped_body'], cancel: ['cancel_title', 'cancel_body'],
+};
+
+// 이벤트별 상세 섹션 (송장 / 취소 사유)
+function orderDetails(L: Lang, o: any, kind: OrderKind, extra: Row[] = []): Section | undefined {
+  if (kind === 'shipped') return { title: L.r.sec_shipping, rows: [[L.x.carrier, str(o.carrier)], [L.x.tracking, str(o.tracking_number)], ...extra] };
+  const rows: Row[] = [];
+  if (kind === 'cancel') rows.push([L.x.reason, adminCancelReason(o.review_history)]);
+  rows.push(...extra);
+  return rowsOf(rows).length ? { title: L.r.sec_details, rows } : undefined;
+}
 
 // 주문 단계 알림 → 고객(연결돼 있으면) + 관리자 사본. 사본을 받은 곳 목록을 돌려줘요
-async function notifyCustomer(o: any, kind: 'confirmed' | 'design' | 'milling' | 'shipped' | 'cancel', actor = ''): Promise<string[]> {
+async function notifyCustomer(o: any, kind: OrderKind, actor = ''): Promise<string[]> {
   const p = await getProfile(o.user_id);
-  const linked = isLinkedProfile(p);
-  const last = lastEntry(o.review_history);
-  const reason = kind === 'cancel'
-    ? (last && last.action === 'admin_cancelled' ? last.note
-      : ((o.review_history || []).slice().reverse().find((h: any) => h && h.action === 'admin_cancelled') || {}).note)
-    : '';
-  const balance = kind === 'cancel' ? await getBalance(o.user_id) : null;
+  const balance = await getBalance(o.user_id);
+  const [tk, bk] = ORDER_TEXT_KEYS[kind];
 
   // 고객 (고객 언어) — LINE 연결했을 때만
-  if (linked && p) {
-    const x = texts(p.lang);
-    const rows: Row[] = [[x.order, o.id], [x.patient, o.patient]];
-    let title = '', body = '';
-    if (kind === 'confirmed') { title = x.confirmed_title; body = x.confirmed_body; rows.push([x.deadline, o.deadline]); }
-    if (kind === 'design') { title = x.design_title; body = x.design_body; }
-    if (kind === 'milling') { title = x.milling_title; body = x.milling_body; rows.push([x.deadline, o.deadline]); }
-    if (kind === 'shipped') {
-      title = x.shipped_title; body = x.shipped_body;
-      rows.push([x.carrier, o.carrier], [x.tracking, o.tracking_number]);
-    }
-    if (kind === 'cancel') {
-      title = x.cancel_title; body = x.cancel_body;
-      rows.push([x.refunded, String(o.credits_used ?? 0) + ' ' + x.credits]);
-      if (reason) rows.push([x.reason, reason]);
-      rows.push([x.balance, balanceText(x, balance)]);
-    }
-    await push(p.line_user_id as string, flexCard({
-      title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL,
-      altText: title + ' · ' + o.id,
+  if (isLinkedProfile(p) && p) {
+    const L = langOf(p.lang);
+    await push(p.line_user_id as string, await orderReceipt(L, o, {
+      title: plainTitle(L.x[tk]), color: customerColor(kind), message: L.x[bk],
+      details: orderDetails(L, o, kind), refunded: kind === 'cancel', balance,
+      button: { label: L.r.view_order, url: SITE_ORDERS_URL },
     }));
   }
 
   // 관리자 사본 (영어)
-  const rows: Row[] = [['Order', o.id], ['Patient', o.patient], ['Teeth', String(o.teeth_count ?? '')]];
-  if (kind === 'confirmed' || kind === 'milling') rows.push(['Deadline', o.deadline]);
-  if (kind === 'shipped') rows.push(['Carrier', o.carrier], ['Tracking', o.tracking_number]);
-  if (kind === 'cancel') {
-    rows.push(['Refunded', String(o.credits_used ?? 0) + ' credits']);
-    if (reason) rows.push(['Reason', reason]);
-    rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
-  }
-  return await sendCustomerCopy(o.user_id, p, COPY_ORDER_TYPES[kind], COPY_ORDER_TITLES[kind], rows, SITE_ADMIN_URL, actor);
+  const st = ADMIN_NOTICE_STYLES[COPY_ORDER_TYPES[kind]];
+  return await sendCustomerCopy(o.user_id, p, actor, async (copy) => orderReceipt(EN, o, {
+    title: st.title, color: st.color, details: orderDetails(EN, o, kind, withActor([], copy.actor)),
+    refunded: kind === 'cancel', balance, copy,
+    button: { label: 'Open admin', url: SITE_ADMIN_URL },
+  }));
 }
 
-// 남은 잔액 (credit_wallets, 서버 관리 키로 읽기). 못 읽으면 null
-async function getBalance(userId: string): Promise<number | null> {
-  if (!userId) return null;
-  const { data, error } = await db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle();
-  if (error) { console.error('balance read failed', error); return null; }
-  return data ? Number(data.balance ?? 0) : 0;
-}
 
-function balanceText(x: Texts, balance: number | null): string {
-  return balance == null ? '—' : String(balance) + ' ' + x.credits;
-}
-
-// 관리자 취소로 생긴 환불인지 (그때는 "관리자 취소" 카드에 환불·잔액이 이미 들어가서 따로 보내지 않아요)
-async function isAdminCancelRefund(orderId: string): Promise<boolean> {
-  if (!orderId) return false;
-  const { data, error } = await db.from('cnc_orders').select('stage, review_history').eq('id', orderId).maybeSingle();
-  if (error || !data) return false;
-  return data.stage === 'cancelled' && isAdminCancel(data.review_history);
-}
-
-// credit_history INSERT → 고객 알림 (type 별) + 관리자 사본
-//   use    📝 주문 접수 완료 (주문번호, 사용 크레딧, 남은 잔액)
-//   refund ↩️ 크레딧 환불 (주문번호, 환불 수량, 남은 잔액) — 관리자 취소로 생긴 환불은 제외 (중복 방지)
-//   adjust ➖ 크레딧 조정 (수량 부호 포함, 사유, 남은 잔액)
-//   charge 💳 크레딧 충전 (수량, 남은 잔액) — 충전 승인이면 사본에 승인한 직원 이름
-//   expire ⌛ 크레딧 만료
-const COPY_CREDIT_TITLES: Record<string, string> = {
-  use: 'Order received — credits used',
-  refund: 'Credits refunded',
-  adjust: 'Credits adjusted',
-  charge: 'Credits added',
-  expire: 'Credits expired',
-};
-const COPY_CREDIT_TYPES: Record<string, NoticeType> = {
+// ================================================================
+// 크레딧 이력 (credit_history INSERT) → 고객 + 관리자 사본
+// ================================================================
+//   use    주문 접수 (주문 영수증 모양: 치과·케이스·치아 + 사용 크레딧 + 잔액)
+//   refund 환불 (관리자 취소로 생긴 환불은 제외 — "관리자 취소" 카드에 이미 들어가요)
+//   adjust 조정 / charge 충전 (충전 요청이면 결제 금액·처리자) / expire 만료
+const CREDIT_TYPES: Record<string, NoticeType> = {
   use: 'credits_used', refund: 'refund', adjust: 'adjust', charge: 'charge', expire: 'expire',
 };
-
-// 충전 묶음이면 그 충전 요청 { id, reviewed_by } (보너스 지급이면 null)
-async function lotTopup(lotId: unknown): Promise<{ id: string; reviewed_by: string | null } | null> {
-  if (!lotId) return null;
-  const { data } = await db.from('credit_lots').select('topup_id, source').eq('id', String(lotId)).maybeSingle();
-  if (!data || !data.topup_id) return null;
-  const t = await db.from('topup_requests').select('id, reviewed_by').eq('id', String(data.topup_id)).maybeSingle();
-  return t.data ? { id: String(t.data.id), reviewed_by: t.data.reviewed_by ?? null } : { id: String(data.topup_id), reviewed_by: null };
-}
 
 async function notifyCredit(h: any): Promise<void> {
   const type = String(h.type || '');
   const amount = Number(h.amount || 0);
-  if (!['use', 'refund', 'adjust', 'charge', 'expire'].includes(type)) return;
+  if (!CREDIT_TYPES[type]) return;
   if (type === 'expire' && amount >= 0) return;
   if (type === 'charge' && amount <= 0) return;
-  if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;   // "관리자 취소" 카드·사본에 이미 들어가요
+  if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;
 
   const p = await getProfile(h.user_id);
-  const linked = isLinkedProfile(p);
   const balance = await getBalance(h.user_id);
   const abs = Math.abs(amount);
-  const desc = String(h.description || '').trim();
+  const desc = str(h.description, 300);
   const exp = type === 'charge' ? await getLotExpiry(h.lot_id) : '';
+  const order = (type === 'use' || type === 'refund') && h.order_id ? await getOrder(h.order_id) : null;
+  const topup = type === 'charge' ? await lotTopup(h.lot_id) : null;
+  const docNo = str(h.order_id) || (topup ? str(topup.id) : '');
+
+  // 금액 줄 (언어별 라벨)
+  const amounts = (L: Lang): Row[] => {
+    if (type === 'use') return [[L.x.used, String(abs)]];
+    if (type === 'refund') return [[L.x.refunded, '+' + abs]];
+    if (type === 'adjust') return [[L.r.adjusted, signed(amount)]];
+    if (type === 'expire') return [[L.r.expired, '-' + abs]];
+    const rows: Row[] = [[L.r.added, '+' + abs]];
+    if (topup && topup.total != null) rows.push([L.r.paid, baht(topup.total)]);
+    return rows;
+  };
+  const details = (L: Lang, admin: boolean): Row[] => {
+    const rows: Row[] = [];
+    if (type === 'charge' && exp) rows.push([L.x.valid_until, exp]);
+    // 충전 요청으로 생긴 충전은 메모가 "Top-up TP…" 라서 문서번호와 겹쳐요 → 빼요
+    if (type === 'adjust' || type === 'expire' || (type === 'charge' && !topup)) rows.push([admin ? 'Note' : L.x.reason, desc]);
+    if (admin && type === 'charge' && !topup) rows.push(['Type', 'Bonus (added by admin)']);
+    return rows;
+  };
 
   // 고객 (고객 언어) — LINE 연결했을 때만
-  if (linked && p) {
-    const x = texts(p.lang);
-    let title = '', body = '';
-    const rows: Row[] = [];
-    if (type === 'use') {
-      title = x.use_title; body = x.use_body;
-      rows.push([x.order, h.order_id], [x.used, String(abs) + ' ' + x.credits]);
-    } else if (type === 'refund') {
-      title = x.refund_title; body = x.refund_body.replace('{n}', String(abs));
-      rows.push([x.order, h.order_id], [x.refunded, String(abs) + ' ' + x.credits]);
-    } else if (type === 'adjust') {
-      title = x.adjust_title; body = x.adjust_body;
-      rows.push([x.amount, (amount > 0 ? '+' : '') + String(amount) + ' ' + x.credits], [x.reason, desc]);
-    } else if (type === 'expire') {
-      title = x.expire_title; body = x.expire_body.replace('{n}', String(abs));
-      rows.push([x.credits, '-' + abs]);
-      if (h.order_id) rows.push([x.order, h.order_id]);
-    } else {
-      title = x.charge_title; body = x.charge_body.replace('{n}', String(abs)) + (desc ? '\n' + desc : '');
-      rows.push([x.credits, '+' + abs]);
-      if (exp) rows.push([x.valid_until, exp]);
-    }
-    rows.push([x.balance, balanceText(x, balance)]);
-    const alt = title + (h.order_id ? ' · ' + h.order_id : '') + ' · ' + x.balance + ': ' + balanceText(x, balance);
-    await push(p.line_user_id as string, flexCard({
-      title, body, rows, buttonLabel: x.open, url: SITE_ORDERS_URL, altText: alt,
+  if (isLinkedProfile(p) && p) {
+    const L = langOf(p.lang);
+    const t: Record<string, [string, string]> = {
+      use: [L.x.use_title, L.x.use_body],
+      refund: [L.x.refund_title, L.x.refund_body.replace('{n}', String(abs))],
+      adjust: [L.x.adjust_title, L.x.adjust_body],
+      expire: [L.x.expire_title, L.x.expire_body.replace('{n}', String(abs))],
+      charge: [L.x.charge_title, L.x.charge_body.replace('{n}', String(abs))],
+    };
+    await push(p.line_user_id as string, await creditReceipt(L, {
+      title: plainTitle(t[type][0]), color: NAVY, message: t[type][1], docNo, userId: h.user_id, p, order,
+      details: details(L, false), amounts: amounts(L), balance, when: h.created_at,
+      button: order ? { label: L.r.view_order, url: SITE_ORDERS_URL } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
     }));
   }
 
   // 관리자 사본 (영어)
-  const rows: Row[] = [];
-  if (h.order_id) rows.push(['Order', h.order_id]);
-  rows.push(['Credits', (amount > 0 ? '+' : '') + String(amount)]);
+  const st = ADMIN_NOTICE_STYLES[CREDIT_TYPES[type]];
   let actor = '';
   let url = SITE_ADMIN_CUSTOMERS_URL;
-  if (type === 'charge') {
-    const tp = await lotTopup(h.lot_id);
-    if (tp) {
-      rows.push(['Top-up', tp.id]);
-      actor = await memberName(tp.reviewed_by);
-      url = SITE_ADMIN_TOPUPS_URL;
-    } else {
-      rows.push(['Type', 'Bonus (added by admin)']);
-    }
-    if (exp) rows.push(['Valid until', exp]);
-  }
-  if (desc && type !== 'use') rows.push(['Note', desc]);
-  rows.push(['Balance', balance == null ? '—' : String(balance) + ' credits']);
+  if (topup) { actor = await memberName(topup.reviewed_by); url = SITE_ADMIN_TOPUPS_URL; }
   if (h.order_id) url = SITE_ADMIN_URL;
-  await sendCustomerCopy(h.user_id, p, COPY_CREDIT_TYPES[type], COPY_CREDIT_TITLES[type], rows, url, actor);
+  await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
+    title: st.title, color: st.color, docNo, userId: h.user_id, p, order,
+    details: withActor(details(EN, true), copy.actor), amounts: amounts(EN), balance, copy, when: h.created_at,
+    button: { label: 'Open admin', url },
+  }));
 }
 
 
-// 날짜 'YYYY-MM-DD' (방콕 시간)
-function ymd(v: unknown): string {
-  const d = new Date(String(v ?? ''));
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
-}
-
-// 금액: 21935 → "21,935.00 THB"
-function thb(v: unknown): string {
-  const n = Number(v ?? 0);
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' THB';
-}
-
-// 크레딧 묶음 만료일
-async function getLotExpiry(lotId: unknown): Promise<string> {
-  if (!lotId) return '';
-  const { data, error } = await db.from('credit_lots').select('expires_at').eq('id', String(lotId)).maybeSingle();
-  if (error || !data) return '';
-  return ymd(data.expires_at);
-}
-
+// ================================================================
 // 충전 요청 (topup_requests)
-//   INSERT                → 관리자: 💰 충전 요청
-//   UPDATE → rejected     → 고객: 충전 거절 + 사유
-//   UPDATE → cancelled    → 관리자: 짧게
+// ================================================================
+//   INSERT             → 관리자: 충전 요청
+//   approved/rejected  → 직원이 처리했으면 연결된 그룹에 "Top-up approved by Ken"
+//   rejected           → 고객: 충전 거절 + 사유 (+ 관리자 사본)
+//   cancelled          → 관리자
 //   (승인은 credit_history 'charge' 로 고객에게 충전 알림이 가요)
 async function handleTopup(type: string, rec: any, old: any): Promise<void> {
   if (type === 'INSERT') {
     const p = await getProfile(rec.user_id);
-    const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
-    await pushAdmins('topups', adminCard({
-      type: 'topup_request', body: 'Please check the payment slip and approve or reject.',
-      rows: [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
-      url: SITE_ADMIN_TOPUPS_URL,
-      altExtra: rec.id + ' · ' + who + ' · ' + thb(rec.total),
+    const st = ADMIN_NOTICE_STYLES.topup_request;
+    await pushAdmins('topups', await topupReceipt(EN, rec, p, {
+      title: st.title, color: st.color, message: 'Please check the payment slip and approve or reject.',
+      button: { label: 'Open admin', url: SITE_ADMIN_TOPUPS_URL }, when: rec.created_at,
     }));
     return;
   }
   if (type !== 'UPDATE') return;
   if (!rec.status || old?.status === rec.status) return;   // 상태가 안 바뀌었으면 보내지 않아요
+  const p = await getProfile(rec.user_id);
 
-  // 직원이 승인·거절 → 연결된 그룹에만 "Top-up approved by Ken"
-  //   (고객 알림 사본을 받는 그룹은 사본에 승인·거절한 직원 이름이 들어가서 이 카드는 빼요)
+  // 직원이 승인·거절 → 연결된 그룹에만 (사본을 받는 그룹은 빼요 — 사본에 처리자 이름이 들어가서)
   if (rec.status === 'approved' || rec.status === 'rejected') {
     const name = await memberName(rec.reviewed_by);
     if (name) {
-      const p = await getProfile(rec.user_id);
-      const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
-      const title = (rec.status === 'approved' ? 'Top-up approved by ' : 'Top-up rejected by ') + clean(name, 60);
-      const rows: Row[] = [['Request', rec.id], ['Customer', who], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]];
-      if (rec.status === 'rejected') rows.push(['Reason', rec.reject_reason]);
+      const st = ADMIN_NOTICE_STYLES[rec.status === 'approved' ? 'topup_approved' : 'topup_rejected'];
+      const title = (rec.status === 'approved' ? 'Top-up approved by ' : 'Top-up rejected by ') + str(name, 60);
       const copyTargets = await adminTargets('customer_copy', true);
-      await pushAdmins('topups', adminCard({
-        type: rec.status === 'approved' ? 'topup_approved' : 'topup_rejected', headline: title, rows, url: SITE_ADMIN_TOPUPS_URL,
-        altExtra: rec.id + ' · ' + title,
+      await pushAdmins('topups', await topupReceipt(EN, rec, p, {
+        title, color: st.color, details: rec.status === 'rejected' ? [[EN.x.reason, str(rec.reject_reason)]] : [],
+        button: { label: 'Open admin', url: SITE_ADMIN_TOPUPS_URL }, when: rec.reviewed_at,
       }), true, copyTargets);
     }
   }
 
-  // 충전 거절 → 고객(연결돼 있으면) + 관리자 사본
   if (rec.status === 'rejected') {
-    const p = await getProfile(rec.user_id);
     if (isLinkedProfile(p) && p) {
-      const x = texts(p.lang);
-      await push(p.line_user_id as string, flexCard({
-        title: x.topup_rejected_title, body: x.topup_rejected_body,
-        rows: [[x.request, rec.id], [x.credits, String(rec.credits)], [x.total, thb(rec.total)], [x.reason, rec.reject_reason]],
-        buttonLabel: x.open, url: SITE_TOPUP_URL,
-        altText: x.topup_rejected_title + ' · ' + rec.id,
+      const L = langOf(p.lang);
+      await push(p.line_user_id as string, await topupReceipt(L, rec, p, {
+        title: plainTitle(L.x.topup_rejected_title), color: customerColor('topup_rejected'), message: L.x.topup_rejected_body,
+        details: [[L.x.reason, str(rec.reject_reason)]],
+        button: { label: L.r.view_topup, url: SITE_TOPUP_URL }, when: rec.reviewed_at,
       }));
     }
-    await sendCustomerCopy(rec.user_id, p, 'topup_rejected', 'Top-up request rejected',
-      [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)], ['Reason', rec.reject_reason]],
-      SITE_ADMIN_TOPUPS_URL, await memberName(rec.reviewed_by));
+    const st = ADMIN_NOTICE_STYLES.topup_rejected;
+    await sendCustomerCopy(rec.user_id, p, await memberName(rec.reviewed_by), async (copy) => topupReceipt(EN, rec, p, {
+      title: st.title, color: st.color, details: withActor([[EN.x.reason, str(rec.reject_reason)]], copy.actor), copy,
+      button: { label: 'Open admin', url: SITE_ADMIN_TOPUPS_URL }, when: rec.reviewed_at,
+    }));
     return;
   }
   if (rec.status === 'cancelled') {
-    await pushAdmins('topups', adminCard({
-      type: 'topup_cancelled', headline: 'Top-up request cancelled by customer',
-      rows: [['Request', rec.id], ['Package', String(rec.credits) + ' credits'], ['Total', thb(rec.total)]],
-      url: SITE_ADMIN_TOPUPS_URL, altExtra: rec.id,
+    const st = ADMIN_NOTICE_STYLES.topup_cancelled;
+    await pushAdmins('topups', await topupReceipt(EN, rec, p, {
+      title: st.title, color: st.color, message: 'The customer cancelled this top-up request.',
+      button: { label: 'Open admin', url: SITE_ADMIN_TOPUPS_URL },
     }));
   }
 }
 
-// 만료 예정 알림 (예약 작업이 보내요): { type: 'EXPIRY_REMINDER', user_id, days, lots: [{ id, remaining, expires_at }] }
+
+// ================================================================
+// 만료 예정 (예약 작업): { type: 'EXPIRY_REMINDER', user_id, days, lots: [{ id, remaining, expires_at }] }
+// ================================================================
 async function handleReminder(payload: any): Promise<void> {
   const lots = Array.isArray(payload.lots) ? payload.lots : [];
   const n = lots.reduce((sum: number, l: any) => sum + Number(l?.remaining || 0), 0);
@@ -884,34 +1139,43 @@ async function handleReminder(payload: any): Promise<void> {
   const days = first ? Math.max(1, Math.ceil((new Date(first).getTime() - Date.now()) / 86400000)) : Number(payload.days || 0);
   const balance = await getBalance(payload.user_id);
   if (isLinkedProfile(p) && p) {
-    const x = texts(p.lang);
-    const title = x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days));
-    await push(p.line_user_id as string, flexCard({
-      title, body: x.reminder_body.replace('{date}', date),
-      rows: [[x.credits, String(n)], [x.valid_until, date], [x.balance, balanceText(x, balance)]],
-      buttonLabel: x.open, url: SITE_PROFILE_URL,
-      altText: title,
+    const L = langOf(p.lang);
+    await push(p.line_user_id as string, await creditReceipt(L, {
+      title: plainTitle(L.x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days))), color: NAVY,
+      message: L.x.reminder_body.replace('{date}', date), userId: payload.user_id, p,
+      details: [[L.x.credits, String(n)], [L.x.valid_until, date]], amounts: [], balance,
+      button: { label: L.r.view_credits, url: SITE_PROFILE_URL },
     }));
   }
-  await sendCustomerCopy(payload.user_id, p, 'expiry_reminder', n + ' credits expire in ' + days + ' days',
-    [['Credits', String(n)], ['Valid until', date], ['Balance', balance == null ? '—' : String(balance) + ' credits']],
-    SITE_ADMIN_CUSTOMERS_URL);
+  const st = ADMIN_NOTICE_STYLES.expiry_reminder;
+  await sendCustomerCopy(payload.user_id, p, '', async (copy) => creditReceipt(EN, {
+    title: n + ' credits expire in ' + days + ' days', color: st.color, userId: payload.user_id, p,
+    details: [['Credits', String(n)], ['Valid until', date]], amounts: [], balance, copy,
+    button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
+  }));
 }
 
 
+// ================================================================
 // 계정 삭제 요청 (account_deletion_requests INSERT) → 관리자 (영어)
+// ================================================================
 async function handleDeletionRequest(rec: any): Promise<void> {
   const p = await getProfile(rec.user_id);
-  const who = (p && (p.clinic_name || p.nickname)) || String(rec.user_id || '').slice(0, 8);
   const balance = await getBalance(rec.user_id);
+  const email = await customerEmail(rec.user_id);
   const { count } = await db.from('cnc_orders').select('id', { count: 'exact', head: true })
     .eq('user_id', rec.user_id).not('stage', 'in', '(done,cancelled)');
-  await pushAdmins('account', adminCard({
-    type: 'account_deletion',
-    body: 'Check open orders, remaining credits and tax records before deleting the account (Admin → Customers).',
-    rows: [['Customer', who], ['Open orders', String(count ?? 0)], ['Credits', String(balance ?? 0)], ['Reason', rec.reason]],
-    url: SITE_ADMIN_CUSTOMERS_URL,
-    altExtra: who,
+  const st = ADMIN_NOTICE_STYLES.account_deletion;
+  await pushAdmins('account', buildReceiptCard({
+    title: st.title, color: st.color, subtitle: 'allAbut · Account notice', docNo: profileName(p, rec.user_id), when: rec.created_at,
+    message: 'Check open orders, remaining credits and tax records before deleting the account (Admin → Customers).',
+    sections: [
+      { title: 'Clinic', clinic: { name: profileName(p, rec.user_id), lines: [email, str(p?.address), str(p?.phone)] } },
+      { title: 'Details', rows: [['Open orders', String(count ?? 0)], ['Reason', str(rec.reason)]] },
+    ],
+    totals: { final: ['Credit balance', String(balance ?? 0)] },
+    button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
+    autoNote: R.en.auto_note, company: await companyLine(),
   }));
 }
 
@@ -922,36 +1186,17 @@ async function handleDeletionRequest(rec: any): Promise<void> {
 async function handle(payload: any): Promise<void> {
   const { type, table, record, old_record } = payload ?? {};
 
-  // 만료 예정 알림 (DB 예약 작업 → pg_net)
-  if (type === 'EXPIRY_REMINDER') {
-    await handleReminder(payload);
-    return;
-  }
+  if (type === 'EXPIRY_REMINDER') { await handleReminder(payload); return; }
   if (!record) return;
 
-  // 충전 요청
-  if (table === 'topup_requests') {
-    await handleTopup(type, record, old_record);
-    return;
-  }
-
-  // 계정 삭제 요청 → 관리자
-  if (table === 'account_deletion_requests') {
-    if (type === 'INSERT') await handleDeletionRequest(record);
-    return;
-  }
-
-  // 크레딧 사용 · 환불 · 조정 · 충전 → 고객
-  if (table === 'credit_history') {
-    if (type === 'INSERT') await notifyCredit(record);
-    return;
-  }
-
+  if (table === 'topup_requests') { await handleTopup(type, record, old_record); return; }
+  if (table === 'account_deletion_requests') { if (type === 'INSERT') await handleDeletionRequest(record); return; }
+  if (table === 'credit_history') { if (type === 'INSERT') await notifyCredit(record); return; }
   if (table !== 'cnc_orders') return;
 
-  // 새 주문 → 관리자만 (고객에게는 credit_history 'use' 로 "주문 접수 완료"를 보내요 — 중복 방지)
+  // 새 주문 → 관리자만 (고객에게는 credit_history 'use' 로 "주문 접수"를 보내요 — 중복 방지)
   if (type === 'INSERT') {
-    await notifyAdmin('new_order', '', record);
+    await notifyAdmin('new_order', record);
     return;
   }
 
@@ -960,42 +1205,36 @@ async function handle(payload: any): Promise<void> {
   const to = record.stage;
   if (!to || from === to) return;   // 단계가 안 바뀌었으면 보내지 않아요
 
-  // 이번 변경을 한 직원 이름 (고객 알림 사본에 넣어요)
-  const actor = newAdminActorName(record, old_record);
-  let copied: string[] = [];   // 고객 알림 사본을 받은 곳 → 그곳에는 "… by 이름" 카드를 따로 안 보내요
+  const actor = newAdminActorName(record, old_record);   // 이번 변경을 한 직원 이름 (사본에 넣어요)
+  let copied: string[] = [];   // 사본을 받은 곳 → 그곳에는 "… by 이름" 카드를 따로 안 보내요
 
   switch (to) {
     // 관리자에게
     case 'approved':
-      await notifyAdmin('approved', 'Customer approved the design', record);
+      await notifyAdmin('approved', record, { message: 'Customer approved the design. You can start milling.' });
       break;
     case 'design_revision':
-      await notifyAdmin('revision', 'Customer requested design changes', record, [['Change request', lastRevisionNote(record.review_history)]]);
+      await notifyAdmin('revision', record, {
+        message: 'Customer requested design changes.',
+        details: { title: 'Change request', text: lastRevisionNote(record.review_history) || '—' },
+      });
       break;
     case 'done': {
       const last = lastEntry(record.review_history);
       if (last && last.action === 'marked_done') break;   // 관리자가 직접 완료 처리한 경우는 알리지 않아요
-      await notifyAdmin('received', 'Customer received the order', record);
+      await notifyAdmin('received', record, { message: 'Customer confirmed receipt of the order.' });
       break;
     }
     case 'cancelled':
       if (isAdminCancel(record.review_history)) copied = await notifyCustomer(record, 'cancel', actor);
-      else await notifyAdmin('cancelled', 'Customer cancelled the order', record, [['Refunded', String(record.credits_used ?? 0) + ' credits']]);
+      else await notifyAdmin('cancelled', record, { message: 'Customer cancelled the order. Credits were returned.', refunded: true });
       break;
 
     // 고객에게 (+ 관리자 사본)
-    case 'confirmed':
-      copied = await notifyCustomer(record, 'confirmed', actor);
-      break;
-    case 'design_ready':
-      copied = await notifyCustomer(record, 'design', actor);
-      break;
-    case 'milling':
-      copied = await notifyCustomer(record, 'milling', actor);
-      break;
-    case 'shipped':
-      copied = await notifyCustomer(record, 'shipped', actor);
-      break;
+    case 'confirmed': copied = await notifyCustomer(record, 'confirmed', actor); break;
+    case 'design_ready': copied = await notifyCustomer(record, 'design', actor); break;
+    case 'milling': copied = await notifyCustomer(record, 'milling', actor); break;
+    case 'shipped': copied = await notifyCustomer(record, 'shipped', actor); break;
   }
 
   // 직원이 처리한 일 → 연결된 그룹에 "… by 이름" (사본을 이미 받은 그룹은 빼요)

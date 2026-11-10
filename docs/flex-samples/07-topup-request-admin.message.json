@@ -1,0 +1,346 @@
+{
+  "type": "flex",
+  "altText": "Top-up request · TP261110-0004",
+  "contents": {
+    "type": "bubble",
+    "size": "mega",
+    "styles": {
+      "body": {
+        "backgroundColor": "#FFFFFF"
+      },
+      "footer": {
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "body": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "20px",
+      "contents": [
+        {
+          "type": "image",
+          "url": "https://allabut.com/assets/brand/line-icon.png",
+          "size": "48px",
+          "aspectRatio": "1:1",
+          "aspectMode": "cover",
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "text": "Top-up request",
+          "wrap": true,
+          "size": "lg",
+          "weight": "bold",
+          "color": "#B8860B",
+          "align": "center",
+          "margin": "md"
+        },
+        {
+          "type": "text",
+          "text": "allAbut · Top-up notice",
+          "wrap": true,
+          "size": "xs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        },
+        {
+          "type": "text",
+          "text": "TP261110-0004",
+          "wrap": true,
+          "size": "md",
+          "weight": "bold",
+          "color": "#111827",
+          "align": "center",
+          "margin": "lg"
+        },
+        {
+          "type": "text",
+          "text": "10 NOV 2026 / 10:12 AM",
+          "wrap": true,
+          "size": "xs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "text",
+          "text": "Please check the payment slip and approve or reject.",
+          "wrap": true,
+          "size": "sm",
+          "color": "#111827",
+          "margin": "lg"
+        },
+        {
+          "type": "text",
+          "text": "Clinic",
+          "wrap": true,
+          "size": "sm",
+          "weight": "bold",
+          "color": "#111827",
+          "margin": "lg"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Bright Smile Dental Clinic",
+              "wrap": true,
+              "size": "sm",
+              "weight": "bold",
+              "color": "#111827"
+            },
+            {
+              "type": "text",
+              "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "xs"
+            },
+            {
+              "type": "text",
+              "text": "02-123-4567",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "xs"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Details",
+          "wrap": true,
+          "size": "sm",
+          "weight": "bold",
+          "color": "#111827",
+          "margin": "lg"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Package",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "30 credits",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Unit price",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "฿1,900.00",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "spacing": "md",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Subtotal",
+              "wrap": true,
+              "size": "sm",
+              "color": "#6B7280",
+              "weight": "regular",
+              "flex": 5,
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "฿57,000.00",
+              "wrap": true,
+              "size": "sm",
+              "color": "#111827",
+              "weight": "bold",
+              "align": "end",
+              "flex": 5,
+              "gravity": "center"
+            }
+          ]
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "spacing": "md",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "VAT 7%",
+              "wrap": true,
+              "size": "sm",
+              "color": "#6B7280",
+              "weight": "regular",
+              "flex": 5,
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "฿3,990.00",
+              "wrap": true,
+              "size": "sm",
+              "color": "#111827",
+              "weight": "bold",
+              "align": "end",
+              "flex": 5,
+              "gravity": "center"
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "md",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "spacing": "md",
+          "margin": "md",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Total",
+              "wrap": true,
+              "size": "md",
+              "color": "#111827",
+              "weight": "bold",
+              "flex": 1,
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "฿60,990.00",
+              "size": "xl",
+              "color": "#111827",
+              "weight": "bold",
+              "align": "end",
+              "flex": 0,
+              "gravity": "center"
+            }
+          ]
+        }
+      ]
+    },
+    "footer": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingTop": "0px",
+      "contents": [
+        {
+          "type": "box",
+          "layout": "vertical",
+          "borderWidth": "1px",
+          "borderColor": "#D1D5DB",
+          "cornerRadius": "8px",
+          "paddingAll": "12px",
+          "action": {
+            "type": "uri",
+            "label": "Open admin",
+            "uri": "https://allabut.com/#/admin/topups"
+          },
+          "contents": [
+            {
+              "type": "text",
+              "text": "Open admin",
+              "wrap": true,
+              "size": "sm",
+              "weight": "bold",
+              "color": "#111827",
+              "align": "center"
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "text",
+          "text": "This is an automatic notification from allAbut.",
+          "wrap": true,
+          "size": "xxs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "md"
+        },
+        {
+          "type": "text",
+          "text": "allAbut Co., Ltd. · Tax ID 0105569012345 · allabut.com",
+          "wrap": true,
+          "size": "xxs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        }
+      ]
+    }
+  }
+}

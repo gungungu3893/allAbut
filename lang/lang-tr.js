@@ -996,7 +996,7 @@ LANG.tr = {
   lg_legend_refund: 'İade · kredi düzeltmesi',
   lg_legend_gray: 'Süresi doldu · süre hatırlatması · yükleme reddedildi/iptal',
   lg_legend_team: 'Personel işlemi (onay · tasarım · frezeleme · kargo)',
-  lg_legend_copy: 'Beyaz başlık + renkli çerçeve = müşteri bildirimi kopyası',
+  lg_legend_copy: '"COPY OF CUSTOMER NOTICE" etiketi = müşteri bildirimi kopyası',
 
   // ----- 회사소개 #/about -----
   about_nav: 'Hakkımızda',

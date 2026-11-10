@@ -996,7 +996,7 @@ LANG.es = {
   lg_legend_refund: 'Reembolso · ajuste de créditos',
   lg_legend_gray: 'Vencido · aviso de vencimiento · recarga rechazada/cancelada',
   lg_legend_team: 'Avance del personal (confirmado · diseño · fresado · enviado)',
-  lg_legend_copy: 'Encabezado blanco con borde de color = copia de un aviso al cliente',
+  lg_legend_copy: 'Etiqueta "COPY OF CUSTOMER NOTICE" = copia de un aviso al cliente',
 
   // ----- 회사소개 #/about -----
   about_nav: 'Nosotros',

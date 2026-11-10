@@ -220,14 +220,18 @@
   - 직원이 처리한 일(by_name 있는 새 기록, 충전 승인/거절의 reviewed_by)은 연결된 그룹에만 "Confirmed by Ken" 카드
   - **고객 알림 사본** (카테고리 `customer_copy`, sql/006_customer_copy.sql): 고객에게 가는 알림(confirmed·design_ready·milling·shipped·관리자 취소,
     credit_history charge·use·refund·adjust·expire, EXPIRY_REMINDER, 충전 거절)은 고객 LINE 연결 여부와 상관없이 `sendCustomerCopy()` 로
-    "📋 COPY · …" 카드를 관리자에게도 보냄 (고객명 + 이메일, 내용 요약, 처리자, ✅ Sent to customer LINE / ❌ not connected + 전화번호).
+    사본 카드를 관리자에게도 보냄 (고객명 + 이메일, 내용, 처리자, LINE 연결 여부 + 미연결이면 전화번호).
     관리자 알림이 이미 가는 일(새 주문·고객 승인·수정 요청·수령·고객 취소·충전 요청)은 사본 없음.
     사본에 처리자가 들어가는 일은, 사본을 받는 그룹에 "… by 이름" 카드를 따로 안 보냄 (중복 방지). 대상이 하나도 없으면 LINE_ADMIN_USER_ID
-  - **관리자 카드 색** = `line-notify` 맨 위 `ADMIN_NOTICE_STYLES` 한 곳 (종류별 색·아이콘·라벨). 헤더 배경 = 종류 색 + "🆕 NEW ORDER" + 작은 allAbut,
-    본문 흰색, 주문번호·금액·크레딧 값과 버튼도 같은 색. altText 맨 앞에도 "아이콘 + 라벨 · 번호" (알림 미리보기에서 구분).
-    파랑 새 주문 / 초록 승인·수령 / 주황 수정 요청 / 빨강 취소·계정 삭제 / 진한 골드 충전·크레딧 지급 / 보라 환불·조정 / 회색 만료·거절 / 청록 직원 처리
-  - 사본 카드: 흰 헤더 + 종류 색 3px 테두리·글씨 + "📋 COPY · " 앞붙임, 고객 LINE 미연결이면 본문 맨 위 빨간 띠 "❌ Customer LINE not connected"
-  - 고객 카드(`flexCard`, 네이비 헤더 + 골드 allAbut)는 그대로
+  - **카드 모양 = 영수증 스타일, 모든 알림이 `buildReceiptCard()` 하나** (관리자·사본·고객 공통, 흰 바탕):
+    상단 가운데 로고 아이콘(`SITE_URL/assets/brand/line-icon.png`, 192×192 PNG) → 제목(색은 글씨에만) → "allAbut · Order notice" → 문서번호 → 날짜·시간(방콕 "10 NOV 2026 / 08:59 AM") →
+    섹션(있는 것만: Clinic / Case / Teeth "#36 Osstem A2" 최대 6줄 + "+n more" / 이벤트별 상세) → 합계(작은 줄 + 마지막 줄 크게: 주문·크레딧 "Credit balance", 충전 "Total ฿…") →
+    테두리 버튼 1개 + "This is an automatic notification from allAbut." + company_settings 회사명 · Tax ID · 사이트 주소
+  - 만드는 함수: `orderReceipt()`(cnc_orders 의 cases·clinic·addr·phone·patient·deadline·credits_used + credit_wallets 잔액), `topupReceipt()`(topup_requests 의 credits·unit_price·subtotal·vat_amount·total), `creditReceipt()`
+  - 제목 색: 관리자 = `ADMIN_NOTICE_STYLES` 의 종류별 색·제목(title) / 고객 = 네이비, 취소·충전 거절만 빨강. 글씨 #111827 · 회색 #6B7280 · 구분선 #E5E7EB
+  - 사본: 문서번호 위 회색 "COPY OF CUSTOMER NOTICE", Clinic 섹션에 고객 이메일, LINE 미연결이면 그 아래 빨간 작은 글씨 + 전화번호, 처리자는 상세의 "Handled by"
+  - altText = "제목 · 문서번호" (사본은 앞에 "COPY · "). 고객 문구는 9개 언어(`T` + 영수증 문구 `R`), 관리자·사본은 영어
+  - Flex 의 text 는 빈 글자를 못 받아서 값이 빈 줄은 빼요. 샘플: `docs/flex-samples/` (사이트에 안 올라감)
   - 관리자 화면 범례: Settings → LINE groups 의 "알림 색 안내" (`ADMIN_NOTICE_LEGEND`, cnc/cnc-team.js) — **색을 바꾸면 두 곳 다**
 - 관리자 Customers 탭: LINE 연결 표시(✅/❌, profiles.line_user_id) + "LINE 미연결 고객만" 필터
 - **비밀값은 코드·저장소에 절대 쓰지 않는다.** Edge Function 안에서 `Deno.env.get()` 으로만 (Secrets: LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, LINE_ADMIN_USER_ID, NOTIFY_SECRET).
