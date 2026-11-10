@@ -72,6 +72,19 @@
 - SQL: `sql/002_credit_topups.sql`, 설정 안내: `TOPUP_SETUP.md`
 - 금액 표시는 `formatTHB()` (언어와 상관없이 21,935.00 THB)
 
+## 무료 크레딧 · 등록된 치과 정보 (sql/008_free_credits.sql)
+- **산 크레딧과 무료 크레딧(가입 선물·이벤트·관리자 지급)을 구분**: `credit_lots.restriction = 'clinic_address_only'` 이면 무료 (source 'bonus' 묶음은 트리거가 자동으로 표시)
+  - 무료 크레딧은 현금 환불 불가, 주문 1단계의 **"무료 크레딧으로 주문하기"** 를 켠 주문에만 사용 → 배송 정보는 **등록된 치과 정보로 고정**(화면에서 못 고침, DB 도 강제로 바꿈)
+  - 켜지 않은 주문은 무료 묶음을 건너뛰고 산 크레딧만 사용. 산 크레딧이 모자라고 무료로 채울 수 있으면 에러 `bonus_address_only` (→ "무료 크레딧으로 주문하기" 켜기 / 충전하기 버튼)
+  - 켠 주문은 무료 먼저 → 모자라면 산 크레딧. `cnc_orders.bonus_used`(사용한 무료 수), `addr_norm`(주소 정규화 `_norm_addr`) 저장. 판단은 전부 `create_cnc_order(..., p_use_free)` 안에서
+  - 주문 취소는 예전처럼 원래 묶음으로 복구 → restriction 그대로. 크레딧은 커스텀 어버트먼트 주문에만 써요 (다른 상품 없음)
+- **등록된 치과 정보** = `profiles.reg_clinic / reg_addr / reg_phone / reg_addr_norm / clinic_locked_at`: 치과 이름·주소·전화가 처음 모두 채워지는 순간(가입 때 다 넣었으면 가입 시점) 트리거가 잠금.
+  고객이 프로필을 고쳐도 등록 정보는 그대로(유료 주문 배송지만 바뀜). 변경은 `request_clinic_change()` → 관리자(manager 이상) `admin_review_clinic_change()` 승인. 회원가입에 주소 칸(선택) 추가
+- **가입 선물**: `payment_settings.signup_bonus_credits` (기본 0 = 지급 안 함, 관리자 Settings → 결제 설정에서 정함). 등록 정보가 처음 잠길 때 1번 `grant_signup_bonus()` (`signup_bonus_grants` 기록)
+- 화면: `cncCreditSplit()` 미리보기(선물 n / 충전 n), `APP.freeCredits / APP.paidCredits` (`get_my_credit_summary()`, 008 실행 전이면 전부 산 크레딧), 묶음 목록 🎁 표시, Profile 의 "등록된 치과 정보" 카드 + 변경 요청
+- 관리자(`ui/page-admin-free.js`): 주문 목록·상세 "🎁 선물 크레딧 사용 — 등록 주소로만 출고" 배지 + 출고 주소 크게, Customers 탭 맨 위 변경 요청(지금 vs 요청), 승인 전 미사용 무료 크레딧 경고(`admin_free_credits`)
+- **002 를 다시 실행하면 008 도 다시** (002 가 예전 7개 인자 create_cnc_order 를 다시 만들어서 — 008 이 지우고 새로 만듦)
+
 ## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
 - 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
 - 문서: `#/terms`, `#/privacy`, `#/credit-policy` — **로그인 없이도** 볼 수 있음 (로그인 전: `screen-legal` 화면)
@@ -153,6 +166,7 @@
 - `ui/page-admin-finance.js` — Dashboard 의 Revenue 구역 (`PageAdmin` 에 함수 덧붙임: 카드, ? 설명, 패키지 표, 상위 고객, SVG 그래프, CSV 버튼)
 - `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회, 관리자 LINE 그룹·그룹 코드 (로직만)
 - `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
+- `ui/page-admin-free.js` — 무료(선물) 크레딧 배지, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
 ## 화면 공통 부품 (디자인)
@@ -232,6 +246,7 @@
   - 사본: 문서번호 위 회색 "COPY OF CUSTOMER NOTICE", Clinic 섹션에 고객 이메일, LINE 미연결이면 그 아래 빨간 작은 글씨 + 전화번호, 처리자는 상세의 "Handled by"
   - altText = "제목 · 문서번호" (사본은 앞에 "COPY · "). 고객 문구는 9개 언어(`T` + 영수증 문구 `R`), 관리자·사본은 영어
   - Flex 의 text 는 빈 글자를 못 받아서 값이 빈 줄은 빼요. 샘플: `docs/flex-samples/` (사이트에 안 올라감)
+  - 관리자 주문 카드: `bonus_used > 0` 이면 Shipping 섹션에 "🎁 Welcome gift / free credits used · ship to registered clinic address only" (`freeShipSection`)
   - **LINE 메시지의 사이트 링크는 전부 `siteLink(path)`** (line-notify·line-webhook 각각): `{SITE_URL}/?openExternalBrowser=1#{path}` → 휴대폰 기본 브라우저로 열림.
     쿼리는 반드시 `#` 앞. 주문 카드는 그 주문으로 바로: 고객 `orderLink(id)` = `#/orders?id=…`, 관리자 `adminOrderLink(id)` = `#/admin/orders?order=…`. LINE 친구추가 주소(line.me)는 그대로
   - 사이트(ui/router.js): `cleanExternalQuery()` 가 주소창에서 `openExternalBrowser` 만 지움(해시·다른 쿼리 유지), `applyDeepLink()` → `#/orders?id=` 는 `PageOrders.openId`(진행 중 → 완료 → 주문번호 검색 순으로 찾아 펼침),

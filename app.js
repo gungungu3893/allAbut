@@ -286,6 +286,8 @@ async function handleSignUp(event) {
   var password2 = document.getElementById('signup-password2').value;
   var clinic = document.getElementById('signup-clinic').value.trim();
   var phone = document.getElementById('signup-phone').value.trim();
+  var addressEl = document.getElementById('signup-address');
+  var address = addressEl ? addressEl.value.trim() : '';
   var button = document.getElementById('signup-btn');
 
   if (!nickname) return showAuthMessage('signup-error', t('err_nickname_required'));
@@ -299,7 +301,7 @@ async function handleSignUp(event) {
     // 지금 최신 약관·개인정보 버전 (가입과 함께 동의 기록)
     var versions = await cncGetLegalVersions(true).catch(function () { return null; });
     var legal = versions && versions.terms && versions.privacy ? { terms: versions.terms.version, privacy: versions.privacy.version } : null;
-    var data = await signUp(email, password, nickname, clinic, phone, legal);
+    var data = await signUp(email, password, nickname, clinic, phone, legal, address);
 
     if (data.session) {
       // 이메일 인증 없이 바로 로그인된 경우 → 동의 기록 + 1시간 세션 시작 + 홈으로

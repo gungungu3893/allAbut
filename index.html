@@ -124,6 +124,12 @@
             <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
             <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30">
           </div>
+          <!-- 치과 주소 (선택) — 치과 이름·주소·전화를 모두 넣으면 "등록된 치과 정보"로 잠겨요 (무료 크레딧 주문의 배송지, sql/008) -->
+          <div class="auth-field">
+            <label for="signup-address"><span data-i18n="address_label">Address</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
+            <input type="text" id="signup-address" autocomplete="street-address" maxlength="300">
+            <p class="auth-hint" data-i18n="signup_reg_hint">Clinic name, address and phone become your registered clinic info (used for free-credit orders).</p>
+          </div>
           <!-- 약관·개인정보 동의 (체크하지 않으면 가입 불가) — 글자는 app.js 의 renderSignupAgree() 가 채워요 -->
           <label class="auth-agree">
             <input type="checkbox" id="signup-agree">
@@ -244,6 +250,7 @@
   <script src="ui/page-admin.js"></script>
   <script src="ui/page-admin-finance.js"></script>
   <script src="ui/page-admin-team.js"></script>
+  <script src="ui/page-admin-free.js"></script>
   <script src="ui/router.js"></script>
 
   <!-- 시작 -->

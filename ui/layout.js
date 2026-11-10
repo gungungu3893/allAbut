@@ -309,11 +309,24 @@ function updateCreditBadges() {
 
 async function refreshBalance() {
   try {
-    var res = await Promise.all([cncGetBalance(), cncGetMyLots().catch(function () { return null; })]);
+    var res = await Promise.all([
+      cncGetBalance(),
+      cncGetMyLots().catch(function () { return null; }),
+      cncGetCreditSummary().catch(function () { return null; })   // 무료 / 산 크레딧 (sql/008)
+    ]);
     APP.balance = res[0];
-    if (res[1]) {
-      APP.lots = res[1];
-      APP.expiringSoon = cncExpiringSoon(res[1]);
+    var lots = (res[2] && res[2].lots) || res[1];
+    if (lots) {
+      APP.lots = lots;
+      APP.expiringSoon = cncExpiringSoon(lots);
+    }
+    if (res[2]) {
+      APP.freeCredits = res[2].free;
+      APP.paidCredits = res[2].paid;
+    } else {
+      // 008 실행 전: 전부 산 크레딧으로 봐요
+      APP.freeCredits = 0;
+      APP.paidCredits = APP.balance || 0;
     }
   } catch (err) {
     console.error('Balance load failed:', err);
@@ -556,7 +569,9 @@ function uiErrorMessage(err) {
     INVALID_ROLE: 'team_err_invalid_role',
     NOT_MEMBER: 'team_err_not_member',
     LAST_OWNER: 'team_err_last_owner',
-    CANNOT_REMOVE_SELF: 'team_err_remove_self'
+    CANNOT_REMOVE_SELF: 'team_err_remove_self',
+    bonus_address_only: 'free_err_address_only',
+    NO_REGISTERED_CLINIC: 'free_err_no_registered'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });

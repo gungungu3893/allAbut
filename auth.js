@@ -10,7 +10,7 @@ window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //    그럴 땐 처음 로그인할 때 getProfile() 이 이 정보로 profiles 행을 만들어 줘요.)
 // legal: 가입 화면에서 동의한 약관·개인정보 버전 { terms, privacy } — 유저 정보(metadata)에도 남겨 둬요
 //        (이메일 인증 때문에 가입 직후 동의 기록을 못 하면, 첫 로그인 때 이 값으로 기록해요)
-async function signUp(email, password, nickname, clinicName, phone, legal) {
+async function signUp(email, password, nickname, clinicName, phone, legal, address) {
   legal = legal || {};
   var result = await sb.auth.signUp({
     email: email,
@@ -19,7 +19,7 @@ async function signUp(email, password, nickname, clinicName, phone, legal) {
       // 인증 메일의 링크를 누르면 돌아올 주소 (config.js 의 SITE_URL)
       emailRedirectTo: SITE_URL + '/',
       data: {
-        nickname: nickname, clinic_name: clinicName || '', phone: phone || '',
+        nickname: nickname, clinic_name: clinicName || '', phone: phone || '', address: address || '',
         accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
       }
     }
@@ -35,7 +35,7 @@ async function signUp(email, password, nickname, clinicName, phone, legal) {
 
   // 바로 로그인 상태가 됐다면 (이메일 인증이 꺼져 있는 경우) profiles 에 바로 저장
   if (result.data.session) {
-    await createProfile(user.id, nickname, { clinic_name: clinicName, phone: phone });
+    await createProfile(user.id, nickname, { clinic_name: clinicName, phone: phone, address: address });
   }
 
   return result.data; // data.session 이 없으면 → 이메일 인증이 필요하다는 뜻
@@ -47,6 +47,7 @@ async function createProfile(userId, nickname, extra) {
   var row = { id: userId, nickname: nickname, lang: currentLang };
   if (extra.clinic_name) row.clinic_name = extra.clinic_name;
   if (extra.phone) row.phone = extra.phone;
+  if (extra.address) row.address = extra.address;   // 치과 이름·주소·전화가 모두 있으면 DB 가 "등록된 치과 정보"로 잠가요 (sql/008)
 
   var result = await sb.from('profiles').insert(row).select().single();
   if (result.error) throw result.error;
@@ -84,5 +85,5 @@ async function getProfile() {
 
   var meta = user.user_metadata || {};
   var nickname = meta.nickname || user.email.split('@')[0];
-  return await createProfile(user.id, nickname, { clinic_name: meta.clinic_name, phone: meta.phone });
+  return await createProfile(user.id, nickname, { clinic_name: meta.clinic_name, phone: meta.phone, address: meta.address });
 }

@@ -1,6 +1,7 @@
 // ===== 내 정보 #/profile =====
 // - 닉네임·이메일(읽기 전용), 치과 정보(Clinic name, Address, Phone, Tax ID), 언어 → 저장
-// - 크레딧 잔액 + 크레딧 이력 표
+// - 크레딧 잔액 + 크레딧 이력 표 (산 크레딧 / 무료 크레딧 나눠서, 무료 묶음엔 🎁 표시)
+// - 등록된 치과 정보 (무료 크레딧 주문의 배송지, 잠김) + 변경 요청 (관리자 승인 후 바뀜) — sql/008_free_credits.sql
 // - LINE 알림 연결 (공통 부품 ui/line-connect.js 의 LineConnect.mountSection 을 그대로 써요)
 
 var PageProfile = {
@@ -20,6 +21,7 @@ var PageProfile = {
     this.draw();
     this.loadHistory();
     this.loadDeletion();
+    this.loadClinicChange();
     if (this.scrollToLine) {
       this.scrollToLine = false;
       var box = document.getElementById('profile-line');
@@ -102,12 +104,115 @@ var PageProfile = {
           '</section>' +
           '<section class="card" id="profile-credits"></section>' +
         '</div>' +
+        '<section class="card reg-card" id="profile-reg"></section>' +
         '<section class="card line-card" id="profile-line"></section>' +
         '<section class="card delete-card" id="profile-delete"></section>' +
       '</div>';
     this.drawCredits();
+    this.drawReg();
     LineConnect.mountSection(document.getElementById('profile-line'));
     this.drawDelete();
+  },
+
+  // ================================================================
+  // 등록된 치과 정보 (무료 크레딧 배송지) + 변경 요청
+  // ================================================================
+  clinicChange: undefined,   // 내 최근 변경 요청 (undefined = 아직 안 읽음)
+
+  loadClinicChange: async function () {
+    try {
+      this.clinicChange = await cncMyClinicChange();
+    } catch (err) {
+      this.clinicChange = null;
+    }
+    this.drawReg();
+  },
+
+  drawReg: function () {
+    var box = document.getElementById('profile-reg');
+    if (!box) return;
+    var p = APP.profile || {};
+    // 008 실행 전 (칸이 없음) → 숨김
+    if (!('clinic_locked_at' in p)) { box.hidden = true; return; }
+    box.hidden = false;
+    var reg = cncRegisteredClinic(p);
+    var html = '<h2 class="card-title"><span aria-hidden="true">🔒</span> ' + escHtml(t('reg_title')) + '</h2>' +
+      '<p class="card-desc">' + escHtml(t('reg_desc')) + '</p>';
+    if (!reg) {
+      html += '<p class="reg-empty"><span aria-hidden="true">ℹ</span> ' + escHtml(t('free_need_registered')) + '</p>';
+    } else {
+      html += '<div class="reg-box"><p class="reg-box-name">' + escHtml(reg.clinic) + '</p>' +
+        '<p class="reg-box-line pre">' + escHtml(reg.addr) + '</p>' +
+        '<p class="reg-box-line">' + escHtml(reg.phone) + '</p>' +
+        '<p class="field-help">' + escHtml(tf('reg_since', { date: formatDate(p.clinic_locked_at) })) + '</p></div>';
+      var c = this.clinicChange;
+      if (c && c.status === 'pending') {
+        html += '<div class="notice notice-info reg-pending" role="status"><p><span aria-hidden="true">⏳</span> ' +
+          escHtml(tf('reg_change_pending', { date: formatDate(c.created_at) })) + '</p>' +
+          '<p class="reg-box-line">' + escHtml(c.clinic) + ' · ' + escHtml(c.addr) + ' · ' + escHtml(c.phone) + '</p>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="PageProfile.cancelClinicChange()">' + escHtml(t('reg_change_cancel')) + '</button></div>';
+      } else {
+        if (c && c.status === 'rejected') {
+          html += '<p class="muted">' + escHtml(tf('reg_change_rejected', { date: formatDate(c.reviewed_at) })) +
+            (c.admin_note ? ' — ' + escHtml(c.admin_note) : '') + '</p>';
+        }
+        html += '<button type="button" class="btn btn-outline" onclick="PageProfile.openClinicChange()">' + escHtml(t('reg_change_btn')) + '</button>';
+      }
+    }
+    box.innerHTML = html;
+  },
+
+  openClinicChange: function () {
+    var self = this;
+    var reg = cncRegisteredClinic(APP.profile) || {};
+    function field(id, labelKey, value, type) {
+      return '<div class="field"><label class="field-label" for="rc-' + id + '">' + escHtml(t(labelKey)) + ' <span class="required">*</span></label>' +
+        '<input class="input" id="rc-' + id + '" type="' + (type || 'text') + '" maxlength="300" value="' + escHtml(value || '') + '">' +
+        '<div class="err-slot" data-rc-err="' + id + '"></div></div>';
+    }
+    var modal = uiModal({
+      title: t('reg_change_btn'),
+      body: '<p class="modal-text">' + escHtml(t('reg_change_text')) + '</p>' +
+        field('clinic', 'clinic_name', reg.clinic) + field('addr', 'address_label', reg.addr) + field('phone', 'phone_label', reg.phone, 'tel') +
+        '<div class="field"><label class="field-label" for="rc-reason">' + escHtml(t('reg_change_reason')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
+        '<textarea class="input textarea" id="rc-reason" rows="2" maxlength="500"></textarea></div>',
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: t('reg_change_submit'), kind: 'primary', onClick: async function (close, btn) {
+          var v = function (id) { return modal.el.querySelector('#rc-' + id).value.trim(); };
+          var vals = { clinic: v('clinic'), addr: v('addr'), phone: v('phone') };
+          var bad = false;
+          Object.keys(vals).forEach(function (k) {
+            var slot = modal.el.querySelector('[data-rc-err="' + k + '"]');
+            slot.innerHTML = vals[k] ? '' : uiFieldError('err_required');
+            if (!vals[k]) bad = true;
+          });
+          if (bad) return;
+          btn.disabled = true;
+          try {
+            await cncRequestClinicChange(vals.clinic, vals.addr, vals.phone, v('reason'));
+            close();
+            uiToast(t('reg_change_sent'), 'success');
+            self.loadClinicChange();
+          } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            uiToast(uiErrorMessage(err), 'error');
+          }
+        } }
+      ]
+    });
+  },
+
+  cancelClinicChange: async function () {
+    var ok = await uiConfirm({ title: t('reg_change_cancel'), message: t('reg_change_cancel_confirm') });
+    if (!ok) return;
+    try {
+      await cncCancelClinicChange();
+      this.loadClinicChange();
+    } catch (err) {
+      uiToast(uiErrorMessage(err), 'error');
+    }
   },
 
   // ================================================================
@@ -183,8 +288,10 @@ var PageProfile = {
       lots.map(function (l) {
         var st = cncExpiryState(l.expires_at);
         var days = cncDaysLeft(l.expires_at);
-        return '<tr class="' + (st ? 'lot-' + st : '') + '">' +
-          '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
+        var free = cncIsFreeLot(l);
+        return '<tr class="' + (st ? 'lot-' + st : '') + (free ? ' lot-free' : '') + '">' +
+          '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span>' +
+            (free ? '<span class="lot-free-tag">🎁 ' + escHtml(t(l.signup ? 'free_lot_signup' : 'free_lot_tag')) + '</span>' : '') + '</td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td>' +
           '<td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
           '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) +
@@ -197,6 +304,11 @@ var PageProfile = {
     if (!box) return;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
       '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+      ((APP.freeCredits || 0) > 0
+        ? '<p class="credit-split-line" id="credit-split-line">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(APP.paidCredits || 0) + '</b>' +
+            ' <span aria-hidden="true">·</span> 🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(APP.freeCredits) + '</b></p>' +
+          '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>'
+        : '') +
       '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
       '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + '</a>' +
       this.lotsHtml() +
@@ -249,9 +361,15 @@ var PageProfile = {
     this.saving = true;
     this.keepValues(fields);
     try {
+      var wasLocked = !!(APP.profile && APP.profile.clinic_locked_at);
       await cncSaveProfile(fields);
       this.saving = false;
       uiToast(t('profile_saved'), 'success');
+      // 치과 정보가 처음으로 모두 채워지면 등록 정보가 잠기고, 가입 선물이 있으면 들어와요
+      if (!wasLocked && APP.profile && APP.profile.clinic_locked_at) {
+        refreshBalance();
+        uiToast(t('reg_locked_now'), 'info');
+      }
       if (fields.lang !== currentLang) setLang(fields.lang);   // 화면 전체가 새 언어로 다시 그려져요
       else this.draw();
     } catch (err) {

@@ -28,6 +28,9 @@ var CNC_APP_ERROR_CODES = ['UPLOAD_FAILED', 'NETWORK', 'STAGE_CHANGED', 'NO_FILE
 // 충전·환불 관련 서버 에러 코드 (sql/002_credit_topups.sql)
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['PACKAGE_NOT_FOUND', 'SLIP_INVALID', 'SLIP_NOT_FOUND', 'TOO_MANY_PENDING', 'ALREADY_REVIEWED',
   'AMOUNT_TOO_HIGH', 'LOT_NOT_REFUNDABLE', 'NO_LOTS', 'BALANCE_NEGATIVE', 'INVALID_AMOUNT', 'VERSION_OUTDATED']);
+// 무료 크레딧 · 등록 치과 정보 (sql/008_free_credits.sql)
+//   bonus_address_only: 산 크레딧이 모자라는데 무료 크레딧은 "무료 크레딧으로 주문하기"(등록 정보 배송)에서만 쓸 수 있을 때
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['bonus_address_only', 'NO_REGISTERED_CLINIC', 'ALREADY_REVIEWED']);
 
 
 // ================================================================
@@ -95,6 +98,7 @@ function cncUserId() {
 //   files: [{ id, file(File), name, size, path }],      ← path 는 업로드가 끝나면 채워짐
 //   missingFiles: ['upper.stl'],                       ← 복원했을 때 다시 골라야 하는 파일 이름
 //   delivery: { clinic, addr, phone, line_id },
+//   useFree: false,                                    ← "무료 크레딧으로 주문하기" (켜면 배송 정보 = 등록된 치과 정보, 못 고침)
 //   saveToProfile: true,
 //   uploadId: '...',                                   ← 업로드 폴더 이름 (한 주문에 하나)
 //   updatedAt: 1700000000000
@@ -118,6 +122,7 @@ function cncNewDraft(profile) {
       phone: profile.phone || '',
       line_id: ''   // 연락용 LINE ID (글자). profiles.line_user_id 는 LINE 알림 연결용이라 여기 쓰지 않아요
     },
+    useFree: false,
     saveToProfile: true,
     uploadId: cncRandomId(),
     updatedAt: Date.now()
@@ -142,6 +147,7 @@ function cncSaveDraft(userId, draft) {
     memo: draft.memo,
     fileNames: draft.files.map(function (f) { return f.name; }).concat(draft.missingFiles || []),
     delivery: draft.delivery,
+    useFree: !!draft.useFree,
     saveToProfile: draft.saveToProfile,
     uploadId: draft.uploadId,
     updatedAt: draft.updatedAt
@@ -185,6 +191,7 @@ function cncLoadDraft(userId, profile) {
       line_id: String(saved.delivery.line_id || '')
     };
   }
+  draft.useFree = saved.useFree === true;
   draft.saveToProfile = saved.saveToProfile !== false;
   draft.uploadId = saved.uploadId || cncRandomId();
   draft.updatedAt = saved.updatedAt || Date.now();
@@ -244,6 +251,76 @@ function cncCreditsNeeded(draft) {
   return draft.teeth.length;
 }
 
+// ----------------------------------------------------------------
+// 무료 크레딧 · 등록된 치과 정보 (sql/008_free_credits.sql)
+// ----------------------------------------------------------------
+// 무료 크레딧 = 가입 선물·이벤트·관리자 지급 (credit_lots.restriction = 'clinic_address_only')
+//   현금 환불 불가, "무료 크레딧으로 주문하기"를 켠 주문(배송 = 등록된 치과 정보)에만 써요.
+//   실제 판단은 DB 함수 create_cnc_order 가 해요 (화면은 미리보기·안내만)
+var FREE_LOT_RESTRICTION = 'clinic_address_only';
+
+function cncIsFreeLot(lot) {
+  return !!lot && (lot.restriction === FREE_LOT_RESTRICTION || (lot.restriction == null && lot.source === 'bonus'));
+}
+
+// 등록된 치과 정보 (프로필에 잠긴 값). 아직 없으면 null
+function cncRegisteredClinic(profile) {
+  var p = profile || {};
+  if (!p.clinic_locked_at || !p.reg_addr) return null;
+  return { clinic: String(p.reg_clinic || ''), addr: String(p.reg_addr || ''), phone: String(p.reg_phone || '') };
+}
+
+// 주소 비교용 (DB 의 _norm_addr 와 같게: 소문자, 공백·기호 빼기)
+function cncNormAddr(s) {
+  return String(s || '').toLowerCase().replace(/[\s!-\/:-@\[-`{-~]+/g, '');
+}
+
+// 차감 미리보기: { free, paid, ok, freeWouldHelp }
+//   useFree = true  → 무료 먼저, 모자라는 만큼 산 크레딧
+//   useFree = false → 산 크레딧만 (무료로 채울 수 있었으면 freeWouldHelp)
+function cncCreditSplit(need, paidAvail, freeAvail, useFree) {
+  need = Math.max(0, need | 0);
+  paidAvail = Math.max(0, paidAvail | 0);
+  freeAvail = Math.max(0, freeAvail | 0);
+  if (useFree) {
+    var free = Math.min(freeAvail, need);
+    var paid = need - free;
+    return { free: free, paid: paid, ok: paid <= paidAvail, freeWouldHelp: false };
+  }
+  var ok = paidAvail >= need;
+  return { free: 0, paid: need, ok: ok, freeWouldHelp: !ok && freeAvail > 0 && paidAvail + freeAvail >= need };
+}
+
+// 내 크레딧 요약 { paid, free, lots } — 008 을 실행하기 전이면 null (그때는 예전처럼 전부 산 크레딧)
+async function cncGetCreditSummary() {
+  var r = await sb.rpc('get_my_credit_summary');
+  if (r.error) {
+    if (typeof cncIsMissingFunction === 'function' && cncIsMissingFunction(r.error)) return null;
+    throw cncError(cncErrorCode(r.error), { cause: r.error });
+  }
+  var d = r.data;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+  return d && typeof d === 'object' ? { paid: Number(d.paid || 0), free: Number(d.free || 0), lots: Array.isArray(d.lots) ? d.lots : [] } : null;
+}
+
+// 등록 정보 변경 요청 (관리자 승인 후 바뀌어요)
+function cncRequestClinicChange(clinic, addr, phone, reason) {
+  return cncRpc('request_clinic_change', {
+    p_clinic: String(clinic || '').trim(), p_addr: String(addr || '').trim(), p_phone: String(phone || '').trim(), p_reason: String(reason || '').trim()
+  });
+}
+
+function cncCancelClinicChange() {
+  return cncRpc('cancel_my_clinic_change');
+}
+
+// 내 최근 변경 요청 (없거나 008 실행 전이면 null)
+async function cncMyClinicChange() {
+  var r = await sb.from('clinic_change_requests').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false }).limit(1);
+  if (r.error) return null;
+  return (r.data && r.data[0]) || null;
+}
+
 
 // ================================================================
 // 3) 단계별 검사
@@ -282,7 +359,8 @@ function cncValidateStep(draft, step) {
     if (draft.files.length > FILE_MAX_COUNT) errors.files = 'err_file_count';
   }
 
-  if (step === 5) {
+  // 무료 크레딧 주문은 배송 정보가 등록된 치과 정보로 고정이라 칸 검사를 하지 않아요
+  if (step === 5 && !draft.useFree) {
     if (!draft.delivery.clinic.trim()) errors.clinic = 'err_required';
     if (!draft.delivery.addr.trim()) errors.addr = 'err_required';
     if (!draft.delivery.phone.trim()) errors.phone = 'err_required';
@@ -446,6 +524,10 @@ async function cncSubmitOrder(draft, onProgress) {
 
   if (draft.teeth.length < 1) throw cncError('NO_TEETH');
   var d = draft.delivery;
+  // 무료 크레딧 주문: 배송 정보는 등록된 치과 정보 (DB 도 같은 값으로 강제로 바꿔요)
+  var reg = draft.useFree ? cncRegisteredClinic(window.APP && APP.profile) : null;
+  if (draft.useFree && !reg) throw cncError('NO_REGISTERED_CLINIC');
+  if (reg) d = { clinic: reg.clinic, addr: reg.addr, phone: reg.phone, line_id: d.line_id || '' };
   if (!d.clinic.trim() || !d.addr.trim() || !d.phone.trim()) throw cncError('DELIVERY_REQUIRED');
 
   if (onProgress) onProgress({ phase: 'upload', done: 0, total: draft.files.length });
@@ -455,23 +537,26 @@ async function cncSubmitOrder(draft, onProgress) {
 
   if (onProgress) onProgress({ phase: 'save' });
   var result;
+  var args = {
+    p_patient: draft.patient.trim(),
+    p_deadline: draft.deadline || null,
+    p_clinic: d.clinic.trim(),
+    p_addr: d.addr.trim(),
+    p_phone: d.phone.trim(),
+    p_line_id: d.line_id.trim(),
+    p_cases: cncBuildCases(draft)
+  };
+  if (draft.useFree) args.p_use_free = true;   // 008 실행 전에도 일반 주문은 그대로 되게, 켰을 때만 보내요
   try {
-    result = await sb.rpc('create_cnc_order', {
-      p_patient: draft.patient.trim(),
-      p_deadline: draft.deadline || null,
-      p_clinic: d.clinic.trim(),
-      p_addr: d.addr.trim(),
-      p_phone: d.phone.trim(),
-      p_line_id: d.line_id.trim(),
-      p_cases: cncBuildCases(draft)
-    });
+    result = await sb.rpc('create_cnc_order', args);
   } catch (err) {
     throw cncError(cncErrorCode(err), { cause: err });
   }
   if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
 
   // "내 프로필에 저장" 을 켰으면 배송 정보를 profiles 에도 저장 (실패해도 주문은 이미 완료)
-  if (draft.saveToProfile) {
+  //   무료 크레딧 주문은 등록 정보 그대로라 저장할 필요가 없어요
+  if (draft.saveToProfile && !draft.useFree) {
     try {
       // (LINE ID 칸은 저장하지 않아요 — profiles.line_user_id 는 LINE 알림 연결 전용)
       await cncSaveProfile({

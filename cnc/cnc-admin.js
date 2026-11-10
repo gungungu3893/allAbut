@@ -180,7 +180,8 @@ async function cncAdminGetOrder(id) {
   if (!order) throw cncError('NOT_FOUND');
   var profile = null;
   try {
-    profile = cncCheck(await sb.from('profiles').select('id, nickname, clinic_name, phone').eq('id', order.user_id).maybeSingle());
+    // '*' — 등록된 치과 정보(reg_*, sql/008)도 같이 (008 실행 전에도 오류 없이)
+    profile = cncCheck(await sb.from('profiles').select('*').eq('id', order.user_id).maybeSingle());
   } catch (err) {
     console.warn('Profile read failed:', err);
   }
@@ -539,6 +540,10 @@ async function cncAdminSaveSettings(fields) {
     note: String(fields.note || '').trim(),
     updated_at: new Date().toISOString()
   };
+  // 가입 선물 크레딧 수 (sql/008 실행 후에만 칸이 있어요. 0 = 지급 안 함)
+  if (fields.signup_bonus_credits !== undefined && fields.signup_bonus_credits !== null) {
+    clean.signup_bonus_credits = Math.max(0, Math.min(100, parseInt(fields.signup_bonus_credits, 10) || 0));
+  }
   var result = await sb.from('payment_settings').update(clean).eq('id', 1).select();
   if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
   if (!result.data || !result.data.length) throw cncError('NOT_ADMIN');
@@ -549,6 +554,43 @@ async function cncAdminSaveSettings(fields) {
 // ================================================================
 // 10) 고객의 크레딧 묶음 · 현금 환불 계산기
 // ================================================================
+
+// ================================================================
+// 무료 크레딧 · 등록 정보 변경 요청 (sql/008_free_credits.sql)
+// ================================================================
+// 변경 요청 목록 (고객 이름 · 지금 등록 정보 붙여서). status: 'pending' | 'all'
+async function cncAdminListClinicChanges(status) {
+  var q = sb.from('clinic_change_requests').select('*');
+  if (status && status !== 'all') q = q.eq('status', status);
+  var r = await q.order('created_at', { ascending: false }).limit(100);
+  if (r.error) {
+    // 008 실행 전 (표가 없음) → 빈 목록
+    if (/does not exist|relation|schema cache|PGRST205|42P01/i.test(String(r.error.message || r.error.code || ''))) return null;
+    throw cncError(cncErrorCode(r.error), { cause: r.error });
+  }
+  var rows = r.data || [];
+  var ids = rows.map(function (x) { return x.user_id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+  if (ids.length) {
+    try {
+      var profiles = cncCheck(await sb.from('profiles').select('*').in('id', ids)) || [];
+      rows.forEach(function (x) { x.customer = profiles.filter(function (p) { return p.id === x.user_id; })[0] || null; });
+    } catch (err) {
+      console.warn('Customer read failed:', err);
+    }
+  }
+  return rows;
+}
+
+// 승인(true) / 거절(false)
+function cncAdminReviewClinicChange(id, approve, note) {
+  return cncRpc('admin_review_clinic_change', { p_id: id, p_approve: !!approve, p_note: String(note || '').trim() });
+}
+
+// 고객의 미사용 무료 크레딧 수
+async function cncAdminFreeCredits(userId) {
+  var n = await cncRpc('admin_free_credits', { p_user: userId });
+  return Number(n || 0);
+}
 
 // 고객의 묶음 (남은 것 먼저, 만료 빠른 순)
 async function cncAdminUserLots(userId) {

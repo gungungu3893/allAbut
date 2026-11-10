@@ -527,7 +527,7 @@ var PageAdmin = {
       '<th>' + escHtml(t('admin_stage')) + '</th></tr></thead><tbody>' +
       o.rows.map(function (r) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openOrder(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openOrder(\'' + escHtml(r.id) + '\')">' +
-          '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b></td>' +
+          '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b>' + self.freeBadgeHtml(r, true) + '</td>' +
           '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +
           '<td>' + escHtml(r.clinic) + '</td>' +
           '<td>' + escHtml(r.patient || t('anonymous')) + '</td>' +
@@ -540,6 +540,7 @@ var PageAdmin = {
     var cards = '<ul class="admin-order-cards">' + o.rows.map(function (r) {
       return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openOrder(\'' + escHtml(r.id) + '\')">' +
         '<span class="order-top"><span class="order-id mono">' + escHtml(r.id) + '</span>' + uiStageBadge(r.stage) + '</span>' +
+        self.freeBadgeHtml(r, true) +
         '<span class="admin-card-clinic">' + escHtml(r.clinic) + '</span>' +
         '<span class="order-meta">' +
           '<span><span class="muted">' + escHtml(t('patient_label')) + '</span> ' + escHtml(r.patient || t('anonymous')) + '</span>' +
@@ -613,6 +614,18 @@ var PageAdmin = {
     // 진행 상황
     html += '<div class="admin-detail-status">' + uiStageBadge(o.stage) + (o.stage === 'cancelled' ? '' : uiStageBar(o.stage)) + '</div>';
 
+    // 무료(선물) 크레딧 사용 주문 → 등록 주소로만 출고 (크게)
+    if (Number(o.bonus_used || 0) > 0) {
+      html += '<div class="free-ship-box" id="free-ship-box" role="note">' +
+        this.freeBadgeHtml(o, false) +
+        '<p class="free-ship-label">' + escHtml(t('admin_free_ship_to')) + '</p>' +
+        '<p class="free-ship-name">' + escHtml(o.clinic) + '</p>' +
+        '<p class="free-ship-addr pre">' + escHtml(o.addr) + '</p>' +
+        '<p class="free-ship-phone mono">' + escHtml(o.phone) + '</p>' +
+        '<p class="field-help">' + escHtml(tf('admin_free_used_n', { n: o.bonus_used })) + '</p>' +
+      '</div>';
+    }
+
     // 처리 버튼
     html += this.actionsHtml(o);
 
@@ -631,6 +644,7 @@ var PageAdmin = {
         row('patient_label', escHtml(o.patient || t('anonymous'))) +
         row('case_deadline_label', this.dueHtml(o)) +
         row('credits_use', formatNumber(o.credits_used), true) +
+        (Number(o.bonus_used || 0) > 0 ? row('admin_free_used', formatNumber(o.bonus_used), true) : '') +
         (o.carrier ? row('carrier_label', escHtml(o.carrier)) : '') +
         (o.tracking_number ? row('tracking_label', escHtml(o.tracking_number), true) : '') +
       '</section></div>';
@@ -980,6 +994,7 @@ var PageAdmin = {
     if (!document.getElementById('admin-users-list')) this.drawBody();
     this.drawUsersList();
     this.loadDeletions();
+    this.loadClinicChanges();
     try {
       var rows = await cncAdminListUsers();
       if (token !== this.loadToken) return;
@@ -993,7 +1008,8 @@ var PageAdmin = {
   },
 
   usersHtml: function () {
-    return '<section class="card admin-deletions" id="admin-deletions"></section>' +
+    return '<section class="card admin-clinic-changes" id="admin-clinic-changes" hidden></section>' +
+      '<section class="card admin-deletions" id="admin-deletions"></section>' +
       '<div class="orders-tools">' +
         '<div class="search-box">' +
           '<label class="sr-only" for="admin-user-search">' + escHtml(t('admin_search_users')) + '</label>' +
@@ -1095,10 +1111,14 @@ var PageAdmin = {
         cncAdminCreditHistory(st.user.id, 100),
         cncAdminListOrders({ userId: st.user.id, stage: 'all', limit: 50 }),
         cncAdminGetBalance(st.user.id),
-        cncAdminUserLots(st.user.id)
+        cncAdminUserLots(st.user.id),
+        sb.from('profiles').select('*').eq('id', st.user.id).maybeSingle().then(function (r) { return r.data || null; }, function () { return null; })
       ]);
       if (this.customer !== st) return;
       st.lots = res[3];
+      st.reg = cncRegisteredClinic(res[4]);
+      st.free = (res[3] || []).filter(function (l) { return cncIsFreeLot(l) && l.remaining > 0 && new Date(l.expires_at) > new Date(); })
+        .reduce(function (s, l) { return s + Number(l.remaining || 0); }, 0);
       st.history = res[0];
       st.orders = res[1].rows;
       st.user.balance = res[2];
@@ -1135,6 +1155,10 @@ var PageAdmin = {
       '<section>' +
         row('email_label', u.email) + row('nickname_label', u.nickname) + row('clinic_name', u.clinic_name) +
         row('phone_label', u.phone, true) + row('admin_joined', formatDate(u.created_at)) +
+        (st.reg ? '<div class="reg-box admin-reg-box"><p class="reg-box-title">🔒 ' + escHtml(t('reg_title')) + '</p>' +
+            '<p class="reg-box-name">' + escHtml(st.reg.clinic) + '</p><p class="reg-box-line pre">' + escHtml(st.reg.addr) + '</p>' +
+            '<p class="reg-box-line mono">' + escHtml(st.reg.phone) + '</p></div>' : '') +
+        (st.free > 0 ? '<p class="credit-split-line">🎁 ' + escHtml(tf('admin_free_unused', { n: st.free })) + '</p>' : '') +
       '</section>' +
       '<section class="credit-box">' +
         '<h3 class="review-title">' + escHtml(t('credit_balance')) + '</h3>' +
@@ -1505,6 +1529,8 @@ var PageAdmin = {
         input('account_name', 'topup_account_name', s.account_name) +
         input('account_number', 'topup_account_number', s.account_number, { mono: true }) +
         input('note', 'admin_payment_note', s.note, { textarea: true, span: true }) +
+        // 가입 선물 크레딧 (sql/008 실행 후에만 칸이 있어요)
+        ('signup_bonus_credits' in s ? input('signup_bonus_credits', 'admin_signup_bonus', s.signup_bonus_credits, { type: 'number', step: '1', mono: true, help: 'admin_signup_bonus_help' }) : '') +
         '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (sx.saving ? ' disabled' : '') + '>' + escHtml(sx.saving ? t('saving') : t('pe_save')) + '</button></div>' +
       '</form></section>';
 
@@ -1539,6 +1565,10 @@ var PageAdmin = {
     var v = function (id) { return document.getElementById('set-' + id).value.trim(); };
     var fields = { promptpay_id: v('promptpay_id'), bank_name: v('bank_name'), account_name: v('account_name'), account_number: v('account_number'), vat_rate: v('vat_rate'), note: v('note') };
     var errs = {};
+    if (document.getElementById('set-signup_bonus_credits')) {
+      fields.signup_bonus_credits = v('signup_bonus_credits');
+      if (!/^\d{1,3}$/.test(fields.signup_bonus_credits) || +fields.signup_bonus_credits > 100) errs.signup_bonus_credits = 'admin_err_signup_bonus';
+    }
     if (fields.promptpay_id && !isValidPromptPayId(fields.promptpay_id)) errs.promptpay_id = 'admin_err_promptpay';
     var vat = Number(fields.vat_rate);
     if (fields.vat_rate === '' || isNaN(vat) || vat < 0 || vat > 30) errs.vat_rate = 'admin_err_vat';

@@ -134,7 +134,7 @@ var PageNew = {
 
   onBalanceChange: function () {
     this.updateSummary();
-    if (!this.submitting && !this.success && (this.draft.step === 2 || this.draft.step === 5)) this.drawStep();
+    if (!this.submitting && !this.success && (this.draft.step === 1 || this.draft.step === 2 || this.draft.step === 5)) this.drawStep();
   },
 
   // 배송 정보가 비어 있으면 프로필 값으로 채우기
@@ -268,7 +268,7 @@ var PageNew = {
     if (d.step < 5) {
       html += '<button type="button" class="btn btn-primary btn-lg" onclick="PageNew.next()">' + escHtml(t('wiz_next')) + ' <span class="arrow" aria-hidden="true">→</span></button>';
     } else {
-      var enough = APP.balance != null && APP.balance >= cncCreditsNeeded(d);
+      var enough = APP.balance != null && this.creditSplit().ok;
       var label = this.submitting ? '<span class="spinner" aria-hidden="true"></span> ' + escHtml(t('submitting')) : escHtml(t('custom_submit'));
       html += '<button type="button" class="btn btn-gold btn-lg btn-submit" onclick="PageNew.submit()"' +
         (this.submitting || !enough ? ' disabled' : '') + '>' + label + '</button>';
@@ -296,7 +296,62 @@ var PageNew = {
         uiDateField({ id: 'f-deadline', value: d.deadline, min: cncToday(), onChange: 'PageNew.setDeadline', invalid: !!e.deadline }) +
         uiFieldError(e.deadline) +
       '</div>' +
+    '</div>' +
+    this.freeOptionHtml();
+  },
+
+  // ----------------------------------------------------------------
+  // 무료 크레딧으로 주문하기 (가입 선물·이벤트로 받은 크레딧)
+  //   켜면 배송 정보는 "등록된 치과 정보"로 고정 (고칠 수 없어요). 실제 판단은 DB(create_cnc_order)가 해요
+  // ----------------------------------------------------------------
+  freeOptionHtml: function () {
+    var d = this.draft;
+    var free = APP.freeCredits || 0;
+    if (!free && !d.useFree) return '';
+    var reg = cncRegisteredClinic(APP.profile);
+    var html = '<div class="free-option' + (d.useFree ? ' on' : '') + '" id="free-option">' +
+      '<label class="checkbox free-check">' +
+        '<input type="checkbox" id="f-use-free"' + (d.useFree ? ' checked' : '') + (reg ? '' : ' disabled') +
+          ' onchange="PageNew.setUseFree(this.checked)"> ' +
+        '<span><b>🎁 ' + escHtml(t('free_use_label')) + '</b> ' +
+          '<span class="free-have">(' + escHtml(tf('free_have', { n: formatNumber(free) })) + ')</span></span>' +
+      '</label>' +
+      '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>';
+    if (!reg) {
+      html += '<p class="free-warn" role="note"><span aria-hidden="true">ℹ</span> ' + escHtml(t('free_need_registered')) +
+        ' <a href="#/profile">' + escHtml(t('nav_profile')) + ' <span class="arrow" aria-hidden="true">→</span></a></p>';
+    } else if (d.useFree) {
+      html += this.registeredBoxHtml(reg);
+    }
+    return html + '</div>';
+  },
+
+  // 등록된 치과 정보 (읽기 전용)
+  registeredBoxHtml: function (reg) {
+    return '<div class="reg-box" id="reg-box">' +
+      '<p class="reg-box-title"><span aria-hidden="true">🔒</span> ' + escHtml(t('reg_title')) + '</p>' +
+      '<p class="reg-box-name">' + escHtml(reg.clinic) + '</p>' +
+      '<p class="reg-box-line pre">' + escHtml(reg.addr) + '</p>' +
+      '<p class="reg-box-line">' + escHtml(reg.phone) + '</p>' +
+      '<p class="field-help">' + escHtml(t('free_locked_note')) + '</p>' +
     '</div>';
+  },
+
+  setUseFree: function (on) {
+    var reg = cncRegisteredClinic(APP.profile);
+    if (on && !reg) { uiToast(t('free_err_no_registered'), 'error'); on = false; }
+    this.draft.useFree = !!on;
+    this.submitError = null;
+    this.save();
+    this.drawStep();
+    this.updateSummary();
+  },
+
+  // 차감 미리보기 (무료 n / 충전 n)
+  creditSplit: function () {
+    var d = this.draft;
+    var paid = APP.paidCredits != null ? APP.paidCredits : (APP.balance || 0);
+    return cncCreditSplit(cncCreditsNeeded(d), paid, APP.freeCredits || 0, !!d.useFree);
   },
 
   // 달력에서 날짜를 고르면 불려요 ('YYYY-MM-DD')
@@ -361,7 +416,7 @@ var PageNew = {
     var info = n
       ? tf('teeth_selected_credits', { n: n, balance: balance })
       : t('teeth_none_selected');
-    var short = APP.balance != null && n > APP.balance;
+    var short = APP.balance != null && n > 0 && !this.creditSplit().ok;
 
     return '<div class="tooth-chart" dir="ltr">' +
         jaw('upper_jaw', FDI_UPPER_RIGHT, FDI_UPPER_LEFT, true) +
@@ -663,7 +718,8 @@ var PageNew = {
     var e = (this.check && this.check.errors) || {};
     var need = cncCreditsNeeded(d);
     var bal = APP.balance;
-    var enough = bal != null && bal >= need;
+    var split = this.creditSplit();
+    var enough = bal != null && split.ok;
 
     function group(titleKey, step, content) {
       return '<div class="review-group">' +
@@ -708,24 +764,44 @@ var PageNew = {
         uiFieldError(e[field]) +
         '</div>';
     }
-    html += '<div class="review-group"><div class="review-head"><h3 class="review-title">' + escHtml(t('wiz_delivery_label')) + '</h3></div>' +
-      '<div class="form-grid two">' +
-        input('clinic', 'clinic_name', true) +
-        input('phone', 'phone_label', true, 'tel') +
-        '<div class="span-2">' + input('addr', 'address_label', true) + '</div>' +
-        input('line_id', 'line_id_label', false) +
-      '</div>' +
-      '<label class="checkbox"><input type="checkbox" ' + (d.saveToProfile ? 'checked' : '') +
-        ' onchange="PageNew.draft.saveToProfile = this.checked; PageNew.save()"> <span>' + escHtml(t('save_to_profile')) + '</span></label>' +
-      '</div>';
+    var reg = cncRegisteredClinic(APP.profile);
+    var free = APP.freeCredits || 0;
+    if (d.useFree && reg) {
+      // 무료 크레딧 주문: 등록된 치과 정보로 고정 (고칠 수 없어요)
+      html += '<div class="review-group"><div class="review-head"><h3 class="review-title">' + escHtml(t('wiz_delivery_label')) + '</h3></div>' +
+        this.registeredBoxHtml(reg) +
+        '<div class="form-grid two">' + input('line_id', 'line_id_label', false) + '</div>' +
+        '</div>';
+    } else {
+      var diff = free > 0 && reg && cncNormAddr(d.delivery.addr) !== cncNormAddr(reg.addr);
+      html += '<div class="review-group"><div class="review-head"><h3 class="review-title">' + escHtml(t('wiz_delivery_label')) + '</h3></div>' +
+        (free > 0 ? '<div class="notice notice-info free-notice" role="note"><p><span aria-hidden="true">🎁</span> ' +
+            escHtml(diff ? t('free_not_for_this_order') : t('free_off_hint')) + '</p>' +
+            (reg ? '<button type="button" class="btn btn-outline btn-sm" onclick="PageNew.setUseFree(true)">' + escHtml(t('free_turn_on')) + '</button>' : '') +
+          '</div>' : '') +
+        '<div class="form-grid two">' +
+          input('clinic', 'clinic_name', true) +
+          input('phone', 'phone_label', true, 'tel') +
+          '<div class="span-2">' + input('addr', 'address_label', true) + '</div>' +
+          input('line_id', 'line_id_label', false) +
+        '</div>' +
+        '<label class="checkbox"><input type="checkbox" ' + (d.saveToProfile ? 'checked' : '') +
+          ' onchange="PageNew.draft.saveToProfile = this.checked; PageNew.save()"> <span>' + escHtml(t('save_to_profile')) + '</span></label>' +
+        '</div>';
+    }
 
     // 크레딧
     html += '<div class="review-group credit-box' + (enough ? '' : ' short') + '">' +
       '<div class="review-head"><h3 class="review-title">' + escHtml(t('credits_title')) + '</h3></div>' +
       row('credits_use', formatNumber(need), true) +
+      ((APP.freeCredits || 0) > 0
+        ? '<div class="review-row credit-split" id="credit-split"><span class="review-label">' + escHtml(t('free_split_label')) + '</span>' +
+            '<span class="review-value"><span class="split-free">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(split.free) + '</b></span>' +
+            ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(split.paid) + '</b></span></span></div>'
+        : '') +
       row('credits_current', bal != null ? formatNumber(bal) : '—', true) +
       row('credits_after', bal != null ? formatNumber(bal - need) : '—', true) +
-      (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('insufficient_credits_msg')) + '</p>' +
+      (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(split.freeWouldHelp ? t('free_err_address_only') : t('insufficient_credits_msg')) + '</p>' +
         '<p class="topup-hint">' + escHtml(t('topup_draft_saved')) + '</p>' +
         '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' : '') +
       '</div>';
@@ -744,6 +820,11 @@ var PageNew = {
         '<p><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(this.submitError)) + '</p>' +
         (cncErrorCode(this.submitError) === 'UPLOAD_FAILED' || cncErrorCode(this.submitError) === 'NETWORK' || cncErrorCode(this.submitError) === 'UNKNOWN'
           ? '<button type="button" class="btn btn-primary" onclick="PageNew.submit()">' + escHtml(t('btn_retry')) + '</button>' : '') +
+        (cncErrorCode(this.submitError) === 'bonus_address_only'
+          ? '<div class="btn-row">' +
+              (reg ? '<button type="button" class="btn btn-outline" onclick="PageNew.setUseFree(true)">🎁 ' + escHtml(t('free_turn_on')) + '</button>' : '') +
+              '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a></div>'
+          : '') +
         uiContactHelpHtml() +
         '</div>';
     }
@@ -865,9 +946,14 @@ var PageNew = {
         '<dt>' + escHtml(tf('teeth_count_fmt', { n: d.teeth.length })) + '</dt><dd>' + teeth + '</dd>' +
         '<dt>' + escHtml(t('files_label')) + '</dt><dd class="mono">' + d.files.length + ' / ' + FILE_MAX_COUNT + '</dd>' +
       '</dl>' +
-      '<div class="sum-credits' + (bal != null && bal < need ? ' short' : '') + '">' +
+      '<div class="sum-credits' + (bal != null && !this.creditSplit().ok ? ' short' : '') + '">' +
         '<div><span>' + escHtml(t('credits_use')) + '</span><b class="mono">' + formatNumber(need) + '</b></div>' +
         '<div><span>' + escHtml(t('credits_current')) + '</span><b class="mono">' + (bal != null ? formatNumber(bal) : '—') + '</b></div>' +
+        ((APP.freeCredits || 0) > 0
+          ? '<div class="sum-free"><span>🎁 ' + escHtml(t('free_short')) + ' / 💳 ' + escHtml(t('paid_short')) + '</span><b class="mono">' +
+              formatNumber(this.creditSplit().free) + ' / ' + formatNumber(this.creditSplit().paid) + '</b></div>' +
+            (d.useFree ? '<p class="sum-free-note">🔒 ' + escHtml(t('free_locked_short')) + '</p>' : '')
+          : '') +
       '</div>';
   },
 
@@ -887,8 +973,9 @@ var PageNew = {
     var bad = cncFirstInvalidStep(d);
     if (bad) { this.goStep(bad); return; }
 
-    if (APP.balance == null || APP.balance < cncCreditsNeeded(d)) {
-      this.submitError = cncError('INSUFFICIENT_CREDITS');
+    var split = this.creditSplit();
+    if (APP.balance == null || !split.ok) {
+      this.submitError = cncError(split.freeWouldHelp ? 'bonus_address_only' : 'INSUFFICIENT_CREDITS');
       this.drawStep();
       return;
     }
@@ -921,7 +1008,7 @@ var PageNew = {
       this.progress = null;
       this.submitError = err;
       this.save();
-      if (cncErrorCode(err) === 'INSUFFICIENT_CREDITS') refreshBalance();
+      if (cncErrorCode(err) === 'INSUFFICIENT_CREDITS' || cncErrorCode(err) === 'bonus_address_only') refreshBalance();
       this.drawStep();
       var box = document.querySelector('.notice-error');
       if (box) box.scrollIntoView({ block: 'center' });

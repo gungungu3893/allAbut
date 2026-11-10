@@ -906,11 +906,19 @@ function withActor(rows: Row[], actor: string): Row[] {
 // ================================================================
 // 주문 → 관리자 (영어)
 // ================================================================
+// 무료(선물) 크레딧을 쓴 주문 → 등록된 치과 주소로만 출고 (sql/008, cnc_orders.bonus_used)
+const FREE_SHIP_LINE = '🎁 Welcome gift / free credits used · ship to registered clinic address only';
+function freeShipSection(o: any): Section | undefined {
+  const n = Number(o?.bonus_used || 0);
+  if (n <= 0) return undefined;
+  return { title: 'Shipping', rows: [['Free credits used', String(n)]], text: FREE_SHIP_LINE };
+}
+
 async function notifyAdmin(type: NoticeType, o: any, opt: { message?: string; details?: Section; refunded?: boolean } = {}): Promise<void> {
   const st = ADMIN_NOTICE_STYLES[type];
   const balance = await getBalance(o.user_id);
   await pushAdmins('orders', await orderReceipt(EN, o, {
-    title: st.title, color: st.color, message: opt.message, details: opt.details, refunded: opt.refunded, balance,
+    title: st.title, color: st.color, message: opt.message, details: opt.details || freeShipSection(o), refunded: opt.refunded, balance,
     button: { label: 'Open admin', url: adminOrderLink(o.id) }, when: type === 'new_order' ? o.created_at : undefined,
   }));
 }
