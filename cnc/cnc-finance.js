@@ -25,6 +25,14 @@ function cncFinanceMissing(err) {
 // 그 달 요약 — 빠진 칸은 0 으로 채워서 화면이 깨지지 않게
 async function cncAdminFinanceMonth(year, month) {
   var d = (await cncRpc('admin_finance_month', { p_year: year, p_month: month })) || {};
+  // 무료 크레딧은 매출이 아닌 "무료"로 따로 (sql/009). 함수가 없으면 null → 예전처럼 보너스 카드
+  var free = null;
+  try {
+    var fr = (await cncRpc('admin_finance_free_month', { p_year: year, p_month: month })) || null;
+    if (fr) free = { granted: cncNum(fr.granted), used: cncNum(fr.used), expired: cncNum(fr.expired) };
+  } catch (err) {
+    free = null;
+  }
   function obj(o) { return o || {}; }
   var tp = obj(d.topups), pd = obj(d.pending), pn = obj(d.pending_now), rf = obj(d.refunds),
       cs = obj(d.consumed), ex = obj(d.expired), bn = obj(d.bonus);
@@ -42,6 +50,7 @@ async function cncAdminFinanceMonth(year, month) {
     consumed: { credits: cncNum(cs.credits), value: cncNum(cs.value) },
     expired: { credits: cncNum(ex.credits), value: cncNum(ex.value) },
     bonus: { credits: cncNum(bn.credits) },
+    free: free,
     byPackage: (d.by_package || []).map(function (p) {
       return {
         credits: cncNum(p.credits), unitPrice: cncNum(p.unit_price), count: cncNum(p.count),

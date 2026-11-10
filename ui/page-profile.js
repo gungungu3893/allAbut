@@ -291,7 +291,8 @@ var PageProfile = {
         var free = cncIsFreeLot(l);
         return '<tr class="' + (st ? 'lot-' + st : '') + (free ? ' lot-free' : '') + '">' +
           '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span>' +
-            (free ? '<span class="lot-free-tag">🎁 ' + escHtml(t(l.signup ? 'free_lot_signup' : 'free_lot_tag')) + '</span>' : '') + '</td>' +
+            (free ? '<span class="lot-free-tag">🎁 ' + escHtml(t(cncIsRestrictedLot(l) ? 'free_lot_tag' : 'free_lot_open')) + '</span>' +
+              (l.event_name ? '<span class="lot-event">' + escHtml(l.event_name) + '</span>' : '') : '') + '</td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td>' +
           '<td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
           '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) +
@@ -304,9 +305,9 @@ var PageProfile = {
     if (!box) return;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
       '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
-      ((APP.freeCredits || 0) > 0
-        ? '<p class="credit-split-line" id="credit-split-line">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(APP.paidCredits || 0) + '</b>' +
-            ' <span aria-hidden="true">·</span> 🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(APP.freeCredits) + '</b></p>' +
+      ((APP.freeTotal || 0) > 0
+        ? '<p class="credit-split-line" id="credit-split-line">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(APP.purchasedCredits || 0) + '</b>' +
+            ' <span aria-hidden="true">·</span> 🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(APP.freeTotal) + '</b></p>' +
           '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>'
         : '') +
       '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
@@ -365,7 +366,7 @@ var PageProfile = {
       await cncSaveProfile(fields);
       this.saving = false;
       uiToast(t('profile_saved'), 'success');
-      // 치과 정보가 처음으로 모두 채워지면 등록 정보가 잠기고, 가입 선물이 있으면 들어와요
+      // 치과 정보가 처음으로 모두 채워지면 등록 정보가 잠기고, 신규 가입 무료 크레딧 이벤트가 있으면 들어와요
       if (!wasLocked && APP.profile && APP.profile.clinic_locked_at) {
         refreshBalance();
         uiToast(t('reg_locked_now'), 'info');

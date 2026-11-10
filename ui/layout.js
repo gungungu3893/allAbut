@@ -321,12 +321,18 @@ async function refreshBalance() {
       APP.expiringSoon = cncExpiringSoon(lots);
     }
     if (res[2]) {
+      // 주문 계산용: freeCredits = 등록 주소 전용 무료 / paidCredits = 어디로든 배송 가능 (산 + 제한 없는 무료)
       APP.freeCredits = res[2].free;
-      APP.paidCredits = res[2].paid;
+      APP.paidCredits = res[2].paid + res[2].freeOpen;
+      // 보여주기용: 산 크레딧 / 무료 크레딧 전체
+      APP.purchasedCredits = res[2].paid;
+      APP.freeTotal = res[2].free + res[2].freeOpen;
     } else {
       // 008 실행 전: 전부 산 크레딧으로 봐요
       APP.freeCredits = 0;
       APP.paidCredits = APP.balance || 0;
+      APP.purchasedCredits = APP.balance || 0;
+      APP.freeTotal = 0;
     }
   } catch (err) {
     console.error('Balance load failed:', err);
@@ -571,7 +577,9 @@ function uiErrorMessage(err) {
     LAST_OWNER: 'team_err_last_owner',
     CANNOT_REMOVE_SELF: 'team_err_remove_self',
     bonus_address_only: 'free_err_address_only',
-    NO_REGISTERED_CLINIC: 'free_err_no_registered'
+    NO_REGISTERED_CLINIC: 'free_err_no_registered',
+    EVENT_REQUIRED: 'admin_free_err_event',
+    REASON_REQUIRED: 'admin_free_err_reason'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });

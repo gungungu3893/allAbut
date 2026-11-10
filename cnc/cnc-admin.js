@@ -540,7 +540,7 @@ async function cncAdminSaveSettings(fields) {
     note: String(fields.note || '').trim(),
     updated_at: new Date().toISOString()
   };
-  // 가입 선물 크레딧 수 (sql/008 실행 후에만 칸이 있어요. 0 = 지급 안 함)
+  // 신규 가입 무료 크레딧 수 (sql/008 실행 후에만 칸이 있어요. 0 = 지급 안 함) — 보통은 cncAdminSaveSignupBonus 로 따로 저장
   if (fields.signup_bonus_credits !== undefined && fields.signup_bonus_credits !== null) {
     clean.signup_bonus_credits = Math.max(0, Math.min(100, parseInt(fields.signup_bonus_credits, 10) || 0));
   }
@@ -586,7 +586,30 @@ function cncAdminReviewClinicChange(id, approve, note) {
   return cncRpc('admin_review_clinic_change', { p_id: id, p_approve: !!approve, p_note: String(note || '').trim() });
 }
 
-// 고객의 미사용 무료 크레딧 수
+// 신규 가입 무료 크레딧 이벤트: 지급할 크레딧 수 (0 = 지급 안 함)
+async function cncAdminSaveSignupBonus(n) {
+  var v = Math.max(0, Math.min(100, parseInt(n, 10) || 0));
+  var result = await sb.from('payment_settings').update({ signup_bonus_credits: v, updated_at: new Date().toISOString() }).eq('id', 1).select();
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  if (!result.data || !result.data.length) throw cncError('NOT_ADMIN');
+  return result.data[0];
+}
+
+// 무료 크레딧 지급 (manager 이상, sql/009) → 잔액
+//   opts: { event, credits, days(기본 365), addressOnly(기본 true) }
+function cncAdminGrantFreeCredits(userId, opts) {
+  return cncRpc('admin_grant_free_credits', {
+    p_user: userId, p_event: String(opts.event || '').trim(), p_credits: parseInt(opts.credits, 10),
+    p_days: parseInt(opts.days, 10) || 365, p_address_only: opts.addressOnly !== false
+  });
+}
+
+// 무료 크레딧 회수 (사유 필수, 무료 묶음에서만) → 잔액
+function cncAdminRevokeFreeCredits(userId, amount, reason) {
+  return cncRpc('admin_revoke_free_credits', { p_user: userId, p_amount: parseInt(amount, 10), p_reason: String(reason || '').trim() });
+}
+
+// 고객의 미사용 무료 크레딧 수 (등록 주소 전용)
 async function cncAdminFreeCredits(userId) {
   var n = await cncRpc('admin_free_credits', { p_user: userId });
   return Number(n || 0);

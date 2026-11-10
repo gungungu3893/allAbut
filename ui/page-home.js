@@ -73,6 +73,9 @@ var PageHome = {
     // LINE 연결 안내 띠 (미연결 + 7일 숨김 아님). 작성 중 주문 안내 바 아래
     html += lineBannerHtml();
 
+    // 🎁 무료 크레딧이 들어왔어요 (30일 이내, 닫으면 다시 안 보여요)
+    html += this.freeNoticeHtml();
+
     // 가이드 배너 (✕ 로 닫으면 다음부터 작은 한 줄)
     if (this.guideBannerSmall()) {
       html += '<p class="guide-banner-small"><span aria-hidden="true">📖</span> <a href="#/guide">' + escHtml(t('guide_banner_small')) + '</a></p>';
@@ -142,6 +145,28 @@ var PageHome = {
   },
 
   // ----- 확인이 필요해요 -----
+  // 🎁 무료 크레딧 n개가 들어왔어요 (유효기간 ~날짜) — 묶음마다 한 줄
+  freeNoticeHtml: function () {
+    var list = cncNewFreeLots(APP.lots);
+    if (!list.length) return '';
+    return '<div class="free-added" id="free-added" role="status">' +
+      list.map(function (x) {
+        return '<p class="free-added-line"><span aria-hidden="true">🎁</span> ' +
+          escHtml(tf('free_added_notice', { n: formatNumber(x.n), date: formatDate(x.expires_at) })) +
+          (x.event_name ? ' <span class="free-added-event">· ' + escHtml(x.event_name) + '</span>' : '') + '</p>';
+      }).join('') +
+      '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>' +
+      '<div class="btn-row">' +
+        '<a href="#/new" class="btn btn-gold">' + escHtml(t('home_new_order')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
+        '<button type="button" class="btn btn-outline btn-sm" onclick="PageHome.hideFreeNotice()"><span aria-hidden="true">✕</span> ' + escHtml(t('btn_hide')) + '</button>' +
+      '</div></div>';
+  },
+
+  hideFreeNotice: function () {
+    cncMarkFreeSeen(cncNewFreeLots(APP.lots).map(function (x) { return x.id; }));
+    this.draw();
+  },
+
   todoHtml: function () {
     var self = this;
     var list = this.data.todo || [];

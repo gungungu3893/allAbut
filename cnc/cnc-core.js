@@ -31,6 +31,8 @@ CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['PACKAGE_NOT_FOUND', 'SLIP_INVALID', '
 // 무료 크레딧 · 등록 치과 정보 (sql/008_free_credits.sql)
 //   bonus_address_only: 산 크레딧이 모자라는데 무료 크레딧은 "무료 크레딧으로 주문하기"(등록 정보 배송)에서만 쓸 수 있을 때
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['bonus_address_only', 'NO_REGISTERED_CLINIC', 'ALREADY_REVIEWED']);
+// 관리자 무료 크레딧 지급·회수 (sql/009_free_credit_grants.sql)
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['EVENT_REQUIRED', 'REASON_REQUIRED']);
 
 
 // ================================================================
@@ -254,13 +256,35 @@ function cncCreditsNeeded(draft) {
 // ----------------------------------------------------------------
 // 무료 크레딧 · 등록된 치과 정보 (sql/008_free_credits.sql)
 // ----------------------------------------------------------------
-// 무료 크레딧 = 가입 선물·이벤트·관리자 지급 (credit_lots.restriction = 'clinic_address_only')
-//   현금 환불 불가, "무료 크레딧으로 주문하기"를 켠 주문(배송 = 등록된 치과 정보)에만 써요.
+// 무료 크레딧 = 이벤트·신규 가입 이벤트·관리자 지급 (credit_lots.source 'free' 또는 예전 'bonus', sql/009)
+//   현금 환불 불가. 기본은 "등록 주소 배송 전용"(restriction = 'clinic_address_only') →
+//   "무료 크레딧으로 주문하기"를 켠 주문(배송 = 등록된 치과 정보)에만 써요. 관리자가 제한 없이 줄 수도 있어요.
 //   실제 판단은 DB 함수 create_cnc_order 가 해요 (화면은 미리보기·안내만)
 var FREE_LOT_RESTRICTION = 'clinic_address_only';
+var FREE_LOT_SOURCES = ['free', 'bonus'];
 
+// 무료 묶음인지 (제한 여부와 상관없이)
 function cncIsFreeLot(lot) {
-  return !!lot && (lot.restriction === FREE_LOT_RESTRICTION || (lot.restriction == null && lot.source === 'bonus'));
+  return !!lot && (lot.free === true || FREE_LOT_SOURCES.indexOf(lot.source) !== -1 || lot.restriction === FREE_LOT_RESTRICTION);
+}
+
+// 등록 주소 배송 전용 묶음인지
+function cncIsRestrictedLot(lot) {
+  return !!lot && (lot.restriction === FREE_LOT_RESTRICTION || (lot.restriction == null && lot.source === 'bonus' && lot.free === undefined));
+}
+
+// 최근 들어온 무료 크레딧 (홈 안내용, 30일 이내 · 아직 닫지 않은 것) → [{ id, n, expires_at, event_name }]
+var FREE_SEEN_PREFIX = 'allabut_free_seen_';
+function cncNewFreeLots(lots) {
+  var since = Date.now() - 30 * 86400000;
+  return (lots || []).filter(function (l) {
+    if (!cncIsFreeLot(l) || !l.created_at || new Date(l.created_at).getTime() < since) return false;
+    try { return !localStorage.getItem(FREE_SEEN_PREFIX + l.id); } catch (e) { return true; }
+  }).map(function (l) { return { id: l.id, n: Number(l.quantity || l.remaining || 0), expires_at: l.expires_at, event_name: l.event_name || '' }; });
+}
+
+function cncMarkFreeSeen(ids) {
+  (ids || []).forEach(function (id) { try { localStorage.setItem(FREE_SEEN_PREFIX + id, '1'); } catch (e) { /* 무시 */ } });
 }
 
 // 등록된 치과 정보 (프로필에 잠긴 값). 아직 없으면 null
@@ -300,7 +324,10 @@ async function cncGetCreditSummary() {
   }
   var d = r.data;
   if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
-  return d && typeof d === 'object' ? { paid: Number(d.paid || 0), free: Number(d.free || 0), lots: Array.isArray(d.lots) ? d.lots : [] } : null;
+  // paid = 산 크레딧, free = 무료 + 등록 주소 전용, freeOpen = 무료 + 제한 없음 (009)
+  return d && typeof d === 'object'
+    ? { paid: Number(d.paid || 0), free: Number(d.free || 0), freeOpen: Number(d.free_open || 0), lots: Array.isArray(d.lots) ? d.lots : [] }
+    : null;
 }
 
 // 등록 정보 변경 요청 (관리자 승인 후 바뀌어요)

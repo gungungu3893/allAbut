@@ -31,6 +31,7 @@
 // 관리자에게 (영어): 새 주문 / 고객 디자인 승인 / 수정 요청(사유) / 고객 수령 / 고객 취소 / 충전 요청 / 충전 취소 / 계정 삭제 요청
 // 고객에게 (profiles.lang, 9개 언어, LINE 연결했을 때만): 확인 / 디자인 확인 요청 / 가공 / 발송 / 관리자 취소(환불 + 잔액)
 //   / 크레딧 use·refund·adjust·charge·expire / 충전 거절 / 만료 예정
+//   / 무료 크레딧 지급 → "🎁 Free credits" 카드 (credit_lots.source 'free'·'bonus' 로 판단, sql/009)
 //
 // 원칙
 //   - UPDATE 인데 stage(또는 status) 가 안 바뀌었으면 아무것도 안 보내요 (중복 알림 방지)
@@ -320,6 +321,7 @@ type ReceiptTexts = {
   more: string; credit_balance: string; subtotal: string; vat: string; paid: string;
   view_order: string; view_credits: string; view_topup: string; auto_note: string;
   added: string; adjusted: string; expired: string; package: string; unit_price: string;
+  free_title: string; free_body: string; free_event: string; free_address_only: string; free_any_address: string; order_now: string;
 };
 const R: Record<string, ReceiptTexts> = {
   en: {
@@ -328,6 +330,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} more', credit_balance: 'Credit balance', subtotal: 'Subtotal', vat: 'VAT {r}%', paid: 'Paid',
     view_order: 'View order', view_credits: 'View credits', view_topup: 'View top-up', auto_note: 'This is an automatic notification from allAbut.',
     added: 'Credits added', adjusted: 'Adjusted', expired: 'Expired', package: 'Package', unit_price: 'Unit price',
+    free_title: "🎁 Free credits", free_body: "{n} free credits have been added (valid until {date}).", free_event: "Event",
+    free_address_only: "Can only be used for orders shipped to your registered clinic address.", free_any_address: "Can be used for any order.", order_now: "Order now",
   },
   ko: {
     notice_order: '주문 알림', notice_credit: '크레딧 알림', notice_topup: '충전 알림',
@@ -335,6 +339,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n}개 더', credit_balance: '크레딧 잔액', subtotal: '공급가액', vat: 'VAT {r}%', paid: '결제 금액',
     view_order: '주문 보기', view_credits: '크레딧 보기', view_topup: '충전 내역 보기', auto_note: 'allAbut 자동 알림입니다.',
     added: '충전 크레딧', adjusted: '조정', expired: '만료', package: '패키지', unit_price: '단가',
+    free_title: "🎁 무료 크레딧", free_body: "무료 크레딧 {n}개가 들어왔어요 (유효기간 ~{date}).", free_event: "이벤트",
+    free_address_only: "등록된 치과 주소로 배송하는 주문에만 쓸 수 있어요.", free_any_address: "모든 주문에 쓸 수 있어요.", order_now: "주문하기",
   },
   th: {
     notice_order: 'แจ้งเตือนคำสั่งงาน', notice_credit: 'แจ้งเตือนเครดิต', notice_topup: 'แจ้งเตือนการเติมเครดิต',
@@ -342,6 +348,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+อีก {n} รายการ', credit_balance: 'เครดิตคงเหลือ', subtotal: 'ยอดก่อน VAT', vat: 'VAT {r}%', paid: 'ยอดชำระ',
     view_order: 'ดูคำสั่งงาน', view_credits: 'ดูเครดิต', view_topup: 'ดูการเติมเครดิต', auto_note: 'นี่คือการแจ้งเตือนอัตโนมัติจาก allAbut',
     added: 'เครดิตที่เติม', adjusted: 'ปรับปรุง', expired: 'หมดอายุ', package: 'แพ็กเกจ', unit_price: 'ราคาต่อหน่วย',
+    free_title: "🎁 เครดิตฟรี", free_body: "ได้รับเครดิตฟรี {n} เครดิตแล้ว (ใช้ได้ถึง {date})", free_event: "กิจกรรม",
+    free_address_only: "ใช้ได้เฉพาะคำสั่งงานที่จัดส่งไปยังที่อยู่คลินิกที่ลงทะเบียน", free_any_address: "ใช้ได้กับทุกคำสั่งงาน", order_now: "สั่งงานเลย",
   },
   zh: {
     notice_order: '订单通知', notice_credit: '积分通知', notice_topup: '充值通知',
@@ -349,6 +357,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '另有 {n} 项', credit_balance: '积分余额', subtotal: '小计', vat: '增值税 {r}%', paid: '已付金额',
     view_order: '查看订单', view_credits: '查看积分', view_topup: '查看充值', auto_note: '这是 allAbut 的自动通知。',
     added: '充值积分', adjusted: '调整', expired: '过期', package: '套餐', unit_price: '单价',
+    free_title: "🎁 免费积分", free_body: "已到账 {n} 个免费积分（有效期至 {date}）。", free_event: "活动",
+    free_address_only: "只能用于寄往已登记诊所地址的订单。", free_any_address: "可用于任何订单。", order_now: "立即下单",
   },
   vi: {
     notice_order: 'Thông báo đơn hàng', notice_credit: 'Thông báo tín dụng', notice_topup: 'Thông báo nạp tín dụng',
@@ -356,6 +366,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} mục khác', credit_balance: 'Số dư tín dụng', subtotal: 'Tạm tính', vat: 'VAT {r}%', paid: 'Đã thanh toán',
     view_order: 'Xem đơn hàng', view_credits: 'Xem tín dụng', view_topup: 'Xem yêu cầu nạp', auto_note: 'Đây là thông báo tự động từ allAbut.',
     added: 'Tín dụng đã nạp', adjusted: 'Điều chỉnh', expired: 'Hết hạn', package: 'Gói', unit_price: 'Đơn giá',
+    free_title: "🎁 Tín dụng miễn phí", free_body: "Đã nhận {n} tín dụng miễn phí (hiệu lực đến {date}).", free_event: "Sự kiện",
+    free_address_only: "Chỉ dùng cho đơn giao đến địa chỉ phòng khám đã đăng ký.", free_any_address: "Dùng được cho mọi đơn hàng.", order_now: "Đặt hàng ngay",
   },
   es: {
     notice_order: 'Aviso de pedido', notice_credit: 'Aviso de créditos', notice_topup: 'Aviso de recarga',
@@ -363,6 +375,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} más', credit_balance: 'Saldo de créditos', subtotal: 'Subtotal', vat: 'IVA {r}%', paid: 'Pagado',
     view_order: 'Ver pedido', view_credits: 'Ver créditos', view_topup: 'Ver recarga', auto_note: 'Esta es una notificación automática de allAbut.',
     added: 'Créditos añadidos', adjusted: 'Ajuste', expired: 'Vencidos', package: 'Paquete', unit_price: 'Precio unitario',
+    free_title: "🎁 Créditos gratuitos", free_body: "Se añadieron {n} créditos gratuitos (válidos hasta el {date}).", free_event: "Evento",
+    free_address_only: "Solo sirven para pedidos enviados a la dirección de su clínica registrada.", free_any_address: "Sirven para cualquier pedido.", order_now: "Hacer un pedido",
   },
   tr: {
     notice_order: 'Sipariş bildirimi', notice_credit: 'Kredi bildirimi', notice_topup: 'Yükleme bildirimi',
@@ -370,6 +384,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} daha', credit_balance: 'Kredi bakiyesi', subtotal: 'Ara toplam', vat: 'KDV %{r}', paid: 'Ödenen',
     view_order: 'Siparişi görüntüle', view_credits: 'Kredileri görüntüle', view_topup: 'Yüklemeyi görüntüle', auto_note: 'Bu, allAbut\'tan otomatik bir bildirimdir.',
     added: 'Yüklenen kredi', adjusted: 'Düzeltme', expired: 'Süresi doldu', package: 'Paket', unit_price: 'Birim fiyat',
+    free_title: "🎁 Ücretsiz kredi", free_body: "{n} ücretsiz kredi eklendi ({date} tarihine kadar geçerli).", free_event: "Etkinlik",
+    free_address_only: "Yalnızca kayıtlı klinik adresinize gönderilen siparişlerde kullanılabilir.", free_any_address: "Tüm siparişlerde kullanılabilir.", order_now: "Sipariş ver",
   },
   ar: {
     notice_order: 'إشعار طلب', notice_credit: 'إشعار رصيد', notice_topup: 'إشعار شحن الرصيد',
@@ -377,6 +393,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} أخرى', credit_balance: 'الرصيد المتبقي', subtotal: 'المجموع الفرعي', vat: 'ضريبة القيمة المضافة {r}%', paid: 'المدفوع',
     view_order: 'عرض الطلب', view_credits: 'عرض الرصيد', view_topup: 'عرض الشحن', auto_note: 'هذا إشعار تلقائي من allAbut.',
     added: 'الرصيد المضاف', adjusted: 'تعديل', expired: 'منتهي', package: 'الباقة', unit_price: 'سعر الوحدة',
+    free_title: "🎁 رصيد مجاني", free_body: "تمت إضافة {n} رصيد مجاني (صالح حتى {date}).", free_event: "الفعالية",
+    free_address_only: "يُستخدم فقط للطلبات المرسلة إلى عنوان عيادتك المسجلة.", free_any_address: "يمكن استخدامه لأي طلب.", order_now: "اطلب الآن",
   },
   fa: {
     notice_order: 'اعلان سفارش', notice_credit: 'اعلان اعتبار', notice_topup: 'اعلان شارژ',
@@ -384,6 +402,8 @@ const R: Record<string, ReceiptTexts> = {
     more: '+{n} مورد دیگر', credit_balance: 'موجودی اعتبار', subtotal: 'جمع جزء', vat: 'مالیات {r}%', paid: 'پرداخت‌شده',
     view_order: 'مشاهده سفارش', view_credits: 'مشاهده اعتبار', view_topup: 'مشاهده شارژ', auto_note: 'این یک اعلان خودکار از allAbut است.',
     added: 'اعتبار افزوده', adjusted: 'اصلاح', expired: 'منقضی', package: 'بسته', unit_price: 'قیمت واحد',
+    free_title: "🎁 اعتبار رایگان", free_body: "{n} اعتبار رایگان اضافه شد (معتبر تا {date}).", free_event: "رویداد",
+    free_address_only: "فقط برای سفارش‌های ارسالی به آدرس کلینیک ثبت‌شده قابل استفاده است.", free_any_address: "برای هر سفارشی قابل استفاده است.", order_now: "سفارش دهید",
   },
 };
 
@@ -906,8 +926,8 @@ function withActor(rows: Row[], actor: string): Row[] {
 // ================================================================
 // 주문 → 관리자 (영어)
 // ================================================================
-// 무료(선물) 크레딧을 쓴 주문 → 등록된 치과 주소로만 출고 (sql/008, cnc_orders.bonus_used)
-const FREE_SHIP_LINE = '🎁 Welcome gift / free credits used · ship to registered clinic address only';
+// 무료 크레딧을 쓴 주문 → 등록된 치과 주소로만 출고 (sql/008, cnc_orders.bonus_used)
+const FREE_SHIP_LINE = '🎁 Free credits used · ship to registered clinic address only';
 function freeShipSection(o: any): Section | undefined {
   const n = Number(o?.bonus_used || 0);
   if (n <= 0) return undefined;
@@ -1024,6 +1044,70 @@ const CREDIT_TYPES: Record<string, NoticeType> = {
   use: 'credits_used', refund: 'refund', adjust: 'adjust', charge: 'charge', expire: 'expire',
 };
 
+// ----------------------------------------------------------------
+// 무료 크레딧 (sql/009) — 판단은 설명 글자가 아니라 묶음 정보로
+//   무료 묶음 = credit_lots.source 'free' 또는 'bonus' (예전 관리자 지급·예전 신규 가입 지급)
+//   묶음을 못 읽으면 예전 설명("Signup bonus" · "Welcome gift" · "Free credits: …")으로도 알아봐요
+// ----------------------------------------------------------------
+const FREE_SOURCES = ['free', 'bonus'];
+const LEGACY_FREE_DESC = /^(signup bonus|welcome gift|free credits\s*:)/i;
+
+async function getLotInfo(lotId: unknown): Promise<any | null> {
+  if (!lotId) return null;
+  const { data, error } = await db.from('credit_lots').select('*').eq('id', String(lotId)).maybeSingle();
+  if (error) { console.error('lot read failed', error); return null; }
+  return data;
+}
+
+function isFreeCharge(lot: any | null, desc: string): boolean {
+  if (lot && lot.topup_id) return false;   // 충전 요청으로 산 크레딧
+  if (lot && FREE_SOURCES.includes(String(lot.source))) return true;
+  return LEGACY_FREE_DESC.test(desc);
+}
+
+// 이벤트 이름: 묶음 → 설명 "Free credits: 이름 (valid until …)" → 예전 신규 가입 지급 → 'Free credits'
+function freeEventName(lot: any | null, desc: string): string {
+  if (lot && str(lot.event_name)) return str(lot.event_name, 100);
+  const m = /^free credits\s*:\s*(.+?)(\s*\(valid until.*)?$/i.exec(desc);
+  if (m && str(m[1])) return str(m[1], 100);
+  if (/^(signup bonus|welcome gift)/i.test(desc)) return 'New member event';
+  return 'Free credits';
+}
+
+// "🎁 Free credits" 카드 → 고객(고객 언어) + 관리자 사본
+//   크레딧 수 · 이벤트 이름 · 유효기간 · 등록 주소 배송 전용 안내 · 주문하기 버튼
+async function notifyFreeCredits(h: any, lot: any | null): Promise<void> {
+  const p = await getProfile(h.user_id);
+  const balance = await getBalance(h.user_id);
+  const n = Math.abs(Number(h.amount || 0));
+  const desc = str(h.description, 300);
+  const event = freeEventName(lot, desc);
+  const exp = lot ? ymd(lot.expires_at) : '';
+  // 등록 주소 전용인지 (묶음을 못 읽으면 기본 규칙대로 "전용"으로 안내)
+  const addressOnly = lot ? !!lot.restriction || (lot.restriction === undefined && lot.source === 'bonus') : true;
+
+  if (isLinkedProfile(p) && p) {
+    const L = langOf(p.lang);
+    await push(p.line_user_id as string, await creditReceipt(L, {
+      title: L.r.free_title, color: NAVY,
+      message: L.r.free_body.replace('{n}', String(n)).replace('{date}', exp || '—') + '\n' + (addressOnly ? L.r.free_address_only : L.r.free_any_address),
+      userId: h.user_id, p, order: null,
+      details: [[L.r.free_event, event], [L.x.valid_until, exp]],
+      amounts: [[L.r.added, '+' + n]], balance, when: h.created_at,
+      button: { label: L.r.order_now, url: siteLink('/new') },
+    }));
+  }
+
+  const st = ADMIN_NOTICE_STYLES.charge;
+  const actor = lot && lot.granted_by ? await memberName(lot.granted_by) : '';
+  await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
+    title: EN.r.free_title, color: st.color, userId: h.user_id, p, order: null,
+    details: withActor([['Event', event], ['Valid until', exp], ['Ship to', addressOnly ? 'Registered clinic address only' : 'Any address']], copy.actor),
+    amounts: [[EN.r.added, '+' + n]], balance, copy, when: h.created_at,
+    button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
+  }));
+}
+
 async function notifyCredit(h: any): Promise<void> {
   const type = String(h.type || '');
   const amount = Number(h.amount || 0);
@@ -1031,6 +1115,12 @@ async function notifyCredit(h: any): Promise<void> {
   if (type === 'expire' && amount >= 0) return;
   if (type === 'charge' && amount <= 0) return;
   if (type === 'refund' && await isAdminCancelRefund(h.order_id)) return;
+
+  // 무료 크레딧 지급 → "🎁 Free credits" 카드 (묶음 정보로 판단)
+  if (type === 'charge') {
+    const lot = await getLotInfo(h.lot_id);
+    if (isFreeCharge(lot, str(h.description, 300))) { await notifyFreeCredits(h, lot); return; }
+  }
 
   const p = await getProfile(h.user_id);
   const balance = await getBalance(h.user_id);

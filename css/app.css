@@ -2361,7 +2361,7 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .lot-free-tag { display: inline-block; margin-inline-start: 6px; padding: 2px 8px; border-radius: 999px; background: #FFF1C2; color: #6B4E00; font-size: 0.8125rem; font-weight: 600; white-space: normal; }
 /* 회원가입 안내 글 */
 .auth-hint { margin: 6px 0 0; font-size: 0.875rem; color: var(--muted); }
-/* 관리자: 선물 크레딧 배지 · 출고 주소 */
+/* 관리자: 무료 크레딧 사용 배지 · 출고 주소 */
 .free-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #FFF1C2; color: #6B4E00; font-weight: 700; font-size: 0.9375rem; border: 1px solid var(--gold); }
 .free-badge-sm { margin-inline-start: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; white-space: normal; }
 .admin-order-card .free-badge-sm { margin: 4px 0 0; align-self: flex-start; }

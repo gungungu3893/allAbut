@@ -21,6 +21,8 @@
 | `07-topup-request-admin` | 충전 요청 (패키지·단가·공급가액·VAT 7%·합계) | 관리자 |
 | `08-customer-copy-unlinked` | 고객 알림 사본 — LINE 미연결 고객 (회색 "COPY OF CUSTOMER NOTICE", 빨간 경고 + 전화번호) | 관리자 |
 | `09-shipped-customer-th` | 배송 시작 — 태국어 고객 | 고객 |
+| `10-free-credits-customer` | 🎁 무료 크레딧 지급 (크레딧 수 · 이벤트 · 유효기간 · 등록 주소 전용 안내 · 주문하기 버튼) | 고객 |
+| `11-free-credits-copy-admin` | 🎁 무료 크레딧 지급 사본 (이벤트 · 배송 제한 · 지급한 직원) | 관리자 |
 
 ## 버튼 링크
 모든 버튼은 `https://allabut.com/?openExternalBrowser=1#/…` 형식이에요 (LINE 안의 작은 브라우저 대신 휴대폰 기본 브라우저로 열려요).

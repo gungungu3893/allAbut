@@ -1,0 +1,383 @@
+{
+  "type": "flex",
+  "altText": "COPY · 🎁 Free credits",
+  "contents": {
+    "type": "bubble",
+    "size": "mega",
+    "styles": {
+      "body": {
+        "backgroundColor": "#FFFFFF"
+      },
+      "footer": {
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "body": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "20px",
+      "contents": [
+        {
+          "type": "image",
+          "url": "https://allabut.com/assets/brand/line-icon.png",
+          "size": "48px",
+          "aspectRatio": "1:1",
+          "aspectMode": "cover",
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "text": "🎁 Free credits",
+          "wrap": true,
+          "size": "lg",
+          "weight": "bold",
+          "color": "#B8860B",
+          "align": "center",
+          "margin": "md"
+        },
+        {
+          "type": "text",
+          "text": "allAbut · Credit notice",
+          "wrap": true,
+          "size": "xs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        },
+        {
+          "type": "text",
+          "text": "COPY OF CUSTOMER NOTICE",
+          "wrap": true,
+          "size": "xxs",
+          "color": "#6B7280",
+          "weight": "bold",
+          "align": "center",
+          "margin": "lg"
+        },
+        {
+          "type": "text",
+          "text": "10 NOV 2026 / 11:00 AM",
+          "wrap": true,
+          "size": "xs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "text",
+          "text": "Clinic",
+          "wrap": true,
+          "size": "sm",
+          "weight": "bold",
+          "color": "#111827",
+          "margin": "lg"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Bright Smile Dental Clinic",
+              "wrap": true,
+              "size": "sm",
+              "weight": "bold",
+              "color": "#111827"
+            },
+            {
+              "type": "text",
+              "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "xs"
+            },
+            {
+              "type": "text",
+              "text": "02-123-4567",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "xs"
+            },
+            {
+              "type": "text",
+              "text": "dr@brightsmile.co.th",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "xs"
+            },
+            {
+              "type": "text",
+              "text": "Sent to customer LINE",
+              "wrap": true,
+              "size": "xs",
+              "color": "#6B7280",
+              "margin": "sm"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Details",
+          "wrap": true,
+          "size": "sm",
+          "weight": "bold",
+          "color": "#111827",
+          "margin": "lg"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Event",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "Dental Expo 2026",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Valid until",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "2027-11-10",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Ship to",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "Registered clinic address only",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Handled by",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "weight": "regular",
+                  "flex": 5,
+                  "gravity": "center"
+                },
+                {
+                  "type": "text",
+                  "text": "Ken",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "weight": "bold",
+                  "align": "end",
+                  "flex": 5,
+                  "gravity": "center"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "spacing": "md",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Credits added",
+              "wrap": true,
+              "size": "sm",
+              "color": "#6B7280",
+              "weight": "regular",
+              "flex": 5,
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "+5",
+              "wrap": true,
+              "size": "sm",
+              "color": "#111827",
+              "weight": "bold",
+              "align": "end",
+              "flex": 5,
+              "gravity": "center"
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "md",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "spacing": "md",
+          "margin": "md",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Credit balance",
+              "wrap": true,
+              "size": "md",
+              "color": "#111827",
+              "weight": "bold",
+              "flex": 1,
+              "gravity": "center"
+            },
+            {
+              "type": "text",
+              "text": "97",
+              "size": "xl",
+              "color": "#111827",
+              "weight": "bold",
+              "align": "end",
+              "flex": 0,
+              "gravity": "center"
+            }
+          ]
+        }
+      ]
+    },
+    "footer": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingTop": "0px",
+      "contents": [
+        {
+          "type": "box",
+          "layout": "vertical",
+          "borderWidth": "1px",
+          "borderColor": "#D1D5DB",
+          "cornerRadius": "8px",
+          "paddingAll": "12px",
+          "action": {
+            "type": "uri",
+            "label": "Open admin",
+            "uri": "https://allabut.com/?openExternalBrowser=1#/admin/customers"
+          },
+          "contents": [
+            {
+              "type": "text",
+              "text": "Open admin",
+              "wrap": true,
+              "size": "sm",
+              "weight": "bold",
+              "color": "#111827",
+              "align": "center"
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "lg",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "text",
+          "text": "This is an automatic notification from allAbut.",
+          "wrap": true,
+          "size": "xxs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "md"
+        },
+        {
+          "type": "text",
+          "text": "allAbut Co., Ltd. · Tax ID 0105569012345 · allabut.com",
+          "wrap": true,
+          "size": "xxs",
+          "color": "#6B7280",
+          "align": "center",
+          "margin": "xs"
+        }
+      ]
+    }
+  }
+}

@@ -1117,6 +1117,7 @@ var PageAdmin = {
       if (this.customer !== st) return;
       st.lots = res[3];
       st.reg = cncRegisteredClinic(res[4]);
+      // 무료 크레딧 (등록 주소 전용 + 제한 없음 모두)
       st.free = (res[3] || []).filter(function (l) { return cncIsFreeLot(l) && l.remaining > 0 && new Date(l.expires_at) > new Date(); })
         .reduce(function (s, l) { return s + Number(l.remaining || 0); }, 0);
       st.history = res[0];
@@ -1181,6 +1182,9 @@ var PageAdmin = {
       html += '<p class="error-text"><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(st.error)) + '</p>' +
         '<button type="button" class="btn btn-outline" onclick="PageAdmin.loadCustomer()">' + escHtml(t('btn_retry')) + '</button>';
     }
+
+    // 🎁 무료 크레딧 지급 · 회수 (manager 이상, sql/009)
+    html += this.freeGrantHtml(st);
 
     // 크레딧 묶음 + 환불 계산기
     html += this.customerLotsHtml(st);
@@ -1529,8 +1533,6 @@ var PageAdmin = {
         input('account_name', 'topup_account_name', s.account_name) +
         input('account_number', 'topup_account_number', s.account_number, { mono: true }) +
         input('note', 'admin_payment_note', s.note, { textarea: true, span: true }) +
-        // 가입 선물 크레딧 (sql/008 실행 후에만 칸이 있어요)
-        ('signup_bonus_credits' in s ? input('signup_bonus_credits', 'admin_signup_bonus', s.signup_bonus_credits, { type: 'number', step: '1', mono: true, help: 'admin_signup_bonus_help' }) : '') +
         '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (sx.saving ? ' disabled' : '') + '>' + escHtml(sx.saving ? t('saving') : t('pe_save')) + '</button></div>' +
       '</form></section>';
 
@@ -1555,7 +1557,8 @@ var PageAdmin = {
         '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '</section>';
 
-    return '<div class="admin-settings">' + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment + packages + '</div>';
+    return '<div class="admin-settings">' + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
+      this.signupEventHtml(s) + packages + '</div>';
   },
 
   saveSettings: async function (event) {
@@ -1565,10 +1568,6 @@ var PageAdmin = {
     var v = function (id) { return document.getElementById('set-' + id).value.trim(); };
     var fields = { promptpay_id: v('promptpay_id'), bank_name: v('bank_name'), account_name: v('account_name'), account_number: v('account_number'), vat_rate: v('vat_rate'), note: v('note') };
     var errs = {};
-    if (document.getElementById('set-signup_bonus_credits')) {
-      fields.signup_bonus_credits = v('signup_bonus_credits');
-      if (!/^\d{1,3}$/.test(fields.signup_bonus_credits) || +fields.signup_bonus_credits > 100) errs.signup_bonus_credits = 'admin_err_signup_bonus';
-    }
     if (fields.promptpay_id && !isValidPromptPayId(fields.promptpay_id)) errs.promptpay_id = 'admin_err_promptpay';
     var vat = Number(fields.vat_rate);
     if (fields.vat_rate === '' || isNaN(vat) || vat < 0 || vat > 30) errs.vat_rate = 'admin_err_vat';

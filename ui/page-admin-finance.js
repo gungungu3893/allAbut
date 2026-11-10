@@ -130,7 +130,10 @@ Object.assign(PageAdmin, {
         escHtml(tf('fin_approved_fmt', { n: formatNumber(m.topups.count) })), 'fin-total') +
       big('fin_net', 'fin_help_net', m.net,
         m.refunds.amount ? escHtml(t('fin_refunds')) + ' −' + escHtml(formatTHB(m.refunds.amount)) : escHtml(t('fin_no_refunds')), 'fin-net') +
-      big('fin_consumed', 'fin_help_consumed', m.consumed.value, credits(m.consumed.credits), 'fin-consumed') +
+      big('fin_consumed', 'fin_help_consumed', m.consumed.value,
+        m.free
+          ? credits(Math.max(0, m.consumed.credits - m.free.used)) + (m.free.used ? ' · 🎁 ' + escHtml(tf('fin_free_used_fmt', { n: formatNumber(m.free.used) })) : '')
+          : credits(m.consumed.credits), 'fin-consumed') +
       (o
         ? big('fin_outstanding', 'fin_help_outstanding', o.paidValue,
             credits(o.paidCredits) + (o.freeCredits ? ' · ' + escHtml(tf('fin_free_fmt', { n: formatNumber(o.freeCredits) })) : '') +
@@ -153,7 +156,10 @@ Object.assign(PageAdmin, {
       small('fin_refunds', 'fin_help_refunds', escHtml(formatTHB(m.refunds.amount)),
         escHtml(tf('fin_cases_fmt', { n: formatNumber(m.refunds.count) })) + ' · ' + credits(m.refunds.credits)) +
       small('fin_expired', 'fin_help_expired', escHtml(formatTHB(m.expired.value)), credits(m.expired.credits)) +
-      small('fin_bonus', 'fin_help_bonus', escHtml(formatNumber(m.bonus.credits)), escHtml(t('credit_unit'))) +
+      (m.free
+        ? small('fin_free', 'fin_help_free', escHtml(formatNumber(m.free.granted)),
+            escHtml(tf('fin_free_month_fmt', { used: formatNumber(m.free.used), expired: formatNumber(m.free.expired) })), null, 'fin-free')
+        : small('fin_bonus', 'fin_help_bonus', escHtml(formatNumber(m.bonus.credits)), escHtml(t('credit_unit')))) +
       '</div>';
 
     // ----- 패키지별 판매 -----
