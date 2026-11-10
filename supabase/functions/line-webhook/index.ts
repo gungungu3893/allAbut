@@ -35,7 +35,15 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 
 // 사이트 주소: Supabase Secrets 에 SITE_URL 이 있으면 그것, 없으면 정식 도메인 (끝의 / 는 떼요)
 const SITE_URL = (Deno.env.get('SITE_URL') || 'https://allabut.com').replace(/\/+$/, '');
-const SITE_PROFILE_URL = SITE_URL + '/#/profile';
+
+// 사이트로 가는 모든 링크는 이 함수로 → 휴대폰 기본 브라우저로 열려요 (쿼리는 # 앞, 페이지 주소는 # 뒤)
+//   siteLink('/profile') → https://allabut.com/?openExternalBrowser=1#/profile   (LINE 친구추가 주소 line.me 는 바꾸지 않아요)
+function siteLink(path: string): string {
+  let p = String(path || '/').trim().replace(/^#/, '');
+  if (!p.startsWith('/')) p = '/' + p;
+  return SITE_URL + '/?openExternalBrowser=1#' + p;
+}
+const SITE_PROFILE_URL = siteLink('/profile');
 
 // 서버 전용 관리 키로 접속 (RLS 를 건너뛰어요 — 이 함수 안에서만 사용)
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {

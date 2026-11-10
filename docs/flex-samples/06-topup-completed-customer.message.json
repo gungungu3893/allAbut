@@ -274,7 +274,7 @@
           "action": {
             "type": "uri",
             "label": "View credits",
-            "uri": "https://allabut.com/#/profile"
+            "uri": "https://allabut.com/?openExternalBrowser=1#/profile"
           },
           "contents": [
             {

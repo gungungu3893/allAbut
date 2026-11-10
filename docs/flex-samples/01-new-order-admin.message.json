@@ -387,7 +387,7 @@
           "action": {
             "type": "uri",
             "label": "Open admin",
-            "uri": "https://allabut.com/#/admin/orders"
+            "uri": "https://allabut.com/?openExternalBrowser=1#/admin/orders?order=CA261110-0012"
           },
           "contents": [
             {

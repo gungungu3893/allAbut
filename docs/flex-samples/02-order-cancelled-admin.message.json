@@ -56,7 +56,7 @@
         },
         {
           "type": "text",
-          "text": "10 NOV 2026 / 05:31 PM",
+          "text": "10 NOV 2026 / 05:55 PM",
           "wrap": true,
           "size": "xs",
           "color": "#6B7280",
@@ -424,7 +424,7 @@
           "action": {
             "type": "uri",
             "label": "Open admin",
-            "uri": "https://allabut.com/#/admin/orders"
+            "uri": "https://allabut.com/?openExternalBrowser=1#/admin/orders?order=CA261110-0012"
           },
           "contents": [
             {

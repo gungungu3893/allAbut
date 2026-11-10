@@ -300,7 +300,7 @@
         "action": {
           "type": "uri",
           "label": "Open admin",
-          "uri": "https://allabut.com/#/admin/topups"
+          "uri": "https://allabut.com/?openExternalBrowser=1#/admin/topups"
         },
         "contents": [
           {

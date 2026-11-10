@@ -52,6 +52,7 @@ var PageAdmin = {
   settingsTab: { packages: null, settings: null, company: null, versions: null, error: false, saving: false, savingCompany: false },
   // Customers 탭의 계정 삭제 요청
   deletions: { rows: null, status: 'pending', error: false },
+  pendingOrder: null,    // LINE 링크로 들어온 주문번호 (열고 나면 비워요)
 
   // ================================================================
   // 페이지 열기 / 다시 그리기 / 떠나기
@@ -64,6 +65,12 @@ var PageAdmin = {
     if (m && m[1] !== this.tab) history.replaceState(null, '', '#/admin/orders');
     this.drawFrame();
     this.loadTab();
+    // LINE 링크 #/admin/orders?order=CA… → 그 주문 상세 창을 바로 열어요 (router.js 의 applyDeepLink 가 넣어 줘요)
+    if (this.pendingOrder) {
+      var orderId = this.pendingOrder;
+      this.pendingOrder = null;
+      this.openOrder(orderId);
+    }
   },
 
   rerender: function () {

@@ -28,8 +28,10 @@ var PageOrders = {
     this.error = false;
     this.openIds = {};
     if (this.openId) {
+      // "이 주문 열어줘" (홈·완료 화면·LINE 링크 #/orders?id=…) → 진행 중 탭부터 찾아요
       this.openIds[this.openId] = true;
       this.search = '';
+      this.tab = 'progress';
     }
     this.drawFrame();
     this.load(false);
@@ -103,8 +105,15 @@ var PageOrders = {
       if (this.openId && !more) {
         var found = this.rows.some(function (o) { return o.id === PageOrders.openId; });
         if (!found && this.tab === 'progress') {
-          this.openId = null;
+          // 진행 중에 없으면 완료 탭에서 찾아요 (openId 는 그대로 두고 다시 불러요)
           this.tab = 'completed';
+          this.loading = false;
+          this.drawFrame();
+          return this.load(false);
+        }
+        if (!found && this.tab === 'completed' && !this.search) {
+          // 완료 탭 첫 20개에도 없으면 (오래된 주문) 주문번호로 검색해서 보여줘요 — LINE 링크 #/orders?id=… 용
+          this.search = this.openId;
           this.loading = false;
           this.drawFrame();
           return this.load(false);

@@ -141,9 +141,16 @@ async function enterApp() {
 }
 
 // 로그인 직후 시작 페이지: 항상 #/home. 이 계정으로 가이드를 본 적이 없으면 처음 한 번은 #/guide
+// 단, 로그인 전에 LINE 알림 링크(#/orders?id=… 등)로 왔으면 로그인 후 그 페이지로 바로 가요 (router.js 의 rememberPendingRoute)
 // (로그인 상태에서 새로고침할 때는 이 함수를 부르지 않아서 지금 페이지가 그대로 유지돼요)
 var GUIDE_SEEN_PREFIX = 'allabut_guide_seen_';
 function goStartPage() {
+  var pending = takePendingRoute();
+  if (pending) {
+    history.replaceState(null, '', pending);
+    window.__guideCheckPending = false;
+    return;
+  }
   history.replaceState(null, '', '#/home');
   window.__guideCheckPending = true;   // enterApp 에서 사용자 id 를 안 뒤에 가이드를 열지 정해요
 }
@@ -374,6 +381,11 @@ function leaveLegalPage(event, toSignIn) {
     await enterApp();                      // 새로고침해도 같은 페이지 (#/orders 등)
   } else if (isLegalHash()) {
     renderRoute();                         // 로그인 없이 법적 문서 (#/terms 등)
+  } else if (rememberPendingRoute()) {
+    // LINE 알림 링크(#/orders?id=… 등)로 왔는데 로그인 전 → 로그인 화면, 로그인하면 그 페이지로
+    resetAuthForms();
+    switchTab('signin');
+    showScreen('auth');
   } else {
     showScreen('landing');
   }

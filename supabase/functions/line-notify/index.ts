@@ -8,6 +8,7 @@
 // 보안: Verify JWT 는 끄고 배포해요. 대신 요청 헤더 x-notify-secret 이 NOTIFY_SECRET 과 같아야만 동작 (다르면 401)
 // 비밀값은 Deno.env.get() 으로만 읽어요. SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 는 Supabase 가 자동으로 넣어 주는 서버 전용 값.
 // 버튼 링크·로고 이미지의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
+// 버튼 링크는 전부 siteLink() → {SITE_URL}/?openExternalBrowser=1#/… (휴대폰 기본 브라우저로 열림, 주문 카드는 그 주문으로 바로)
 //
 // ── 카드 모양: 모든 알림이 buildReceiptCard() 하나를 써요 (LINE MAN 영수증 같은 흰 카드) ──
 //   1) 상단 가운데: 로고 아이콘(SITE_URL/assets/brand/line-icon.png) → 제목(종류별 색 글씨) → "allAbut · Order notice"
@@ -49,12 +50,30 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 // 사이트 주소: Supabase Secrets 에 SITE_URL 이 있으면 그것, 없으면 정식 도메인 (끝의 / 는 떼요)
 const SITE_URL = (Deno.env.get('SITE_URL') || 'https://allabut.com').replace(/\/+$/, '');
 const SITE_HOST = SITE_URL.replace(/^https?:\/\//, '');
-const SITE_ORDERS_URL = SITE_URL + '/#/orders';
-const SITE_ADMIN_URL = SITE_URL + '/#/admin/orders';
-const SITE_ADMIN_TOPUPS_URL = SITE_URL + '/#/admin/topups';
-const SITE_ADMIN_CUSTOMERS_URL = SITE_URL + '/#/admin/customers';
-const SITE_TOPUP_URL = SITE_URL + '/#/topup';
-const SITE_PROFILE_URL = SITE_URL + '/#/profile';
+
+// 사이트로 가는 모든 링크는 이 함수로 만들어요 → LINE 안의 작은 브라우저 대신 휴대폰 기본 브라우저로 열려요
+//   siteLink('/orders')               → https://allabut.com/?openExternalBrowser=1#/orders
+//   siteLink('/orders?id=CA2611…')    → https://allabut.com/?openExternalBrowser=1#/orders?id=CA2611…
+//   쿼리(openExternalBrowser)는 반드시 # 앞, 페이지 안의 값(주문번호)은 # 뒤에 둬요. 사이트가 열리면 주소창에서 openExternalBrowser 를 지워요
+//   (LINE 친구추가 주소 line.me 는 이 함수를 쓰지 않아요)
+function siteLink(path: string): string {
+  let p = String(path || '/').trim().replace(/^#/, '');
+  if (!p.startsWith('/')) p = '/' + p;
+  return SITE_URL + '/?openExternalBrowser=1#' + p;
+}
+// 특정 주문으로 바로 가는 링크 (고객: 내 주문에서 그 주문 펼침 / 관리자: 주문 상세 창 열림)
+function orderLink(orderId: unknown): string {
+  return orderId ? siteLink('/orders?id=' + encodeURIComponent(String(orderId))) : siteLink('/orders');
+}
+function adminOrderLink(orderId: unknown): string {
+  return orderId ? siteLink('/admin/orders?order=' + encodeURIComponent(String(orderId))) : siteLink('/admin/orders');
+}
+const SITE_ORDERS_URL = siteLink('/orders');
+const SITE_ADMIN_URL = siteLink('/admin/orders');
+const SITE_ADMIN_TOPUPS_URL = siteLink('/admin/topups');
+const SITE_ADMIN_CUSTOMERS_URL = siteLink('/admin/customers');
+const SITE_TOPUP_URL = siteLink('/topup');
+const SITE_PROFILE_URL = siteLink('/profile');
 // 카드 맨 위 로고 (사이트에 올라가 있는 공개 이미지, 192×192 PNG — assets/brand/line-icon.png)
 const LOGO_URL = SITE_URL + '/assets/brand/line-icon.png';
 
@@ -892,7 +911,7 @@ async function notifyAdmin(type: NoticeType, o: any, opt: { message?: string; de
   const balance = await getBalance(o.user_id);
   await pushAdmins('orders', await orderReceipt(EN, o, {
     title: st.title, color: st.color, message: opt.message, details: opt.details, refunded: opt.refunded, balance,
-    button: { label: 'Open admin', url: SITE_ADMIN_URL }, when: type === 'new_order' ? o.created_at : undefined,
+    button: { label: 'Open admin', url: adminOrderLink(o.id) }, when: type === 'new_order' ? o.created_at : undefined,
   }));
 }
 
@@ -935,7 +954,7 @@ async function notifyTeamAction(record: any, old: any, except: string[] = []): P
     title, color: ADMIN_NOTICE_STYLES[TEAM_ACTION_TYPES[record.stage]].color,
     details: rows.length ? { title: record.stage === 'shipped' ? EN.r.sec_shipping : EN.r.sec_details, rows } : undefined,
     refunded: record.stage === 'cancelled', balance,
-    button: { label: 'Open admin', url: SITE_ADMIN_URL },
+    button: { label: 'Open admin', url: adminOrderLink(record.id) },
   }), true, except);
 }
 
@@ -973,7 +992,7 @@ async function notifyCustomer(o: any, kind: OrderKind, actor = ''): Promise<stri
     await push(p.line_user_id as string, await orderReceipt(L, o, {
       title: plainTitle(L.x[tk]), color: customerColor(kind), message: L.x[bk],
       details: orderDetails(L, o, kind), refunded: kind === 'cancel', balance,
-      button: { label: L.r.view_order, url: SITE_ORDERS_URL },
+      button: { label: L.r.view_order, url: orderLink(o.id) },
     }));
   }
 
@@ -982,7 +1001,7 @@ async function notifyCustomer(o: any, kind: OrderKind, actor = ''): Promise<stri
   return await sendCustomerCopy(o.user_id, p, actor, async (copy) => orderReceipt(EN, o, {
     title: st.title, color: st.color, details: orderDetails(EN, o, kind, withActor([], copy.actor)),
     refunded: kind === 'cancel', balance, copy,
-    button: { label: 'Open admin', url: SITE_ADMIN_URL },
+    button: { label: 'Open admin', url: adminOrderLink(o.id) },
   }));
 }
 
@@ -1046,7 +1065,7 @@ async function notifyCredit(h: any): Promise<void> {
     await push(p.line_user_id as string, await creditReceipt(L, {
       title: plainTitle(t[type][0]), color: NAVY, message: t[type][1], docNo, userId: h.user_id, p, order,
       details: details(L, false), amounts: amounts(L), balance, when: h.created_at,
-      button: order ? { label: L.r.view_order, url: SITE_ORDERS_URL } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
+      button: h.order_id ? { label: L.r.view_order, url: orderLink(h.order_id) } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
     }));
   }
 
@@ -1055,7 +1074,7 @@ async function notifyCredit(h: any): Promise<void> {
   let actor = '';
   let url = SITE_ADMIN_CUSTOMERS_URL;
   if (topup) { actor = await memberName(topup.reviewed_by); url = SITE_ADMIN_TOPUPS_URL; }
-  if (h.order_id) url = SITE_ADMIN_URL;
+  if (h.order_id) url = adminOrderLink(h.order_id);
   await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
     title: st.title, color: st.color, docNo, userId: h.user_id, p, order,
     details: withActor(details(EN, true), copy.actor), amounts: amounts(EN), balance, copy, when: h.created_at,
