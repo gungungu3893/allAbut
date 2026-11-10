@@ -1,5 +1,6 @@
 // ===== 내 정보 #/profile =====
-// - 닉네임·이메일(읽기 전용), 치과 정보(Clinic name, Address, Phone, Tax ID), 언어 → 저장
+// - 본명(sql/010 실행 후, 처음 채워지면 잠김)·이메일(읽기 전용), 치과 정보(Clinic name, Address, Phone, Tax ID), 언어 → 저장
+//   본명 · 올바른 Tax ID 는 잠겨서 읽기 전용 → 바꾸려면 등록 정보 변경 요청 (관리자 승인)
 // - 크레딧 잔액 + 크레딧 이력 표 (산 크레딧 / 무료 크레딧 나눠서, 무료 묶음엔 🎁 표시)
 // - 등록된 치과 정보 (무료 크레딧 주문의 배송지, 잠김) + 변경 요청 (관리자 승인 후 바뀜) — sql/008_free_credits.sql
 // - LINE 알림 연결 (공통 부품 ui/line-connect.js 의 LineConnect.mountSection 을 그대로 써요)
@@ -76,6 +77,19 @@ var PageProfile = {
         '</div>';
     }
 
+    // sql/010 실행 후: 본명 · Tax ID 잠금, 필수 표시
+    var ident = cncHasIdentityColumns(p);
+    function lockedValue(labelKey, value) {
+      return '<div class="field"><span class="field-label">' + escHtml(t(labelKey)) + '</span>' +
+        '<p class="readonly-value">' + escHtml(value || '—') + '</p>' +
+        '<p class="field-help"><span aria-hidden="true">🔒</span> ' + escHtml(t('identity_locked_note')) + '</p></div>';
+    }
+    var nameHtml = !ident ? readOnly('nickname_label', p.nickname)
+      : cncIdentityLocked(p, 'full_name') ? lockedValue('full_name_label', p.full_name)
+      : input('full_name', 'full_name_label', p.full_name, { required: true });
+    var taxHtml = ident && cncIdentityLocked(p, 'tax_id') ? lockedValue('clinic_tax_id_label', cncFormatTaxId(p.tax_id))
+      : input('tax_id', ident ? 'clinic_tax_id_label' : 'tax_id_label', p.tax_id, { required: ident, help: ident ? 'tax_id_help' : '' });
+
     this.main.innerHTML =
       '<div class="page page-profile">' +
         '<h1 class="page-title">' + escHtml(t('nav_profile')) + '</h1>' +
@@ -84,12 +98,12 @@ var PageProfile = {
             '<h2 class="card-title">' + escHtml(t('profile_info_title')) + '</h2>' +
             '<p class="card-desc">' + escHtml(t('profile_info_desc')) + '</p>' +
             '<form class="form-grid two" onsubmit="PageProfile.save(event)" novalidate>' +
-              readOnly('nickname_label', p.nickname) +
+              nameHtml +
               readOnly('email_label', APP.user && APP.user.email) +
-              input('clinic_name', 'clinic_name', p.clinic_name, { span: true }) +
-              input('address', 'address_label', p.address, { span: true }) +
-              input('phone', 'phone_label', p.phone, { type: 'tel' }) +
-              input('tax_id', 'tax_id_label', p.tax_id) +
+              input('clinic_name', 'clinic_name', p.clinic_name, { span: true, required: ident }) +
+              input('address', 'address_label', p.address, { span: true, required: ident }) +
+              input('phone', 'phone_label', p.phone, { type: 'tel', required: ident }) +
+              taxHtml +
               '<div class="field">' +
                 '<label class="field-label" for="p-lang">' + escHtml(t('language')) + '</label>' +
                 '<select class="input" id="p-lang">' + LANGUAGES.map(function (l) {
@@ -149,7 +163,8 @@ var PageProfile = {
       if (c && c.status === 'pending') {
         html += '<div class="notice notice-info reg-pending" role="status"><p><span aria-hidden="true">⏳</span> ' +
           escHtml(tf('reg_change_pending', { date: formatDate(c.created_at) })) + '</p>' +
-          '<p class="reg-box-line">' + escHtml(c.clinic) + ' · ' + escHtml(c.addr) + ' · ' + escHtml(c.phone) + '</p>' +
+          '<p class="reg-box-line">' + (c.full_name ? escHtml(c.full_name) + ' · ' : '') + escHtml(c.clinic) + ' · ' + escHtml(c.addr) + ' · ' + escHtml(c.phone) +
+            (c.tax_id ? ' · ' + escHtml(cncFormatTaxId(c.tax_id)) : '') + '</p>' +
           '<button type="button" class="btn btn-outline btn-sm" onclick="PageProfile.cancelClinicChange()">' + escHtml(t('reg_change_cancel')) + '</button></div>';
       } else {
         if (c && c.status === 'rejected') {
@@ -164,7 +179,9 @@ var PageProfile = {
 
   openClinicChange: function () {
     var self = this;
-    var reg = cncRegisteredClinic(APP.profile) || {};
+    var p = APP.profile || {};
+    var reg = cncRegisteredClinic(p) || {};
+    var ident = cncHasIdentityColumns(p);   // sql/010 실행 후엔 본명 · Tax ID 도 같이 요청
     function field(id, labelKey, value, type) {
       return '<div class="field"><label class="field-label" for="rc-' + id + '">' + escHtml(t(labelKey)) + ' <span class="required">*</span></label>' +
         '<input class="input" id="rc-' + id + '" type="' + (type || 'text') + '" maxlength="300" value="' + escHtml(value || '') + '">' +
@@ -173,7 +190,9 @@ var PageProfile = {
     var modal = uiModal({
       title: t('reg_change_btn'),
       body: '<p class="modal-text">' + escHtml(t('reg_change_text')) + '</p>' +
+        (ident ? field('full_name', 'full_name_label', p.full_name) : '') +
         field('clinic', 'clinic_name', reg.clinic) + field('addr', 'address_label', reg.addr) + field('phone', 'phone_label', reg.phone, 'tel') +
+        (ident ? field('tax_id', 'clinic_tax_id_label', p.tax_id) : '') +
         '<div class="field"><label class="field-label" for="rc-reason">' + escHtml(t('reg_change_reason')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
         '<textarea class="input textarea" id="rc-reason" rows="2" maxlength="500"></textarea></div>',
       actions: [
@@ -181,16 +200,19 @@ var PageProfile = {
         { label: t('reg_change_submit'), kind: 'primary', onClick: async function (close, btn) {
           var v = function (id) { return modal.el.querySelector('#rc-' + id).value.trim(); };
           var vals = { clinic: v('clinic'), addr: v('addr'), phone: v('phone') };
-          var bad = false;
+          if (ident) { vals.full_name = v('full_name'); vals.tax_id = v('tax_id'); }
+          var errs = {};
+          Object.keys(vals).forEach(function (k) { if (!vals[k]) errs[k] = 'err_required'; });
+          if (vals.phone && !cncValidPhone(vals.phone)) errs.phone = 'err_phone';
+          if (ident && vals.tax_id && !cncValidTaxId(vals.tax_id)) errs.tax_id = 'err_tax_id_checksum';
           Object.keys(vals).forEach(function (k) {
-            var slot = modal.el.querySelector('[data-rc-err="' + k + '"]');
-            slot.innerHTML = vals[k] ? '' : uiFieldError('err_required');
-            if (!vals[k]) bad = true;
+            modal.el.querySelector('[data-rc-err="' + k + '"]').innerHTML = uiFieldError(errs[k]);
           });
-          if (bad) return;
+          if (Object.keys(errs).length) return;
           btn.disabled = true;
           try {
-            await cncRequestClinicChange(vals.clinic, vals.addr, vals.phone, v('reason'));
+            await cncRequestClinicChange(vals.clinic, vals.addr, vals.phone, v('reason'),
+              ident ? vals.full_name : undefined, ident ? vals.tax_id : undefined);
             close();
             uiToast(t('reg_change_sent'), 'success');
             self.loadClinicChange();
@@ -343,17 +365,32 @@ var PageProfile = {
   save: async function (event) {
     event.preventDefault();
     if (this.saving) return;
-    var v = function (id) { return document.getElementById('p-' + id).value.trim(); };
+    var v = function (id) { var el = document.getElementById('p-' + id); return el ? el.value.trim() : null; };
+    var p = APP.profile || {};
+    var ident = cncHasIdentityColumns(p);
     var fields = {
       clinic_name: v('clinic_name'),
       address: v('address'),
       phone: v('phone'),
-      tax_id: v('tax_id'),
       lang: document.getElementById('p-lang').value
     };
+    // 잠긴 칸(본명 · Tax ID)은 화면에 입력칸이 없어서 보내지 않아요
+    if (v('tax_id') !== null) fields.tax_id = ident ? cncNormTaxId(v('tax_id')) : v('tax_id');
+    if (ident && v('full_name') !== null) fields.full_name = cncNormName(v('full_name'));
     this.errors = {};
-    if (fields.tax_id && !/^[0-9A-Za-z\- ]{5,20}$/.test(fields.tax_id)) this.errors.tax_id = 'err_tax_id';
-    if (fields.phone && !/^[0-9+\-() ]{6,20}$/.test(fields.phone)) this.errors.phone = 'err_phone';
+    if (ident) {
+      // sql/010 실행 후: 모두 필수 + 전화 형식 + Tax ID 체크섬 (잠긴 칸은 지금 값으로 검사)
+      var check = cncValidateIdentity({
+        full_name: fields.full_name !== undefined ? fields.full_name : p.full_name,
+        phone: fields.phone, clinic_name: fields.clinic_name, address: fields.address,
+        tax_id: fields.tax_id !== undefined ? fields.tax_id : p.tax_id
+      });
+      var self = this;
+      Object.keys(check).forEach(function (k) { if (document.getElementById('p-' + k)) self.errors[k] = check[k]; });
+    } else {
+      if (fields.tax_id && !/^[0-9A-Za-z\- ]{5,20}$/.test(fields.tax_id)) this.errors.tax_id = 'err_tax_id';
+      if (fields.phone && !/^[0-9+\-() ]{6,20}$/.test(fields.phone)) this.errors.phone = 'err_phone';
+    }
     if (Object.keys(this.errors).length) {
       this.keepValues(fields);
       return;
@@ -365,6 +402,7 @@ var PageProfile = {
       var wasLocked = !!(APP.profile && APP.profile.clinic_locked_at);
       await cncSaveProfile(fields);
       this.saving = false;
+      APP.needsInfo = cncNeedsProfileInfo(APP.profile);
       uiToast(t('profile_saved'), 'success');
       // 치과 정보가 처음으로 모두 채워지면 등록 정보가 잠기고, 신규 가입 무료 크레딧 이벤트가 있으면 들어와요
       if (!wasLocked && APP.profile && APP.profile.clinic_locked_at) {
@@ -376,8 +414,11 @@ var PageProfile = {
     } catch (err) {
       console.error(err);
       this.saving = false;
+      var code = cncErrorCode(err);
+      var fieldOf = { PHONE_TAKEN: 'phone', PHONE_INVALID: 'phone', TAX_ID_TAKEN: 'tax_id', TAX_ID_INVALID: 'tax_id' };
+      if (fieldOf[code]) this.errors[fieldOf[code]] = uiErrorMessageKey(code);   // 칸 아래 빨간 글씨 (ui/page-complete.js)
       this.keepValues(fields);
-      uiToast(uiErrorMessage(err), 'error');
+      if (!fieldOf[code]) uiToast(uiErrorMessage(err), 'error');
     }
   },
 

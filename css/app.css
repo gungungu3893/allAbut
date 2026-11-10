@@ -2382,3 +2382,32 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .free-warn-strong { margin: 12px 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--danger-bg); border: 1px solid #F3B4B4; color: var(--danger); font-weight: 700; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 @media (min-width: 720px) { .clinic-change-grid { grid-template-columns: 1fr 1fr; } }
+
+
+/* ===== 필수 정보 입력 #/complete (ui/page-complete.js) ===== */
+.page-complete .complete-card { max-width: 760px; }
+.complete-desc {
+  margin: 0 0 18px; padding: 14px 16px; border-radius: var(--radius-sm, 8px);
+  background: #FFF8E1; border: 1px solid #F0D98A; color: var(--text); font-size: 1rem; line-height: 1.5;
+}
+.page-complete .field-missing .field-label::after { content: ''; }
+.complete-help { margin-top: 14px; }
+
+/* ===== 🎁 신규 가입 무료 크레딧 이벤트 (관리자, ui/page-admin-free.js) ===== */
+.camp-status { font-weight: 600; }
+.camp-off { background: #F3F4F6; color: #4B5563; }
+.camp-scheduled { background: #E0ECFF; color: #1E40AF; }
+.camp-running { background: #DCFCE7; color: #166534; }
+.camp-ended { background: #FDE2E1; color: #991B1B; }
+.camp-enable { font-weight: 600; }
+.camp-banner-fields { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin: 0; }
+.camp-banner-fields legend { padding: 0 6px; }
+.grant-pending { background: #FEF3C7; color: #92400E; }
+.grant-granted { background: #DCFCE7; color: #166534; }
+.grant-rejected, .grant-revoked { background: #F3F4F6; color: #4B5563; }
+.grant-credits { margin-inline-start: 6px; }
+.grant-info p { margin: 2px 0; }
+.grant-flags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
+.flag-badge { background: #FDE2E1; color: #991B1B; font-weight: 600; }
+.flag-none { color: var(--muted); font-size: 0.9375rem; }
+.signup-grant.has-flags { border-inline-start: 4px solid var(--danger); }

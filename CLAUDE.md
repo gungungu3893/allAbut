@@ -82,8 +82,8 @@
   - 켠 주문은 무료 먼저 → 모자라면 나머지. `cnc_orders.bonus_used`(사용한 등록 주소 전용 무료 수), `addr_norm`(주소 정규화 `_norm_addr`) 저장. 판단은 전부 `create_cnc_order(..., p_use_free)` 안에서
   - 주문 취소는 원래 묶음으로 복구 → restriction 그대로. 크레딧은 커스텀 어버트먼트 주문에만 써요 (다른 상품 없음)
 - **등록된 치과 정보** = `profiles.reg_clinic / reg_addr / reg_phone / reg_addr_norm / clinic_locked_at`: 치과 이름·주소·전화가 처음 모두 채워지는 순간(가입 때 다 넣었으면 가입 시점) 트리거가 잠금.
-  고객이 프로필을 고쳐도 등록 정보는 그대로(유료 주문 배송지만 바뀜). 변경은 `request_clinic_change()` → 관리자(manager 이상) `admin_review_clinic_change()` 승인. 회원가입에 주소 칸(선택)
-- **🎁 신규 가입 무료 크레딧 이벤트**: `payment_settings.signup_bonus_credits` (0 = 이벤트 없음, Settings 의 별도 카드 `signupEventHtml`). 등록 정보가 처음 잠길 때 1번 `grant_signup_bonus()` → source 'free', 이벤트 "New member event"
+  고객이 프로필을 고쳐도 등록 정보는 그대로(유료 주문 배송지만 바뀜). 변경은 `request_clinic_change()` → 관리자(manager 이상) `admin_review_clinic_change()` 승인. 회원가입에 주소 칸(필수, sql/010)
+- **🎁 신규 가입 무료 크레딧 이벤트**: `payment_settings.signup_bonus_credits` + sql/010 의 기간·승인 설정 (아래 "회원 필수 정보 · 신규 가입 이벤트"). Settings 의 별도 카드 `signupEventHtml`
 - **관리자 무료 크레딧 지급**(manager 이상, 고객 상세 `freeGrantHtml`): 이벤트 이름(필수) · 크레딧 수(1~1000) · 유효기간(일, 기본 365) · 등록 주소 배송 전용(기본 체크) → 확인창 → `admin_grant_free_credits()`
   (묶음 + 잔액 + 이력 'charge' + `admin_audit_log` 'credits_added'). 회수 `admin_revoke_free_credits()` (사유 필수, 무료 묶음에서만, 이력 'adjust' → 작업 기록 credits_removed)
 - 화면: `APP.freeCredits`(등록 주소 전용 무료) / `APP.paidCredits`(어디로든 = 산 + 제한 없는 무료) / 보여주기용 `APP.purchasedCredits`, `APP.freeTotal` (`get_my_credit_summary()`: paid · free · free_open, 008 실행 전이면 전부 산 크레딧)
@@ -93,6 +93,27 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
+
+## 회원 필수 정보 · 중복 · 신규 가입 이벤트 · Turnstile (sql/010_signup_identity_campaign.sql)
+- **필수 5개**: 본명(`profiles.full_name`) · 전화 · 치과명 · 치과 Tax ID(13자리 + 태국 체크섬) · 치과 주소. 회원가입 폼은 칸마다 빨간 글씨(`[data-su-err]`), 닉네임 칸 없음(닉네임 = 본명)
+- **정규화는 SQL 과 JS 가 똑같이** (`cnc/cnc-identity.js` ↔ `_norm_phone` / `_norm_tax_id` / `_valid_tax_id`): 전화 = 숫자만 + `+66`/`66` → `0`, Tax ID = 숫자만, 체크섬 = (11 − Σ d[i]·(13−i) % 11) % 10. **한쪽을 바꾸면 다른 쪽도**
+- 서버 트리거 `_trg_profile_identity` 가 다시 검사: `PHONE_TAKEN` / `PHONE_INVALID` / `TAX_ID_TAKEN` / `TAX_ID_INVALID` / `EMAIL_DISPOSABLE` (일회용 메일 `blocked_email_domains` ↔ `DISPOSABLE_EMAIL_DOMAINS`)
+- 중복: 정규화 전화 = 유니크(`profiles_phone_norm_unique`, 기존 중복이 있으면 목록만 출력하고 인덱스는 건너뜀). Tax ID 는 `payment_settings.tax_id_policy` 'block'(기본) / 'allow'(가입 허용, 이벤트는 Tax ID 당 1번). 이름·치과명·주소는 의심 표시만
+- 가입 전 확인 `check_signup_available(phone, tax_id, email)` (로그인 전, 겹침 여부 true/false 만 → 다른 사람 정보는 안 보여요)
+- **본명 · 올바른 Tax ID 는 처음 채워지면 잠김** → Profile 에서 읽기 전용, 바꾸려면 등록 정보 변경 요청(`request_clinic_change(..., p_full_name, p_tax_id)`, manager 승인)
+- 필수 정보가 빈 계정(010 실행 후, `cncNeedsProfileInfo`) → 로그인 직후 `#/complete` (`ui/page-complete.js`) 만 열림 (법적 문서·문의·회사소개는 열림). DB 도 주문 INSERT 때 `PROFILE_INCOMPLETE`.
+  010 실행 전(프로필에 full_name 칸이 없음)이면 예전처럼 막지 않음 (`cncHasIdentityColumns`)
+- 가입 기록: 첫 로그인 때 `record_signup_meta(device_id, user_agent)` (IP 는 서버가 요청 헤더에서, 기기 ID = `localStorage.allabut_device_id`)
+- **신규 가입 이벤트 설정** (Settings, owner): 켜기(기본 꺼짐, 크레딧 0 이면 못 켬) · 이벤트 이름 · 크레딧 · 시작일/종료일(방콕 날짜, `uiDateField`) · 유효기간(일, 365) · 지급 방식 approval(기본)/auto · LINE 필수(기본) · 배너 en/th/ko · Tax ID 규칙. 상태 배지 꺼짐/예정/진행 중/종료 (`cncCampaignStatus`)
+- 지급 조건 (`grant_signup_bonus`): 켜짐 + 지금 기간 안 + 가입 시각 기간 안 + 이메일 인증 + (LINE 필수면) LINE 연결 + 사용자·전화·LINE·Tax ID 당 1번. 조건이 아직 안 되면 나중에 다시(로그인 때 `claim_signup_bonus()`, 프로필 변경 트리거)
+  - approval: `signup_bonus_grants.status` 'pending' → 관리자 승인(`admin_review_signup_bonus`, 그때 묶음 지급) / 거절(사유 필수) / 회수(`admin_revoke_signup_bonus`, 사유 필수)
+  - 목록 `admin_list_signup_bonus(status)` — Customers 탭 맨 위(대기 있을 때) + Settings 이벤트 카드 아래 (manager 이상). 의심 배지(같은 IP · 기기 · 비슷한 치과명 · 주소 · 이름 · Tax ID, `admin_suspicion_flags`)는 목록과 고객 상세에
+  - LINE: pending 이 되면 관리자(카테고리 account)에 "🎁 Free credits — approval needed" 카드 (Database Webhook `signup_bonus_grants` Insert·Update)
+- 배너: 진행 중이면 랜딩·로그인 화면에 골드 배너 `.campaign-banner` (배너 문구 → 없으면 `campaign_default` + "~ 종료일"), 기간이 끝나면 `get_signup_campaign()` 이 active:false → 자동으로 사라짐
+- **비밀번호 찾기**: 로그인 폼 "비밀번호를 잊으셨나요?" → `#form-reset` (`sendPasswordReset`, redirectTo = `SITE_URL/`) → 메일 링크로 오면 `window.__passwordRecovery` → `#form-newpass` (`updatePassword`) → 로그아웃 후 다시 로그인
+- **Cloudflare Turnstile**: `config.js` 의 `TURNSTILE_SITE_KEY` (비어 있으면 위젯 숨김, 예전처럼 동작). 회원가입·로그인·비밀번호 찾기 폼의 `.ts-box[data-ts]` (`ui/turnstile.js`), 토큰은 `captchaToken` 으로 Supabase Auth 에 전달, 호출 뒤 `tsReset`.
+  **시크릿 키는 코드에 절대 넣지 않는다** → Supabase → Authentication → Bot and Abuse Protection 에만
+- 재실행 순서: 002 → 008 → 009 → 010 (008 을 다시 실행하면 009 → 010 도)
 
 ## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
 - 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
@@ -151,7 +172,10 @@
 - `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
 - `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시
 - `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
-- `auth.js` — 회원가입(닉네임, 치과 이름·전화 선택) / 로그인 / `getProfile()`
+- `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`
+- `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
+- `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)
+- `ui/page-complete.js` — 필수 정보 입력 `#/complete`
 - `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지
 - `app.js` — `APP { user, profile, balance }`, 화면 전환, 로그인 폼, 시작(boot)
 - `cnc/cnc-data.js` — 브랜드 11종, VITA 14색, 주문 단계, FDI 32개, `getToothName()`, 파일 규칙
@@ -159,7 +183,7 @@
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
 - `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
-- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about` (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about`, `#/complete`(필수 정보가 비었을 때만) (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
 - `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
 - `ui/page-legal.js` — 법적 문서 페이지 (목차, 섹션 번호, 버전·시행일, 연락처, 인쇄)

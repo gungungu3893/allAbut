@@ -579,7 +579,13 @@ function uiErrorMessage(err) {
     bonus_address_only: 'free_err_address_only',
     NO_REGISTERED_CLINIC: 'free_err_no_registered',
     EVENT_REQUIRED: 'admin_free_err_event',
-    REASON_REQUIRED: 'admin_free_err_reason'
+    REASON_REQUIRED: 'admin_free_err_reason',
+    PHONE_TAKEN: 'err_phone_taken',
+    PHONE_INVALID: 'err_phone',
+    TAX_ID_TAKEN: 'err_tax_id_taken',
+    TAX_ID_INVALID: 'err_tax_id_checksum',
+    EMAIL_DISPOSABLE: 'err_email_disposable',
+    PROFILE_INCOMPLETE: 'err_profile_incomplete'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });

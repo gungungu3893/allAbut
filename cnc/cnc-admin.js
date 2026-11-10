@@ -595,6 +595,52 @@ async function cncAdminSaveSignupBonus(n) {
   return result.data[0];
 }
 
+// ----------------------------------------------------------------
+// 🎁 신규 가입 무료 크레딧 이벤트 (sql/010) — 기간 · 승인 · 의심 표시
+// ----------------------------------------------------------------
+// 이벤트 설정 저장 (owner). fields: { signup_bonus_enabled, signup_bonus_campaign, signup_bonus_credits, signup_bonus_starts, signup_bonus_ends,
+//   signup_bonus_valid_days, signup_bonus_grant_mode, signup_bonus_require_line, signup_bonus_banner, tax_id_policy }
+// 켜려면 크레딧 1 이상 + 시작일 ≤ 종료일 (DB 도 같은 규칙으로 막아요)
+async function cncAdminSaveSignupCampaign(fields) {
+  var row = Object.assign({}, fields, { updated_at: new Date().toISOString() });
+  var result = await sb.from('payment_settings').update(row).eq('id', 1).select();
+  if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });
+  if (!result.data || !result.data.length) throw cncError('NOT_ADMIN');
+  return result.data[0];
+}
+
+// 신청 · 지급 목록 (manager) — status: 'pending' | 'granted' | 'rejected' | 'revoked' | 'all'. 010 실행 전이면 null
+async function cncAdminListSignupBonus(status) {
+  var r = await sb.rpc('admin_list_signup_bonus', { p_status: status || 'pending' });
+  if (r.error) {
+    if (/admin_list_signup_bonus|function .* does not exist|PGRST202/i.test(String(r.error.message || '') + String(r.error.code || ''))) return null;
+    throw cncError(cncErrorCode(r.error), { cause: r.error });
+  }
+  var d = r.data;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = []; } }
+  return Array.isArray(d) ? d : [];
+}
+
+// 승인(지급) / 거절(사유 필수)
+function cncAdminReviewSignupBonus(userId, approve, reason) {
+  return cncRpc('admin_review_signup_bonus', { p_user: userId, p_approve: !!approve, p_reason: String(reason || '').trim() });
+}
+
+// 회수 (사유 필수, 그 묶음에 남은 만큼)
+function cncAdminRevokeSignupBonus(userId, reason) {
+  return cncRpc('admin_revoke_signup_bonus', { p_user: userId, p_reason: String(reason || '').trim() });
+}
+
+// 의심 표시 (같은 IP · 같은 기기 · 비슷한 치과명 · 같은 주소 · 같은 이름 · 같은 Tax ID) → ['same_ip', ...]. 실패하면 []
+async function cncAdminSuspicionFlags(userId) {
+  try {
+    var r = await sb.rpc('admin_suspicion_flags', { p_user: userId });
+    return r.error || !Array.isArray(r.data) ? [] : r.data;
+  } catch (err) {
+    return [];
+  }
+}
+
 // 무료 크레딧 지급 (manager 이상, sql/009) → 잔액
 //   opts: { event, credits, days(기본 365), addressOnly(기본 true) }
 function cncAdminGrantFreeCredits(userId, opts) {

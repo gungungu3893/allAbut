@@ -52,6 +52,9 @@
       <!-- 슬로건 -->
       <p class="slogan" data-i18n="slogan">Precision Custom Abutment</p>
 
+      <!-- 🎁 신규 가입 무료 크레딧 이벤트 (진행 중일 때만, app.js 의 renderCampaignBanners) -->
+      <p class="campaign-banner" hidden></p>
+
       <!-- 주문 시작 버튼 -->
       <button type="button" class="cta-btn" onclick="handleStartOrder()" data-i18n="start_order">Start Order</button>
 
@@ -75,6 +78,9 @@
         <span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>
       </div>
 
+      <!-- 🎁 신규 가입 무료 크레딧 이벤트 (진행 중일 때만) -->
+      <p class="campaign-banner" hidden></p>
+
       <!-- 흰색 카드 -->
       <div class="auth-card">
 
@@ -94,47 +100,90 @@
             <label for="signin-password" data-i18n="password_label">Password</label>
             <input type="password" id="signin-password" autocomplete="current-password">
           </div>
+          <div class="ts-box" data-ts="signin" hidden></div>
           <p class="auth-msg" id="signin-error" role="alert"></p>
           <button type="submit" class="auth-submit" id="signin-btn" data-i18n="btn_sign_in">Sign In</button>
+          <button type="button" class="auth-link" id="forgot-link" onclick="showResetForm()" data-i18n="forgot_password">Forgot your password?</button>
         </form>
 
-        <!-- Create Account 폼 -->
+        <!-- 비밀번호 찾기: 메일로 재설정 링크 -->
+        <form id="form-reset" onsubmit="handleResetPassword(event)" novalidate style="display:none">
+          <h2 class="auth-form-title" data-i18n="reset_title">Reset your password</h2>
+          <p class="auth-hint" data-i18n="reset_desc">Enter your email. We will send you a link to set a new password.</p>
+          <div class="auth-field">
+            <label for="reset-email" data-i18n="email_label">Email</label>
+            <input type="email" id="reset-email" autocomplete="email">
+          </div>
+          <div class="ts-box" data-ts="reset" hidden></div>
+          <p class="auth-msg" id="reset-error" role="alert"></p>
+          <button type="submit" class="auth-submit" id="reset-btn" data-i18n="reset_send">Send reset link</button>
+          <button type="button" class="auth-link" onclick="switchTab('signin')" data-i18n="reset_back">Back to sign in</button>
+        </form>
+
+        <!-- 새 비밀번호 (메일의 재설정 링크로 들어왔을 때) -->
+        <form id="form-newpass" onsubmit="handleNewPassword(event)" novalidate style="display:none">
+          <h2 class="auth-form-title" data-i18n="newpass_title">Set a new password</h2>
+          <div class="auth-field">
+            <label for="newpass-password" data-i18n="password_label">Password</label>
+            <input type="password" id="newpass-password" autocomplete="new-password">
+          </div>
+          <div class="auth-field">
+            <label for="newpass-password2" data-i18n="password_confirm_label">Confirm Password</label>
+            <input type="password" id="newpass-password2" autocomplete="new-password">
+          </div>
+          <p class="auth-msg" id="newpass-error" role="alert"></p>
+          <button type="submit" class="auth-submit" id="newpass-btn" data-i18n="newpass_save">Save new password</button>
+        </form>
+
+        <!-- Create Account 폼 — 필수: 본명 · 전화 · 치과명 · 치과 Tax ID · 치과 주소 (cnc/cnc-identity.js 로 검사) -->
         <form id="form-signup" onsubmit="handleSignUp(event)" novalidate style="display:none">
           <div class="auth-field">
-            <label for="signup-nickname" data-i18n="nickname_label">Nickname</label>
-            <input type="text" id="signup-nickname" autocomplete="nickname" maxlength="40">
+            <label for="signup-full_name"><span data-i18n="full_name_label">Full name</span> <span class="required">*</span></label>
+            <input type="text" id="signup-full_name" autocomplete="name" maxlength="200">
+            <p class="auth-field-err" data-su-err="full_name" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-email" data-i18n="email_label">Email</label>
+            <label for="signup-email"><span data-i18n="email_label">Email</span> <span class="required">*</span></label>
             <input type="email" id="signup-email" autocomplete="email">
+            <p class="auth-field-err" data-su-err="email" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-password" data-i18n="password_label">Password</label>
+            <label for="signup-password"><span data-i18n="password_label">Password</span> <span class="required">*</span></label>
             <input type="password" id="signup-password" autocomplete="new-password">
+            <p class="auth-field-err" data-su-err="password" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-password2" data-i18n="password_confirm_label">Confirm Password</label>
+            <label for="signup-password2"><span data-i18n="password_confirm_label">Confirm Password</span> <span class="required">*</span></label>
             <input type="password" id="signup-password2" autocomplete="new-password">
+            <p class="auth-field-err" data-su-err="password2" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-clinic"><span data-i18n="clinic_name">Clinic name</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
+            <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="required">*</span></label>
+            <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30" inputmode="tel">
+            <p class="auth-field-err" data-su-err="phone" role="alert"></p>
+          </div>
+          <div class="auth-field">
+            <label for="signup-clinic"><span data-i18n="clinic_name">Clinic name</span> <span class="required">*</span></label>
             <input type="text" id="signup-clinic" autocomplete="organization" maxlength="200">
+            <p class="auth-field-err" data-su-err="clinic_name" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
-            <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30">
+            <label for="signup-tax_id"><span data-i18n="clinic_tax_id_label">Clinic Tax ID (13 digits)</span> <span class="required">*</span></label>
+            <input type="text" id="signup-tax_id" maxlength="20" inputmode="numeric" autocomplete="off">
+            <p class="auth-field-err" data-su-err="tax_id" role="alert"></p>
           </div>
-          <!-- 치과 주소 (선택) — 치과 이름·주소·전화를 모두 넣으면 "등록된 치과 정보"로 잠겨요 (무료 크레딧 주문의 배송지, sql/008) -->
           <div class="auth-field">
-            <label for="signup-address"><span data-i18n="address_label">Address</span> <span class="auth-optional">(<span data-i18n="optional">optional</span>)</span></label>
+            <label for="signup-address"><span data-i18n="clinic_address_label">Clinic address</span> <span class="required">*</span></label>
             <input type="text" id="signup-address" autocomplete="street-address" maxlength="300">
-            <p class="auth-hint" data-i18n="signup_reg_hint">Clinic name, address and phone become your registered clinic info (used for free-credit orders).</p>
+            <p class="auth-field-err" data-su-err="address" role="alert"></p>
+            <p class="auth-hint" data-i18n="signup_reg_hint">Clinic name, address and phone become your registered clinic (used for free-credit orders).</p>
           </div>
           <!-- 약관·개인정보 동의 (체크하지 않으면 가입 불가) — 글자는 app.js 의 renderSignupAgree() 가 채워요 -->
           <label class="auth-agree">
             <input type="checkbox" id="signup-agree">
             <span id="signup-agree-label">I agree to the Terms of Service and Privacy Policy.</span>
           </label>
+          <div class="ts-box" data-ts="signup" hidden></div>
           <p class="auth-msg" id="signup-error" role="alert"></p>
           <button type="submit" class="auth-submit" id="signup-btn" data-i18n="btn_create_account">Create Account</button>
         </form>
@@ -233,9 +282,11 @@
   <script src="cnc/cnc-admin.js"></script>
   <script src="cnc/cnc-finance.js"></script>
   <script src="cnc/cnc-team.js"></script>
+  <script src="cnc/cnc-identity.js"></script>
 
   <!-- 화면 -->
   <script src="ui/layout.js"></script>
+  <script src="ui/turnstile.js"></script>
   <script src="ui/line-connect.js"></script>
   <script src="ui/datepicker.js"></script>
   <script src="ui/page-home.js"></script>
@@ -247,6 +298,7 @@
   <script src="ui/page-legal.js"></script>
   <script src="ui/page-contact.js"></script>
   <script src="ui/page-about.js"></script>
+  <script src="ui/page-complete.js"></script>
   <script src="ui/page-admin.js"></script>
   <script src="ui/page-admin-finance.js"></script>
   <script src="ui/page-admin-team.js"></script>

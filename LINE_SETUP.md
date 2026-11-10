@@ -104,6 +104,17 @@ Supabase 대시보드 → **Database** → **Webhooks** (또는 **Integrations �
 | Table | `credit_history` |
 | Events | ✅ **Insert** 만 |
 
+### 4-3. 🎁 신규 가입 무료 크레딧 승인 대기 (`signup_bonus_grants`) — sql/010 실행 후
+위와 똑같이 만들고, 다른 점만:
+| 칸 | 값 |
+|---|---|
+| Name | `line_notify_signup_bonus` |
+| Table | `signup_bonus_grants` |
+| Events | ✅ **Insert**, ✅ **Update** |
+
+→ 신청이 "승인 대기(pending)"가 되면 관리자 그룹(카테고리 account)에 **"🎁 Free credits — approval needed"** 카드
+(고객 · 치과 · 의심 표시 수 · Admin 열기 버튼 → Customers 탭 맨 위 목록에서 승인 · 거절). 자동 지급 모드에서는 카드가 가지 않아요.
+
 ---
 
 ## 5. 테스트 순서

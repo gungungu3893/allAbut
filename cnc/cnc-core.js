@@ -33,6 +33,8 @@ CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['PACKAGE_NOT_FOUND', 'SLIP_INVALID', '
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['bonus_address_only', 'NO_REGISTERED_CLINIC', 'ALREADY_REVIEWED']);
 // 관리자 무료 크레딧 지급·회수 (sql/009_free_credit_grants.sql)
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['EVENT_REQUIRED', 'REASON_REQUIRED']);
+// sql/010: 회원 필수 정보 · 중복 (TAKEN/INVALID 을 PHONE·TAX_ID 보다 먼저 찾도록 긴 이름부터)
+CNC_ERROR_CODES = ['PHONE_TAKEN', 'PHONE_INVALID', 'TAX_ID_TAKEN', 'TAX_ID_INVALID', 'EMAIL_DISPOSABLE', 'PROFILE_INCOMPLETE'].concat(CNC_ERROR_CODES);
 
 
 // ================================================================
@@ -331,10 +333,14 @@ async function cncGetCreditSummary() {
 }
 
 // 등록 정보 변경 요청 (관리자 승인 후 바뀌어요)
-function cncRequestClinicChange(clinic, addr, phone, reason) {
-  return cncRpc('request_clinic_change', {
+// 등록 정보 변경 요청 (관리자 승인 후 바뀜). fullName · taxId 는 sql/010 실행 후에만 보내요 (없으면 예전 모양 그대로)
+function cncRequestClinicChange(clinic, addr, phone, reason, fullName, taxId) {
+  var args = {
     p_clinic: String(clinic || '').trim(), p_addr: String(addr || '').trim(), p_phone: String(phone || '').trim(), p_reason: String(reason || '').trim()
-  });
+  };
+  if (fullName !== undefined) args.p_full_name = cncNormName(fullName);
+  if (taxId !== undefined) args.p_tax_id = cncNormTaxId(taxId);
+  return cncRpc('request_clinic_change', args);
 }
 
 function cncCancelClinicChange() {

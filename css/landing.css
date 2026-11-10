@@ -202,6 +202,7 @@ a { color: inherit; }
   font-weight: 500;
   cursor: pointer;
 }
+.auth-tabs[hidden] { display: none; }
 .auth-tab.active { color: var(--navy); font-weight: 600; border-bottom-color: var(--gold); }
 
 .auth-field { margin-bottom: 16px; }
@@ -243,6 +244,36 @@ a { color: inherit; }
 .auth-msg { font-size: 0.9375rem; line-height: 1.5; min-height: 22px; margin: 4px 0 8px; }
 .auth-msg.error { color: var(--danger); font-weight: 500; }
 .auth-msg.info { color: var(--success); font-weight: 500; }
+
+/* 칸 아래 빨간 글씨 (회원가입 칸마다) */
+.auth-field-err { margin: 6px 0 0; font-size: 0.9375rem; line-height: 1.45; color: var(--danger); font-weight: 500; }
+.auth-field-err:empty { display: none; }
+.auth-field input.invalid { border-color: var(--danger); }
+.auth-field .required { color: var(--danger); }
+
+/* 비밀번호 찾기 · 돌아가기 같은 글자 버튼 (높이는 충분히) */
+.auth-link {
+  display: inline-flex; align-items: center;
+  min-height: 48px; padding: 0 4px; margin: 0 0 6px;
+  background: none; border: none; color: var(--navy);
+  font-size: 1rem; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.auth-link:hover { color: #8A6D12; }
+.auth-form-title { margin: 0 0 12px; font-size: 1.25rem; font-weight: 600; color: var(--navy); }
+
+/* 로봇 차단 위젯 자리 (TURNSTILE_SITE_KEY 가 있을 때만 보임) */
+.ts-box { margin: 4px 0 10px; min-height: 65px; }
+.ts-box[hidden] { display: none; }
+
+/* 🎁 신규 가입 무료 크레딧 이벤트 배너 (랜딩 · 로그인, 진행 중일 때만) */
+.campaign-banner {
+  width: 100%; max-width: 440px; margin: 18px auto 0; padding: 14px 18px;
+  background: linear-gradient(135deg, #F6E7A8 0%, var(--gold) 55%, #B8921F 100%);
+  color: #1F1600; border-radius: 12px; box-shadow: 0 8px 28px rgba(212, 175, 55, 0.35);
+  font-size: 1.0625rem; font-weight: 600; line-height: 1.45; text-align: center;
+}
+.campaign-banner[hidden] { display: none; }
+.campaign-until { display: inline-block; font-weight: 500; font-size: 0.9375rem; opacity: 0.85; }
 
 /* ← Back */
 .back-link {
@@ -335,6 +366,8 @@ a { color: inherit; }
 .public-footer a { color: rgba(255, 255, 255, 0.78); text-decoration: none; padding: 6px 4px; display: inline-block; }
 .public-footer a:hover { color: var(--gold); text-decoration: underline; }
 body.in-app .public-footer { display: none; }
+/* 로그인·가입 화면: 가입 폼이 길어서 고정 푸터가 입력칸을 가리지 않도록 화면 맨 아래에 그냥 놓아요 */
+body.on-auth .public-footer { position: static; background: var(--dark); padding-top: 18px; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; }
 .footer-copy { margin-top: 2px; }
 .public-footer .footer-contact { margin: 0 0 2px; color: rgba(255, 255, 255, 0.85); }

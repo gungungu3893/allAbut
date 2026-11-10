@@ -20,7 +20,8 @@ var ROUTES = {
   privacy: function () { return PageLegal; },
   'credit-policy': function () { return PageLegal; },
   contact: function () { return PageContact; },  // 문의하기 (로그인 없이도)
-  about: function () { return PageAbout; }       // 회사소개 (로그인 없이도)
+  about: function () { return PageAbout; },      // 회사소개 (로그인 없이도)
+  complete: function () { return PageComplete; } // 필수 정보 입력 (본명 · 전화 · 치과명 · Tax ID · 주소가 비었을 때)
 };
 
 // ----------------------------------------------------------------
@@ -118,6 +119,7 @@ function pageTitle(name) {
   var doc = legalDocForRoute(name);
   if (name === 'contact') return t('contact_title') + ' · allAbut';
   if (name === 'about') return t('about_meta_title');
+  if (name === 'complete') return t('complete_title') + ' · allAbut';
   return (doc ? t(doc.titleKey) : t('nav_' + name)) + ' · allAbut';
 }
 
@@ -162,6 +164,15 @@ function renderRoute() {
   }
   // 관리자가 아닌 사람이 #/admin 으로 들어오면 홈으로
   if (name === 'admin' && !APP.isAdmin) {
+    name = 'home';
+    history.replaceState(null, '', '#/home');
+  }
+  // 필수 정보가 비어 있으면 정보 입력 화면만 (법적 문서 · 문의 · 회사소개는 열어 둬요) — sql/010
+  if (APP.needsInfo && name !== 'complete' && !isPublicRoute(name)) {
+    name = 'complete';
+    history.replaceState(null, '', '#/complete');
+  }
+  if (name === 'complete' && !APP.needsInfo) {
     name = 'home';
     history.replaceState(null, '', '#/home');
   }

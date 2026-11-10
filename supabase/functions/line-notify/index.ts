@@ -115,6 +115,7 @@ const ADMIN_NOTICE_STYLES = {
   milling:          { color: '#0E7490', icon: '⚙️', label: 'MILLING STARTED',  title: 'Milling started' },
   shipped:          { color: '#0E7490', icon: '🚚', label: 'SHIPPED',          title: 'Order shipped' },
   marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED', title: 'Marked as delivered' },
+  free_approval:    { color: '#B8860B', icon: '🎁', label: 'FREE CREDITS',     title: '🎁 Free credits — approval needed' },
 };
 type NoticeType = keyof typeof ADMIN_NOTICE_STYLES;
 
@@ -1297,6 +1298,44 @@ async function handleDeletionRequest(rec: any): Promise<void> {
 }
 
 
+// 🎁 신규 가입 무료 크레딧 — 승인 대기 (sql/010, signup_bonus_grants INSERT/UPDATE 에서 status 가 pending 이 될 때)
+//   고객 · 치과 · 의심 표시 수 + 관리자 화면 버튼 (Customers 탭 맨 위 목록에서 승인 · 거절)
+const FLAG_LABELS: Record<string, string> = {
+  same_ip: 'Same IP', same_device: 'Same device', similar_clinic: 'Similar clinic name',
+  same_address: 'Same address', same_name: 'Same name', same_tax_id: 'Same Tax ID',
+};
+async function handleSignupGrant(type: string, rec: any, old: any): Promise<void> {
+  if (rec?.status !== 'pending') return;
+  if (type === 'UPDATE' && old?.status === 'pending') return;   // 이미 알린 신청
+  if (type !== 'INSERT' && type !== 'UPDATE') return;
+  const p = await getProfile(rec.user_id);
+  const email = await customerEmail(rec.user_id);
+  let flags: string[] = [];
+  try {
+    const { data } = await db.rpc('_suspicion_flags', { p_user: rec.user_id });
+    if (Array.isArray(data)) flags = data.map((x: unknown) => String(x));
+  } catch (_) { /* 무시 */ }
+  const st = ADMIN_NOTICE_STYLES.free_approval;
+  const name = str(p?.full_name) || profileName(p, rec.user_id);
+  const rows: [string, string][] = [
+    ['Event', str(rec.campaign_name) || 'New member event'],
+    ['Credits', String(rec.credits ?? 0)],
+    ['LINE', /^U[0-9a-f]{32}$/.test(String(p?.line_user_id ?? '')) ? 'Linked' : 'Not linked'],
+    ['Suspicious', flags.length ? `${flags.length} · ${flags.map((f) => FLAG_LABELS[f] ?? f).join(', ')}` : 'None'],
+  ];
+  await pushAdmins('account', buildReceiptCard({
+    title: st.title, color: st.color, subtitle: 'allAbut · Account notice', docNo: name, when: rec.requested_at ?? rec.granted_at,
+    message: 'Check the customer and approve or reject the free credits (Admin → Customers).',
+    sections: [
+      { title: 'Customer', clinic: { name, lines: [email, str(p?.clinic_name), str(p?.phone), str(p?.tax_id)] } },
+      { title: 'Details', rows },
+    ],
+    button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
+    autoNote: R.en.auto_note, company: await companyLine(),
+  }));
+}
+
+
 // ================================================================
 // 이벤트 → 알림
 // ================================================================
@@ -1309,6 +1348,7 @@ async function handle(payload: any): Promise<void> {
   if (table === 'topup_requests') { await handleTopup(type, record, old_record); return; }
   if (table === 'account_deletion_requests') { if (type === 'INSERT') await handleDeletionRequest(record); return; }
   if (table === 'credit_history') { if (type === 'INSERT') await notifyCredit(record); return; }
+  if (table === 'signup_bonus_grants') { await handleSignupGrant(type, record, old_record); return; }
   if (table !== 'cnc_orders') return;
 
   // 새 주문 → 관리자만 (고객에게는 credit_history 'use' 로 "주문 접수"를 보내요 — 중복 방지)

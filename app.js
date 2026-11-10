@@ -31,6 +31,7 @@ function showScreen(name) {
 
   isSwitching = true;
   document.body.classList.toggle('in-app', name === 'app' || name === 'legal');   // 앱·법적 문서 화면은 밝은 배경
+  document.body.classList.toggle('on-auth', name === 'auth');   // 로그인·가입 화면: 푸터가 긴 가입 폼을 가리지 않게 (아래에 놓아요)
 
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
@@ -97,6 +98,14 @@ async function enterApp() {
     APP.isAdmin = !!APP.adminRole;
     APP.legal = loaded[2];
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
+
+    // 필수 정보(본명 · 전화 · 치과명 · Tax ID · 주소)가 비어 있으면 정보 입력 화면 (sql/010 실행 후에만)
+    APP.needsInfo = cncNeedsProfileInfo(APP.profile);
+    if (cncHasIdentityColumns(APP.profile)) {
+      if (!APP.profile.signup_meta_at) cncRecordSignupMeta();   // 가입 IP · 기기 · 브라우저 (처음 한 번)
+      // 신규 가입 무료 크레딧 이벤트: 이메일 인증·LINE 연결 뒤 로그인할 때 다시 시도
+      cncClaimSignupBonus().then(function (r) { if (r && r.granted_now > 0) refreshBalance(); });
+    }
 
     // 가입할 때 지금 최신 버전에 동의했으면 (이메일 인증으로 기록을 못 했던 경우) 여기서 기록
     if (APP.needsConsent) {
@@ -192,14 +201,30 @@ function onSessionEnded() {
 
 
 // ===== 탭 전환 (Sign In / Create Account) =====
+// tab: 'signin' | 'signup' | 'reset'(비밀번호 찾기) | 'newpass'(재설정 링크로 들어와 새 비밀번호)
+var AUTH_FORMS = { signin: 'form-signin', signup: 'form-signup', reset: 'form-reset', newpass: 'form-newpass' };
 function switchTab(tab) {
+  var tabsShown = tab === 'signin' || tab === 'signup';
   document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
   document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
   document.getElementById('tab-signin').setAttribute('aria-selected', tab === 'signin' ? 'true' : 'false');
   document.getElementById('tab-signup').setAttribute('aria-selected', tab === 'signup' ? 'true' : 'false');
-  document.getElementById('form-signin').style.display = tab === 'signin' ? 'block' : 'none';
-  document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  var tabs = document.querySelector('.auth-tabs');
+  if (tabs) tabs.hidden = !tabsShown;
+  Object.keys(AUTH_FORMS).forEach(function (k) {
+    var f = document.getElementById(AUTH_FORMS[k]);
+    if (f) f.style.display = k === tab ? 'block' : 'none';
+  });
   clearAuthMessages();
+  if (typeof tsMountAll === 'function') tsMountAll();   // 로봇 차단 위젯 (키가 있을 때만)
+}
+
+// 비밀번호 찾기 화면 (로그인 칸의 이메일을 그대로 가져와요)
+function showResetForm() {
+  var email = document.getElementById('signin-email').value.trim();
+  switchTab('reset');
+  document.getElementById('reset-email').value = email;
+  document.getElementById('reset-email').focus();
 }
 
 
@@ -212,16 +237,33 @@ function showAuthMessage(id, text, type) {
 }
 
 function clearAuthMessages() {
-  ['signin-error', 'signup-error'].forEach(function (id) {
+  ['signin-error', 'signup-error', 'reset-error', 'newpass-error'].forEach(function (id) {
     var el = document.getElementById(id);
+    if (!el) return;
     el.textContent = '';
     el.className = 'auth-msg';
   });
+  setSignupFieldErrors({});
+}
+
+// 가입 폼 칸 아래 빨간 글씨 (errors: { field: '번역 키' })
+function setSignupFieldErrors(errors) {
+  var slots = document.querySelectorAll('[data-su-err]');
+  for (var i = 0; i < slots.length; i++) {
+    var key = errors[slots[i].getAttribute('data-su-err')];
+    slots[i].innerHTML = key ? '<span aria-hidden="true">⚠</span> ' + escHtml(t(key)) : '';
+    var input = slots[i].parentNode.querySelector('input');
+    if (input) input.classList.toggle('invalid', !!key);
+  }
+  var first = document.querySelector('#form-signup input.invalid');
+  if (first) first.focus();
 }
 
 function resetAuthForms() {
-  document.getElementById('form-signin').reset();
-  document.getElementById('form-signup').reset();
+  Object.keys(AUTH_FORMS).forEach(function (k) {
+    var f = document.getElementById(AUTH_FORMS[k]);
+    if (f) f.reset();
+  });
   clearAuthMessages();
 }
 
@@ -244,6 +286,13 @@ function friendlyError(err) {
   if (msg.indexOf('Invalid login credentials') !== -1) return t('err_login_invalid');
   if (msg.indexOf('Email not confirmed') !== -1) return t('err_email_not_confirmed');
   if (msg.indexOf('already registered') !== -1) return t('err_email_registered');
+  if (/captcha/i.test(msg)) return t('err_captcha');
+  // 서버(sql/010) 검사
+  if (msg.indexOf('PHONE_TAKEN') !== -1) return t('err_phone_taken');
+  if (msg.indexOf('TAX_ID_TAKEN') !== -1) return t('err_tax_id_taken');
+  if (msg.indexOf('TAX_ID_INVALID') !== -1) return t('err_tax_id_checksum');
+  if (msg.indexOf('PHONE_INVALID') !== -1) return t('err_phone');
+  if (msg.indexOf('EMAIL_DISPOSABLE') !== -1) return t('err_email_disposable');
   if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return t('err_network');
   return msg || t('err_unknown');
 }
@@ -260,10 +309,11 @@ async function handleSignIn(event) {
 
   if (!isValidEmail(email)) return showAuthMessage('signin-error', t('err_email_invalid'));
   if (password.length < 6) return showAuthMessage('signin-error', t('err_password_short'));
+  if (tsMissing('signin')) return showAuthMessage('signin-error', t('err_captcha_needed'));
 
   setLoading(button, true, 'btn_sign_in');
   try {
-    await signIn(email, password);
+    await signIn(email, password, tsToken('signin'));
     startSession(); // 로그인 성공 → 1시간 세션 시작
     goStartPage();  // 로그인하면 항상 홈 (처음이면 가이드)
     await enterApp();
@@ -271,6 +321,7 @@ async function handleSignIn(event) {
     showAuthMessage('signin-error', friendlyError(err));
   } finally {
     setLoading(button, false, 'btn_sign_in');
+    tsReset('signin');   // 토큰은 한 번만 쓸 수 있어요
   }
 }
 
@@ -280,28 +331,47 @@ async function handleSignUp(event) {
   event.preventDefault();
   clearAuthMessages();
 
-  var nickname = document.getElementById('signup-nickname').value.trim();
-  var email = document.getElementById('signup-email').value.trim();
+  var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var email = v('signup-email');
   var password = document.getElementById('signup-password').value;
   var password2 = document.getElementById('signup-password2').value;
-  var clinic = document.getElementById('signup-clinic').value.trim();
-  var phone = document.getElementById('signup-phone').value.trim();
-  var addressEl = document.getElementById('signup-address');
-  var address = addressEl ? addressEl.value.trim() : '';
+  var fields = {
+    full_name: v('signup-full_name'), phone: v('signup-phone'), clinic_name: v('signup-clinic'),
+    tax_id: v('signup-tax_id'), address: v('signup-address')
+  };
   var button = document.getElementById('signup-btn');
 
-  if (!nickname) return showAuthMessage('signup-error', t('err_nickname_required'));
-  if (!isValidEmail(email)) return showAuthMessage('signup-error', t('err_email_invalid'));
-  if (password.length < 6) return showAuthMessage('signup-error', t('err_password_short'));
-  if (password !== password2) return showAuthMessage('signup-error', t('err_password_mismatch'));
+  // 칸마다 검사 (본명 · 전화 · 치과명 · Tax ID 체크섬 · 주소 + 이메일 · 비밀번호)
+  var errors = cncValidateIdentity(fields);
+  if (!isValidEmail(email)) errors.email = 'err_email_invalid';
+  else if (cncIsDisposableEmail(email)) errors.email = 'err_email_disposable';
+  if (password.length < 6) errors.password = 'err_password_short';
+  else if (password !== password2) errors.password2 = 'err_password_mismatch';
+  if (Object.keys(errors).length) { setSignupFieldErrors(errors); return showAuthMessage('signup-error', t('err_check_fields')); }
   if (!document.getElementById('signup-agree').checked) return showAuthMessage('signup-error', t('signup_agree_required'));
+  if (tsMissing('signup')) return showAuthMessage('signup-error', t('err_captcha_needed'));
 
   setLoading(button, true, 'btn_create_account');
   try {
+    // 가입 전에 전화 · Tax ID 가 이미 쓰였는지 (서버는 겹침 여부만 알려줘요)
+    var avail = await cncCheckSignupAvailable(fields.phone, fields.tax_id, email);
+    var taken = {};
+    if (avail.phone_taken) taken.phone = 'err_phone_taken';
+    if (avail.tax_id_taken) taken.tax_id = 'err_tax_id_taken';
+    if (avail.email_blocked) taken.email = 'err_email_disposable';
+    if (Object.keys(taken).length) {
+      setSignupFieldErrors(taken);
+      showAuthMessage('signup-error', t('err_check_fields'));
+      return;
+    }
+
     // 지금 최신 약관·개인정보 버전 (가입과 함께 동의 기록)
     var versions = await cncGetLegalVersions(true).catch(function () { return null; });
     var legal = versions && versions.terms && versions.privacy ? { terms: versions.terms.version, privacy: versions.privacy.version } : null;
-    var data = await signUp(email, password, nickname, clinic, phone, legal, address);
+    var data = await signUp({
+      email: email, password: password, fullName: fields.full_name, phone: fields.phone, clinicName: fields.clinic_name,
+      taxId: fields.tax_id, address: fields.address, legal: legal, captchaToken: tsToken('signup')
+    });
 
     if (data.session) {
       // 이메일 인증 없이 바로 로그인된 경우 → 동의 기록 + 1시간 세션 시작 + 홈으로
@@ -321,8 +391,71 @@ async function handleSignUp(event) {
     showAuthMessage('signup-error', friendlyError(err));
   } finally {
     setLoading(button, false, 'btn_create_account');
+    tsReset('signup');
   }
 }
+
+
+// ===== 비밀번호 찾기: 재설정 메일 =====
+async function handleResetPassword(event) {
+  event.preventDefault();
+  clearAuthMessages();
+  var email = document.getElementById('reset-email').value.trim();
+  var button = document.getElementById('reset-btn');
+  if (!isValidEmail(email)) return showAuthMessage('reset-error', t('err_email_invalid'));
+  if (tsMissing('reset')) return showAuthMessage('reset-error', t('err_captcha_needed'));
+  setLoading(button, true, 'reset_send');
+  try {
+    await sendPasswordReset(email, tsToken('reset'));
+    // 가입 여부와 상관없이 같은 안내 (다른 사람 정보가 드러나지 않게)
+    showAuthMessage('reset-error', t('reset_sent'), 'info');
+  } catch (err) {
+    showAuthMessage('reset-error', friendlyError(err));
+  } finally {
+    setLoading(button, false, 'reset_send');
+    tsReset('reset');
+  }
+}
+
+// ===== 재설정 링크로 들어와 새 비밀번호 저장 =====
+async function handleNewPassword(event) {
+  event.preventDefault();
+  clearAuthMessages();
+  var pw = document.getElementById('newpass-password').value;
+  var pw2 = document.getElementById('newpass-password2').value;
+  var button = document.getElementById('newpass-btn');
+  if (pw.length < 6) return showAuthMessage('newpass-error', t('err_password_short'));
+  if (pw !== pw2) return showAuthMessage('newpass-error', t('err_password_mismatch'));
+  setLoading(button, true, 'newpass_save');
+  try {
+    await updatePassword(pw);
+    try { await signOut(); } catch (e) { /* 무시 */ }
+    clearSessionExpiry();
+    window.__passwordRecovery = false;
+    switchTab('signin');
+    showAuthMessage('signin-error', t('newpass_done'), 'info');
+  } catch (err) {
+    showAuthMessage('newpass-error', friendlyError(err));
+  } finally {
+    setLoading(button, false, 'newpass_save');
+  }
+}
+
+
+// ===== 🎁 신규 가입 무료 크레딧 이벤트 배너 (랜딩 · 로그인 · 회원가입) =====
+// 진행 중일 때만 보여요 (기간이 끝나면 서버가 active:false → 자동으로 사라짐)
+async function renderCampaignBanners(force) {
+  var c = await cncGetSignupCampaign(force);
+  var els = document.querySelectorAll('.campaign-banner');
+  var text = cncCampaignBannerText(c, currentLang);
+  for (var i = 0; i < els.length; i++) {
+    if (!text) { els[i].hidden = true; els[i].innerHTML = ''; continue; }
+    els[i].hidden = false;
+    els[i].innerHTML = '<span aria-hidden="true">🎁</span> ' + escHtml(text) +
+      (c.ends ? ' <span class="campaign-until">' + escHtml(tf('campaign_until', { date: formatDate(c.ends) })) + '</span>' : '');
+  }
+}
+window.addEventListener('langchange', function () { renderCampaignBanners(false); });
 
 
 // ===== 랜딩·로그인 화면의 언어 선택 =====
@@ -377,6 +510,20 @@ function leaveLegalPage(event, toSignIn) {
   renderFooters();
   // 회사 이름 (푸터 · 법적 문서) — 로그인 전에도 읽을 수 있어요
   cncGetCompany().then(renderFooters).catch(function () { /* SQL 실행 전이면 기본값 */ });
+
+  renderCampaignBanners(true);   // 🎁 신규 가입 이벤트 배너 (진행 중일 때만)
+
+  // 비밀번호 재설정 메일의 링크로 들어왔으면 → 새 비밀번호 화면 (1시간 세션 검사보다 먼저)
+  if (window.__passwordRecovery) {
+    var rs = null;
+    try { rs = await getSession(); } catch (e) { rs = null; }
+    if (rs) {
+      showScreen('auth');
+      switchTab('newpass');
+      return;
+    }
+    window.__passwordRecovery = false;
+  }
 
   var kept = await checkSessionOnLoad();   // 1시간 세션이 남아 있는지 (session.js)
   if (kept) {

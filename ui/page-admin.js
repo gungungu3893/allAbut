@@ -138,7 +138,7 @@ var PageAdmin = {
     if (this.tab === 'orders') box.innerHTML = this.ordersHtml();
     else if (this.tab === 'topups') box.innerHTML = this.topupsHtml();
     else if (this.tab === 'customers') box.innerHTML = this.usersHtml();
-    else if (this.tab === 'settings') { box.innerHTML = this.settingsHtml(); this.drawLineGroups(); }
+    else if (this.tab === 'settings') { box.innerHTML = this.settingsHtml(); this.drawLineGroups(); if (this.settingsTab.settings) this.loadSignupGrants(); }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
     else box.innerHTML = this.dashHtml();
@@ -995,6 +995,7 @@ var PageAdmin = {
     this.drawUsersList();
     this.loadDeletions();
     this.loadClinicChanges();
+    this.loadSignupGrants();
     try {
       var rows = await cncAdminListUsers();
       if (token !== this.loadToken) return;
@@ -1008,7 +1009,8 @@ var PageAdmin = {
   },
 
   usersHtml: function () {
-    return '<section class="card admin-clinic-changes" id="admin-clinic-changes" hidden></section>' +
+    return '<section class="card admin-signup-grants" id="admin-signup-grants" hidden></section>' +
+      '<section class="card admin-clinic-changes" id="admin-clinic-changes" hidden></section>' +
       '<section class="card admin-deletions" id="admin-deletions"></section>' +
       '<div class="orders-tools">' +
         '<div class="search-box">' +
@@ -1112,11 +1114,14 @@ var PageAdmin = {
         cncAdminListOrders({ userId: st.user.id, stage: 'all', limit: 50 }),
         cncAdminGetBalance(st.user.id),
         cncAdminUserLots(st.user.id),
-        sb.from('profiles').select('*').eq('id', st.user.id).maybeSingle().then(function (r) { return r.data || null; }, function () { return null; })
+        sb.from('profiles').select('*').eq('id', st.user.id).maybeSingle().then(function (r) { return r.data || null; }, function () { return null; }),
+        cncHasRole('manager') ? cncAdminSuspicionFlags(st.user.id) : Promise.resolve([])
       ]);
       if (this.customer !== st) return;
       st.lots = res[3];
       st.reg = cncRegisteredClinic(res[4]);
+      st.profile = res[4] || null;
+      st.flags = res[5] || [];   // 의심 표시 (sql/010)
       // 무료 크레딧 (등록 주소 전용 + 제한 없음 모두)
       st.free = (res[3] || []).filter(function (l) { return cncIsFreeLot(l) && l.remaining > 0 && new Date(l.expires_at) > new Date(); })
         .reduce(function (s, l) { return s + Number(l.remaining || 0); }, 0);
@@ -1154,8 +1159,15 @@ var PageAdmin = {
 
     var html = '<div class="admin-detail-grid">' +
       '<section>' +
-        row('email_label', u.email) + row('nickname_label', u.nickname) + row('clinic_name', u.clinic_name) +
-        row('phone_label', u.phone, true) + row('admin_joined', formatDate(u.created_at)) +
+        row('email_label', u.email) +
+        (st.profile && cncHasIdentityColumns(st.profile) ? row('full_name_label', st.profile.full_name) : row('nickname_label', u.nickname)) +
+        row('clinic_name', u.clinic_name) +
+        row('phone_label', u.phone, true) +
+        (st.profile && st.profile.tax_id ? row('clinic_tax_id_label', cncFormatTaxId(st.profile.tax_id), true) : '') +
+        row('admin_joined', formatDate(u.created_at)) +
+        (st.profile && cncHasIdentityColumns(st.profile)
+          ? '<div class="review-row"><span class="review-label">' + escHtml(t('flag_title')) + '</span><span class="review-value grant-flags" id="cust-flags">' + this.flagBadgesHtml(st.flags) + '</span></div>'
+          : '') +
         (st.reg ? '<div class="reg-box admin-reg-box"><p class="reg-box-title">🔒 ' + escHtml(t('reg_title')) + '</p>' +
             '<p class="reg-box-name">' + escHtml(st.reg.clinic) + '</p><p class="reg-box-line pre">' + escHtml(st.reg.addr) + '</p>' +
             '<p class="reg-box-line mono">' + escHtml(st.reg.phone) + '</p></div>' : '') +
