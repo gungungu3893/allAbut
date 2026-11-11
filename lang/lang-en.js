@@ -94,12 +94,10 @@ LANG.en = {
   // ----- 새 주문: 단계 -----
   order_steps: 'Order steps',
   step_of: 'Step {n} of {total}',
-  wiz_step1: 'Patient & Deadline',
   wiz_step2: 'Select Teeth',
   wiz_step3: 'Tooth Details',
   wiz_step4: 'Upload Files',
   wiz_step5: 'Review & Submit',
-  wiz_step1_desc: 'Enter the patient ID and the date you need the abutments.',
   wiz_step2_desc: 'Tap every tooth position that needs a custom abutment.',
   wiz_step3_desc: 'Choose the implant brand and shade for each tooth. Size is optional.',
   wiz_step4_desc: 'Add scan files (STL, PLY, OBJ, 3MF), photos or PDF documents.',
@@ -112,7 +110,6 @@ LANG.en = {
   patient_ph: 'e.g. P-0001',
   patient_help: 'Leave empty to order as "Anonymous".',
   case_deadline_label: 'Delivery deadline',
-  err_deadline_required: 'Please choose a delivery deadline.',
   err_deadline_past: 'The deadline cannot be in the past.',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.en = {
   submitted_help: 'Your order is waiting for confirmation. You can still edit or cancel it.',
   edit_order_btn: 'Edit order',
   edit_order_title: 'Edit order',
-  edit_order_help: 'You can change the patient ID, deadline and delivery information. To change teeth or files, cancel and order again.',
   order_updated: 'Order updated.',
   cancel_order_btn: 'Cancel order',
   keep_order: 'Keep order',
@@ -480,7 +476,6 @@ LANG.en = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: 'Ordering in 5 steps',
-  guide_step1_text: 'Enter the patient ID (required) and choose the delivery deadline from the calendar. Past dates cannot be selected.',
   guide_step2_text: 'Tap every tooth that needs a custom abutment on the FDI chart (32 teeth, wisdom teeth included). Each tooth uses 1 credit. Tap again to remove it.',
   guide_step3_text: 'For each tooth, choose the implant brand and the shade (both required). Size is optional. Use "Apply to all teeth" when all teeth are the same, and add a memo for special requests.',
   guide_step4_text: 'Add scan files (STL, PLY, OBJ, 3MF), photos (JPG, PNG) or PDF documents. Up to 10 files, 50 MB each. Use Preview to check a file before sending.',
@@ -490,8 +485,6 @@ LANG.en = {
   guide_s4_title: 'After you order',
   guide_flow_submitted: 'We received your order. You can still edit or cancel it.',
   guide_flow_confirmed: 'We checked your order and started the design.',
-  guide_flow_design_ready: 'Your action: check the design in My Orders and press "Approve design" or "Request changes".',
-  guide_flow_approved: 'The design is approved and will go to milling.',
   guide_flow_milling: 'Your abutments are being milled.',
   guide_flow_shipped: 'Your action: when the parcel arrives, press "Received" in My Orders.',
   guide_flow_done: 'The order is complete.',
@@ -499,7 +492,6 @@ LANG.en = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: 'Editing and cancelling',
-  guide_s5_p1: 'While the order status is "Submitted", you can edit the patient ID, deadline and delivery information, or cancel the order.',
   guide_s5_p2: 'When you cancel, the credits are returned to your balance immediately. To change teeth or files, cancel and place a new order.',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.en = {
   about_prod_note: 'Zirconia crowns are available as a set with our custom abutment.',
   about_compatible: 'Compatible implant systems',
   about_sec_how: 'How to order',
-  about_how_note: 'Track every step with LINE notifications · Prepaid credits · Available in 9 languages',
   about_sec_delivery: 'Delivery & guarantee',
   about_lead_time: 'Lead time',
   about_delivery: 'Delivery',
@@ -1221,6 +1212,43 @@ LANG.en = {
   split_after: 'Balance after this order',
   split_used_this: 'Credits used for this order',
   split_balance_now: 'Current balance',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: 'Patient',
+  wiz_step1_desc: 'Enter the patient ID. The delivery date is set later, when you approve the design.',
+  guide_step1_text: 'Enter the patient ID (required). You do not choose a delivery date here — you choose it when you approve the design.',
+  guide_s5_p1: 'While the order status is "Submitted", you can edit the patient ID and delivery information, or cancel the order.',
+  edit_order_help: 'You can change the patient ID and delivery information. To change teeth or files, cancel and order again.',
+  guide_flow_design_ready: 'Your action: check the design in My Orders and press "Approve design" (choose the delivery date) or "Request changes".',
+  guide_flow_approved: 'The design is approved and the delivery date is confirmed. It will go to milling.',
+  about_how_note: 'The delivery date is set when you approve the design · Track every step with LINE notifications · Prepaid credits · Available in 9 languages',
+  deadline_at_approval_note: 'The delivery date is set when you approve the design.',
+  deadline_tbd: 'Set at design approval',
+  deadline_tbd_admin: 'Deadline TBD · set at design approval',
+  approve_design_version: 'Design version {v}',
+  approve_design_files: 'Design files: {n}',
+  approve_deadline_label: 'Delivery date',
+  approve_deadline_help: 'The earliest date you can choose is {date}.',
+  approve_warning: 'Approving starts milling. After approval, design changes and cancellation are difficult.',
+  approve_submit: 'Approve and confirm delivery date',
+  err_deadline_required: 'Please choose a delivery date.',
+  err_deadline_too_early: 'Please choose {date} or later.',
+  design_approved_deadline_msg: 'Design approved. Delivery date: {date}',
+  err_stage_changed_customer: 'This order has already changed. Please check it again.',
+  review_deadline_changed: 'Delivery date changed',
+  audit_order_deadline: 'Delivery date changed',
+  admin_set_deadline: 'Change delivery date',
+  admin_set_deadline_help: 'Choose the new delivery date and enter the reason. The customer will be notified on LINE.',
+  admin_deadline_now: 'Current',
+  admin_deadline_new: 'New delivery date',
+  admin_set_deadline_notify: 'The customer gets a LINE message, and a copy goes to the admin group.',
+  admin_set_deadline_save: 'Change date',
+  admin_deadline_same: 'This is the same as the current date.',
+  admin_set_deadline_confirm: 'Change the delivery date from {from} to {to}?',
+  admin_deadline_changed: 'Delivery date changed.',
+  admin_min_lead_days: 'Minimum days after approval',
+  admin_min_lead_days_help: 'Earliest delivery date = approval day (Bangkok time) + this many days. 1 = from the next day. 0–30.',
+  admin_err_min_lead_days: 'Enter a number from 0 to 30.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

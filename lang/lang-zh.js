@@ -94,12 +94,10 @@ LANG.zh = {
   // ----- 새 주문: 단계 -----
   order_steps: '下单步骤',
   step_of: '第 {n} 步，共 {total} 步',
-  wiz_step1: '患者与交期',
   wiz_step2: '选择牙位',
   wiz_step3: '牙位详情',
   wiz_step4: '上传文件',
   wiz_step5: '确认提交',
-  wiz_step1_desc: '请输入患者ID以及所需基台的交付日期。',
   wiz_step2_desc: '请点选所有需要定制基台的牙位。',
   wiz_step3_desc: '请为每颗牙选择种植体品牌和色号。尺寸为选填。',
   wiz_step4_desc: '添加扫描文件（STL、PLY、OBJ、3MF）、照片或PDF文档。',
@@ -112,7 +110,6 @@ LANG.zh = {
   patient_ph: '例：P-0001',
   patient_help: '留空则以“匿名”下单。',
   case_deadline_label: '交付截止日期',
-  err_deadline_required: '请选择交付截止日期。',
   err_deadline_past: '截止日期不能早于今天。',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.zh = {
   submitted_help: '您的订单正在等待确认，目前仍可编辑或取消。',
   edit_order_btn: '编辑订单',
   edit_order_title: '编辑订单',
-  edit_order_help: '可修改患者ID、截止日期和配送信息。如需更改牙位或文件，请取消后重新下单。',
   order_updated: '订单已更新。',
   cancel_order_btn: '取消订单',
   keep_order: '保留订单',
@@ -480,7 +476,6 @@ LANG.zh = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: '下单 5 步',
-  guide_step1_text: '输入患者编号（必填），并在日历中选择交货期限。过去的日期无法选择。',
   guide_step2_text: '在 FDI 牙位图上点选所有需要个性化基台的牙齿（共 32 颗，含智齿）。每颗牙使用 1 积分。再点一次即可取消。',
   guide_step3_text: '为每颗牙选择种植体品牌和色号（均为必填），尺寸可不填。如果所有牙齿相同，请使用“应用于所有牙位”。有特殊要求请填写备注。',
   guide_step4_text: '添加扫描文件（STL、PLY、OBJ、3MF）、照片（JPG、PNG）或 PDF 文档。最多 10 个文件，每个不超过 50 MB。发送前可点击“预览”查看文件。',
@@ -490,8 +485,6 @@ LANG.zh = {
   guide_s4_title: '下单之后',
   guide_flow_submitted: '我们已收到您的订单。此时您仍可以修改或取消。',
   guide_flow_confirmed: '我们已核对您的订单，并开始设计。',
-  guide_flow_design_ready: '需要您操作：在“我的订单”中查看设计，然后点击“批准设计”或“要求修改”。',
-  guide_flow_approved: '设计已批准，即将进入加工。',
   guide_flow_milling: '您的基台正在加工中。',
   guide_flow_shipped: '需要您操作：收到包裹后，请在“我的订单”中点击“已收货”。',
   guide_flow_done: '订单已完成。',
@@ -499,7 +492,6 @@ LANG.zh = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: '修改和取消',
-  guide_s5_p1: '当订单状态为“已提交”时，您可以修改患者编号、交货期限和收货信息，也可以取消订单。',
   guide_s5_p2: '取消后，积分会立即退回到您的余额。如需更改牙位或文件，请取消后重新下单。',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.zh = {
   about_prod_note: '氧化锆牙冠需与我们的个性化基台成套订购。',
   about_compatible: '兼容的种植体系统',
   about_sec_how: '下单流程',
-  about_how_note: 'LINE 通知跟踪每一步 · 预付积分 · 支持 9 种语言',
   about_sec_delivery: '交付与保障',
   about_lead_time: '制作周期',
   about_delivery: '配送',
@@ -1218,6 +1209,43 @@ LANG.zh = {
   split_after: '下单后余额',
   split_used_this: '本订单使用的积分',
   split_balance_now: '当前余额',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: '患者',
+  wiz_step1_desc: '请输入患者编号。交期在您确认设计时再选择。',
+  guide_step1_text: '请输入患者编号（必填）。这里不选择交期——在确认设计时选择。',
+  guide_s5_p1: '订单状态为"已提交"时，可以修改患者编号和收货信息，或取消订单。',
+  edit_order_help: '您可以修改患者编号和收货信息。如需更改牙位或文件，请取消后重新下单。',
+  guide_flow_design_ready: '您需要：在"我的订单"中查看设计，然后点击"确认设计"（选择交期）或"要求修改"。',
+  guide_flow_approved: '设计已确认，交期已确定。即将开始加工。',
+  about_how_note: '交期在确认设计时决定 · 通过 LINE 通知跟踪每一步 · 预付积分 · 支持 9 种语言',
+  deadline_at_approval_note: '交期在您确认设计时决定。',
+  deadline_tbd: '确认设计时决定',
+  deadline_tbd_admin: '交期未定 · 确认设计时决定',
+  approve_design_version: '设计版本 {v}',
+  approve_design_files: '设计文件 {n} 个',
+  approve_deadline_label: '交期',
+  approve_deadline_help: '最早可选日期为 {date}。',
+  approve_warning: '确认后将开始加工。确认后很难修改设计或取消订单。',
+  approve_submit: '确认并确定交期',
+  err_deadline_required: '请选择交期。',
+  err_deadline_too_early: '请选择 {date} 或之后的日期。',
+  design_approved_deadline_msg: '设计已确认。交期：{date}',
+  err_stage_changed_customer: '订单状态已变化，请重新查看。',
+  review_deadline_changed: '交期已更改',
+  audit_order_deadline: '交期已更改',
+  admin_set_deadline: '更改交期',
+  admin_set_deadline_help: '选择新的交期并填写原因。将通过 LINE 通知客户。',
+  admin_deadline_now: '当前',
+  admin_deadline_new: '新交期',
+  admin_set_deadline_notify: '客户会收到 LINE 消息，副本也会发送到管理员群组。',
+  admin_set_deadline_save: '更改日期',
+  admin_deadline_same: '与当前日期相同。',
+  admin_set_deadline_confirm: '将交期从 {from} 改为 {to}？',
+  admin_deadline_changed: '交期已更改。',
+  admin_min_lead_days: '确认后最少天数',
+  admin_min_lead_days_help: '最早交期 = 确认当天（曼谷时间）+ 此天数。1 = 从第二天起。0–30。',
+  admin_err_min_lead_days: '请输入 0 到 30 的数字。',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

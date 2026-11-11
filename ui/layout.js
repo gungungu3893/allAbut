@@ -442,6 +442,14 @@ function uiCreditKindBadge(k) {
   return '<span class="kind-badge kind-paid">💳 ' + escHtml(t('paid_short')) + '</span>';
 }
 
+// 납기 표시: 있으면 날짜, 없으면(디자인 승인 전) "디자인 승인 때 결정" (sql/012)
+//   admin: true → 관리자용 회색 배지 "납기 미정 · 디자인 승인 때 결정"
+function uiDeadlineHtml(o, admin) {
+  if (o && o.deadline) return '<span class="deadline-date">' + escHtml(formatDate(o.deadline)) + '</span>';
+  if (admin) return '<span class="badge deadline-tbd">' + escHtml(t('deadline_tbd_admin')) + '</span>';
+  return '<span class="deadline-tbd-text">' + escHtml(t('deadline_tbd')) + '</span>';
+}
+
 // 이 주문에 쓴 크레딧: 🎁 무료 n / 💳 충전 n (cnc_orders.bonus_used · credits_used 그대로)
 function uiOrderCreditUseHtml(creditsUsed, bonusUsed) {
   var used = Number(creditsUsed || 0), free = Math.min(used, Math.max(0, Number(bonusUsed || 0)));
@@ -743,6 +751,9 @@ function uiHistoryList(history, showNames) {
       '<span class="timeline-dot" aria-hidden="true"></span>' +
       '<div class="timeline-body">' +
         '<p class="timeline-head"><b>' + escHtml(label) + '</b> <span class="muted">· ' + escHtml(who) + ' · ' + escHtml(formatDateTime(h.date)) + '</span></p>' +
+        // 납품일 (디자인 승인 때 확정 · 관리자 납기 변경 — sql/012)
+        (h.deadline ? '<p class="timeline-deadline">📅 ' + escHtml(t('case_deadline_label')) + ': ' +
+          (h.old_deadline ? escHtml(formatDate(h.old_deadline)) + ' → ' : '') + '<b>' + escHtml(formatDate(h.deadline)) + '</b></p>' : '') +
         (h.note ? '<p class="pre timeline-note">' + escHtml(h.note) + '</p>' : '') +
       '</div></li>';
   }).join('') + '</ol>';

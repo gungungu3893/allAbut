@@ -326,6 +326,8 @@ Object.assign(PageAdmin, {
         return [d.carrier, d.tracking_number].filter(Boolean).join(' ');
       case 'order_design':
         return 'v' + (d.version || '');
+      case 'order_deadline':   // 관리자 납기 변경 (sql/012)
+        return (d.from ? formatDate(d.from) : t('deadline_tbd')) + ' → ' + (d.to ? formatDate(d.to) : '—') + (d.reason ? ' · ' + d.reason : '');
       case 'topup_approved':
         return tf('fin_credits_fmt', { n: formatNumber(d.credits || 0) }) + ' · ' + formatTHB(d.total || 0);
       case 'topup_rejected':

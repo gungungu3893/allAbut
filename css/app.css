@@ -2438,3 +2438,16 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 /* 주문에 쓴 크레딧: 3 (🎁 무료 1 / 💳 충전 2) */
 .order-credit-use .ocu-split { color: var(--muted); font-size: 0.9375rem; margin-inline-start: 4px; }
 .order-credit-use .ocu-split b { color: var(--navy); }
+
+/* ===== 납품일은 디자인 승인 때 (sql/012) ===== */
+.deadline-later-note { margin: 4px 0 0; padding: 12px 14px; border-radius: var(--radius-sm, 8px); background: #F1F5FB; border: 1px solid #D6E0EE; color: var(--navy); font-size: 1rem; line-height: 1.5; }
+.sum-deadline-later { color: var(--muted); font-size: 0.9375rem; }
+.deadline-tbd-text { color: var(--muted); }
+.badge.deadline-tbd { background: #F3F4F6; color: #4B5563; font-weight: 500; white-space: normal; }
+.deadline-date { font-weight: 600; }
+.approve-design-box { padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: #FAFBFC; }
+.approve-design-box p { margin: 2px 0; }
+.approve-deadline-field .date-field { width: 100%; }
+.approve-warn { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--radius-sm, 8px); background: #FFF7ED; border: 1px solid #FED7AA; color: #9A3412; font-weight: 500; line-height: 1.5; }
+.timeline-deadline { margin: 4px 0 0; color: var(--navy); }
+#btn-set-deadline { margin-inline-start: 8px; }

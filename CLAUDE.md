@@ -93,6 +93,24 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012.
+  **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
+
+## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
+- 이유: 디자인을 주고받는 동안 시간이 지나서, 주문할 때 미리 정한 납기를 못 지킬 수 있어요
+- 새 주문에는 납품일 칸이 없어요 (1단계 "환자" + 안내 "📅 납품일은 디자인을 승인할 때 정해요" `deadline_at_approval_note`). draft 에 예전 deadline 이 있어도 무시
+- DB: `cnc_orders.deadline` null 허용. `create_cnc_order` = 008 정의 그대로 + deadline 은 항상 null (p_deadline 인자는 예전 호출 호환용, 무시).
+  `update_my_cnc_order` 는 deadline 을 안 바꿔요. `customer_cnc_action('approve')` → `DEADLINE_REQUIRED` (수정 요청·수령은 그대로)
+- 고객 승인 = `customer_approve_design(p_id, p_deadline, p_note)` (`cncApproveDesign`): design_ready 일 때만(아니면 `STAGE_CHANGED`), 납품일 필수(`DEADLINE_REQUIRED`),
+  납품일 ≥ 방콕 오늘 + `payment_settings.min_lead_days`(기본 1, 0~30, `DEADLINE_TOO_EARLY`) → 승인 + deadline + review_history `{ action: 'approved', deadline }` 한 번에.
+  가장 빠른 날은 `get_deadline_rules()` (`cncGetDeadlineRules`). 012 실행 전이면 예전 승인으로 (납기 저장 안 됨)
+- 승인 창(`PageOrders.approve`): 디자인 버전 요약 + 납품일 `uiDateField`(min = 가장 빠른 날) + 경고 "승인하면 가공이 시작돼요…" → [승인하고 납품일 확정]. 에러는 날짜 칸 아래 빨간 글씨
+- 납기 표시 `uiDeadlineHtml(o, admin)`: 있으면 날짜 / 없으면 고객 "디자인 승인 때 결정", 관리자 회색 배지 "납기 미정 · 디자인 승인 때 결정". 타임라인에 📅 납품일(이전 → 새)
+- 정렬 `cncSortProgress`: 할 일 있는 주문 → 납기 있는 것 빠른 순 → 납기 없는 것 접수일 순(먼저 들어온 것 먼저)
+- 관리자 납기 변경 `admin_set_deadline(p_id, p_deadline, p_reason)` (manager, 사유 필수, 주문 상세 "📅 납기 변경" → 확인창) → review_history `deadline_changed`(old_deadline · by:'admin') + `admin_audit_log` 'order_deadline'
+- 대시보드 "기한 임박"·"지금 처리할 일"은 deadline 이 있는 주문만. Settings 의 "승인 후 최소 일수"(owner, `min_lead_days`)
+- LINE: 관리자 새 주문 카드 "Delivery · Set at design approval" / 승인 → 관리자 카드에 확정 납기 크게(`Section.big`) + 고객 확인 카드 "✅ 디자인 승인 · 납품일 확정"(사본 없음) /
+  관리자 납기 변경 → 고객 "📅 납품일이 바뀌었어요"(이전 → 새 날짜, 사유) + 사본(Handled by). deadline 이 없으면 줄 자체를 빼요
 
 ## 잔액 나눠 보기: 💳 충전(Paid) · 🎁 무료(Free) (sql/011_admin_credit_split.sql)
 - **헤더는 전체 잔액만** (배지·팝오버 없음). 그 밖의 잔액이 보이는 곳은 전부 충전 / 무료를 나눠서, 항상 둘 다(0 이어도)
@@ -125,7 +143,7 @@
 - **비밀번호 찾기**: 로그인 폼 "비밀번호를 잊으셨나요?" → `#form-reset` (`sendPasswordReset`, redirectTo = `SITE_URL/`) → 메일 링크로 오면 `window.__passwordRecovery` → `#form-newpass` (`updatePassword`) → 로그아웃 후 다시 로그인
 - **Cloudflare Turnstile**: `config.js` 의 `TURNSTILE_SITE_KEY` (비어 있으면 위젯 숨김, 예전처럼 동작). 회원가입·로그인·비밀번호 찾기 폼의 `.ts-box[data-ts]` (`ui/turnstile.js`), 토큰은 `captchaToken` 으로 Supabase Auth 에 전달, 호출 뒤 `tsReset`.
   **시크릿 키는 코드에 절대 넣지 않는다** → Supabase → Authentication → Bot and Abuse Protection 에만
-- 재실행 순서: 002 → 008 → 009 → 010 (008 을 다시 실행하면 009 → 010 도)
+- 재실행 순서: 002 → 008 → 009 → 010 → 012 (008 을 다시 실행하면 009 → 010 → 012 도)
 
 ## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
 - 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
@@ -218,7 +236,7 @@
 - 단계 색은 `ui/layout.js` 의 `STAGE_COLORS` 한 곳 → `uiStageBadge(stage)` (홈·내 주문·관리자 공통), `uiStageStyle(stage)` (관리자 단계 카드 등)
 - 내 주문 카드: 윗줄 주문번호(Mono) · 배지 / 둘째 줄 환자 · 치아 수 · 납기 · 접수일 / 얇은 진행 줄 `uiStageProgress(stage)` + "현재: … (3/7)".
   큰 7단계 진행 막대 `uiStageBar` 는 펼친 상세 안에만. 고객 할 일(디자인 확인·수령 확인, `cncOrderNeedsAction`)은 골드 세로줄 + "다음 할 일" + 바로가기
-- 진행 중 목록은 한 번에 모두 가져와 `cncSortProgress` (할 일 있는 주문 → 납기 빠른 순)
+- 진행 중 목록은 한 번에 모두 가져와 `cncSortProgress` (할 일 있는 주문 → 납기 있는 것 빠른 순 → 납기 없는 것 접수일 순)
 - 홈 맨 위 "확인이 필요해요" (골드 테두리, `cncOrdersNeedingAction`), 크레딧 카드 "n크레딧이 m일 후 만료" (`cncExpiringSummary`)
 - 치아 선택(Step 2): 치아 모양 SVG 버튼 3종 (1~3 앞니 / 4~5 작은어금니 / 6~8 큰어금니), 위턱 뿌리 위·번호 아래, 아래턱 반대.
   넓은 칸(600px 이상)은 한 턱 한 줄 + 아치(가운데가 앞으로), 좁으면 사분면마다 한 줄(8개). 선택 = 네이비 채움 + 흰 테두리 + ✓, 호버 = 골드 테두리.

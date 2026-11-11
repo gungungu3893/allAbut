@@ -94,12 +94,10 @@ LANG.es = {
   // ----- 새 주문: 단계 -----
   order_steps: 'Pasos del pedido',
   step_of: 'Paso {n} de {total}',
-  wiz_step1: 'Paciente y plazo',
   wiz_step2: 'Seleccionar dientes',
   wiz_step3: 'Detalles por diente',
   wiz_step4: 'Subir archivos',
   wiz_step5: 'Revisar y enviar',
-  wiz_step1_desc: 'Introduzca el ID del paciente y la fecha en que necesita los pilares.',
   wiz_step2_desc: 'Toque cada posición dental que necesite un pilar personalizado.',
   wiz_step3_desc: 'Elija la marca de implante y el color para cada diente. La medida es opcional.',
   wiz_step4_desc: 'Añada archivos de escaneo (STL, PLY, OBJ, 3MF), fotos o documentos PDF.',
@@ -112,7 +110,6 @@ LANG.es = {
   patient_ph: 'p. ej. P-0001',
   patient_help: 'Déjelo vacío para pedir como "Anónimo".',
   case_deadline_label: 'Fecha límite de entrega',
-  err_deadline_required: 'Elija una fecha límite de entrega.',
   err_deadline_past: 'La fecha límite no puede ser anterior a hoy.',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.es = {
   submitted_help: 'Su pedido está pendiente de confirmación. Todavía puede editarlo o cancelarlo.',
   edit_order_btn: 'Editar pedido',
   edit_order_title: 'Editar pedido',
-  edit_order_help: 'Puede cambiar el ID del paciente, la fecha límite y la información de entrega. Para cambiar dientes o archivos, cancele y vuelva a hacer el pedido.',
   order_updated: 'Pedido actualizado.',
   cancel_order_btn: 'Cancelar pedido',
   keep_order: 'Mantener pedido',
@@ -480,7 +476,6 @@ LANG.es = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: 'Hacer un pedido en 5 pasos',
-  guide_step1_text: 'Introduzca el ID del paciente (obligatorio) y elija la fecha límite de entrega en el calendario. No se pueden elegir fechas pasadas.',
   guide_step2_text: 'Toque en el odontograma FDI cada diente que necesite un pilar personalizado (32 dientes, incluidas las muelas del juicio). Cada diente usa 1 crédito. Vuelva a tocarlo para quitarlo.',
   guide_step3_text: 'Para cada diente, elija la marca del implante y el color (ambos obligatorios). El tamaño es opcional. Use "Aplicar a todos" si todos los dientes son iguales y añada una nota para peticiones especiales.',
   guide_step4_text: 'Añada archivos de escaneo (STL, PLY, OBJ, 3MF), fotos (JPG, PNG) o documentos PDF. Hasta 10 archivos de 50 MB cada uno. Use "Vista previa" para revisar un archivo antes de enviarlo.',
@@ -490,8 +485,6 @@ LANG.es = {
   guide_s4_title: 'Después de hacer el pedido',
   guide_flow_submitted: 'Hemos recibido su pedido. Todavía puede modificarlo o cancelarlo.',
   guide_flow_confirmed: 'Hemos revisado su pedido y empezado el diseño.',
-  guide_flow_design_ready: 'Acción necesaria: revise el diseño en "Mis pedidos" y pulse "Aprobar diseño" o "Solicitar cambios".',
-  guide_flow_approved: 'El diseño está aprobado y pasará al fresado.',
   guide_flow_milling: 'Sus pilares se están fresando.',
   guide_flow_shipped: 'Acción necesaria: cuando llegue el paquete, pulse "Recibido" en "Mis pedidos".',
   guide_flow_done: 'El pedido se ha completado.',
@@ -499,7 +492,6 @@ LANG.es = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: 'Modificar y cancelar',
-  guide_s5_p1: 'Mientras el estado del pedido sea "Pedido realizado", puede modificar el ID del paciente, la fecha límite y los datos de entrega, o cancelar el pedido.',
   guide_s5_p2: 'Al cancelar, los créditos vuelven a su saldo de inmediato. Para cambiar dientes o archivos, cancele el pedido y haga uno nuevo.',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.es = {
   about_prod_note: 'Las coronas de zirconio están disponibles como set con nuestro pilar personalizado.',
   about_compatible: 'Sistemas de implantes compatibles',
   about_sec_how: 'Cómo hacer un pedido',
-  about_how_note: 'Siga cada paso con notificaciones de LINE · Créditos prepagos · Disponible en 9 idiomas',
   about_sec_delivery: 'Entrega y garantía',
   about_lead_time: 'Plazo de fabricación',
   about_delivery: 'Entrega',
@@ -1218,6 +1209,43 @@ LANG.es = {
   split_after: 'Saldo después de este pedido',
   split_used_this: 'Créditos usados en este pedido',
   split_balance_now: 'Saldo actual',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: 'Paciente',
+  wiz_step1_desc: 'Ingrese el ID del paciente. La fecha de entrega se elige después, al aprobar el diseño.',
+  guide_step1_text: 'Ingrese el ID del paciente (obligatorio). Aquí no se elige la fecha de entrega: se elige al aprobar el diseño.',
+  guide_s5_p1: 'Mientras el pedido esté en "Enviado", puede editar el ID del paciente y los datos de envío, o cancelar el pedido.',
+  edit_order_help: 'Puede cambiar el ID del paciente y los datos de envío. Para cambiar dientes o archivos, cancele y haga un pedido nuevo.',
+  guide_flow_design_ready: 'Su acción: revise el diseño en Mis pedidos y pulse "Aprobar diseño" (elija la fecha de entrega) o "Solicitar cambios".',
+  guide_flow_approved: 'El diseño está aprobado y la fecha de entrega confirmada. Pasará al fresado.',
+  about_how_note: 'La fecha de entrega se elige al aprobar el diseño · Siga cada paso con notificaciones LINE · Créditos prepagados · Disponible en 9 idiomas',
+  deadline_at_approval_note: 'La fecha de entrega se elige al aprobar el diseño.',
+  deadline_tbd: 'Se elige al aprobar el diseño',
+  deadline_tbd_admin: 'Fecha pendiente · se elige al aprobar el diseño',
+  approve_design_version: 'Diseño versión {v}',
+  approve_design_files: 'Archivos de diseño: {n}',
+  approve_deadline_label: 'Fecha de entrega',
+  approve_deadline_help: 'La fecha más próxima que puede elegir es el {date}.',
+  approve_warning: 'Al aprobar comienza el fresado. Después será difícil cambiar el diseño o cancelar.',
+  approve_submit: 'Aprobar y confirmar fecha de entrega',
+  err_deadline_required: 'Elija una fecha de entrega.',
+  err_deadline_too_early: 'Elija el {date} o una fecha posterior.',
+  design_approved_deadline_msg: 'Diseño aprobado. Fecha de entrega: {date}',
+  err_stage_changed_customer: 'Este pedido ya cambió. Revíselo de nuevo.',
+  review_deadline_changed: 'Fecha de entrega cambiada',
+  audit_order_deadline: 'Fecha de entrega cambiada',
+  admin_set_deadline: 'Cambiar fecha de entrega',
+  admin_set_deadline_help: 'Elija la nueva fecha de entrega e indique el motivo. Se avisará al cliente por LINE.',
+  admin_deadline_now: 'Actual',
+  admin_deadline_new: 'Nueva fecha de entrega',
+  admin_set_deadline_notify: 'El cliente recibe un mensaje de LINE y se envía una copia al grupo de administración.',
+  admin_set_deadline_save: 'Cambiar fecha',
+  admin_deadline_same: 'Es la misma fecha actual.',
+  admin_set_deadline_confirm: '¿Cambiar la fecha de entrega del {from} al {to}?',
+  admin_deadline_changed: 'Fecha de entrega cambiada.',
+  admin_min_lead_days: 'Días mínimos tras la aprobación',
+  admin_min_lead_days_help: 'Fecha de entrega más próxima = día de aprobación (hora de Bangkok) + estos días. 1 = desde el día siguiente. 0–30.',
+  admin_err_min_lead_days: 'Ingrese un número de 0 a 30.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

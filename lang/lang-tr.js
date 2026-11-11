@@ -94,12 +94,10 @@ LANG.tr = {
   // ----- 새 주문: 단계 -----
   order_steps: 'Sipariş adımları',
   step_of: 'Adım {n} / {total}',
-  wiz_step1: 'Hasta ve Teslim Tarihi',
   wiz_step2: 'Diş Seçimi',
   wiz_step3: 'Diş Detayları',
   wiz_step4: 'Dosya Yükleme',
   wiz_step5: 'Kontrol ve Gönder',
-  wiz_step1_desc: 'Hasta ID\'sini ve abutmentlere ihtiyaç duyduğunuz tarihi girin.',
   wiz_step2_desc: 'Kişiye özel abutment gereken her diş pozisyonuna dokunun.',
   wiz_step3_desc: 'Her diş için implant markasını ve rengi seçin. Boyut isteğe bağlıdır.',
   wiz_step4_desc: 'Tarama dosyaları (STL, PLY, OBJ, 3MF), fotoğraf veya PDF belgeleri ekleyin.',
@@ -112,7 +110,6 @@ LANG.tr = {
   patient_ph: 'ör. P-0001',
   patient_help: '"Anonim" olarak sipariş vermek için boş bırakın.',
   case_deadline_label: 'Teslim tarihi',
-  err_deadline_required: 'Lütfen bir teslim tarihi seçin.',
   err_deadline_past: 'Teslim tarihi geçmiş bir tarih olamaz.',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.tr = {
   submitted_help: 'Siparişiniz onay bekliyor. Hâlâ düzenleyebilir veya iptal edebilirsiniz.',
   edit_order_btn: 'Siparişi düzenle',
   edit_order_title: 'Siparişi düzenle',
-  edit_order_help: 'Hasta ID, teslim tarihi ve teslimat bilgilerini değiştirebilirsiniz. Dişleri veya dosyaları değiştirmek için siparişi iptal edip yeniden verin.',
   order_updated: 'Sipariş güncellendi.',
   cancel_order_btn: 'Siparişi iptal et',
   keep_order: 'Siparişi koru',
@@ -480,7 +476,6 @@ LANG.tr = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: '5 adımda sipariş',
-  guide_step1_text: 'Hasta ID bilgisini girin (zorunlu) ve takvimden teslim tarihini seçin. Geçmiş tarihler seçilemez.',
   guide_step2_text: 'FDI diş şemasında özel abutment gereken her dişe dokunun (yirmilik dişler dahil 32 diş). Her diş 1 kredi kullanır. Kaldırmak için dişe tekrar dokunun.',
   guide_step3_text: 'Her diş için implant markasını ve rengi seçin (ikisi de zorunlu). Boyut isteğe bağlıdır. Tüm dişler aynıysa "Tüm dişlere uygula" düğmesini kullanın; özel istekleriniz için not ekleyin.',
   guide_step4_text: 'Tarama dosyaları (STL, PLY, OBJ, 3MF), fotoğraflar (JPG, PNG) veya PDF belgeleri ekleyin. En fazla 10 dosya, her biri en fazla 50 MB. Göndermeden önce bir dosyayı kontrol etmek için "Önizle" düğmesini kullanın.',
@@ -490,8 +485,6 @@ LANG.tr = {
   guide_s4_title: 'Sipariş verdikten sonra',
   guide_flow_submitted: 'Siparişinizi aldık. Hâlâ düzenleyebilir veya iptal edebilirsiniz.',
   guide_flow_confirmed: 'Siparişinizi kontrol ettik ve tasarıma başladık.',
-  guide_flow_design_ready: 'Sizden beklenen: "Siparişlerim" bölümünde tasarımı kontrol edin ve "Tasarımı onayla" ya da "Değişiklik iste" düğmesine basın.',
-  guide_flow_approved: 'Tasarım onaylandı ve frezelemeye gönderilecek.',
   guide_flow_milling: 'Abutmentlarınız frezeleniyor.',
   guide_flow_shipped: 'Sizden beklenen: kargo elinize ulaştığında "Siparişlerim" bölümünde "Teslim aldım" düğmesine basın.',
   guide_flow_done: 'Sipariş tamamlandı.',
@@ -499,7 +492,6 @@ LANG.tr = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: 'Düzenleme ve iptal',
-  guide_s5_p1: 'Sipariş durumu "Gönderildi" olduğu sürece hasta ID, teslim tarihi ve teslimat bilgilerini düzenleyebilir veya siparişi iptal edebilirsiniz.',
   guide_s5_p2: 'İptal ettiğinizde krediler hemen bakiyenize iade edilir. Dişleri veya dosyaları değiştirmek için siparişi iptal edip yeni bir sipariş verin.',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.tr = {
   about_prod_note: 'Zirkonya kronlar, kişiye özel abutmentımızla set olarak sunulur.',
   about_compatible: 'Uyumlu implant sistemleri',
   about_sec_how: 'Nasıl sipariş verilir',
-  about_how_note: 'Her adımı LINE bildirimleriyle takip edin · Ön ödemeli krediler · 9 dilde kullanılabilir',
   about_sec_delivery: 'Teslimat ve garanti',
   about_lead_time: 'Üretim süresi',
   about_delivery: 'Teslimat',
@@ -1218,6 +1209,43 @@ LANG.tr = {
   split_after: 'Bu siparişten sonra bakiye',
   split_used_this: 'Bu siparişte kullanılan krediler',
   split_balance_now: 'Şu anki bakiye',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: 'Hasta',
+  wiz_step1_desc: 'Hasta kimliğini girin. Teslim tarihi daha sonra, tasarımı onaylarken seçilir.',
+  guide_step1_text: 'Hasta kimliğini girin (zorunlu). Teslim tarihi burada seçilmez — tasarımı onaylarken seçersiniz.',
+  guide_s5_p1: 'Sipariş "Gönderildi" durumundayken hasta kimliğini ve teslimat bilgilerini düzenleyebilir veya siparişi iptal edebilirsiniz.',
+  edit_order_help: 'Hasta kimliğini ve teslimat bilgilerini değiştirebilirsiniz. Diş veya dosya değiştirmek için iptal edip yeniden sipariş verin.',
+  guide_flow_design_ready: 'Yapmanız gereken: Siparişlerim\'de tasarımı kontrol edip "Tasarımı onayla" (teslim tarihini seçin) veya "Değişiklik iste"ye basın.',
+  guide_flow_approved: 'Tasarım onaylandı ve teslim tarihi kesinleşti. Frezelemeye geçecek.',
+  about_how_note: 'Teslim tarihi tasarım onayında seçilir · Her adımı LINE bildirimleriyle izleyin · Ön ödemeli krediler · 9 dil desteği',
+  deadline_at_approval_note: 'Teslim tarihi tasarımı onayladığınızda seçilir.',
+  deadline_tbd: 'Tasarım onayında belirlenir',
+  deadline_tbd_admin: 'Teslim tarihi belirsiz · tasarım onayında belirlenir',
+  approve_design_version: 'Tasarım sürümü {v}',
+  approve_design_files: 'Tasarım dosyası: {n}',
+  approve_deadline_label: 'Teslim tarihi',
+  approve_deadline_help: 'Seçebileceğiniz en erken tarih {date}.',
+  approve_warning: 'Onaylayınca frezeleme başlar. Onaydan sonra tasarım değişikliği ve iptal zordur.',
+  approve_submit: 'Onayla ve teslim tarihini kesinleştir',
+  err_deadline_required: 'Lütfen bir teslim tarihi seçin.',
+  err_deadline_too_early: 'Lütfen {date} veya sonrasını seçin.',
+  design_approved_deadline_msg: 'Tasarım onaylandı. Teslim tarihi: {date}',
+  err_stage_changed_customer: 'Bu sipariş zaten değişti. Lütfen tekrar kontrol edin.',
+  review_deadline_changed: 'Teslim tarihi değişti',
+  audit_order_deadline: 'Teslim tarihi değişti',
+  admin_set_deadline: 'Teslim tarihini değiştir',
+  admin_set_deadline_help: 'Yeni teslim tarihini seçin ve nedeni girin. Müşteriye LINE ile bildirilir.',
+  admin_deadline_now: 'Mevcut',
+  admin_deadline_new: 'Yeni teslim tarihi',
+  admin_set_deadline_notify: 'Müşteriye LINE mesajı gider, yönetici grubuna da bir kopya gider.',
+  admin_set_deadline_save: 'Tarihi değiştir',
+  admin_deadline_same: 'Mevcut tarihle aynı.',
+  admin_set_deadline_confirm: 'Teslim tarihi {from} yerine {to} olarak değiştirilsin mi?',
+  admin_deadline_changed: 'Teslim tarihi değiştirildi.',
+  admin_min_lead_days: 'Onaydan sonra en az gün',
+  admin_min_lead_days_help: 'En erken teslim = onay günü (Bangkok saati) + bu gün sayısı. 1 = ertesi günden itibaren. 0–30.',
+  admin_err_min_lead_days: '0 ile 30 arasında bir sayı girin.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

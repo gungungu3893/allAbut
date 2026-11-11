@@ -94,12 +94,10 @@ LANG.vi = {
   // ----- 새 주문: 단계 -----
   order_steps: 'Các bước đặt hàng',
   step_of: 'Bước {n} / {total}',
-  wiz_step1: 'Bệnh nhân & Hạn giao',
   wiz_step2: 'Chọn răng',
   wiz_step3: 'Chi tiết răng',
   wiz_step4: 'Tải tệp lên',
   wiz_step5: 'Kiểm tra & Gửi',
-  wiz_step1_desc: 'Nhập ID bệnh nhân và ngày bạn cần nhận abutment.',
   wiz_step2_desc: 'Chạm vào mọi vị trí răng cần abutment cá nhân hóa.',
   wiz_step3_desc: 'Chọn thương hiệu implant và màu răng cho từng răng. Kích thước không bắt buộc.',
   wiz_step4_desc: 'Thêm tệp quét (STL, PLY, OBJ, 3MF), ảnh hoặc tài liệu PDF.',
@@ -112,7 +110,6 @@ LANG.vi = {
   patient_ph: 'vd: P-0001',
   patient_help: 'Để trống để đặt hàng dưới tên "Ẩn danh".',
   case_deadline_label: 'Hạn giao hàng',
-  err_deadline_required: 'Vui lòng chọn hạn giao hàng.',
   err_deadline_past: 'Hạn giao hàng không thể là ngày trong quá khứ.',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.vi = {
   submitted_help: 'Đơn hàng đang chờ xác nhận. Bạn vẫn có thể sửa hoặc hủy đơn.',
   edit_order_btn: 'Sửa đơn',
   edit_order_title: 'Sửa đơn hàng',
-  edit_order_help: 'Bạn có thể thay đổi ID bệnh nhân, hạn giao và thông tin giao hàng. Để thay đổi răng hoặc tệp, vui lòng hủy và đặt lại.',
   order_updated: 'Đã cập nhật đơn hàng.',
   cancel_order_btn: 'Hủy đơn',
   keep_order: 'Giữ đơn',
@@ -480,7 +476,6 @@ LANG.vi = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: 'Đặt hàng trong 5 bước',
-  guide_step1_text: 'Nhập mã bệnh nhân (bắt buộc) và chọn hạn giao hàng trên lịch. Không thể chọn ngày đã qua.',
   guide_step2_text: 'Chạm vào từng răng cần abutment tùy chỉnh trên sơ đồ FDI (32 răng, gồm cả răng khôn). Mỗi răng dùng 1 tín dụng. Chạm lại để bỏ chọn.',
   guide_step3_text: 'Với mỗi răng, chọn thương hiệu implant và màu răng (cả hai đều bắt buộc). Kích thước có thể bỏ trống. Dùng "Áp dụng cho tất cả răng" khi các răng giống nhau, và thêm ghi chú nếu có yêu cầu đặc biệt.',
   guide_step4_text: 'Thêm file scan (STL, PLY, OBJ, 3MF), ảnh (JPG, PNG) hoặc tài liệu PDF. Tối đa 10 file, mỗi file 50 MB. Dùng "Xem trước" để kiểm tra file trước khi gửi.',
@@ -490,8 +485,6 @@ LANG.vi = {
   guide_s4_title: 'Sau khi đặt hàng',
   guide_flow_submitted: 'Chúng tôi đã nhận đơn hàng của bạn. Bạn vẫn có thể sửa hoặc hủy đơn.',
   guide_flow_confirmed: 'Chúng tôi đã kiểm tra đơn hàng và bắt đầu thiết kế.',
-  guide_flow_design_ready: 'Việc bạn cần làm: xem thiết kế trong "Đơn của tôi" và nhấn "Phê duyệt thiết kế" hoặc "Yêu cầu chỉnh sửa".',
-  guide_flow_approved: 'Thiết kế đã được phê duyệt và sẽ được chuyển sang phay.',
   guide_flow_milling: 'Abutment của bạn đang được phay.',
   guide_flow_shipped: 'Việc bạn cần làm: khi nhận được bưu kiện, hãy nhấn "Đã nhận" trong "Đơn của tôi".',
   guide_flow_done: 'Đơn hàng đã hoàn tất.',
@@ -499,7 +492,6 @@ LANG.vi = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: 'Sửa và hủy đơn',
-  guide_s5_p1: 'Khi trạng thái đơn hàng là "Đã gửi", bạn có thể sửa mã bệnh nhân, hạn giao hàng và thông tin giao hàng, hoặc hủy đơn.',
   guide_s5_p2: 'Khi bạn hủy, tín dụng sẽ được hoàn lại vào số dư ngay lập tức. Để thay đổi răng hoặc file, hãy hủy đơn và đặt đơn mới.',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.vi = {
   about_prod_note: 'Mão zirconia chỉ cung cấp theo bộ cùng abutment cá nhân hóa của chúng tôi.',
   about_compatible: 'Hệ thống implant tương thích',
   about_sec_how: 'Cách đặt hàng',
-  about_how_note: 'Theo dõi từng bước qua thông báo LINE · Tín dụng trả trước · Hỗ trợ 9 ngôn ngữ',
   about_sec_delivery: 'Giao hàng & bảo hành',
   about_lead_time: 'Thời gian sản xuất',
   about_delivery: 'Giao hàng',
@@ -1218,6 +1209,43 @@ LANG.vi = {
   split_after: 'Số dư sau đơn này',
   split_used_this: 'Tín dụng dùng cho đơn này',
   split_balance_now: 'Số dư hiện tại',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: 'Bệnh nhân',
+  wiz_step1_desc: 'Nhập mã bệnh nhân. Ngày giao sẽ được chọn sau, khi bạn duyệt thiết kế.',
+  guide_step1_text: 'Nhập mã bệnh nhân (bắt buộc). Không chọn ngày giao ở đây — bạn chọn khi duyệt thiết kế.',
+  guide_s5_p1: 'Khi đơn ở trạng thái "Đã gửi", bạn có thể sửa mã bệnh nhân và thông tin giao hàng, hoặc hủy đơn.',
+  edit_order_help: 'Bạn có thể đổi mã bệnh nhân và thông tin giao hàng. Muốn đổi răng hoặc tệp, hãy hủy và đặt lại.',
+  guide_flow_design_ready: 'Việc của bạn: xem thiết kế trong "Đơn hàng của tôi" rồi bấm "Duyệt thiết kế" (chọn ngày giao) hoặc "Yêu cầu chỉnh sửa".',
+  guide_flow_approved: 'Thiết kế đã được duyệt và ngày giao đã chốt. Sắp bắt đầu gia công.',
+  about_how_note: 'Ngày giao được chọn khi duyệt thiết kế · Theo dõi mọi bước qua thông báo LINE · Tín dụng trả trước · Hỗ trợ 9 ngôn ngữ',
+  deadline_at_approval_note: 'Ngày giao được chọn khi bạn duyệt thiết kế.',
+  deadline_tbd: 'Chọn khi duyệt thiết kế',
+  deadline_tbd_admin: 'Chưa có ngày giao · chọn khi duyệt thiết kế',
+  approve_design_version: 'Thiết kế phiên bản {v}',
+  approve_design_files: 'Tệp thiết kế: {n}',
+  approve_deadline_label: 'Ngày giao',
+  approve_deadline_help: 'Ngày sớm nhất có thể chọn là {date}.',
+  approve_warning: 'Duyệt xong sẽ bắt đầu gia công. Sau khi duyệt, rất khó sửa thiết kế hoặc hủy đơn.',
+  approve_submit: 'Duyệt và chốt ngày giao',
+  err_deadline_required: 'Vui lòng chọn ngày giao.',
+  err_deadline_too_early: 'Vui lòng chọn từ {date} trở đi.',
+  design_approved_deadline_msg: 'Đã duyệt thiết kế. Ngày giao: {date}',
+  err_stage_changed_customer: 'Đơn hàng đã thay đổi. Vui lòng kiểm tra lại.',
+  review_deadline_changed: 'Đã đổi ngày giao',
+  audit_order_deadline: 'Đã đổi ngày giao',
+  admin_set_deadline: 'Đổi ngày giao',
+  admin_set_deadline_help: 'Chọn ngày giao mới và nhập lý do. Khách hàng sẽ được báo qua LINE.',
+  admin_deadline_now: 'Hiện tại',
+  admin_deadline_new: 'Ngày giao mới',
+  admin_set_deadline_notify: 'Khách hàng nhận tin nhắn LINE, bản sao gửi đến nhóm quản trị.',
+  admin_set_deadline_save: 'Đổi ngày',
+  admin_deadline_same: 'Trùng với ngày hiện tại.',
+  admin_set_deadline_confirm: 'Đổi ngày giao từ {from} sang {to}?',
+  admin_deadline_changed: 'Đã đổi ngày giao.',
+  admin_min_lead_days: 'Số ngày tối thiểu sau khi duyệt',
+  admin_min_lead_days_help: 'Ngày giao sớm nhất = ngày duyệt (giờ Bangkok) + số ngày này. 1 = từ ngày hôm sau. 0–30.',
+  admin_err_min_lead_days: 'Nhập số từ 0 đến 30.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

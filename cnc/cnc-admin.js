@@ -66,7 +66,7 @@ async function cncAdminDashboardNow() {
   });
   var results = await Promise.all(countJobs.concat([
     sb.from('cnc_orders').select('id, stage, deadline, clinic, patient, teeth_count, created_at')
-      .not('stage', 'in', '(done,cancelled)').lte('deadline', dueLimit)
+      .not('stage', 'in', '(done,cancelled)').not('deadline', 'is', null).lte('deadline', dueLimit)   // 납기가 정해진 주문만 (승인 전은 빼요)
       .order('deadline', { ascending: true }).limit(50)
   ]));
   var counts = {};
@@ -421,6 +421,11 @@ async function cncAdminListUsers() {
   return users;
 }
 
+// 납기 변경 (manager 이상, 사유 필수, sql/012) → { deadline, old_deadline, changed }
+function cncAdminSetDeadline(orderId, deadline, reason) {
+  return cncRpc('admin_set_deadline', { p_id: orderId, p_deadline: deadline, p_reason: String(reason || '').trim() });
+}
+
 // 고객별 잔액 나누기 (sql/011 admin_credit_split, manager 이상) → { [user_id]: { paid, free, paidExpiry, freeExpiry } }
 //   userIds 를 안 주면 전체. 011 실행 전이면 null → 화면은 지금처럼 전부 충전으로 보여요
 async function cncAdminCreditSplit(userIds) {
@@ -569,6 +574,10 @@ async function cncAdminSaveSettings(fields) {
   // 신규 가입 무료 크레딧 수 (sql/008 실행 후에만 칸이 있어요. 0 = 지급 안 함) — 보통은 cncAdminSaveSignupBonus 로 따로 저장
   if (fields.signup_bonus_credits !== undefined && fields.signup_bonus_credits !== null) {
     clean.signup_bonus_credits = Math.max(0, Math.min(100, parseInt(fields.signup_bonus_credits, 10) || 0));
+  }
+  // 승인 후 최소 일수 (sql/012, 0~30)
+  if (fields.min_lead_days !== undefined && fields.min_lead_days !== null && fields.min_lead_days !== '') {
+    clean.min_lead_days = Math.max(0, Math.min(30, parseInt(fields.min_lead_days, 10) || 0));
   }
   var result = await sb.from('payment_settings').update(clean).eq('id', 1).select();
   if (result.error) throw cncError(cncErrorCode(result.error), { cause: result.error });

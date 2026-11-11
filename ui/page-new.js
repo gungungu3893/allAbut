@@ -291,11 +291,8 @@ var PageNew = {
         '<p class="field-help privacy-hint"><span aria-hidden="true">🔒</span> ' + escHtml(t('patient_privacy_hint')) + '</p>' +
         uiFieldError(e.patient) +
       '</div>' +
-      '<div class="field">' +
-        '<label class="field-label" for="f-deadline">' + escHtml(t('case_deadline_label')) + ' <span class="required">*</span></label>' +
-        uiDateField({ id: 'f-deadline', value: d.deadline, min: cncToday(), onChange: 'PageNew.setDeadline', invalid: !!e.deadline }) +
-        uiFieldError(e.deadline) +
-      '</div>' +
+      // 납품일은 여기서 정하지 않아요 → 디자인을 승인할 때 (sql/012)
+      '<p class="deadline-later-note" id="deadline-later-note"><span aria-hidden="true">📅</span> ' + escHtml(t('deadline_at_approval_note')) + '</p>' +
     '</div>' +
     this.freeOptionHtml();
   },
@@ -365,11 +362,6 @@ var PageNew = {
     return { paid: Math.max(0, paidNow - paidUse), free: Math.max(0, freeNow - sp.free - (sp.paid - paidUse)) };
   },
 
-  // 달력에서 날짜를 고르면 불려요 ('YYYY-MM-DD')
-  setDeadline: function (value) {
-    this.setField('deadline', value);
-  },
-
   // 단계 제목 옆 "? Help" → 그 단계 설명 (가이드 문구 재사용)
   showHelp: function (btn) {
     var n = this.draft.step;
@@ -378,7 +370,7 @@ var PageNew = {
       '<a href="#/guide" class="popover-link">' + escHtml(t('guide_open_full')) + ' <span class="arrow" aria-hidden="true">→</span></a>');
   },
 
-  // 글자 입력 칸 (patient, deadline, memo) — 다시 그리지 않고 저장 + 요약만 갱신 (입력 중 커서 유지)
+  // 글자 입력 칸 (patient, memo) — 다시 그리지 않고 저장 + 요약만 갱신 (입력 중 커서 유지)
   setField: function (field, value) {
     this.draft[field] = value;
     this.save();
@@ -756,7 +748,7 @@ var PageNew = {
     var html = '';
     html += group('wiz_step1', 1,
       row('wiz_patient_label', escHtml(d.patient.trim() || '—')) +
-      row('case_deadline_label', escHtml(formatDate(d.deadline))));
+      '<p class="deadline-later-note"><span aria-hidden="true">📅</span> ' + escHtml(t('deadline_at_approval_note')) + '</p>');
     html += group('wiz_step3', 3, teethTable +
       (d.memo ? row('memo_label', '<span class="pre">' + escHtml(d.memo) + '</span>') : ''));
     html += group('wiz_step4', 4, d.files.length
@@ -957,7 +949,7 @@ var PageNew = {
       '<h2 class="sum-title">' + escHtml(t('summary_title')) + '</h2>' +
       '<dl class="sum-list">' +
         '<dt>' + escHtml(t('wiz_patient_label')) + '</dt><dd>' + escHtml(d.patient.trim() || '—') + '</dd>' +
-        '<dt>' + escHtml(t('case_deadline_label')) + '</dt><dd>' + escHtml(d.deadline ? formatDate(d.deadline) : '—') + '</dd>' +
+        '<dt>' + escHtml(t('case_deadline_label')) + '</dt><dd class="sum-deadline-later">📅 ' + escHtml(t('deadline_at_approval_note')) + '</dd>' +
         '<dt>' + escHtml(tf('teeth_count_fmt', { n: d.teeth.length })) + '</dt><dd>' + teeth + '</dd>' +
         '<dt>' + escHtml(t('files_label')) + '</dt><dd class="mono">' + d.files.length + ' / ' + FILE_MAX_COUNT + '</dd>' +
       '</dl>' +

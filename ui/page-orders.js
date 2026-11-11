@@ -174,7 +174,7 @@ var PageOrders = {
         '<span class="order-meta">' +
           meta('patient_label', escHtml(o.patient || t('anonymous'))) +
           meta('teeth_label', '<span class="mono">' + formatNumber(o.teeth_count) + '</span>') +
-          meta('case_deadline_label', escHtml(formatDate(o.deadline))) +
+          meta('case_deadline_label', uiDeadlineHtml(o)) +   // 승인 전 = 디자인 승인 때 결정
           meta('order_date', escHtml(formatDate(o.created_at))) +
         '</span>' +
         (open || cancelled ? '' : uiStageProgress(o.stage)) +
@@ -302,6 +302,7 @@ var PageOrders = {
       '<div class="review-row"><span class="review-label">' + escHtml(t('address_label')) + '</span><span class="review-value">' + escHtml(o.addr) + '</span></div>' +
       '<div class="review-row"><span class="review-label">' + escHtml(t('phone_label')) + '</span><span class="review-value mono">' + escHtml(o.phone) + '</span></div>' +
       (o.line_id ? '<div class="review-row"><span class="review-label">' + escHtml(t('line_id_label')) + '</span><span class="review-value">' + escHtml(o.line_id) + '</span></div>' : '') +
+      '<div class="review-row order-deadline-row"><span class="review-label">' + escHtml(t('case_deadline_label')) + '</span><span class="review-value">' + uiDeadlineHtml(o) + '</span></div>' +
       // 이 주문에 쓴 크레딧: 🎁 무료 n / 💳 충전 n (cnc_orders.bonus_used · credits_used)
       '<div class="review-row order-credits-row"><span class="review-label">' + escHtml(t('credits_use')) + '</span><span class="review-value">' + uiOrderCreditUseHtml(o.credits_used, o.bonus_used) + '</span></div>';
 
@@ -409,7 +410,8 @@ var PageOrders = {
     }
     var body = '<p class="modal-text">' + escHtml(t('edit_order_help')) + '</p>' +
       field('patient', 'wiz_patient_label', o.patient, true) +
-      field('deadline', 'case_deadline_label', o.deadline, true, 'date') +
+      // 납품일은 여기서 못 바꿔요 → 디자인 승인 때 정해요
+      '<p class="deadline-later-note"><span aria-hidden="true">📅</span> ' + escHtml(t('deadline_at_approval_note')) + '</p>' +
       field('clinic', 'clinic_name', o.clinic, true) +
       field('addr', 'address_label', o.addr, true) +
       field('phone', 'phone_label', o.phone, true, 'tel') +
@@ -426,11 +428,9 @@ var PageOrders = {
             var input = el.querySelector('#e-' + n);
             return input.classList.contains('date-field') ? (input.getAttribute('data-value') || '') : input.value.trim();
           };
-          var f = { patient: v('patient'), deadline: v('deadline'), clinic: v('clinic'), addr: v('addr'), phone: v('phone'), line_id: v('line_id') };
+          var f = { patient: v('patient'), clinic: v('clinic'), addr: v('addr'), phone: v('phone'), line_id: v('line_id') };
           var errs = {};
           if (!f.patient) errs.patient = 'err_patient_required';
-          if (!f.deadline) errs.deadline = 'err_deadline_required';
-          else if (f.deadline < cncToday() && f.deadline !== o.deadline) errs.deadline = 'err_deadline_past';
           ['clinic', 'addr', 'phone'].forEach(function (k) { if (!f[k]) errs[k] = 'err_required'; });
           var slots = el.querySelectorAll('.err-slot');
           for (var i = 0; i < slots.length; i++) {
@@ -467,10 +467,78 @@ var PageOrders = {
   // ================================================================
   // design_ready: 승인 / 수정 요청
   // ================================================================
+  // 승인 창: 디자인 버전 요약 + 납품일 선택 (가장 빠른 날 이전은 못 골라요) + 안내 → [승인하고 납품일 확정]
+  //   서버(customer_approve_design, sql/012)가 승인 · 납품일 저장 · 기록을 한 번에. 날짜 에러는 칸 바로 아래 빨간 글씨
   approve: async function (id) {
-    var ok = await uiConfirm({ title: t('design_satisfied'), message: t('approve_confirm_msg'), okLabel: t('design_satisfied') });
-    if (!ok) return;
-    await this.runAction(id, function () { return cncCustomerAction(id, 'approve'); }, 'design_approved_msg');
+    var self = this;
+    var o = this.findRow(id);
+    if (!o || this.busy[id]) return;
+    var rules = await cncGetDeadlineRules();
+    var vers = Array.isArray(o.design_versions) ? o.design_versions : [];
+    var last = vers[vers.length - 1];
+    var nFiles = last ? ((last.names || last.paths || []).length) : 0;
+    var body =
+      (last
+        ? '<div class="approve-design-box">' +
+            '<p class="approve-ver"><span aria-hidden="true">🎨</span> <b>' + escHtml(tf('approve_design_version', { v: last.version || vers.length })) + '</b>' +
+              (last.date ? ' <span class="muted">· ' + escHtml(formatDate(last.date)) + '</span>' : '') + '</p>' +
+            '<p class="muted">' + escHtml(tf('approve_design_files', { n: nFiles })) + ' · <span class="mono">' + escHtml(o.id) + '</span></p>' +
+          '</div>'
+        : '') +
+      '<div class="field approve-deadline-field">' +
+        '<span class="field-label" id="approve-deadline-label">' + escHtml(t('approve_deadline_label')) + ' <span class="required">*</span></span>' +
+        uiDateField({ id: 'approve-deadline', min: rules.earliest }) +
+        '<p class="field-help">' + escHtml(tf('approve_deadline_help', { date: formatDate(rules.earliest) })) + '</p>' +
+        '<div class="err-slot" data-err="deadline"></div>' +
+      '</div>' +
+      '<p class="approve-warn" role="note"><span aria-hidden="true">⚠</span> ' + escHtml(t('approve_warning')) + '</p>';
+
+    var modal = uiModal({
+      title: t('design_satisfied'),
+      body: body,
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: t('approve_submit'), kind: 'primary', onClick: async function (close, btn) {
+          var slot = modal.el.querySelector('[data-err="deadline"]');
+          var field = modal.el.querySelector('#approve-deadline');
+          function showErr(key, params) {
+            slot.innerHTML = key ? uiFieldError(key, params) : '';
+            if (field) field.classList.toggle('invalid', !!key);
+            if (key && field) field.focus();
+          }
+          var dl = uiDateValue('approve-deadline');
+          if (!dl) return showErr('err_deadline_required');
+          if (dl < rules.earliest) return showErr('err_deadline_too_early', { date: formatDate(rules.earliest) });
+          showErr('');
+          btn.disabled = true;
+          self.busy[id] = true;
+          try {
+            await cncApproveDesign(id, dl);
+            delete self.busy[id];
+            close();
+            uiToast(tf('design_approved_deadline_msg', { date: formatDate(dl) }), 'success');
+            await self.refreshRow(id);
+          } catch (err) {
+            console.error(err);
+            delete self.busy[id];
+            btn.disabled = false;
+            var code = cncErrorCode(err);
+            if (code === 'DEADLINE_TOO_EARLY') {
+              rules = await cncGetDeadlineRules();   // 그 사이 날짜가 바뀌었거나 최소 일수가 바뀐 경우
+              showErr('err_deadline_too_early', { date: formatDate(rules.earliest) });
+            } else if (code === 'DEADLINE_REQUIRED') {
+              showErr('err_deadline_required');
+            } else if (code === 'STAGE_CHANGED') {
+              close();
+              uiToast(t('err_stage_changed_customer'), 'error');
+              self.refreshRow(id);
+            } else {
+              uiToast(uiErrorMessage(err), 'error');
+            }
+          }
+        } }
+      ]
+    });
   },
 
   reject: function (id) {

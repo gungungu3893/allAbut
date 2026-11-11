@@ -34,6 +34,8 @@ CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['bonus_address_only', 'NO_REGISTERED_C
 // 관리자 무료 크레딧 지급·회수 (sql/009_free_credit_grants.sql)
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['EVENT_REQUIRED', 'REASON_REQUIRED']);
 // sql/010: 회원 필수 정보 · 중복 (TAKEN/INVALID 을 PHONE·TAX_ID 보다 먼저 찾도록 긴 이름부터)
+// sql/012: 납품일 (디자인 승인 때)
+CNC_ERROR_CODES = ['DEADLINE_REQUIRED', 'DEADLINE_TOO_EARLY', 'STAGE_CHANGED'].concat(CNC_ERROR_CODES);
 CNC_ERROR_CODES = ['PHONE_TAKEN', 'PHONE_INVALID', 'TAX_ID_TAKEN', 'TAX_ID_INVALID', 'EMAIL_DISPOSABLE', 'PROFILE_INCOMPLETE'].concat(CNC_ERROR_CODES);
 
 
@@ -47,6 +49,18 @@ function cncToday() {
   var mm = String(d.getMonth() + 1).padStart(2, '0');
   var dd = String(d.getDate()).padStart(2, '0');
   return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+// 방콕 기준 오늘 'YYYY-MM-DD' (납품일 규칙은 방콕 날짜로 — DB 와 같게)
+function cncBangkokToday() {
+  try { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }); } catch (e) { return cncToday(); }
+}
+
+// 'YYYY-MM-DD' + n일
+function cncDatePlus(dateStr, n) {
+  var p = String(dateStr).split('-');
+  var d = new Date(+p[0], +p[1] - 1, +p[2] + n);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 // 짧은 무작위 id (파일 목록 구분용)
@@ -95,7 +109,7 @@ function cncUserId() {
 // draft 모양:
 // {
 //   step: 1~5 (지금 단계), maxStep: 지금까지 가 본 가장 먼 단계,
-//   patient: '', deadline: 'YYYY-MM-DD',
+//   patient: '',                                       ← 납품일은 없어요: 디자인 승인 때 정해요 (sql/012)
 //   teeth: [16, 26],                                   ← 선택한 치아 (차트 순서)
 //   details: { '16': { brand, size, shade }, ... },    ← 치아마다 따로
 //   memo: '',
@@ -114,7 +128,6 @@ function cncNewDraft(profile) {
     step: 1,
     maxStep: 1,
     patient: '',
-    deadline: '',
     teeth: [],
     details: {},
     memo: '',
@@ -145,7 +158,6 @@ function cncSaveDraft(userId, draft) {
     step: draft.step,
     maxStep: draft.maxStep,
     patient: draft.patient,
-    deadline: draft.deadline,
     teeth: draft.teeth,
     details: draft.details,
     memo: draft.memo,
@@ -173,7 +185,7 @@ function cncLoadDraft(userId, profile) {
   draft.step = Math.min(Math.max(parseInt(saved.step, 10) || 1, 1), 5);
   draft.maxStep = Math.min(Math.max(parseInt(saved.maxStep, 10) || draft.step, draft.step), 5);
   draft.patient = String(saved.patient || '');
-  draft.deadline = /^\d{4}-\d{2}-\d{2}$/.test(saved.deadline || '') ? saved.deadline : '';
+  // 예전에 저장된 draft 의 deadline 은 무시해요 (납품일은 디자인 승인 때 정해요)
   draft.teeth = sortTeeth((saved.teeth || []).map(Number).filter(isValidTooth));
   draft.details = {};
   draft.teeth.forEach(function (n) {
@@ -211,7 +223,7 @@ function cncClearDraft(userId) {
 function cncHasDraft(userId) {
   var d = cncLoadDraft(userId, null);
   if (!d) return false;
-  return !!(d.patient || d.deadline || d.teeth.length || d.memo || d.missingFiles.length);
+  return !!(d.patient || d.teeth.length || d.memo || d.missingFiles.length);
 }
 
 
@@ -375,8 +387,7 @@ function cncValidateStep(draft, step) {
     var patient = draft.patient.trim();
     if (!patient) errors.patient = 'err_patient_required';
     else if (patient.length > 50) errors.patient = 'err_patient_long';
-    if (!draft.deadline) errors.deadline = 'err_deadline_required';
-    else if (draft.deadline < cncToday()) errors.deadline = 'err_deadline_past';
+    // 납품일은 여기서 받지 않아요 → 디자인 승인 때 (cncApproveDesign)
   }
 
   if (step === 2) {
@@ -471,7 +482,7 @@ function cncDismissMissingFiles(draft) {
 // 5) cases (주문 내용) 만들기 — Dentalk 과 같은 모양 + 파일 경로
 // ================================================================
 // [{
-//   patient, deadline, memo,
+//   patient, memo,              (납품일은 주문 칸 cnc_orders.deadline — 디자인 승인 때 정해요)
 //   teeth: [{ tooth: 16, toothName: '#16 1st Molar', brand, size, color }],
 //   stls: ['upper.stl'],                         ← 원래 파일 이름
 //   stlPaths: ['{user_id}/{uploadId}/1_upper.stl'] ← 비공개 버킷 안 경로
@@ -490,7 +501,6 @@ function cncBuildCases(draft) {
   });
   return [{
     patient: draft.patient.trim(),
-    deadline: draft.deadline,
     memo: draft.memo.trim(),
     teeth: teeth,
     stls: draft.files.map(function (f) { return f.name; }),
@@ -579,7 +589,7 @@ async function cncSubmitOrder(draft, onProgress) {
   var result;
   var args = {
     p_patient: draft.patient.trim(),
-    p_deadline: draft.deadline || null,
+    p_deadline: null,   // 납품일은 디자인 승인 때 (sql/012 는 이 값을 저장하지 않아요. 012 전에도 null 은 그대로 들어가요)
     p_clinic: d.clinic.trim(),
     p_addr: d.addr.trim(),
     p_phone: d.phone.trim(),
@@ -657,14 +667,16 @@ function cncOrderNeedsAction(o) {
   return !!o && CUSTOMER_ACTION_STAGES.indexOf(o.stage) !== -1;
 }
 
-// 할 일 있는 주문 → 납기 빠른 순(납기 없으면 뒤) → 최신 접수 순
+// 할 일 있는 주문 → 납기 있는 것 빠른 순 → 납기 없는 것(디자인 승인 전) 접수일 순(먼저 들어온 것 먼저)
 function cncSortProgress(rows) {
   return rows.slice().sort(function (a, b) {
     var na = cncOrderNeedsAction(a) ? 0 : 1, nb = cncOrderNeedsAction(b) ? 0 : 1;
     if (na !== nb) return na - nb;
-    var da = a.deadline || '9999-12-31', db = b.deadline || '9999-12-31';
-    if (da !== db) return da < db ? -1 : 1;
-    return a.created_at < b.created_at ? 1 : (a.created_at > b.created_at ? -1 : 0);
+    var ha = a.deadline ? 0 : 1, hb = b.deadline ? 0 : 1;
+    if (ha !== hb) return ha - hb;
+    if (a.deadline && b.deadline && a.deadline !== b.deadline) return a.deadline < b.deadline ? -1 : 1;
+    var ca = String(a.created_at || ''), cb = String(b.created_at || '');
+    return ca < cb ? -1 : (ca > cb ? 1 : 0);
   });
 }
 
@@ -755,12 +767,12 @@ async function cncRpc(name, params) {
   return result.data;
 }
 
-// 접수 상태일 때 환자·납기·배송 정보 수정
+// 접수 상태일 때 환자·배송 정보 수정 (납기는 고객이 못 바꿔요 — 서버도 무시)
 function cncUpdateOrder(id, f) {
   return cncRpc('update_my_cnc_order', {
     p_id: id,
     p_patient: (f.patient || '').trim(),
-    p_deadline: f.deadline || null,
+    p_deadline: null,
     p_clinic: (f.clinic || '').trim(),
     p_addr: (f.addr || '').trim(),
     p_phone: (f.phone || '').trim(),
@@ -773,9 +785,38 @@ function cncCancelOrder(id) {
   return cncRpc('cancel_my_cnc_order', { p_id: id });
 }
 
-// action: 'approve' (디자인 승인) / 'reject' (수정 요청, note 필수) / 'receive' (수령 완료)
+// action: 'reject' (수정 요청, note 필수) / 'receive' (수령 완료)
+//   디자인 승인은 납품일이 필요해서 cncApproveDesign 으로 (sql/012 의 customer_cnc_action 'approve' 는 DEADLINE_REQUIRED)
 function cncCustomerAction(id, action, note) {
   return cncRpc('customer_cnc_action', { p_id: id, p_action: action, p_note: note || '' });
+}
+
+// 디자인 승인 + 납품일 확정 (한 번에, sql/012 customer_approve_design)
+//   deadline: 'YYYY-MM-DD' (방콕 오늘 + 최소 일수 이후). 에러: DEADLINE_REQUIRED / DEADLINE_TOO_EARLY / STAGE_CHANGED
+//   012 를 실행하기 전이면 예전 승인(customer_cnc_action 'approve')으로 — 그때는 납품일이 저장되지 않아요
+async function cncApproveDesign(id, deadline, note) {
+  if (!deadline) throw cncError('DEADLINE_REQUIRED');
+  var r = await sb.rpc('customer_approve_design', { p_id: id, p_deadline: deadline, p_note: note || '' });
+  if (r.error) {
+    if (typeof cncIsMissingFunction === 'function' && cncIsMissingFunction(r.error)) return cncCustomerAction(id, 'approve', note);
+    throw cncError(cncErrorCode(r.error), { cause: r.error });
+  }
+  return r.data;
+}
+
+// 납품일 규칙: { earliest: 'YYYY-MM-DD', minLeadDays } — 가장 빠른 날 = 방콕 오늘 + 최소 일수 (sql/012, 없으면 오늘 + 1)
+async function cncGetDeadlineRules() {
+  function fallback() { return { earliest: cncDatePlus(cncBangkokToday(), 1), minLeadDays: 1 }; }
+  try {
+    var r = await sb.rpc('get_deadline_rules');
+    if (r.error) return fallback();
+    var d = r.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+    if (!d || !d.earliest) return fallback();
+    return { earliest: String(d.earliest).slice(0, 10), minLeadDays: Number(d.min_lead_days != null ? d.min_lead_days : 1) };
+  } catch (err) {
+    return fallback();
+  }
 }
 
 

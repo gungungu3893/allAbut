@@ -73,7 +73,7 @@ function cncAdminRemoveMember(userId) {
 var AUDIT_PAGE = 50;
 // 필터의 "작업" 묶음 → DB 의 action 값들
 var AUDIT_ACTION_GROUPS = {
-  orders: ['order_stage', 'order_shipping', 'order_design', 'order_cancelled'],
+  orders: ['order_stage', 'order_shipping', 'order_design', 'order_cancelled', 'order_deadline'],
   topups: ['topup_approved', 'topup_rejected', 'refund_cash'],
   credits: ['credits_added', 'credits_removed'],
   team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code'],

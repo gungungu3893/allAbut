@@ -116,6 +116,7 @@ const ADMIN_NOTICE_STYLES = {
   shipped:          { color: '#0E7490', icon: '🚚', label: 'SHIPPED',          title: 'Order shipped' },
   marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED', title: 'Marked as delivered' },
   free_approval:    { color: '#B8860B', icon: '🎁', label: 'FREE CREDITS',     title: '🎁 Free credits — approval needed' },
+  deadline_changed: { color: '#0E7490', icon: '📅', label: 'DEADLINE CHANGED', title: 'Delivery date changed' },
 };
 type NoticeType = keyof typeof ADMIN_NOTICE_STYLES;
 
@@ -131,6 +132,8 @@ type Texts = {
   open: string; order: string; patient: string; deadline: string; carrier: string; tracking: string;
   credits: string; refunded: string; reason: string;
   confirmed_title: string; confirmed_body: string;
+  approved_title: string; approved_body: string;
+  deadline_changed_title: string; deadline_changed_body: string; deadline_before: string; deadline_after: string;
   design_title: string; design_body: string;
   milling_title: string; milling_body: string;
   shipped_title: string; shipped_body: string;
@@ -151,6 +154,8 @@ const T: Record<string, Texts> = {
     open: 'Open allAbut', order: 'Order', patient: 'Patient', deadline: 'Deadline', carrier: 'Carrier', tracking: 'Tracking no.',
     credits: 'Credits', refunded: 'Refunded', reason: 'Reason',
     confirmed_title: '📋 Order confirmed', confirmed_body: 'We have confirmed your order and started the design.',
+    approved_title: '✅ Design approved · delivery date confirmed', approved_body: 'Thank you. Milling will start soon. Your delivery date is below.',
+    deadline_changed_title: '📅 Delivery date changed', deadline_changed_body: 'allAbut changed the delivery date of your order.', deadline_before: 'Before', deadline_after: 'New date',
     design_title: '🎨 Please review your design', design_body: 'Your design is ready. Please open the website and press "Approve design" or "Request changes".',
     milling_title: '⚙️ Milling started', milling_body: 'Your abutments are now being milled. The order can no longer be cancelled.',
     shipped_title: '🚚 Your order has shipped', shipped_body: 'Please press "Received" on the website when the parcel arrives.',
@@ -169,6 +174,8 @@ const T: Record<string, Texts> = {
     open: 'allAbut 열기', order: '주문번호', patient: '환자', deadline: '납기', carrier: '택배사', tracking: '송장번호',
     credits: '크레딧', refunded: '환불', reason: '사유',
     confirmed_title: '📋 주문이 확인되었어요', confirmed_body: '주문을 확인하고 디자인을 시작했어요.',
+    approved_title: '✅ 디자인 승인 · 납품일 확정', approved_body: '감사합니다. 곧 가공을 시작해요. 확정된 납품일은 아래와 같아요.',
+    deadline_changed_title: '📅 납품일이 바뀌었어요', deadline_changed_body: 'allAbut 에서 주문의 납품일을 바꿨어요.', deadline_before: '이전', deadline_after: '새 날짜',
     design_title: '🎨 디자인을 확인해 주세요', design_body: '디자인이 준비되었어요. 웹사이트에서 "디자인 승인" 또는 "수정 요청"을 눌러 주세요.',
     milling_title: '⚙️ 가공을 시작했어요', milling_body: '지대주 가공을 시작했어요. 이제 주문을 취소할 수 없어요.',
     shipped_title: '🚚 배송을 시작했어요', shipped_body: '택배를 받으시면 웹사이트에서 "수령 확인"을 눌러 주세요.',
@@ -187,6 +194,8 @@ const T: Record<string, Texts> = {
     open: 'เปิด allAbut', order: 'คำสั่งงาน', patient: 'ผู้ป่วย', deadline: 'กำหนดส่ง', carrier: 'บริษัทขนส่ง', tracking: 'เลขพัสดุ',
     credits: 'เครดิต', refunded: 'คืนเครดิต', reason: 'เหตุผล',
     confirmed_title: '📋 ยืนยันคำสั่งงานแล้ว', confirmed_body: 'เราได้ยืนยันคำสั่งงานและเริ่มออกแบบแล้ว',
+    approved_title: '✅ อนุมัติแบบแล้ว · ยืนยันวันส่ง', approved_body: 'ขอบคุณค่ะ เราจะเริ่มกัดชิ้นงานเร็ว ๆ นี้ วันส่งของคุณอยู่ด้านล่าง',
+    deadline_changed_title: '📅 เปลี่ยนวันส่งแล้ว', deadline_changed_body: 'allAbut ได้เปลี่ยนวันส่งของคำสั่งงานนี้', deadline_before: 'เดิม', deadline_after: 'วันใหม่',
     design_title: '🎨 กรุณาตรวจแบบ', design_body: 'แบบพร้อมแล้ว กรุณาเปิดเว็บไซต์แล้วกด "อนุมัติแบบ" หรือ "ขอแก้ไข"',
     milling_title: '⚙️ เริ่มมิลลิ่งแล้ว', milling_body: 'เริ่มผลิต Abutment แล้ว ไม่สามารถยกเลิกคำสั่งงานได้อีก',
     shipped_title: '🚚 จัดส่งแล้ว', shipped_body: 'เมื่อได้รับพัสดุ กรุณากด "ได้รับแล้ว" บนเว็บไซต์',
@@ -205,6 +214,8 @@ const T: Record<string, Texts> = {
     open: '打开 allAbut', order: '订单号', patient: '患者', deadline: '交期', carrier: '快递公司', tracking: '运单号',
     credits: '积分', refunded: '已退还', reason: '原因',
     confirmed_title: '📋 订单已确认', confirmed_body: '我们已确认您的订单并开始设计。',
+    approved_title: '✅ 设计已确认 · 交期已定', approved_body: '谢谢。我们将很快开始加工。确定的交期如下。',
+    deadline_changed_title: '📅 交期已更改', deadline_changed_body: 'allAbut 已更改此订单的交期。', deadline_before: '原交期', deadline_after: '新交期',
     design_title: '🎨 请审核设计', design_body: '设计已完成。请打开网站点击“批准设计”或“要求修改”。',
     milling_title: '⚙️ 已开始加工', milling_body: '基台已开始 CNC 加工，订单无法再取消。',
     shipped_title: '🚚 订单已发货', shipped_body: '收到包裹后，请在网站上点击“已收货”。',
@@ -223,6 +234,8 @@ const T: Record<string, Texts> = {
     open: 'Mở allAbut', order: 'Đơn hàng', patient: 'Bệnh nhân', deadline: 'Hạn giao', carrier: 'Đơn vị vận chuyển', tracking: 'Mã vận đơn',
     credits: 'Tín dụng', refunded: 'Đã hoàn', reason: 'Lý do',
     confirmed_title: '📋 Đơn hàng đã được xác nhận', confirmed_body: 'Chúng tôi đã xác nhận đơn hàng và bắt đầu thiết kế.',
+    approved_title: '✅ Đã duyệt thiết kế · đã chốt ngày giao', approved_body: 'Cảm ơn bạn. Chúng tôi sẽ sớm bắt đầu gia công. Ngày giao ở bên dưới.',
+    deadline_changed_title: '📅 Đã đổi ngày giao', deadline_changed_body: 'allAbut đã đổi ngày giao của đơn hàng.', deadline_before: 'Trước', deadline_after: 'Ngày mới',
     design_title: '🎨 Vui lòng duyệt thiết kế', design_body: 'Thiết kế đã sẵn sàng. Vui lòng mở trang web và nhấn "Phê duyệt thiết kế" hoặc "Yêu cầu chỉnh sửa".',
     milling_title: '⚙️ Đã bắt đầu phay', milling_body: 'Abutment đang được phay. Đơn hàng không thể hủy nữa.',
     shipped_title: '🚚 Đơn hàng đã được gửi', shipped_body: 'Khi nhận được hàng, vui lòng nhấn "Đã nhận" trên trang web.',
@@ -241,6 +254,8 @@ const T: Record<string, Texts> = {
     open: 'Abrir allAbut', order: 'Pedido', patient: 'Paciente', deadline: 'Fecha límite', carrier: 'Transportista', tracking: 'N.º de seguimiento',
     credits: 'Créditos', refunded: 'Reembolsados', reason: 'Motivo',
     confirmed_title: '📋 Pedido confirmado', confirmed_body: 'Hemos confirmado su pedido y comenzado el diseño.',
+    approved_title: '✅ Diseño aprobado · fecha de entrega confirmada', approved_body: 'Gracias. El fresado comenzará pronto. Su fecha de entrega está abajo.',
+    deadline_changed_title: '📅 Fecha de entrega cambiada', deadline_changed_body: 'allAbut cambió la fecha de entrega de su pedido.', deadline_before: 'Antes', deadline_after: 'Nueva fecha',
     design_title: '🎨 Revise su diseño', design_body: 'Su diseño está listo. Abra el sitio web y pulse "Aprobar diseño" o "Solicitar cambios".',
     milling_title: '⚙️ Fresado iniciado', milling_body: 'Sus pilares se están fresando. El pedido ya no se puede cancelar.',
     shipped_title: '🚚 Su pedido ha sido enviado', shipped_body: 'Cuando reciba el paquete, pulse "Recibido" en el sitio web.',
@@ -259,6 +274,8 @@ const T: Record<string, Texts> = {
     open: 'allAbut\'u aç', order: 'Sipariş', patient: 'Hasta', deadline: 'Teslim tarihi', carrier: 'Kargo firması', tracking: 'Takip no.',
     credits: 'Kredi', refunded: 'İade edildi', reason: 'Neden',
     confirmed_title: '📋 Sipariş onaylandı', confirmed_body: 'Siparişinizi onayladık ve tasarıma başladık.',
+    approved_title: '✅ Tasarım onaylandı · teslim tarihi kesinleşti', approved_body: 'Teşekkürler. Frezeleme yakında başlayacak. Teslim tarihiniz aşağıda.',
+    deadline_changed_title: '📅 Teslim tarihi değişti', deadline_changed_body: 'allAbut siparişinizin teslim tarihini değiştirdi.', deadline_before: 'Önceki', deadline_after: 'Yeni tarih',
     design_title: '🎨 Lütfen tasarımı inceleyin', design_body: 'Tasarımınız hazır. Lütfen web sitesini açıp "Tasarımı onayla" veya "Değişiklik iste" düğmesine basın.',
     milling_title: '⚙️ Frezeleme başladı', milling_body: 'Abutment\'larınız frezeleniyor. Sipariş artık iptal edilemez.',
     shipped_title: '🚚 Siparişiniz kargoya verildi', shipped_body: 'Paket elinize ulaşınca web sitesinde "Teslim aldım" düğmesine basın.',
@@ -277,6 +294,8 @@ const T: Record<string, Texts> = {
     open: 'فتح allAbut', order: 'الطلب', patient: 'المريض', deadline: 'موعد التسليم', carrier: 'شركة الشحن', tracking: 'رقم التتبع',
     credits: 'الرصيد', refunded: 'المسترد', reason: 'السبب',
     confirmed_title: '📋 تم تأكيد الطلب', confirmed_body: 'أكدنا طلبك وبدأنا التصميم.',
+    approved_title: '✅ تمت الموافقة على التصميم · تأكيد موعد التسليم', approved_body: 'شكرًا لك. سيبدأ التفريز قريبًا. موعد التسليم أدناه.',
+    deadline_changed_title: '📅 تم تغيير موعد التسليم', deadline_changed_body: 'قامت allAbut بتغيير موعد تسليم طلبك.', deadline_before: 'السابق', deadline_after: 'الموعد الجديد',
     design_title: '🎨 يرجى مراجعة التصميم', design_body: 'التصميم جاهز. يرجى فتح الموقع والضغط على "الموافقة على التصميم" أو "طلب تعديلات".',
     milling_title: '⚙️ بدأ التفريز', milling_body: 'بدأ تفريز الدعامات. لم يعد بالإمكان إلغاء الطلب.',
     shipped_title: '🚚 تم شحن طلبك', shipped_body: 'عند وصول الطرد، يرجى الضغط على "تم الاستلام" في الموقع.',
@@ -295,6 +314,8 @@ const T: Record<string, Texts> = {
     open: 'باز کردن allAbut', order: 'سفارش', patient: 'بیمار', deadline: 'مهلت تحویل', carrier: 'شرکت حمل', tracking: 'کد رهگیری',
     credits: 'اعتبار', refunded: 'بازگردانده شد', reason: 'دلیل',
     confirmed_title: '📋 سفارش تأیید شد', confirmed_body: 'سفارش شما را تأیید کردیم و طراحی را شروع کردیم.',
+    approved_title: '✅ طرح تأیید شد · تاریخ تحویل قطعی شد', approved_body: 'سپاسگزاریم. فرزکاری به‌زودی شروع می‌شود. تاریخ تحویل در پایین است.',
+    deadline_changed_title: '📅 تاریخ تحویل تغییر کرد', deadline_changed_body: 'allAbut تاریخ تحویل سفارش شما را تغییر داد.', deadline_before: 'قبلی', deadline_after: 'تاریخ جدید',
     design_title: '🎨 لطفاً طراحی را بررسی کنید', design_body: 'طراحی آماده است. لطفاً سایت را باز کنید و «تأیید طراحی» یا «درخواست اصلاح» را بزنید.',
     milling_title: '⚙️ فرزکاری شروع شد', milling_body: 'فرزکاری اباتمنت‌ها شروع شد. دیگر امکان لغو سفارش وجود ندارد.',
     shipped_title: '🚚 سفارش شما ارسال شد', shipped_body: 'وقتی بسته رسید، لطفاً در سایت «دریافت شد» را بزنید.',
@@ -546,6 +567,7 @@ type Section = {
   teeth?: { tooth: string; brand: string; shade: string }[];
   moreTpl?: string;             // "+{n} more"
   text?: string;                // 긴 글 (예: 수정 요청 사유)
+  big?: string;                 // 크게 보여 줄 값 (예: 확정된 납품일)
 };
 type ReceiptOpts = {
   title: string;                // 알림 종류 이름 (색 글씨)
@@ -608,6 +630,7 @@ function sectionNodes(s: Section): any[] {
     }
   }
   if (s.text) body.push(textNode(s.text, { size: 'sm', color: INK, margin: 'sm' }));
+  if (str(s.big)) body.push(textNode(s.big as string, { size: 'xl', weight: 'bold', color: INK, margin: 'sm' }));
   if (!body.length) return out;
   if (s.title) out.push(textNode(s.title, { size: 'sm', weight: 'bold', color: INK, margin: 'lg' }));
   out.push({ type: 'box', layout: 'vertical', margin: s.title ? 'sm' : 'lg', contents: body });
@@ -861,11 +884,13 @@ function clinicSection(L: Lang, name: string, lines: string[], copy?: CopyInfo):
 //   refunded: 취소 → 환불 줄
 async function orderReceipt(L: Lang, o: any, opt: {
   title: string; color: string; message?: string; details?: Section; refunded?: boolean; balance?: number | null;
-  copy?: CopyInfo; button: { label: string; url: string }; when?: unknown; customer?: boolean;
+  copy?: CopyInfo; button: { label: string; url: string }; when?: unknown; customer?: boolean; deadlineTbd?: boolean;
 }) {
+  // 납품일: 있으면 날짜 / 없으면 줄을 빼요 (Flex 는 빈 글자를 못 받아요). 관리자 새 주문 카드만 "Set at design approval"
+  const dlRow: Row = str(o.deadline) ? [L.x.deadline, str(o.deadline, 20)] : (opt.deadlineTbd ? ['Delivery', 'Set at design approval'] : ['', '']);
   const sections: Section[] = [
     clinicSection(L, str(o.clinic) || (opt.copy ? opt.copy.name : ''), [str(o.addr), str(o.phone)], opt.copy),
-    { title: L.r.sec_case, rows: [[L.x.patient, str(o.patient, 60)], [L.x.deadline, str(o.deadline, 20)]] },
+    { title: L.r.sec_case, rows: [[L.x.patient, str(o.patient, 60)], dlRow] },
     { title: L.r.sec_teeth, teeth: orderTeeth(o), moreTpl: L.r.more },
   ];
   if (opt.details) sections.push(opt.details);
@@ -976,6 +1001,7 @@ async function notifyAdmin(type: NoticeType, o: any, opt: { message?: string; de
   const balance = await getBalance(o.user_id);
   await pushAdmins('orders', await orderReceipt(EN, o, {
     title: st.title, color: st.color, message: opt.message, details: opt.details || freeShipSection(o), refunded: opt.refunded, balance,
+    deadlineTbd: type === 'new_order',   // 새 주문: 납품일은 디자인 승인 때 (sql/012)
     button: { label: 'Open admin', url: adminOrderLink(o.id) }, when: type === 'new_order' ? o.created_at : undefined,
   }));
 }
@@ -1043,6 +1069,44 @@ function orderDetails(L: Lang, o: any, kind: OrderKind, extra: Row[] = []): Sect
   if (kind === 'cancel') rows.push([L.x.reason, adminCancelReason(o.review_history)]);
   rows.push(...extra);
   return rowsOf(rows).length ? { title: L.r.sec_details, rows } : undefined;
+}
+
+// 고객 디자인 승인 → 고객 확인 카드 (확정된 납품일 크게). LINE 연결했을 때만
+async function notifyCustomerApproved(o: any): Promise<void> {
+  const p = await getProfile(o.user_id);
+  if (!isLinkedProfile(p) || !p) return;
+  const L = langOf(p.lang);
+  const balance = await getBalance(o.user_id);
+  await push(p.line_user_id as string, await orderReceipt(L, o, {
+    title: plainTitle(L.x.approved_title), color: customerColor('approved'), message: L.x.approved_body,
+    details: str(o.deadline) ? { title: L.x.deadline, big: str(o.deadline, 20) } : undefined,
+    balance, customer: true, button: { label: L.r.view_order, url: orderLink(o.id) },
+  }));
+}
+
+// 관리자 납기 변경 → 고객 "📅 Delivery date changed" (이전 → 새 날짜, 사유) + 관리자 사본 (처리자)
+async function notifyDeadlineChanged(o: any, old: any): Promise<string[]> {
+  const p = await getProfile(o.user_id);
+  const balance = await getBalance(o.user_id);
+  const last: any = lastEntry(o.review_history) || {};
+  const before = str(old?.deadline, 20) || str(last.old_deadline, 20);
+  const reason = str(last.note);
+  const rowsFor = (L: Lang): Row[] => [[L.x.deadline_before, before], [L.x.deadline_after, str(o.deadline, 20)], [L.x.reason, reason]];
+  if (isLinkedProfile(p) && p) {
+    const L = langOf(p.lang);
+    await push(p.line_user_id as string, await orderReceipt(L, o, {
+      title: plainTitle(L.x.deadline_changed_title), color: customerColor('deadline_changed'), message: L.x.deadline_changed_body,
+      details: { title: L.r.sec_details, rows: rowsFor(L), big: str(o.deadline, 20) },
+      balance, customer: true, button: { label: L.r.view_order, url: orderLink(o.id) },
+    }));
+  }
+  const st = ADMIN_NOTICE_STYLES.deadline_changed;
+  const actor = str(last.by_name);
+  return await sendCustomerCopy(o.user_id, p, actor, async (copy) => orderReceipt(EN, o, {
+    title: st.title, color: st.color,
+    details: { title: EN.r.sec_details, rows: withActor(rowsFor(EN), copy.actor), big: str(o.deadline, 20) },
+    balance, copy, button: { label: 'Open admin', url: adminOrderLink(o.id) },
+  }));
 }
 
 // 주문 단계 알림 → 고객(연결돼 있으면) + 관리자 사본. 사본을 받은 곳 목록을 돌려줘요
@@ -1396,6 +1460,12 @@ async function handle(payload: any): Promise<void> {
   if (type !== 'UPDATE') return;
   const from = old_record?.stage;
   const to = record.stage;
+  // 단계는 그대로 + 관리자가 납기를 바꿈 (admin_set_deadline) → 고객 카드 + 사본
+  if (to && from === to && old_record && str(record.deadline) && str(old_record.deadline) !== str(record.deadline)) {
+    const last = lastEntry(record.review_history);
+    if (last && last.action === 'deadline_changed') await notifyDeadlineChanged(record, old_record);
+    return;
+  }
   if (!to || from === to) return;   // 단계가 안 바뀌었으면 보내지 않아요
 
   const actor = newAdminActorName(record, old_record);   // 이번 변경을 한 직원 이름 (사본에 넣어요)
@@ -1404,7 +1474,12 @@ async function handle(payload: any): Promise<void> {
   switch (to) {
     // 관리자에게
     case 'approved':
-      await notifyAdmin('approved', record, { message: 'Customer approved the design. You can start milling.' });
+      // 관리자: 확정된 납품일을 크게 / 고객: 승인 확인 카드 + 납품일 (관리자 알림이 이미 가는 일이라 사본은 없어요)
+      await notifyAdmin('approved', record, {
+        message: 'Customer approved the design. You can start milling.',
+        details: str(record.deadline) ? { title: 'Delivery date (confirmed)', big: str(record.deadline, 20) } : undefined,
+      });
+      await notifyCustomerApproved(record);
       break;
     case 'design_revision':
       await notifyAdmin('revision', record, {

@@ -150,8 +150,9 @@ var PageAdmin = {
       '<button type="button" class="btn btn-outline" onclick="' + retryCall + '">' + escHtml(t('btn_retry')) + '</button></div>';
   },
 
-  // 납기 칸 (임박·지남 색)
+  // 납기 칸 (임박·지남 색). 디자인 승인 전(납기 없음) = 회색 배지 "납기 미정 · 디자인 승인 때 결정"
   dueHtml: function (o) {
+    if (!o.deadline) return uiDeadlineHtml(o, true);
     var state = cncDueState(o);
     var label = state === 'overdue' ? ' · ' + t('admin_overdue') : (state === 'soon' ? ' · ' + t('admin_due_soon_short') : '');
     return '<span class="due ' + state + '">' + escHtml(formatDate(o.deadline)) + escHtml(label) + '</span>';
@@ -642,7 +643,11 @@ var PageAdmin = {
         row('order_number', escHtml(o.id), true) +
         row('admin_received', escHtml(formatDateTime(o.created_at))) +
         row('patient_label', escHtml(o.patient || t('anonymous'))) +
-        row('case_deadline_label', this.dueHtml(o)) +
+        row('case_deadline_label', this.dueHtml(o) +
+          // 납기 변경 (manager 이상, 끝난·취소된 주문 제외) → admin_set_deadline (sql/012)
+          (cncHasRole('manager') && o.stage !== 'done' && o.stage !== 'cancelled'
+            ? ' <button type="button" class="btn btn-outline btn-sm" id="btn-set-deadline" onclick="PageAdmin.openSetDeadline()">📅 ' + escHtml(t('admin_set_deadline')) + '</button>'
+            : '')) +
         row('credits_use', formatNumber(o.credits_used), true) +
         (Number(o.bonus_used || 0) > 0 ? row('admin_free_used', formatNumber(o.bonus_used), true) : '') +
         (o.carrier ? row('carrier_label', escHtml(o.carrier)) : '') +
@@ -690,6 +695,53 @@ var PageAdmin = {
 
     html += '</div>';
     body.innerHTML = html;
+  },
+
+  // 납기 변경 창: 새 날짜 (달력) + 사유(필수) → 확인 → admin_set_deadline (기록 · 작업 기록 · 고객 LINE + 사본)
+  openSetDeadline: function () {
+    var self = this;
+    var st = this.detail;
+    var o = st && st.order;
+    if (!o) return;
+    var modal = uiModal({
+      title: t('admin_set_deadline') + ' · ' + o.id,
+      body: '<p class="modal-text">' + escHtml(t('admin_set_deadline_help')) + '</p>' +
+        '<div class="review-row"><span class="review-label">' + escHtml(t('admin_deadline_now')) + '</span><span class="review-value">' + uiDeadlineHtml(o, true) + '</span></div>' +
+        '<div class="field"><span class="field-label">' + escHtml(t('admin_deadline_new')) + ' <span class="required">*</span></span>' +
+          uiDateField({ id: 'sd-date', value: o.deadline || '', min: cncBangkokToday() }) +
+          '<div class="err-slot" data-sd-err="date"></div></div>' +
+        '<div class="field"><label class="field-label" for="sd-reason">' + escHtml(t('camp_reason')) + ' <span class="required">*</span></label>' +
+          '<textarea class="input textarea" id="sd-reason" rows="2" maxlength="500"></textarea>' +
+          '<div class="err-slot" data-sd-err="reason"></div></div>' +
+        '<p class="field-help">' + escHtml(t('admin_set_deadline_notify')) + '</p>',
+      actions: [
+        { label: t('btn_cancel'), kind: 'outline' },
+        { label: t('admin_set_deadline_save'), kind: 'primary', onClick: async function (close, btn) {
+          var dl = uiDateValue('sd-date');
+          var reason = modal.el.querySelector('#sd-reason').value.trim();
+          var errs = {};
+          if (!dl) errs.date = 'err_deadline_required';
+          else if (dl === o.deadline) errs.date = 'admin_deadline_same';
+          if (!reason) errs.reason = 'admin_free_err_reason';
+          ['date', 'reason'].forEach(function (k) { modal.el.querySelector('[data-sd-err="' + k + '"]').innerHTML = uiFieldError(errs[k]); });
+          if (Object.keys(errs).length) return;
+          var ok = await uiConfirm({ title: t('admin_set_deadline'), message: tf('admin_set_deadline_confirm', { from: o.deadline ? formatDate(o.deadline) : t('deadline_tbd'), to: formatDate(dl) }) });
+          if (!ok) return;
+          btn.disabled = true;
+          try {
+            await cncAdminSetDeadline(o.id, dl, reason);
+            close();
+            uiToast(t('admin_deadline_changed'), 'success');
+            self.loadDetail();
+            if (self.tab === 'orders' && self.loadOrders) self.loadOrders();
+          } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            uiToast(uiErrorMessage(err), 'error');
+          }
+        } }
+      ]
+    });
   },
 
   // 현재 단계에 맞는 처리 버튼
@@ -1567,6 +1619,8 @@ var PageAdmin = {
       '<form class="form-grid two" onsubmit="PageAdmin.saveSettings(event)" novalidate>' +
         input('promptpay_id', 'topup_promptpay_id', s.promptpay_id, { mono: true, help: 'admin_promptpay_help' }) +
         input('vat_rate', 'admin_vat_rate', s.vat_rate, { type: 'number', step: '0.01' }) +
+        // 납품일: 승인 후 최소 일수 (sql/012, 0~30, 기본 1 = 승인 다음 날부터)
+        ('min_lead_days' in s ? input('min_lead_days', 'admin_min_lead_days', s.min_lead_days, { type: 'number', step: '1', help: 'admin_min_lead_days_help' }) : '') +
         input('bank_name', 'topup_bank', s.bank_name) +
         input('account_name', 'topup_account_name', s.account_name) +
         input('account_number', 'topup_account_number', s.account_number, { mono: true }) +
@@ -1606,6 +1660,10 @@ var PageAdmin = {
     var v = function (id) { return document.getElementById('set-' + id).value.trim(); };
     var fields = { promptpay_id: v('promptpay_id'), bank_name: v('bank_name'), account_name: v('account_name'), account_number: v('account_number'), vat_rate: v('vat_rate'), note: v('note') };
     var errs = {};
+    if (document.getElementById('set-min_lead_days')) {
+      fields.min_lead_days = v('min_lead_days');
+      if (!/^\d{1,2}$/.test(fields.min_lead_days) || +fields.min_lead_days > 30) errs.min_lead_days = 'admin_err_min_lead_days';
+    }
     if (fields.promptpay_id && !isValidPromptPayId(fields.promptpay_id)) errs.promptpay_id = 'admin_err_promptpay';
     var vat = Number(fields.vat_rate);
     if (fields.vat_rate === '' || isNaN(vat) || vat < 0 || vat > 30) errs.vat_rate = 'admin_err_vat';

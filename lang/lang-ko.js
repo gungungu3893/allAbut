@@ -94,12 +94,10 @@ LANG.ko = {
   // ----- 새 주문: 단계 -----
   order_steps: '주문 단계',
   step_of: '{total}단계 중 {n}단계',
-  wiz_step1: '환자 & 납품 기한',
   wiz_step2: '치아 선택',
   wiz_step3: '치아별 정보',
   wiz_step4: '파일 업로드',
   wiz_step5: '확인 & 제출',
-  wiz_step1_desc: '환자 ID와 지대주가 필요한 날짜를 입력해 주세요.',
   wiz_step2_desc: '맞춤형 지대주가 필요한 치아 위치를 모두 눌러 주세요.',
   wiz_step3_desc: '치아마다 임플란트 브랜드와 쉐이드를 선택해 주세요. 사이즈는 선택 사항이에요.',
   wiz_step4_desc: '스캔 파일(STL, PLY, OBJ, 3MF), 사진 또는 PDF 문서를 추가해 주세요.',
@@ -112,7 +110,6 @@ LANG.ko = {
   patient_ph: '예: P-0001',
   patient_help: '비워 두면 "익명"으로 주문돼요.',
   case_deadline_label: '납품 기한',
-  err_deadline_required: '납품 기한을 선택해 주세요.',
   err_deadline_past: '납품 기한은 지난 날짜로 정할 수 없어요.',
 
   // ----- Step 2 -----
@@ -242,7 +239,6 @@ LANG.ko = {
   submitted_help: '주문 확인을 기다리고 있어요. 아직 수정하거나 취소할 수 있어요.',
   edit_order_btn: '주문 수정',
   edit_order_title: '주문 수정',
-  edit_order_help: '환자 ID, 납품 기한, 배송 정보를 변경할 수 있어요. 치아나 파일을 변경하려면 주문을 취소하고 다시 주문해 주세요.',
   order_updated: '주문이 수정되었어요.',
   cancel_order_btn: '주문 취소',
   keep_order: '주문 유지',
@@ -480,7 +476,6 @@ LANG.ko = {
 
   // ----- 가이드 3) 주문 5단계 (새 주문의 "? Help" 에도 사용) -----
   guide_s3_title: '5단계로 주문하기',
-  guide_step1_text: '환자 ID(필수)를 입력하고 달력에서 납품 기한을 선택해 주세요. 지난 날짜는 선택할 수 없어요.',
   guide_step2_text: 'FDI 치식(사랑니 포함 32개 치아)에서 커스텀 어버트먼트가 필요한 치아를 모두 눌러 주세요. 치아 1개당 1크레딧이 사용돼요. 다시 누르면 선택이 해제돼요.',
   guide_step3_text: '치아마다 임플란트 브랜드와 쉐이드를 선택해 주세요(둘 다 필수). 사이즈는 선택 사항이에요. 모든 치아가 같다면 "모든 치아에 적용"을 누르고, 특별한 요청은 메모에 적어 주세요.',
   guide_step4_text: '스캔 파일(STL, PLY, OBJ, 3MF), 사진(JPG, PNG), PDF 문서를 첨부해 주세요. 최대 10개, 파일당 50 MB까지 가능해요. 보내기 전에 "미리보기"로 파일을 확인할 수 있어요.',
@@ -490,8 +485,6 @@ LANG.ko = {
   guide_s4_title: '주문한 다음에는',
   guide_flow_submitted: '주문이 접수되었어요. 아직 수정하거나 취소할 수 있어요.',
   guide_flow_confirmed: '주문을 확인하고 디자인을 시작했어요.',
-  guide_flow_design_ready: '하실 일: 내 주문에서 디자인을 확인하고 "디자인 승인" 또는 "수정 요청"을 눌러 주세요.',
-  guide_flow_approved: '디자인이 승인되어 밀링으로 넘어가요.',
   guide_flow_milling: '어버트먼트를 밀링하고 있어요.',
   guide_flow_shipped: '하실 일: 택배를 받으시면 내 주문에서 "수령 확인"을 눌러 주세요.',
   guide_flow_done: '주문이 완료되었어요.',
@@ -499,7 +492,6 @@ LANG.ko = {
 
   // ----- 가이드 5) 수정 · 취소 -----
   guide_s5_title: '수정과 취소',
-  guide_s5_p1: '주문 상태가 "접수 대기"일 때는 환자 ID, 납품 기한, 배송 정보를 수정하거나 주문을 취소할 수 있어요.',
   guide_s5_p2: '취소하면 크레딧이 바로 잔액으로 돌아와요. 치아나 파일을 바꾸려면 주문을 취소하고 새로 주문해 주세요.',
 
   // ----- 가이드 6) 자주 묻는 질문 -----
@@ -1031,7 +1023,6 @@ LANG.ko = {
   about_prod_note: '지르코니아 크라운은 커스텀 어버트먼트와 세트로만 주문할 수 있어요.',
   about_compatible: '호환 임플란트 시스템',
   about_sec_how: '주문 방법',
-  about_how_note: 'LINE 알림으로 모든 단계 확인 · 선불 크레딧 · 9개 언어 지원',
   about_sec_delivery: '납기 · 보증',
   about_lead_time: '제작 기간',
   about_delivery: '배송',
@@ -1219,6 +1210,43 @@ LANG.ko = {
   split_after: '주문 후 잔액',
   split_used_this: '이 주문에 쓴 크레딧',
   split_balance_now: '지금 잔액',
+
+  // ----- 납품일은 디자인 승인 때 (sql/012) -----
+  wiz_step1: '환자',
+  wiz_step1_desc: '환자 ID 를 입력해 주세요. 납품일은 나중에 디자인을 승인할 때 정해요.',
+  guide_step1_text: '환자 ID 를 입력해 주세요(필수). 납품일은 여기서 정하지 않고, 디자인을 승인할 때 골라요.',
+  guide_s5_p1: '주문 상태가 "접수"일 때는 환자 ID 와 배송 정보를 고치거나 주문을 취소할 수 있어요.',
+  edit_order_help: '환자 ID 와 배송 정보를 변경할 수 있어요. 치아나 파일을 변경하려면 주문을 취소하고 다시 주문해 주세요.',
+  guide_flow_design_ready: '하실 일: 내 주문에서 디자인을 확인하고 "디자인 승인"(납품일 선택) 또는 "수정 요청"을 눌러 주세요.',
+  guide_flow_approved: '디자인이 승인되고 납품일이 확정됐어요. 곧 가공을 시작해요.',
+  about_how_note: '납품일은 디자인 승인 때 정해요 · LINE 알림으로 모든 단계 확인 · 선불 크레딧 · 9개 언어 지원',
+  deadline_at_approval_note: '납품일은 디자인을 승인할 때 정해요.',
+  deadline_tbd: '디자인 승인 때 결정',
+  deadline_tbd_admin: '납기 미정 · 디자인 승인 때 결정',
+  approve_design_version: '디자인 버전 {v}',
+  approve_design_files: '디자인 파일 {n}개',
+  approve_deadline_label: '납품일',
+  approve_deadline_help: '고를 수 있는 가장 빠른 날은 {date} 이에요.',
+  approve_warning: '승인하면 가공이 시작돼요. 승인 후에는 디자인 수정과 취소가 어려워요.',
+  approve_submit: '승인하고 납품일 확정',
+  err_deadline_required: '납품일을 선택해 주세요.',
+  err_deadline_too_early: '{date} 이후로 선택해 주세요.',
+  design_approved_deadline_msg: '디자인을 승인했어요. 납품일: {date}',
+  err_stage_changed_customer: '주문 상태가 이미 바뀌었어요. 다시 확인해 주세요.',
+  review_deadline_changed: '납품일 변경',
+  audit_order_deadline: '납품일 변경',
+  admin_set_deadline: '납기 변경',
+  admin_set_deadline_help: '새 납품일과 사유를 입력해 주세요. 고객에게 LINE 으로 알려요.',
+  admin_deadline_now: '지금',
+  admin_deadline_new: '새 납품일',
+  admin_set_deadline_notify: '고객에게 LINE 메시지가 가고, 관리자 그룹에도 사본이 가요.',
+  admin_set_deadline_save: '날짜 변경',
+  admin_deadline_same: '지금 날짜와 같아요.',
+  admin_set_deadline_confirm: '납품일을 {from} 에서 {to} 로 바꿀까요?',
+  admin_deadline_changed: '납품일을 바꿨어요.',
+  admin_min_lead_days: '승인 후 최소 일수',
+  admin_min_lead_days_help: '가장 빠른 납품일 = 승인한 날(방콕 시간) + 이 일수. 1 = 다음 날부터. 0~30.',
+  admin_err_min_lead_days: '0 ~ 30 사이 숫자를 입력해 주세요.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
