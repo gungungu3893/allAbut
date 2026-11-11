@@ -320,6 +320,7 @@ async function refreshBalance() {
       APP.lots = lots;
       APP.expiringSoon = cncExpiringSoon(lots);
     }
+    APP.creditSummaryOk = !!res[2];   // 요약 함수(sql/008·009)가 있는지 — 없으면 전부 충전으로 보여요
     if (res[2]) {
       // 주문 계산용: freeCredits = 등록 주소 전용 무료 / paidCredits = 어디로든 배송 가능 (산 + 제한 없는 무료)
       APP.freeCredits = res[2].free;
@@ -338,14 +339,115 @@ async function refreshBalance() {
     console.error('Balance load failed:', err);
   }
   updateCreditBadges();
+  uiRefreshCreditSplits();
   window.dispatchEvent(new CustomEvent('balancechange'));
   return APP.balance;
 }
 
+// 주문·취소 등으로 새 잔액만 받았을 때: 전체 잔액은 바로 바꾸고, 충전 / 무료 나눔은 서버 요약으로 다시 읽어요
 function setBalance(value) {
   APP.balance = value;
   updateCreditBadges();
   window.dispatchEvent(new CustomEvent('balancechange'));
+  refreshBalance();
+}
+
+
+// ================================================================
+// 5-1) 잔액 나눠 보기: 💳 충전 n · 🎁 무료 n (헤더는 전체 잔액만 — 여기 안 써요)
+// ================================================================
+// 값은 이미 있는 것만: APP.purchasedCredits(충전) / APP.freeTotal(무료 = 등록 주소 전용 + 제한 없는 무료)
+//   요약 함수가 없으면(sql/008 전) refreshBalance 가 purchasedCredits = 전체, freeTotal = 0 으로 둬요 → 전부 충전
+// opts:
+//   expiry: true  → 종류마다 가장 빠른 만료일 "~날짜" (APP.lots 에서, 묶음 종류는 cncLotKind)
+//   note:   true  → 등록 주소 전용 무료가 있으면 작은 안내 한 줄
+//   paid / free / paidExpiry / freeExpiry / restrictedFree → 직접 넘기면 그 값으로 (관리자 고객 상세 등). 이때는 자동 갱신 안 함
+//   cls: 추가 클래스
+// 직접 값을 넘기지 않은 부품은 잔액이 바뀔 때(refreshBalance) 자동으로 다시 그려져요 (uiRefreshCreditSplits)
+function uiCreditSplitValues(opts) {
+  opts = opts || {};
+  var v = {};
+  if (opts.paid != null || opts.free != null) {
+    v.paid = Number(opts.paid || 0);
+    v.free = Number(opts.free || 0);
+    v.paidExpiry = opts.paidExpiry || null;
+    v.freeExpiry = opts.freeExpiry || null;
+    v.restrictedFree = Number(opts.restrictedFree || 0);
+    return v;
+  }
+  var A = window.APP || {};
+  v.paid = A.purchasedCredits != null ? Number(A.purchasedCredits) : Number(A.balance || 0);
+  v.free = A.freeTotal != null ? Number(A.freeTotal) : 0;
+  v.restrictedFree = Number(A.freeCredits || 0);
+  v.paidExpiry = null;
+  v.freeExpiry = null;
+  var summary = A.creditSummaryOk !== false && A.freeTotal != null;
+  (A.lots || []).forEach(function (l) {
+    if (!(Number(l.remaining) > 0) || new Date(l.expires_at) <= new Date()) return;
+    var kind = summary ? cncLotKind(l) : 'paid';
+    var key = kind === 'free' ? 'freeExpiry' : 'paidExpiry';
+    if (!v[key] || new Date(l.expires_at) < new Date(v[key])) v[key] = l.expires_at;
+  });
+  return v;
+}
+
+function uiCreditSplitInner(opts) {
+  opts = opts || {};
+  var v = uiCreditSplitValues(opts);
+  var known = opts.paid != null || opts.free != null || (window.APP && APP.balance != null);
+  function item(kind, icon, labelKey, n, exp) {
+    return '<span class="cs-item cs-' + kind + '"><span aria-hidden="true">' + icon + '</span> ' +
+      '<span class="cs-label">' + escHtml(t(labelKey)) + '</span> ' +
+      '<b class="mono cs-num">' + (known ? formatNumber(n) : '—') + '</b>' +
+      (opts.expiry && exp && n > 0 ? ' <span class="cs-exp">' + escHtml(tf('split_until', { date: formatDate(exp) })) + '</span>' : '') +
+      '</span>';
+  }
+  return '<span class="credit-split-bar">' +
+      item('paid', '💳', 'paid_short', v.paid, v.paidExpiry) +
+      '<span class="cs-sep" aria-hidden="true">·</span>' +
+      item('free', '🎁', 'free_short', v.free, v.freeExpiry) +
+    '</span>' +
+    (opts.note && v.restrictedFree > 0 ? '<span class="cs-note">🎁 ' + escHtml(t('split_free_note')) + '</span>' : '');
+}
+
+function uiCreditSplitHtml(opts) {
+  opts = opts || {};
+  var live = opts.paid == null && opts.free == null;
+  var flags = (opts.expiry ? 'e' : '') + (opts.note ? 'n' : '');
+  return '<span class="credit-split-wrap' + (opts.cls ? ' ' + opts.cls : '') + '"' +
+    (live ? ' data-credit-split="' + flags + '"' : '') + '>' + uiCreditSplitInner(opts) + '</span>';
+}
+
+// 화면에 있는 (자동 갱신) 부품을 지금 값으로 다시 그려요
+function uiRefreshCreditSplits() {
+  var els = document.querySelectorAll('[data-credit-split]');
+  for (var i = 0; i < els.length; i++) {
+    var f = els[i].getAttribute('data-credit-split') || '';
+    els[i].innerHTML = uiCreditSplitInner({ expiry: f.indexOf('e') !== -1, note: f.indexOf('n') !== -1 });
+  }
+}
+
+// 이력 · 묶음 줄의 종류 배지: 💳 충전 / 🎁 무료 (+ 이벤트 이름) / 섞임(주문: 🎁 무료 n · 💳 충전 n)
+//   k: { kind: 'paid' | 'free' | 'mixed', event, free, paid } (cncCreditHistoryKinds · cncLotKind)
+function uiCreditKindBadge(k) {
+  k = k || { kind: 'paid' };
+  if (k.kind === 'mixed') {
+    return '<span class="kind-badge kind-mixed">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(k.free || 0) + '</b>' +
+      ' <span aria-hidden="true">·</span> 💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(k.paid || 0) + '</b></span>';
+  }
+  if (k.kind === 'free') {
+    return '<span class="kind-badge kind-free">🎁 ' + escHtml(t('free_short')) + '</span>' +
+      (k.event ? '<span class="kind-event">' + escHtml(k.event) + '</span>' : '');
+  }
+  return '<span class="kind-badge kind-paid">💳 ' + escHtml(t('paid_short')) + '</span>';
+}
+
+// 이 주문에 쓴 크레딧: 🎁 무료 n / 💳 충전 n (cnc_orders.bonus_used · credits_used 그대로)
+function uiOrderCreditUseHtml(creditsUsed, bonusUsed) {
+  var used = Number(creditsUsed || 0), free = Math.min(used, Math.max(0, Number(bonusUsed || 0)));
+  return '<span class="order-credit-use"><span class="mono">' + formatNumber(used) + '</span> ' +
+    '<span class="ocu-split">(🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(free) + '</b>' +
+    ' <span aria-hidden="true">/</span> 💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(used - free) + '</b>)</span></span>';
 }
 
 // 언어를 바꾸면 내 프로필에도 저장 (실패해도 화면은 그대로)

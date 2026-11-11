@@ -93,6 +93,7 @@ var PageTopup = {
       '<div class="page-head">' +
         '<h1 class="page-title"><span aria-hidden="true">💳</span> ' + escHtml(t('topup_title')) + '</h1>' +
         '<p class="topup-balance">' + escHtml(t('credit_balance')) + ': <b class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</b> ' + escHtml(t('credit_unit')) + '</p>' +
+        '<p class="topup-split">' + uiCreditSplitHtml({ expiry: true }) + '</p>' +
       '</div>' +
       '<div id="topup-body"></div>' +
       '<section class="card topup-history" id="topup-history"></section>' +

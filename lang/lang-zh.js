@@ -1058,7 +1058,6 @@ LANG.zh = {
   free_off_hint: '此订单只使用购买的积分。若要使用免费积分，请开启“使用免费积分下单”（寄往已登记诊所）。',
   free_turn_on: '使用免费积分（寄往已登记诊所）',
   free_split_label: '扣除明细',
-  paid_short: '充值',
   free_locked_short: '仅寄往已登记诊所',
   reg_desc: '免费积分订单只寄往此地址。如需更改，请提交申请——管理员批准后生效。',
   reg_since: '{date} 登记',
@@ -1210,6 +1209,15 @@ LANG.zh = {
   flag_same_address: '相同地址',
   flag_same_name: '相同姓名',
   flag_same_tax_id: '相同税号',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: '充值',
+  split_until: '至 {date}',
+  split_free_note: '免费积分仅可用于寄送到登记诊所地址的订单。',
+  split_kind: '类型',
+  split_after: '下单后余额',
+  split_used_this: '本订单使用的积分',
+  split_balance_now: '当前余额',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

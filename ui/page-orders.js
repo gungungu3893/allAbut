@@ -302,7 +302,8 @@ var PageOrders = {
       '<div class="review-row"><span class="review-label">' + escHtml(t('address_label')) + '</span><span class="review-value">' + escHtml(o.addr) + '</span></div>' +
       '<div class="review-row"><span class="review-label">' + escHtml(t('phone_label')) + '</span><span class="review-value mono">' + escHtml(o.phone) + '</span></div>' +
       (o.line_id ? '<div class="review-row"><span class="review-label">' + escHtml(t('line_id_label')) + '</span><span class="review-value">' + escHtml(o.line_id) + '</span></div>' : '') +
-      '<div class="review-row"><span class="review-label">' + escHtml(t('credits_use')) + '</span><span class="review-value mono">' + formatNumber(o.credits_used) + '</span></div>';
+      // 이 주문에 쓴 크레딧: 🎁 무료 n / 💳 충전 n (cnc_orders.bonus_used · credits_used)
+      '<div class="review-row order-credits-row"><span class="review-label">' + escHtml(t('credits_use')) + '</span><span class="review-value">' + uiOrderCreditUseHtml(o.credits_used, o.bonus_used) + '</span></div>';
 
     // 리뷰·처리 이력
     if ((o.review_history || []).length) {

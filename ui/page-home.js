@@ -104,6 +104,8 @@ var PageHome = {
         '<a href="#/profile" class="home-card-link">' +
           '<span class="home-card-label">' + escHtml(t('home_credits')) + '</span>' +
           '<span class="home-card-number mono">' + balance + '</span>' +
+          // 💳 충전 n · 🎁 무료 n (항상 둘 다) + 종류마다 가장 빠른 만료일 + 등록 주소 전용 무료 안내
+          uiCreditSplitHtml({ expiry: true, note: true, cls: 'home-split' }) +
           '<span class="home-card-desc">' + escHtml(t('credit_rule')) + '</span>' +
           this.expiringHtml() +
         '</a>' +

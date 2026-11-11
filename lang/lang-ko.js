@@ -1059,7 +1059,6 @@ LANG.ko = {
   free_off_hint: '이 주문은 충전한 크레딧만 써요. 무료 크레딧을 쓰려면 "무료 크레딧으로 주문하기"를 켜세요 (등록된 치과로 배송).',
   free_turn_on: '무료 크레딧 쓰기 (등록된 치과로 배송)',
   free_split_label: '차감 내역',
-  paid_short: '충전',
   free_locked_short: '등록된 치과로만 배송',
   reg_desc: '무료 크레딧 주문은 이 주소로만 배송돼요. 바꾸려면 변경 요청을 보내 주세요 — 관리자 승인 후 바뀌어요.',
   reg_since: '{date} 등록',
@@ -1211,6 +1210,15 @@ LANG.ko = {
   flag_same_address: '같은 주소',
   flag_same_name: '같은 이름',
   flag_same_tax_id: '같은 Tax ID',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: '충전',
+  split_until: '~{date}',
+  split_free_note: '무료 크레딧은 등록된 치과 주소 배송 주문에만 쓸 수 있어요.',
+  split_kind: '종류',
+  split_after: '주문 후 잔액',
+  split_used_this: '이 주문에 쓴 크레딧',
+  split_balance_now: '지금 잔액',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

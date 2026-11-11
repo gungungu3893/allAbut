@@ -1058,7 +1058,6 @@ LANG.vi = {
   free_off_hint: 'Đơn này chỉ dùng tín dụng đã mua. Để dùng tín dụng miễn phí, hãy bật "Đặt hàng bằng tín dụng miễn phí" (giao đến phòng khám đã đăng ký).',
   free_turn_on: 'Dùng tín dụng miễn phí (giao đến phòng khám đã đăng ký)',
   free_split_label: 'Chi tiết trừ tín dụng',
-  paid_short: 'Đã nạp',
   free_locked_short: 'Chỉ giao đến phòng khám đã đăng ký',
   reg_desc: 'Đơn dùng tín dụng miễn phí chỉ giao đến địa chỉ này. Để thay đổi, hãy gửi yêu cầu — thay đổi sau khi quản trị viên duyệt.',
   reg_since: 'Đăng ký ngày {date}',
@@ -1210,6 +1209,15 @@ LANG.vi = {
   flag_same_address: 'Cùng địa chỉ',
   flag_same_name: 'Cùng tên',
   flag_same_tax_id: 'Cùng mã số thuế',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: 'Đã nạp',
+  split_until: 'đến {date}',
+  split_free_note: 'Tín dụng miễn phí chỉ dùng cho đơn hàng giao đến địa chỉ phòng khám đã đăng ký.',
+  split_kind: 'Loại',
+  split_after: 'Số dư sau đơn này',
+  split_used_this: 'Tín dụng dùng cho đơn này',
+  split_balance_now: 'Số dư hiện tại',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

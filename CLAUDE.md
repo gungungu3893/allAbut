@@ -94,6 +94,18 @@
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
 
+## 잔액 나눠 보기: 💳 충전(Paid) · 🎁 무료(Free) (sql/011_admin_credit_split.sql)
+- **헤더는 전체 잔액만** (배지·팝오버 없음). 그 밖의 잔액이 보이는 곳은 전부 충전 / 무료를 나눠서, 항상 둘 다(0 이어도)
+- 기준은 이미 있는 값만: `APP.purchasedCredits`(충전) / `APP.freeTotal`(무료 = 등록 주소 전용 + 제한 없는 무료) ← `get_my_credit_summary()`.
+  요약 함수가 없으면(008 전) 전부 충전 (`APP.creditSummaryOk === false`)
+- 공통 부품 `ui/layout.js`: `uiCreditSplitHtml({ expiry, note, paid, free, ... })` ("💳 충전 n · 🎁 무료 n", 숫자만 `.mono`, `expiry` = 종류마다 가장 빠른 만료일, `note` = 등록 주소 전용 무료 안내).
+  값을 직접 넘기지 않은 부품은 `refreshBalance()` 때 `uiRefreshCreditSplits()` 로 자동 갱신. `setBalance()` 도 뒤에서 `refreshBalance()` 를 불러 나눔을 서버 값으로 맞춰요
+- 묶음 종류 `cncLotKind(lot)` (요약과 같은 규칙: paid = 제한 없음 + 무료 출처 아님), 이력 줄 종류 `cncCreditHistoryKinds(rows)` (lot_id → 묶음 / 주문 줄 → bonus_used·credits_used / 그 밖 → 무료 설명이면 무료) → 배지 `uiCreditKindBadge`
+- 표시 위치: 홈 크레딧 카드(만료일 + 안내) · Profile · 충전 · 새 주문 요약/5단계(이번 차감 + "주문 후 잔액") · 주문 완료 · 내 주문 상세(`uiOrderCreditUseHtml(credits_used, bonus_used)`) · 이력·묶음 배지
+  - "주문 후 잔액"은 미리보기: 무료 몫은 무료에서, 나머지는 충전에서 먼저 (제한 없는 무료가 있으면 실제 DB 차감 순서와 조금 다를 수 있어요 — 주문 뒤엔 서버 값)
+- 관리자: Customers 목록 "💳 충전 / 🎁 무료" 두 칸, 고객 상세 나눔 + 이력·묶음 배지 ← `admin_credit_split(p_users)` (manager, sql/011). 011 실행 전이면 전부 충전
+- LINE: 고객 카드 · 사본 카드의 "Credit balance" 아래 작은 줄 "Paid n · Free n" (R 문구 `split_paid` · `split_free`, `getCreditSplit` 이 credit_lots 에서 같은 규칙으로). 관리자 새 주문 카드는 없음
+
 ## 회원 필수 정보 · 중복 · 신규 가입 이벤트 · Turnstile (sql/010_signup_identity_campaign.sql)
 - **필수 5개**: 본명(`profiles.full_name`) · 전화 · 치과명 · 치과 Tax ID(13자리 + 태국 체크섬) · 치과 주소. 회원가입 폼은 칸마다 빨간 글씨(`[data-su-err]`), 닉네임 칸 없음(닉네임 = 본명)
 - **정규화는 SQL 과 JS 가 똑같이** (`cnc/cnc-identity.js` ↔ `_norm_phone` / `_norm_tax_id` / `_valid_tax_id`): 전화 = 숫자만 + `+66`/`66` → `0`, Tax ID = 숫자만, 체크섬 = (11 − Σ d[i]·(13−i) % 11) % 10. **한쪽을 바꾸면 다른 쪽도**

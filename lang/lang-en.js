@@ -1059,7 +1059,6 @@ LANG.en = {
   free_off_hint: 'This order uses purchased credits only. To use free credits, turn on "Order with free credits" (ships to your registered clinic).',
   free_turn_on: 'Use free credits (ship to registered clinic)',
   free_split_label: 'Breakdown',
-  paid_short: 'Purchased',
   free_locked_short: 'Ships to registered clinic only',
   reg_desc: 'Orders with free credits are shipped only to this address. To change it, send a request — it changes after admin approval.',
   reg_since: 'Registered on {date}',
@@ -1213,6 +1212,15 @@ LANG.en = {
   flag_same_address: 'Same address',
   flag_same_name: 'Same name',
   flag_same_tax_id: 'Same Tax ID',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: 'Paid',
+  split_until: 'until {date}',
+  split_free_note: 'Free credits can only be used for orders shipped to your registered clinic address.',
+  split_kind: 'Kind',
+  split_after: 'Balance after this order',
+  split_used_this: 'Credits used for this order',
+  split_balance_now: 'Current balance',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

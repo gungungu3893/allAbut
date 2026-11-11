@@ -1066,18 +1066,19 @@ var PageAdmin = {
 
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('email_label')) + '</th><th>' + escHtml(t('nickname_label')) + '</th><th>' + escHtml(t('clinic_name')) + '</th>' +
-      '<th>' + escHtml(t('phone_label')) + '</th><th>LINE</th><th>' + escHtml(t('credit_balance')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('phone_label')) + '</th><th>LINE</th><th class="nowrap">💳 ' + escHtml(t('paid_short')) + '</th><th class="nowrap">🎁 ' + escHtml(t('free_short')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
       rows.map(function (u) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
           '<td>' + escHtml(u.email) + '</td><td>' + escHtml(u.nickname) + '</td><td>' + escHtml(u.clinic_name) + '</td>' +
-          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td><td class="mono"><b>' + formatNumber(u.balance) + '</b></td>' +
+          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td>' +
+          '<td class="mono col-paid"><b>' + formatNumber(u.paid != null ? u.paid : u.balance) + '</b></td><td class="mono col-free"><b>' + formatNumber(u.free || 0) + '</b></td>' +
           '<td class="nowrap">' + escHtml(formatDate(u.created_at)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     var cards = '<ul class="admin-order-cards">' + rows.map(function (u) {
       return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
         '<span class="order-top"><span class="admin-card-clinic">' + escHtml(u.clinic_name || u.nickname || u.email) + '</span>' +
-        '<span class="credit-badge-sm mono">💳 ' + formatNumber(u.balance) + '</span></span>' +
+        '<span class="credit-badge-sm">💳 <span class="mono">' + formatNumber(u.paid != null ? u.paid : u.balance) + '</span> · 🎁 <span class="mono">' + formatNumber(u.free || 0) + '</span></span></span>' +
         '<span class="order-meta"><span>' + escHtml(u.email) + '</span><span>' + escHtml(u.nickname) + '</span>' +
         '<span class="mono">' + escHtml(u.phone) + '</span>' + self.lineStatusHtml(u) + '</span></button></li>';
     }).join('') + '</ul>';
@@ -1115,13 +1116,19 @@ var PageAdmin = {
         cncAdminGetBalance(st.user.id),
         cncAdminUserLots(st.user.id),
         sb.from('profiles').select('*').eq('id', st.user.id).maybeSingle().then(function (r) { return r.data || null; }, function () { return null; }),
-        cncHasRole('manager') ? cncAdminSuspicionFlags(st.user.id) : Promise.resolve([])
+        cncHasRole('manager') ? cncAdminSuspicionFlags(st.user.id) : Promise.resolve([]),
+        cncAdminCreditSplit([st.user.id]).catch(function () { return null; })   // 충전 / 무료 (sql/011)
       ]);
       if (this.customer !== st) return;
       st.lots = res[3];
       st.reg = cncRegisteredClinic(res[4]);
       st.profile = res[4] || null;
       st.flags = res[5] || [];   // 의심 표시 (sql/010)
+      // 충전 / 무료: 011 이 없으면 전부 충전
+      st.splitOk = !!res[6];
+      st.split = res[6] ? (res[6][st.user.id] || { paid: 0, free: 0 }) : { paid: res[2], free: 0 };
+      st.kinds = await cncCreditHistoryKinds(res[0], !res[6]);
+      if (this.customer !== st) return;
       // 무료 크레딧 (등록 주소 전용 + 제한 없음 모두)
       st.free = (res[3] || []).filter(function (l) { return cncIsFreeLot(l) && l.remaining > 0 && new Date(l.expires_at) > new Date(); })
         .reduce(function (s, l) { return s + Number(l.remaining || 0); }, 0);
@@ -1129,7 +1136,7 @@ var PageAdmin = {
       st.orders = res[1].rows;
       st.user.balance = res[2];
       st.error = null;
-      this.syncUserBalance(st.user.id, res[2]);
+      this.syncUserBalance(st.user.id, res[2], res[6] ? st.split : null);
     } catch (err) {
       console.error(err);
       if (this.customer !== st) return;
@@ -1139,9 +1146,26 @@ var PageAdmin = {
   },
 
   // 목록의 잔액도 같이 고치기
-  syncUserBalance: function (userId, balance) {
-    (this.users.rows || []).forEach(function (u) { if (u.id === userId) u.balance = balance; });
-    this.drawUsersList();
+  // 잔액이 바뀌면 목록 · 고객 상세의 충전 / 무료도 같이 (split 을 주면 그 값, 아니면 서버에서 다시 — sql/011)
+  syncUserBalance: function (userId, balance, split) {
+    var self = this;
+    function apply(x) {
+      (self.users.rows || []).forEach(function (u) {
+        if (u.id !== userId) return;
+        u.balance = balance;
+        if (x) { u.paid = x.paid; u.free = x.free; } else if (!u.splitOk) { u.paid = balance; u.free = 0; }
+      });
+      var st = self.customer;
+      if (st && st.user.id === userId && x) st.split = x;
+      self.drawUsersList();
+    }
+    if (split !== undefined) { apply(split); return; }
+    apply(null);
+    cncAdminCreditSplit([userId]).then(function (m) {
+      if (!m) return;
+      apply(m[userId] || { paid: 0, free: 0 });
+      if (self.customer && self.customer.user.id === userId) self.drawCustomer();
+    }).catch(function (err) { console.warn('credit split reload failed', err); });
   },
 
   drawCustomer: function () {
@@ -1176,6 +1200,7 @@ var PageAdmin = {
       '<section class="credit-box">' +
         '<h3 class="review-title">' + escHtml(t('credit_balance')) + '</h3>' +
         '<p class="big-number" id="cust-balance"><span class="mono">' + formatNumber(u.balance) + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+        (st.split ? '<p class="credit-split-line" id="cust-split">' + uiCreditSplitHtml({ paid: st.split.paid, free: st.split.free, paidExpiry: st.split.paidExpiry, freeExpiry: st.split.freeExpiry, expiry: true }) + '</p>' : '') +
         '<div class="field"><label class="field-label" for="cust-amount">' + escHtml(t('admin_credit_amount')) + '</label>' +
           '<input class="input mono" id="cust-amount" type="number" step="1" inputmode="numeric" placeholder="' + escHtml(t('admin_credit_amount_ph')) + '"' + dis + '>' +
           '<div class="err-slot" data-err="amount"></div></div>' +
@@ -1206,12 +1231,13 @@ var PageAdmin = {
     if (st.history === null) html += uiLoading();
     else if (!st.history.length) html += '<p class="muted">' + escHtml(t('credit_no_history')) + '</p>';
     else html += '<div class="table-wrap"><table class="table credit-table"><thead><tr>' +
-      '<th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('col_type')) + '</th><th>' + escHtml(t('col_amount')) + '</th>' +
+      '<th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('col_type')) + '</th><th>' + escHtml(t('split_kind')) + '</th><th>' + escHtml(t('col_amount')) + '</th>' +
       '<th>' + escHtml(t('col_description')) + '</th><th>' + escHtml(t('order_number')) + '</th></tr></thead><tbody>' +
       st.history.map(function (h) {
         var amount = Number(h.amount || 0);
         return '<tr><td class="nowrap">' + escHtml(formatDateTime(h.created_at)) + '</td>' +
           '<td><span class="badge credit-' + escHtml(h.type) + '">' + escHtml(t('credit_type_' + h.type)) + '</span></td>' +
+          '<td class="kind-cell">' + uiCreditKindBadge((st.kinds && st.kinds[h.id]) || { kind: 'paid' }) + '</td>' +
           '<td class="mono nowrap ' + (amount >= 0 ? 'plus' : 'minus') + '">' + (amount > 0 ? '+' : '') + formatNumber(amount) + '</td>' +
           '<td>' + escHtml(h.description || '') + '</td><td class="mono nowrap">' + escHtml(h.order_id || '—') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -1655,7 +1681,9 @@ var PageAdmin = {
       '<th>' + escHtml(t('topup_each_label')) + '</th><th>' + escHtml(t('lots_expires')) + '</th></tr></thead><tbody>' +
       lots.map(function (l) {
         var stt = cncExpiryState(l.expires_at);
-        return '<tr class="' + (stt ? 'lot-' + stt : '') + '"><td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
+        var free = st.splitOk && cncLotKind(l) === 'free';   // 011 이 없으면 전부 충전
+        return '<tr class="' + (stt ? 'lot-' + stt : '') + (free ? ' lot-free' : '') + '"><td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' ' +
+          uiCreditKindBadge({ kind: free ? 'free' : 'paid', event: free ? l.event_name : '' }) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td><td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
           '<td class="mono nowrap">' + (Number(l.unit_price) ? formatTHB(l.unit_price) : '—') + '</td>' +
           '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) + '</td></tr>';

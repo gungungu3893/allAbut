@@ -1058,7 +1058,6 @@ LANG.es = {
   free_off_hint: 'Este pedido usa solo créditos comprados. Para usar créditos gratuitos, active "Pedir con créditos gratuitos" (envío a la clínica registrada).',
   free_turn_on: 'Usar créditos gratuitos (envío a la clínica registrada)',
   free_split_label: 'Créditos descontados',
-  paid_short: 'Comprados',
   free_locked_short: 'Solo envío a la clínica registrada',
   reg_desc: 'Los pedidos con créditos gratuitos solo se envían a esta dirección. Para cambiarla, envíe una solicitud: se cambia tras la aprobación del administrador.',
   reg_since: 'Registrada el {date}',
@@ -1210,6 +1209,15 @@ LANG.es = {
   flag_same_address: 'Misma dirección',
   flag_same_name: 'Mismo nombre',
   flag_same_tax_id: 'Mismo número fiscal',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: 'Pagados',
+  split_until: 'hasta el {date}',
+  split_free_note: 'Los créditos gratis solo sirven para pedidos enviados a la dirección registrada de la clínica.',
+  split_kind: 'Tipo',
+  split_after: 'Saldo después de este pedido',
+  split_used_this: 'Créditos usados en este pedido',
+  split_balance_now: 'Saldo actual',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

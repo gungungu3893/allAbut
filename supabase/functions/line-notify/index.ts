@@ -320,6 +320,7 @@ type ReceiptTexts = {
   notice_order: string; notice_credit: string; notice_topup: string;
   sec_clinic: string; sec_case: string; sec_teeth: string; sec_details: string; sec_shipping: string;
   more: string; credit_balance: string; subtotal: string; vat: string; paid: string;
+  split_paid: string; split_free: string;
   view_order: string; view_credits: string; view_topup: string; auto_note: string;
   added: string; adjusted: string; expired: string; package: string; unit_price: string;
   free_title: string; free_body: string; free_event: string; free_address_only: string; free_any_address: string; order_now: string;
@@ -329,6 +330,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'Order notice', notice_credit: 'Credit notice', notice_topup: 'Top-up notice',
     sec_clinic: 'Clinic', sec_case: 'Case', sec_teeth: 'Teeth', sec_details: 'Details', sec_shipping: 'Shipping',
     more: '+{n} more', credit_balance: 'Credit balance', subtotal: 'Subtotal', vat: 'VAT {r}%', paid: 'Paid',
+    split_paid: 'Paid', split_free: 'Free',
     view_order: 'View order', view_credits: 'View credits', view_topup: 'View top-up', auto_note: 'This is an automatic notification from allAbut.',
     added: 'Credits added', adjusted: 'Adjusted', expired: 'Expired', package: 'Package', unit_price: 'Unit price',
     free_title: "🎁 Free credits", free_body: "{n} free credits have been added (valid until {date}).", free_event: "Event",
@@ -338,6 +340,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: '주문 알림', notice_credit: '크레딧 알림', notice_topup: '충전 알림',
     sec_clinic: '치과', sec_case: '케이스', sec_teeth: '치아', sec_details: '상세', sec_shipping: '배송',
     more: '+{n}개 더', credit_balance: '크레딧 잔액', subtotal: '공급가액', vat: 'VAT {r}%', paid: '결제 금액',
+    split_paid: '충전', split_free: '무료',
     view_order: '주문 보기', view_credits: '크레딧 보기', view_topup: '충전 내역 보기', auto_note: 'allAbut 자동 알림입니다.',
     added: '충전 크레딧', adjusted: '조정', expired: '만료', package: '패키지', unit_price: '단가',
     free_title: "🎁 무료 크레딧", free_body: "무료 크레딧 {n}개가 들어왔어요 (유효기간 ~{date}).", free_event: "이벤트",
@@ -347,6 +350,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'แจ้งเตือนคำสั่งงาน', notice_credit: 'แจ้งเตือนเครดิต', notice_topup: 'แจ้งเตือนการเติมเครดิต',
     sec_clinic: 'คลินิก', sec_case: 'เคส', sec_teeth: 'ซี่ฟัน', sec_details: 'รายละเอียด', sec_shipping: 'การจัดส่ง',
     more: '+อีก {n} รายการ', credit_balance: 'เครดิตคงเหลือ', subtotal: 'ยอดก่อน VAT', vat: 'VAT {r}%', paid: 'ยอดชำระ',
+    split_paid: 'เติมเงิน', split_free: 'ฟรี',
     view_order: 'ดูคำสั่งงาน', view_credits: 'ดูเครดิต', view_topup: 'ดูการเติมเครดิต', auto_note: 'นี่คือการแจ้งเตือนอัตโนมัติจาก allAbut',
     added: 'เครดิตที่เติม', adjusted: 'ปรับปรุง', expired: 'หมดอายุ', package: 'แพ็กเกจ', unit_price: 'ราคาต่อหน่วย',
     free_title: "🎁 เครดิตฟรี", free_body: "ได้รับเครดิตฟรี {n} เครดิตแล้ว (ใช้ได้ถึง {date})", free_event: "กิจกรรม",
@@ -356,6 +360,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: '订单通知', notice_credit: '积分通知', notice_topup: '充值通知',
     sec_clinic: '诊所', sec_case: '病例', sec_teeth: '牙位', sec_details: '详情', sec_shipping: '配送',
     more: '另有 {n} 项', credit_balance: '积分余额', subtotal: '小计', vat: '增值税 {r}%', paid: '已付金额',
+    split_paid: '充值', split_free: '免费',
     view_order: '查看订单', view_credits: '查看积分', view_topup: '查看充值', auto_note: '这是 allAbut 的自动通知。',
     added: '充值积分', adjusted: '调整', expired: '过期', package: '套餐', unit_price: '单价',
     free_title: "🎁 免费积分", free_body: "已到账 {n} 个免费积分（有效期至 {date}）。", free_event: "活动",
@@ -365,6 +370,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'Thông báo đơn hàng', notice_credit: 'Thông báo tín dụng', notice_topup: 'Thông báo nạp tín dụng',
     sec_clinic: 'Phòng khám', sec_case: 'Ca', sec_teeth: 'Răng', sec_details: 'Chi tiết', sec_shipping: 'Giao hàng',
     more: '+{n} mục khác', credit_balance: 'Số dư tín dụng', subtotal: 'Tạm tính', vat: 'VAT {r}%', paid: 'Đã thanh toán',
+    split_paid: 'Đã nạp', split_free: 'Miễn phí',
     view_order: 'Xem đơn hàng', view_credits: 'Xem tín dụng', view_topup: 'Xem yêu cầu nạp', auto_note: 'Đây là thông báo tự động từ allAbut.',
     added: 'Tín dụng đã nạp', adjusted: 'Điều chỉnh', expired: 'Hết hạn', package: 'Gói', unit_price: 'Đơn giá',
     free_title: "🎁 Tín dụng miễn phí", free_body: "Đã nhận {n} tín dụng miễn phí (hiệu lực đến {date}).", free_event: "Sự kiện",
@@ -374,6 +380,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'Aviso de pedido', notice_credit: 'Aviso de créditos', notice_topup: 'Aviso de recarga',
     sec_clinic: 'Clínica', sec_case: 'Caso', sec_teeth: 'Dientes', sec_details: 'Detalles', sec_shipping: 'Envío',
     more: '+{n} más', credit_balance: 'Saldo de créditos', subtotal: 'Subtotal', vat: 'IVA {r}%', paid: 'Pagado',
+    split_paid: 'Pagado', split_free: 'Gratis',
     view_order: 'Ver pedido', view_credits: 'Ver créditos', view_topup: 'Ver recarga', auto_note: 'Esta es una notificación automática de allAbut.',
     added: 'Créditos añadidos', adjusted: 'Ajuste', expired: 'Vencidos', package: 'Paquete', unit_price: 'Precio unitario',
     free_title: "🎁 Créditos gratuitos", free_body: "Se añadieron {n} créditos gratuitos (válidos hasta el {date}).", free_event: "Evento",
@@ -383,6 +390,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'Sipariş bildirimi', notice_credit: 'Kredi bildirimi', notice_topup: 'Yükleme bildirimi',
     sec_clinic: 'Klinik', sec_case: 'Vaka', sec_teeth: 'Dişler', sec_details: 'Ayrıntılar', sec_shipping: 'Kargo',
     more: '+{n} daha', credit_balance: 'Kredi bakiyesi', subtotal: 'Ara toplam', vat: 'KDV %{r}', paid: 'Ödenen',
+    split_paid: 'Ücretli', split_free: 'Ücretsiz',
     view_order: 'Siparişi görüntüle', view_credits: 'Kredileri görüntüle', view_topup: 'Yüklemeyi görüntüle', auto_note: 'Bu, allAbut\'tan otomatik bir bildirimdir.',
     added: 'Yüklenen kredi', adjusted: 'Düzeltme', expired: 'Süresi doldu', package: 'Paket', unit_price: 'Birim fiyat',
     free_title: "🎁 Ücretsiz kredi", free_body: "{n} ücretsiz kredi eklendi ({date} tarihine kadar geçerli).", free_event: "Etkinlik",
@@ -392,6 +400,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'إشعار طلب', notice_credit: 'إشعار رصيد', notice_topup: 'إشعار شحن الرصيد',
     sec_clinic: 'العيادة', sec_case: 'الحالة', sec_teeth: 'الأسنان', sec_details: 'التفاصيل', sec_shipping: 'الشحن',
     more: '+{n} أخرى', credit_balance: 'الرصيد المتبقي', subtotal: 'المجموع الفرعي', vat: 'ضريبة القيمة المضافة {r}%', paid: 'المدفوع',
+    split_paid: 'مدفوع', split_free: 'مجاني',
     view_order: 'عرض الطلب', view_credits: 'عرض الرصيد', view_topup: 'عرض الشحن', auto_note: 'هذا إشعار تلقائي من allAbut.',
     added: 'الرصيد المضاف', adjusted: 'تعديل', expired: 'منتهي', package: 'الباقة', unit_price: 'سعر الوحدة',
     free_title: "🎁 رصيد مجاني", free_body: "تمت إضافة {n} رصيد مجاني (صالح حتى {date}).", free_event: "الفعالية",
@@ -401,6 +410,7 @@ const R: Record<string, ReceiptTexts> = {
     notice_order: 'اعلان سفارش', notice_credit: 'اعلان اعتبار', notice_topup: 'اعلان شارژ',
     sec_clinic: 'کلینیک', sec_case: 'کیس', sec_teeth: 'دندان‌ها', sec_details: 'جزئیات', sec_shipping: 'ارسال',
     more: '+{n} مورد دیگر', credit_balance: 'موجودی اعتبار', subtotal: 'جمع جزء', vat: 'مالیات {r}%', paid: 'پرداخت‌شده',
+    split_paid: 'پرداختی', split_free: 'رایگان',
     view_order: 'مشاهده سفارش', view_credits: 'مشاهده اعتبار', view_topup: 'مشاهده شارژ', auto_note: 'این یک اعلان خودکار از allAbut است.',
     added: 'اعتبار افزوده', adjusted: 'اصلاح', expired: 'منقضی', package: 'بسته', unit_price: 'قیمت واحد',
     free_title: "🎁 اعتبار رایگان", free_body: "{n} اعتبار رایگان اضافه شد (معتبر تا {date}).", free_event: "رویداد",
@@ -546,7 +556,7 @@ type ReceiptOpts = {
   when?: unknown;               // 날짜·시간 (없으면 지금)
   message?: string;             // 짧은 안내 글
   sections: Section[];
-  totals?: { rows?: Row[]; final?: Row };
+  totals?: { rows?: Row[]; final?: Row; split?: string };   // split: "Paid 9 · Free 3" (잔액 아래 작은 줄)
   button: { label: string; url: string };
   autoNote: string;             // "This is an automatic notification from allAbut."
   company: string;              // "allAbut Co., Ltd. · Tax ID 0105… · allabut.com"
@@ -626,6 +636,7 @@ function buildReceiptCard(o: ReceiptOpts) {
     if (final) {
       if (tRows.length) body.push({ type: 'separator', margin: 'md', color: LINE_GRAY });
       body.push(kvRow(final[0], final[1], { big: true }));
+      if (str(o.totals?.split)) body.push(textNode(o.totals!.split as string, { size: 'xs', color: GRAY, align: 'end', margin: 'xs' }));
     }
   }
 
@@ -685,6 +696,27 @@ async function getBalance(userId: string): Promise<number | null> {
   const { data, error } = await db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle();
   if (error) { console.error('balance read failed', error); return null; }
   return data ? Number(data.balance ?? 0) : 0;
+}
+
+// 잔액 나누기: 만료 안 된 묶음 remaining 을 충전 / 무료로 (get_my_credit_summary 와 같은 규칙)
+//   paid = restriction 없음 + 무료 출처(_is_free_source: free · bonus — 아래 FREE_SOURCES) 아님 / free = 나머지. 못 읽으면 null
+async function getCreditSplit(userId: string): Promise<{ paid: number; free: number } | null> {
+  if (!userId) return null;
+  const { data, error } = await db.from('credit_lots').select('source, restriction, remaining, expires_at')
+    .eq('user_id', userId).gt('remaining', 0).gt('expires_at', new Date().toISOString());
+  if (error || !Array.isArray(data)) { if (error) console.error('lots read failed', error); return null; }
+  let paid = 0, free = 0;
+  for (const l of data) {
+    const n = Number(l.remaining ?? 0);
+    if (!(n > 0) || new Date(String(l.expires_at)).getTime() <= Date.now()) continue;
+    if (l.restriction == null && !FREE_SOURCES.includes(String(l.source))) paid += n; else free += n;
+  }
+  return { paid, free };
+}
+// "Paid 9 · Free 3" (고객 언어). 못 읽으면 빈 글자 → 줄 없음
+async function splitLine(L: Lang, userId: string): Promise<string> {
+  const sp = await getCreditSplit(userId);
+  return sp ? `${L.r.split_paid} ${sp.paid} · ${L.r.split_free} ${sp.free}` : '';
 }
 
 async function getOrder(orderId: unknown): Promise<any | null> {
@@ -829,7 +861,7 @@ function clinicSection(L: Lang, name: string, lines: string[], copy?: CopyInfo):
 //   refunded: 취소 → 환불 줄
 async function orderReceipt(L: Lang, o: any, opt: {
   title: string; color: string; message?: string; details?: Section; refunded?: boolean; balance?: number | null;
-  copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
+  copy?: CopyInfo; button: { label: string; url: string }; when?: unknown; customer?: boolean;
 }) {
   const sections: Section[] = [
     clinicSection(L, str(o.clinic) || (opt.copy ? opt.copy.name : ''), [str(o.addr), str(o.phone)], opt.copy),
@@ -844,7 +876,9 @@ async function orderReceipt(L: Lang, o: any, opt: {
     title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_order,
     copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
     docNo: str(o.id, 40), when: opt.when, message: opt.message, sections,
-    totals: { rows: tRows, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)] },
+    // 고객 카드 · 사본 카드만 잔액 아래 "Paid n · Free n" (관리자 새 주문 카드는 없음)
+    totals: { rows: tRows, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)],
+      split: (opt.customer || opt.copy) && opt.balance != null ? await splitLine(L, o.user_id) : '' },
     button: opt.button, ...(await footerOf(L)),
   });
 }
@@ -891,7 +925,9 @@ async function creditReceipt(L: Lang, opt: {
     title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_credit,
     copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
     docNo: opt.docNo, when: opt.when, message: opt.message, sections,
-    totals: { rows: opt.amounts, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)] },
+    // 크레딧 영수증은 고객 카드 · 사본 카드에서만 써요 → 잔액 아래 "Paid n · Free n"
+    totals: { rows: opt.amounts, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)],
+      split: opt.balance != null ? await splitLine(L, opt.userId) : '' },
     button: opt.button, ...(await footerOf(L)),
   });
 }
@@ -1020,7 +1056,7 @@ async function notifyCustomer(o: any, kind: OrderKind, actor = ''): Promise<stri
     const L = langOf(p.lang);
     await push(p.line_user_id as string, await orderReceipt(L, o, {
       title: plainTitle(L.x[tk]), color: customerColor(kind), message: L.x[bk],
-      details: orderDetails(L, o, kind), refunded: kind === 'cancel', balance,
+      details: orderDetails(L, o, kind), refunded: kind === 'cancel', balance, customer: true,
       button: { label: L.r.view_order, url: orderLink(o.id) },
     }));
   }

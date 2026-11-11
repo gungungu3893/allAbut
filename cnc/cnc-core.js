@@ -270,6 +270,13 @@ function cncIsFreeLot(lot) {
   return !!lot && (lot.free === true || FREE_LOT_SOURCES.indexOf(lot.source) !== -1 || lot.restriction === FREE_LOT_RESTRICTION);
 }
 
+// 잔액 나눠 보기의 묶음 종류: 'free' | 'paid' — get_my_credit_summary 와 같은 규칙
+//   paid = 제한 없음 + 무료 출처 아님 / free = 나머지 (등록 주소 전용 + 제한 없는 무료)
+function cncLotKind(lot) {
+  if (!lot) return 'paid';
+  return (lot.restriction == null && !cncIsFreeLot(lot)) ? 'paid' : 'free';
+}
+
 // 등록 주소 배송 전용 묶음인지
 function cncIsRestrictedLot(lot) {
   return !!lot && (lot.restriction === FREE_LOT_RESTRICTION || (lot.restriction == null && lot.source === 'bonus' && lot.free === undefined));
@@ -811,6 +818,51 @@ async function cncGetBalance() {
 // 크레딧 이력 (최신순)
 async function cncCreditHistory(limit) {
   return cncCheck(await sb.from('credit_history').select('*').eq('user_id', cncUserId()).order('created_at', { ascending: false }).limit(limit || 50)) || [];
+}
+
+// 크레딧 이력 줄마다 종류 (충전 / 무료 / 섞임) — 새 규칙 없이 이미 있는 값으로만
+//   - lot_id 가 있는 줄(충전 승인 · 무료 지급 · 만료 등) → 그 묶음의 종류 (cncLotKind) + 이벤트 이름
+//   - 주문 줄(use · 주문 취소 refund) → 그 주문의 bonus_used(무료) / credits_used
+//   - 그 밖에 → 설명이 무료 크레딧 기록이면 무료("Free credits…", 예전 "Signup bonus" · "Welcome gift"), 아니면 충전
+//   allPaid: 요약 함수가 없을 때(sql/008 전) → 전부 충전
+// rows: credit_history 행들 → { [row.id]: { kind, event, free, paid } }
+async function cncCreditHistoryKinds(rows, allPaid) {
+  var out = {};
+  rows = rows || [];
+  if (allPaid) { rows.forEach(function (h) { out[h.id] = { kind: 'paid' }; }); return out; }
+  function uniq(a) { return a.filter(function (x, i) { return x && a.indexOf(x) === i; }); }
+  var lotIds = uniq(rows.map(function (h) { return h.lot_id; }));
+  var orderIds = uniq(rows.map(function (h) { return h.order_id; }));
+  var lots = {}, orders = {};
+  async function chunks(ids, fn) { for (var i = 0; i < ids.length; i += 100) await fn(ids.slice(i, i + 100)); }
+  try {
+    await chunks(lotIds, async function (ids) {
+      var r = await sb.from('credit_lots').select('id, source, restriction, event_name').in('id', ids);
+      if (r.error) {
+        r = await sb.from('credit_lots').select('id, source').in('id', ids);   // 008 · 009 전 (칸이 없음)
+      }
+      (r.data || []).forEach(function (l) { lots[l.id] = l; });
+    });
+  } catch (err) { console.warn('lot kinds load failed', err); }
+  try {
+    await chunks(orderIds, async function (ids) {
+      var r = await sb.from('cnc_orders').select('id, credits_used, bonus_used').in('id', ids);
+      if (r.error) r = await sb.from('cnc_orders').select('id, credits_used').in('id', ids);
+      (r.data || []).forEach(function (o) { orders[o.id] = o; });
+    });
+  } catch (err) { console.warn('order kinds load failed', err); }
+  rows.forEach(function (h) {
+    var lot = h.lot_id && lots[h.lot_id];
+    var o = h.order_id && orders[h.order_id];
+    if (lot) { out[h.id] = { kind: cncLotKind(lot), event: cncLotKind(lot) === 'free' ? (lot.event_name || '') : '' }; return; }
+    if (o && (h.type === 'use' || h.type === 'refund')) {
+      var used = Number(o.credits_used || 0), free = Math.min(used, Math.max(0, Number(o.bonus_used || 0)));
+      out[h.id] = free <= 0 ? { kind: 'paid' } : (free >= used ? { kind: 'free', free: free, paid: 0 } : { kind: 'mixed', free: free, paid: used - free });
+      return;
+    }
+    out[h.id] = /^(Free credits|Signup bonus|Welcome gift)/i.test(String(h.description || '')) ? { kind: 'free' } : { kind: 'paid' };
+  });
+  return out;
 }
 
 // profiles 에서 내 행 고치기. fields 예: { clinic_name, address, phone, tax_id, lang }

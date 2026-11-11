@@ -1,13 +1,14 @@
 // ===== 내 정보 #/profile =====
 // - 본명(sql/010 실행 후, 처음 채워지면 잠김)·이메일(읽기 전용), 치과 정보(Clinic name, Address, Phone, Tax ID), 언어 → 저장
 //   본명 · 올바른 Tax ID 는 잠겨서 읽기 전용 → 바꾸려면 등록 정보 변경 요청 (관리자 승인)
-// - 크레딧 잔액 + 크레딧 이력 표 (산 크레딧 / 무료 크레딧 나눠서, 무료 묶음엔 🎁 표시)
+// - 크레딧 잔액 (전체 + 💳 충전 n · 🎁 무료 n, 공통 부품 uiCreditSplitHtml) + 묶음 목록 · 크레딧 이력 (줄마다 종류 배지 uiCreditKindBadge)
 // - 등록된 치과 정보 (무료 크레딧 주문의 배송지, 잠김) + 변경 요청 (관리자 승인 후 바뀜) — sql/008_free_credits.sql
 // - LINE 알림 연결 (공통 부품 ui/line-connect.js 의 LineConnect.mountSection 을 그대로 써요)
 
 var PageProfile = {
   main: null,
   history: null,
+  historyKinds: {},   // 이력 줄마다 종류 (충전 / 무료 / 섞임) — cncCreditHistoryKinds
   historyError: false,
   errors: {},
   saving: false,
@@ -48,6 +49,9 @@ var PageProfile = {
     try {
       var rows = await cncCreditHistory(50);
       if (token !== this.loadToken) return;
+      var kinds = await cncCreditHistoryKinds(rows, APP.creditSummaryOk === false);
+      if (token !== this.loadToken) return;
+      this.historyKinds = kinds;
       this.history = rows;
     } catch (err) {
       console.error(err);
@@ -310,11 +314,12 @@ var PageProfile = {
       lots.map(function (l) {
         var st = cncExpiryState(l.expires_at);
         var days = cncDaysLeft(l.expires_at);
-        var free = cncIsFreeLot(l);
+        // 종류: 요약 함수가 없으면(sql/008 전) 전부 충전
+        var free = APP.creditSummaryOk !== false && cncLotKind(l) === 'free';
         return '<tr class="' + (st ? 'lot-' + st : '') + (free ? ' lot-free' : '') + '">' +
-          '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span>' +
-            (free ? '<span class="lot-free-tag">🎁 ' + escHtml(t(cncIsRestrictedLot(l) ? 'free_lot_tag' : 'free_lot_open')) + '</span>' +
-              (l.event_name ? '<span class="lot-event">' + escHtml(l.event_name) + '</span>' : '') : '') + '</td>' +
+          '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' ' +
+            uiCreditKindBadge({ kind: free ? 'free' : 'paid', event: free ? l.event_name : '' }) +
+            (free && cncIsRestrictedLot(l) ? '<span class="lot-free-tag">' + escHtml(t('free_lot_tag')) + '</span>' : '') + '</td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td>' +
           '<td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
           '<td class="nowrap lot-exp">' + escHtml(formatDate(l.expires_at)) +
@@ -325,13 +330,11 @@ var PageProfile = {
   drawCredits: function () {
     var box = document.getElementById('profile-credits');
     if (!box) return;
+    var self = this;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
       '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
-      ((APP.freeTotal || 0) > 0
-        ? '<p class="credit-split-line" id="credit-split-line">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(APP.purchasedCredits || 0) + '</b>' +
-            ' <span aria-hidden="true">·</span> 🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(APP.freeTotal) + '</b></p>' +
-          '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>'
-        : '') +
+      '<p class="credit-split-line" id="credit-split-line">' + uiCreditSplitHtml({ expiry: true }) + '</p>' +
+      ((APP.freeTotal || 0) > 0 ? '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>' : '') +
       '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
       '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + '</a>' +
       this.lotsHtml() +
@@ -346,13 +349,15 @@ var PageProfile = {
       html += '<p class="empty-text">' + escHtml(t('credit_no_history')) + '</p>';
     } else {
       html += '<div class="table-wrap"><table class="table credit-table"><thead><tr>' +
-        '<th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('col_type')) + '</th><th>' + escHtml(t('col_amount')) + '</th>' +
+        '<th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('col_type')) + '</th><th>' + escHtml(t('split_kind')) + '</th><th>' + escHtml(t('col_amount')) + '</th>' +
         '<th>' + escHtml(t('col_description')) + '</th><th>' + escHtml(t('order_number')) + '</th></tr></thead><tbody>' +
         this.history.map(function (h) {
           var amount = Number(h.amount || 0);
+          var k = APP.creditSummaryOk === false ? { kind: 'paid' } : (self.historyKinds[h.id] || { kind: 'paid' });
           return '<tr>' +
             '<td class="mono nowrap">' + escHtml(formatDate(h.created_at)) + '</td>' +
             '<td><span class="badge credit-' + escHtml(h.type) + '">' + escHtml(t('credit_type_' + h.type)) + '</span></td>' +
+            '<td class="kind-cell">' + uiCreditKindBadge(k) + '</td>' +
             '<td class="mono nowrap ' + (amount >= 0 ? 'plus' : 'minus') + '">' + (amount > 0 ? '+' : '') + formatNumber(amount) + '</td>' +
             '<td>' + escHtml(h.description || '') + '</td>' +
             '<td class="mono nowrap">' + escHtml(h.order_id || '—') + '</td>' +

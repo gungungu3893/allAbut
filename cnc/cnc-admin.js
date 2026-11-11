@@ -409,7 +409,33 @@ async function cncAdminListUsers() {
   } catch (err) {
     console.warn('LINE status load failed', err);
   }
+  // 충전 / 무료 나누기 (sql/011). 없거나 실패하면 전부 충전 (u.paid = 잔액, u.free = 0)
+  var split = null;
+  try { split = await cncAdminCreditSplit(); } catch (err) { console.warn('credit split load failed', err); }
+  users.forEach(function (u) {
+    var x = split && split[u.id];
+    u.splitOk = !!split;
+    u.paid = split ? (x ? x.paid : 0) : Number(u.balance || 0);
+    u.free = split ? (x ? x.free : 0) : 0;
+  });
   return users;
+}
+
+// 고객별 잔액 나누기 (sql/011 admin_credit_split, manager 이상) → { [user_id]: { paid, free, paidExpiry, freeExpiry } }
+//   userIds 를 안 주면 전체. 011 실행 전이면 null → 화면은 지금처럼 전부 충전으로 보여요
+async function cncAdminCreditSplit(userIds) {
+  var r = await sb.rpc('admin_credit_split', userIds ? { p_users: userIds } : {});
+  if (r.error) {
+    if (typeof cncIsMissingFunction === 'function' && cncIsMissingFunction(r.error)) return null;
+    throw cncError(cncErrorCode(r.error), { cause: r.error });
+  }
+  var d = r.data;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = []; } }
+  var out = {};
+  (Array.isArray(d) ? d : []).forEach(function (x) {
+    out[x.user_id] = { paid: Number(x.paid || 0), free: Number(x.free || 0), paidExpiry: x.paid_next_expiry || null, freeExpiry: x.free_next_expiry || null };
+  });
+  return out;
 }
 
 // 크레딧 충전(+) / 차감(-) → 새 잔액

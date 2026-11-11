@@ -1058,7 +1058,6 @@ LANG.tr = {
   free_off_hint: 'Bu sipariş yalnızca satın alınan kredileri kullanır. Ücretsiz kredileri kullanmak için "Ücretsiz kredilerle sipariş ver"i açın (kayıtlı kliniğe gönderim).',
   free_turn_on: 'Ücretsiz kredileri kullan (kayıtlı kliniğe gönderim)',
   free_split_label: 'Düşülen krediler',
-  paid_short: 'Satın alınan',
   free_locked_short: 'Yalnızca kayıtlı kliniğe gönderim',
   reg_desc: 'Ücretsiz kredili siparişler yalnızca bu adrese gönderilir. Değiştirmek için talep gönderin — yönetici onayından sonra değişir.',
   reg_since: '{date} tarihinde kaydedildi',
@@ -1210,6 +1209,15 @@ LANG.tr = {
   flag_same_address: 'Aynı adres',
   flag_same_name: 'Aynı ad',
   flag_same_tax_id: 'Aynı vergi numarası',
+
+  // ----- 잔액 나눠 보기: 💳 충전 · 🎁 무료 -----
+  paid_short: 'Ücretli',
+  split_until: '{date} tarihine kadar',
+  split_free_note: 'Ücretsiz krediler yalnızca kayıtlı klinik adresine gönderilen siparişlerde kullanılabilir.',
+  split_kind: 'Tür',
+  split_after: 'Bu siparişten sonra bakiye',
+  split_used_this: 'Bu siparişte kullanılan krediler',
+  split_balance_now: 'Şu anki bakiye',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

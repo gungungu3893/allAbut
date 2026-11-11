@@ -354,6 +354,17 @@ var PageNew = {
     return cncCreditSplit(cncCreditsNeeded(d), paid, APP.freeCredits || 0, !!d.useFree);
   },
 
+  // 주문 후 잔액 (💳 충전 / 🎁 무료) — 새 규칙 없이 지금 값에서 차감 미리보기(cncCreditSplit)를 빼요
+  //   무료 몫(등록 주소 전용)은 무료에서, 나머지는 충전에서 (충전이 모자라면 제한 없는 무료에서).
+  //   제한 없는 무료가 있으면 실제 차감 순서(만료 빠른 묶음부터, DB)와 몇 개 다를 수 있어요 — 주문 뒤엔 서버 값으로 다시 그려요
+  afterSplit: function () {
+    var sp = this.creditSplit();
+    var paidNow = APP.purchasedCredits != null ? APP.purchasedCredits : (APP.balance || 0);
+    var freeNow = APP.freeTotal || 0;
+    var paidUse = Math.min(paidNow, sp.paid);
+    return { paid: Math.max(0, paidNow - paidUse), free: Math.max(0, freeNow - sp.free - (sp.paid - paidUse)) };
+  },
+
   // 달력에서 날짜를 고르면 불려요 ('YYYY-MM-DD')
   setDeadline: function (value) {
     this.setField('deadline', value);
@@ -794,13 +805,16 @@ var PageNew = {
     html += '<div class="review-group credit-box' + (enough ? '' : ' short') + '">' +
       '<div class="review-head"><h3 class="review-title">' + escHtml(t('credits_title')) + '</h3></div>' +
       row('credits_use', formatNumber(need), true) +
-      ((APP.freeCredits || 0) > 0
-        ? '<div class="review-row credit-split" id="credit-split"><span class="review-label">' + escHtml(t('free_split_label')) + '</span>' +
-            '<span class="review-value"><span class="split-free">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(split.free) + '</b></span>' +
-            ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(split.paid) + '</b></span></span></div>'
-        : '') +
+      // 이번 주문 차감: 🎁 무료 n / 💳 충전 n (기존 cncCreditSplit)
+      '<div class="review-row credit-split" id="credit-split"><span class="review-label">' + escHtml(t('free_split_label')) + '</span>' +
+        '<span class="review-value"><span class="split-free">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(split.free) + '</b></span>' +
+        ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(split.paid) + '</b></span></span></div>' +
       row('credits_current', bal != null ? formatNumber(bal) : '—', true) +
+      '<div class="review-row review-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml({}) + '</span></div>' +
       row('credits_after', bal != null ? formatNumber(bal - need) : '—', true) +
+      (bal != null && enough
+        ? '<div class="review-row review-split" id="after-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml(this.afterSplit()) + '</span></div>'
+        : '') +
       (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(split.freeWouldHelp ? t('free_err_address_only') : t('insufficient_credits_msg')) + '</p>' +
         '<p class="topup-hint">' + escHtml(t('topup_draft_saved')) + '</p>' +
         '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' : '') +
@@ -928,6 +942,7 @@ var PageNew = {
     var d = this.draft;
     var need = cncCreditsNeeded(d);
     var bal = APP.balance;
+    var split = this.creditSplit();
 
     var teeth = d.teeth.length
       ? '<ul class="sum-teeth">' + d.teeth.map(function (n) {
@@ -946,13 +961,18 @@ var PageNew = {
         '<dt>' + escHtml(tf('teeth_count_fmt', { n: d.teeth.length })) + '</dt><dd>' + teeth + '</dd>' +
         '<dt>' + escHtml(t('files_label')) + '</dt><dd class="mono">' + d.files.length + ' / ' + FILE_MAX_COUNT + '</dd>' +
       '</dl>' +
-      '<div class="sum-credits' + (bal != null && !this.creditSplit().ok ? ' short' : '') + '">' +
+      '<div class="sum-credits' + (bal != null && !split.ok ? ' short' : '') + '">' +
         '<div><span>' + escHtml(t('credits_use')) + '</span><b class="mono">' + formatNumber(need) + '</b></div>' +
+        // 이번 주문 차감 (기존 cncCreditSplit): 🎁 무료 / 💳 충전
+        '<div class="sum-free"><span>🎁 ' + escHtml(t('free_short')) + ' / 💳 ' + escHtml(t('paid_short')) + '</span><b class="mono">' +
+          formatNumber(split.free) + ' / ' + formatNumber(split.paid) + '</b></div>' +
+        (d.useFree ? '<p class="sum-free-note">🔒 ' + escHtml(t('free_locked_short')) + '</p>' : '') +
         '<div><span>' + escHtml(t('credits_current')) + '</span><b class="mono">' + (bal != null ? formatNumber(bal) : '—') + '</b></div>' +
-        ((APP.freeCredits || 0) > 0
-          ? '<div class="sum-free"><span>🎁 ' + escHtml(t('free_short')) + ' / 💳 ' + escHtml(t('paid_short')) + '</span><b class="mono">' +
-              formatNumber(this.creditSplit().free) + ' / ' + formatNumber(this.creditSplit().paid) + '</b></div>' +
-            (d.useFree ? '<p class="sum-free-note">🔒 ' + escHtml(t('free_locked_short')) + '</p>' : '')
+        '<div class="sum-split">' + uiCreditSplitHtml({}) + '</div>' +
+        // 주문 후 잔액: 💳 충전 n · 🎁 무료 n
+        (bal != null && split.ok
+          ? '<div class="sum-after" id="sum-after"><span>' + escHtml(t('split_after')) + '</span></div>' +
+            '<div class="sum-split">' + uiCreditSplitHtml(this.afterSplit()) + '</div>'
           : '') +
       '</div>';
   },
@@ -1036,6 +1056,9 @@ var PageNew = {
           '<p class="success-label">' + escHtml(t('order_number')) + '</p>' +
           '<p class="success-id mono">' + escHtml(s.id || '') + '</p>' +
           '<p class="success-text">' + escHtml(tf('order_success_detail', { n: s.teeth || 0, balance: formatNumber(s.balance != null ? s.balance : APP.balance) })) + '</p>' +
+          // 이 주문에 쓴 크레딧 (🎁 무료 n / 💳 충전 n — bonus_used · 치아 수) + 지금 잔액 나눠 보기
+          '<p class="success-split" id="success-used">' + escHtml(t('split_used_this')) + ': ' + uiOrderCreditUseHtml(s.teeth || 0, s.bonus_used || 0) + '</p>' +
+          '<p class="success-split" id="success-balance">' + escHtml(t('split_balance_now')) + ': ' + uiCreditSplitHtml({}) + '</p>' +
           lineCtaHtml() +
           '<div class="success-actions">' +
             '<a href="#/orders" class="btn btn-primary btn-lg" onclick="PageOrders.openId=\'' + escHtml(s.id || '') + '\'">' + escHtml(t('view_my_orders')) + '</a>' +
