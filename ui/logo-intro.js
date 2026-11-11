@@ -1,8 +1,11 @@
 // 첫 화면 로고 인트로: A 꼭짓점 → 불꽃 → 빛이 모여 5μm → 빛나는 선
-// LogoIntro.maybePlay() : 세션당 1번 / LogoIntro.play() : 무조건 / LogoIntro.stop()
+// LogoIntro.maybePlay() : 페이지를 열 때마다 1번 (새로고침 포함) / LogoIntro.play() : 무조건 / LogoIntro.stop()
 var LogoIntro = (function () {
   var raf = null, stage = null, cv = null, umEl = null, aEl = null, timer = null;
-  var KEY = 'allabut_intro_played';
+  var playedThisLoad = false;   // 이 페이지(새로고침 전까지)에서 이미 재생했는지 — 로그인 화면 갔다 돌아와도 다시 안 함
+
+  // 예전 버전이 남긴 "탭당 1번" 기록은 이제 안 써요 → 한 번 지워요 (실패해도 괜찮아요)
+  try { sessionStorage.removeItem('allabut_intro_played'); } catch (e) { /* 무시 */ }
 
   function reduced() { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
   function smooth(v) { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); }
@@ -172,7 +175,8 @@ var LogoIntro = (function () {
   }
 
   function maybePlay() {
-    try { if (sessionStorage.getItem(KEY)) return; sessionStorage.setItem(KEY, '1'); } catch (e) { /* 저장 안 돼도 재생 */ }
+    if (playedThisLoad) return;
+    playedThisLoad = true;
     var go = function () { timer = setTimeout(play, 500); };
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
   }
