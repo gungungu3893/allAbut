@@ -9,4 +9,4 @@ var SITE_URL = 'https://allabut.com';
 
 // 로봇 차단 (Cloudflare Turnstile) 사이트 키 — 공개돼도 되는 키예요. 비워 두면 위젯을 숨기고 예전처럼 동작해요.
 // ⚠️ 시크릿 키는 여기에 넣지 마세요 → Supabase 대시보드 Authentication → Bot and Abuse Protection 에만 넣어요.
-var TURNSTILE_SITE_KEY = '0x4AAAAAAF8VDAIMBZp28auQWGU03htz2V8';
+var TURNSTILE_SITE_KEY = '0x4AAAAAAF8VDP_n3vg55h4E';
