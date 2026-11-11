@@ -2075,13 +2075,6 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 /* ================================================================
    회사소개 #/about (ui/page-about.js) — Hero 만 다크, 나머지는 밝은 테마, 최대 1120px
    ================================================================ */
-.landing-about-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  min-height: 52px; margin-top: 14px; padding: 0 16px;
-  color: #C9D1DE; font-size: 1rem; letter-spacing: 0.5px; text-decoration: none;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
-}
-.landing-about-link:hover, .landing-about-link:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
 
 .page-about { max-width: none; }
 .page-about .about-spec, .page-about .about-num { color: var(--gold-dark); font-weight: 500; }
@@ -2289,7 +2282,7 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 
 /* 랜딩 상단 메뉴 줄 */
 .landing-nav {
-  position: absolute; top: 0; left: 0; right: 0;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;   /* 불꽃 캔버스(z-index 0)보다 위 */
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 12px 20px;
   border-bottom: 1px solid rgba(212, 175, 55, 0.14);

@@ -37,6 +37,11 @@
 
 ## 디자인
 - 랜딩·로그인: 다크 `#06090f` + 골드 로고 (B1 스타일), 로그인은 흰색 카드
+- 랜딩(첫 화면): 상단 메뉴 줄(작은 로고 · 회사소개 · 언어 · 골드 테두리 "로그인") + 가운데 큰 로고 `.logo-hero`(`clamp(40px, 11vw, 72px)`, 안의 비율 em 그대로) + 슬로건 + 이벤트 배너 + 푸터.
+  가운데 Start Order 버튼·About 링크는 없앴어요 (로그인은 상단 버튼 `handleStartOrder()` 하나). 메뉴 줄 작은 로고·로그인 화면·앱 헤더 로고 크기는 그대로
+- 로고 불꽃 인트로 `ui/logo-intro.js` (`LogoIntro`): A 꼭짓점 → 금빛 불씨 → 터짐(빛줄기 꼬리) → 빛이 모여 5μm → 진짜 글자 + 빛나는 선(`.logo-um.shine`).
+  랜딩이 보일 때 탭(세션)당 1번 (`sessionStorage.allabut_intro_played`, app.js 의 `showScreen('landing')` 이 페이드인 뒤 `LogoIntro.maybePlay()`), 랜딩을 떠나면 `LogoIntro.stop()`.
+  prefers-reduced-motion 이면 안 함. 캔버스 `canvas.logo-fx` 는 랜딩 안 `position:absolute` · `pointer-events:none` · z-index 0 (메뉴 z-index 2, 로고·슬로건·배너 z-index 1)
 - 로그인 후 앱: 밝은 테마
   - 배경 `#F7F8FA`, 카드 흰색, 글자 네이비 `#001D4A`, 포인트 골드 `#D4AF37`
   - 보조 회색 `#6B7280`, 테두리 `#E5E7EB`
@@ -175,7 +180,7 @@
 - SEO: 페이지가 열려 있는 동안 title·description·og 태그(언어별, og:url 은 `SITE_URL`) + JSON-LD Organization, 떠나면 원래대로
 - 스크롤 등장 애니메이션은 IntersectionObserver + `.about-animate` (prefers-reduced-motion 이면 안 붙임)
 - 들어가는 곳: PC 위쪽 메뉴 줄 "홈" 바로 오른쪽(`NAV_ITEMS` 의 about, `noTab`), 모바일은 ☰ 메뉴 맨 위 첫 항목(하단 탭에는 없음, PC 에서 fit-7 로 아래 탭을 쓸 때만 탭에도),
-  랜딩 상단 메뉴 줄(로고 · 회사소개 · 언어 · 로그인) + Start Order 아래 "About allAbut", 로그인 전 헤더(로고 옆), 푸터 맨 앞 "About".
+  랜딩 상단 메뉴 줄(로고 · 회사소개 · 언어 · 로그인), 로그인 전 헤더(로고 옆), 푸터 맨 앞 "About".
   #/about 이면 메뉴가 굵게 + 골드 밑줄 (`setActiveNav`, 로그인 전 화면도). 좁은 화면(420px 미만)은 로고 · 회사소개 · 로그인 한 줄 + 언어 선택은 둘째 줄
 
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
@@ -205,6 +210,7 @@
 - `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`
 - `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
 - `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)
+- `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (탭당 1번, `LogoIntro.maybePlay()` / `stop()`)
 - `ui/page-complete.js` — 필수 정보 입력 `#/complete`
 - `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지
 - `app.js` — `APP { user, profile, balance }`, 화면 전환, 로그인 폼, 시작(boot)

@@ -33,6 +33,9 @@ function showScreen(name) {
   document.body.classList.toggle('in-app', name === 'app' || name === 'legal');   // 앱·법적 문서 화면은 밝은 배경
   document.body.classList.toggle('on-auth', name === 'auth');   // 로그인·가입 화면: 푸터가 긴 가입 폼을 가리지 않게 (아래에 놓아요)
 
+  // 랜딩을 떠나면 로고 인트로를 바로 멈추고 5μm 원래대로 (ui/logo-intro.js)
+  if (current && current.id === 'screen-landing' && window.LogoIntro) LogoIntro.stop();
+
   // 1) 지금 화면을 투명하게
   if (current) current.classList.remove('visible');
 
@@ -48,6 +51,13 @@ function showScreen(name) {
         next.classList.add('visible');
         isSwitching = false;
 
+        // 랜딩이 처음 보일 때 로고 인트로 (탭당 1번). 페이드인(0.4초)이 끝난 뒤 — LogoIntro 가 글꼴 로딩 + 0.5초 더 기다려요
+        if (name === 'landing' && window.LogoIntro) {
+          setTimeout(function () {
+            if (next.classList.contains('active') && next.classList.contains('visible')) LogoIntro.maybePlay();
+          }, 400);
+        }
+
         // 전환 중에 들어온 요청이 있으면 이어서 처리
         if (pendingScreen) {
           var waiting = pendingScreen;
@@ -60,7 +70,7 @@ function showScreen(name) {
 }
 
 
-// ===== 랜딩의 Start Order 버튼 =====
+// ===== 랜딩 상단 메뉴의 "로그인" 버튼 (가운데 Start Order 버튼은 없앴어요) =====
 // 로그인 안 돼 있으면 → 로그인 화면, 돼 있으면 → 앱 홈
 async function handleStartOrder() {
   var session = await getSession();

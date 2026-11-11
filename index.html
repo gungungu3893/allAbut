@@ -44,8 +44,8 @@
         </nav>
       </header>
 
-      <!-- 로고 -->
-      <div class="logo" aria-label="allAbut 5μm">
+      <!-- 큰 로고 (logo-hero: 랜딩 가운데만 크게 + 불꽃 인트로 ui/logo-intro.js) -->
+      <div class="logo logo-hero" aria-label="allAbut 5μm">
         <span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>
       </div>
 
@@ -54,12 +54,6 @@
 
       <!-- 🎁 신규 가입 무료 크레딧 이벤트 (진행 중일 때만, app.js 의 renderCampaignBanners) -->
       <p class="campaign-banner" hidden></p>
-
-      <!-- 주문 시작 버튼 -->
-      <button type="button" class="cta-btn" onclick="handleStartOrder()" data-i18n="start_order">Start Order</button>
-
-      <!-- 회사소개 링크 (로그인 없이 #/about) -->
-      <a href="#/about" class="landing-about-link"><span data-i18n="about_link">About allAbut</span> <span class="arrow" aria-hidden="true">→</span></a>
 
     </section>
 
@@ -287,6 +281,7 @@
   <!-- 화면 -->
   <script src="ui/layout.js"></script>
   <script src="ui/turnstile.js"></script>
+  <script src="ui/logo-intro.js"></script>
   <script src="ui/line-connect.js"></script>
   <script src="ui/datepicker.js"></script>
   <script src="ui/page-home.js"></script>

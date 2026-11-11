@@ -132,22 +132,26 @@ a { color: inherit; }
   opacity: 0.8;
   margin-top: 18px;
 }
+/* 랜딩: 큰 로고와 어울리게 슬로건 조금 크게 (로고 · 메뉴 · 배너는 불꽃 캔버스보다 위) */
+#screen-landing .slogan { font-size: 0.875rem; margin-top: 22px; position: relative; z-index: 1; }
+#screen-landing .campaign-banner { position: relative; z-index: 1; }
 
-/* ===== 랜딩 Start Order ===== */
-.cta-btn {
-  margin-top: 44px;
-  min-height: 56px;
-  padding: 0 48px;
-  background: var(--gold);
-  color: var(--navy);
-  font-weight: 600;
-  font-size: 1.125rem;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: filter 0.2s;
+/* 랜딩 큰 로고 */
+.logo-hero { font-size: clamp(40px, 11vw, 72px); position: relative; z-index: 1; }
+
+/* 로고 불꽃 인트로 (ui/logo-intro.js) */
+.logo-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0; }
+.logo-hero .logo-um { transition: opacity .45s ease; }
+.logo-intro-run .logo-hero .logo-um { opacity: 0; }
+.logo-hero .logo-um.shine {
+  background: linear-gradient(100deg, var(--gold) 0 38%, #FFF8E1 47%, #FFFFFF 50%, #FFF8E1 53%, var(--gold) 62% 100%);
+  background-size: 320% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: um-shine .9s cubic-bezier(.45,.05,.35,1) both, um-glow .9s ease both;
 }
-.cta-btn:hover { filter: brightness(1.12); }
+@keyframes um-shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+@keyframes um-glow { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 4px rgba(255,236,170,.85)); } }
+@media (prefers-reduced-motion: reduce) { .logo-hero .logo-um.shine { animation: none; color: var(--gold); background: none; } }
 
 /* ===== 랜딩·로그인 언어 선택 (오른쪽 위) ===== */
 .public-lang {
