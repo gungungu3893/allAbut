@@ -37,9 +37,14 @@
 
 ## 디자인
 - 랜딩·로그인: 다크 `#06090f` + 골드 로고 (B1 스타일), 로그인은 흰색 카드
-- 랜딩(첫 화면): 상단 메뉴 줄(작은 로고 · 회사소개 · 언어 · 골드 테두리 "로그인") + 가운데 큰 로고 `.logo-hero`(`clamp(40px, 11vw, 72px)`, 안의 비율 em 그대로) + 슬로건 + 이벤트 배너 + 푸터.
+- **로그인 전 화면: 흰 헤더 · 흰 푸터 + 다크 본문.** 상단 메뉴 줄 `.landing-nav`(랜딩 · 로그인 화면 `.auth-nav`)는 흰 배경 + 아래 1px 경계선,
+  작은 로고는 `logo-light`(all/but 네이비, A·5μm 골드), 회사소개·언어 네이비, "로그인" 버튼 네이비 테두리·글자(호버 네이비 배경 + 흰 글자).
+  푸터 `.public-footer` 흰 배경 + 위 경계선, 글자 #4B5563, 링크 네이비(호버 밑줄). 색은 `css/landing.css` `:root` 의 `--public-bar-*` · `--public-footer-*`.
+  회사소개·문의·법적 문서(screen-legal)는 원래 흰 헤더·푸터
+- 랜딩(첫 화면): 상단 흰 메뉴 줄(작은 로고 · 회사소개 · 언어 · "로그인") + 가운데 큰 로고 `.logo-hero`(`clamp(40px, 11vw, 72px)`, 안의 비율 em 그대로) + 슬로건 + 이벤트 배너 + 푸터.
   가운데 Start Order 버튼·About 링크는 없앴어요 (로그인은 상단 버튼 `handleStartOrder()` 하나). 메뉴 줄 작은 로고·로그인 화면·앱 헤더 로고 크기는 그대로
-- 로고 불꽃 인트로 `ui/logo-intro.js` (`LogoIntro`): A 꼭짓점 → 금빛 불씨 → 터짐(빛줄기 꼬리) → 빛이 모여 5μm → 진짜 글자 + 빛나는 선(`.logo-um.shine`).
+- 로고 불꽃 인트로 `ui/logo-intro.js` (`LogoIntro`, 차분한 버전 약 8초): A 꼭짓점 → 금빛 불씨(솟기 1.4초) → 아주 천천히 터짐(빛줄기 140개 + 꼬리) → 2.1초 뒤부터 2.0초 동안 빛이 모여 5μm → 0.8초 동안 진짜 글자로 → 빛나는 선(`.logo-um.shine`, 1.8초).
+  불꽃 위쪽 한계는 흰 메뉴 줄 실제 높이 + 16px (`topLimit`) → 메뉴 줄에 가리지 않아요.
   랜딩이 보일 때 페이지를 열 때마다 1번 (새로고침 포함, 모듈 변수 `playedThisLoad` — 같은 페이지에서 로그인 화면 갔다 돌아오면 다시 안 함. 예전 `sessionStorage.allabut_intro_played` 는 지움).
   app.js 의 `showScreen('landing')` 이 페이드인 뒤 `LogoIntro.maybePlay()`, 랜딩을 떠나면 `LogoIntro.stop()`.
   prefers-reduced-motion 이면 안 함. 캔버스 `canvas.logo-fx` 는 랜딩 안 `position:absolute` · `pointer-events:none` · z-index 0 (메뉴 z-index 2, 로고·슬로건·배너 z-index 1)

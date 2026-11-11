@@ -2280,29 +2280,38 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
   .screen-legal .legal-header .public-lang-light select { max-width: none; }
 }
 
-/* 랜딩 상단 메뉴 줄 */
+/* 랜딩 · 로그인 상단 메뉴 줄 — 흰 배경 + 아래 경계선 (가운데 본문은 다크). 색은 css/landing.css 의 --public-bar-* */
 .landing-nav {
   position: absolute; top: 0; left: 0; right: 0; z-index: 2;   /* 불꽃 캔버스(z-index 0)보다 위 */
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.14);
+  background: var(--public-bar-bg);
+  border-bottom: 1px solid var(--public-bar-border);
 }
-.landing-nav-logo { font-size: 26px; }
+.landing-nav-logo { font-size: 26px; }   /* logo-light (네이비 all/but · 골드 A·5μm), 크기만 작게 */
 .landing-nav-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .landing-nav-link {
   display: inline-flex; align-items: center; min-height: 52px; padding: 0 12px;
-  color: #E6EAF2; text-decoration: none; font-size: 1rem; white-space: nowrap;
+  color: var(--public-bar-text); text-decoration: none; font-size: 1rem; white-space: nowrap;
   border-bottom: 2px solid transparent;
 }
-.landing-nav-link:hover, .landing-nav-link:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
-.landing-lang.public-lang { position: static; }
+.landing-nav-link:hover, .landing-nav-link:focus-visible { color: var(--public-bar-text); border-bottom-color: var(--gold); }
+.landing-lang.public-lang { position: static; color: var(--public-bar-text); }
+.landing-nav .public-lang select {
+  background: var(--public-bar-bg); color: var(--public-bar-text);
+  border: 1px solid var(--border-strong);
+}
+.landing-nav .public-lang select:hover { border-color: var(--public-bar-text); }
 .landing-nav-signin {
   min-height: 44px; padding: 0 18px; white-space: nowrap;
-  background: transparent; color: var(--gold); font-weight: 600; font-size: 1rem;
-  border: 1.5px solid var(--gold); border-radius: 8px; cursor: pointer;
+  background: transparent; color: var(--public-bar-text); font-weight: 600; font-size: 1rem;
+  border: 1.5px solid var(--public-bar-text); border-radius: 8px; cursor: pointer;
 }
-.landing-nav-signin:hover { background: var(--gold); color: var(--navy); }
+.landing-nav-signin:hover, .landing-nav-signin:focus-visible { background: var(--public-bar-hover-bg); color: var(--public-bar-hover-text); }
 #screen-landing { padding-top: 104px; }
+/* 로그인 화면의 메뉴 줄: 로고(→ 첫 화면) · 언어 */
+.auth-nav-home { display: inline-flex; align-items: center; min-height: 48px; padding: 0; background: none; border: none; cursor: pointer; }
+#screen-auth { padding-top: 104px; }
 /* 좁은 화면: 로고 · 회사소개 · 로그인은 한 줄, 언어 선택만 둘째 줄 오른쪽으로 */
 @media (max-width: 479px) {
   .landing-nav { padding: 6px 12px 8px; gap: 6px; align-items: flex-start; }
@@ -2312,6 +2321,11 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
   .landing-nav-signin { padding: 0 12px; }
   .landing-lang.public-lang { order: 3; flex-basis: 100%; justify-content: flex-end; }
   #screen-landing { padding-top: 150px; }
+  /* 로그인 화면은 로고 · 언어 두 개라 한 줄 */
+  .auth-nav { align-items: center; }
+  .auth-nav .landing-nav-logo { margin-top: 0; }
+  .auth-nav .landing-lang.public-lang { order: 0; flex-basis: auto; }
+  #screen-auth { padding-top: 92px; }
 }
 
 /* 하단 탭의 회사소개: 모바일에서는 숨김(☰ 메뉴 맨 위에 있어요), PC 에서 아래 탭을 쓸 때(fit-7)만 보임 */

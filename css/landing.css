@@ -24,6 +24,15 @@
   --warn-border: #F5D565;
   --focus: #2563EB;
 
+  /* 로그인 전 화면(랜딩 · 로그인)의 흰 헤더 · 흰 푸터 (가운데 본문은 다크) */
+  --public-bar-bg: #FFFFFF;
+  --public-bar-border: #E5E7EB;
+  --public-bar-text: #001D4A;
+  --public-bar-hover-bg: #001D4A;
+  --public-bar-hover-text: #FFFFFF;
+  --public-footer-text: #4B5563;
+  --public-footer-link: #001D4A;
+
   /* 글꼴 */
   /* 글꼴 규칙
      - Sans: 모든 글자 문구. 영어·베트남어 → IBM Plex Sans, 태국어 → Plex Sans Thai(→ Noto Sans Thai),
@@ -141,13 +150,13 @@ a { color: inherit; }
 
 /* 로고 불꽃 인트로 (ui/logo-intro.js) */
 .logo-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0; }
-.logo-hero .logo-um { transition: opacity .45s ease; }
+.logo-hero .logo-um { transition: opacity .8s ease; }
 .logo-intro-run .logo-hero .logo-um { opacity: 0; }
 .logo-hero .logo-um.shine {
   background: linear-gradient(100deg, var(--gold) 0 38%, #FFF8E1 47%, #FFFFFF 50%, #FFF8E1 53%, var(--gold) 62% 100%);
   background-size: 320% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: um-shine .9s cubic-bezier(.45,.05,.35,1) both, um-glow .9s ease both;
+  animation: um-shine 1.8s cubic-bezier(.45,.05,.35,1) both, um-glow 1.8s ease both;
 }
 @keyframes um-shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
 @keyframes um-glow { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 4px rgba(255,236,170,.85)); } }
@@ -364,18 +373,19 @@ a { color: inherit; }
   padding: 10px 16px 14px;
   text-align: center;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.6);
-  background: linear-gradient(transparent, rgba(6, 9, 15, 0.9) 40%);
+  color: var(--public-footer-text);
+  background: var(--public-bar-bg);           /* 흰 푸터 (가운데 본문은 다크) */
+  border-top: 1px solid var(--public-bar-border);
 }
-.public-footer a { color: rgba(255, 255, 255, 0.78); text-decoration: none; padding: 6px 4px; display: inline-block; }
-.public-footer a:hover { color: var(--gold); text-decoration: underline; }
+.public-footer a { color: var(--public-footer-link); text-decoration: none; padding: 6px 4px; display: inline-block; }
+.public-footer a:hover, .public-footer a:focus-visible { color: var(--public-footer-link); text-decoration: underline; }
 body.in-app .public-footer { display: none; }
 /* 로그인·가입 화면: 가입 폼이 길어서 고정 푸터가 입력칸을 가리지 않도록 화면 맨 아래에 그냥 놓아요 */
-body.on-auth .public-footer { position: static; background: var(--dark); padding-top: 18px; }
+body.on-auth .public-footer { position: static; padding-top: 14px; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; }
 .footer-copy { margin-top: 2px; }
-.public-footer .footer-contact { margin: 0 0 2px; color: rgba(255, 255, 255, 0.85); }
-.public-footer .footer-contact a { color: var(--gold); }
+.public-footer .footer-contact { margin: 0 0 2px; color: var(--public-footer-text); }
+.public-footer .footer-contact a { color: var(--public-footer-link); }
 
 /* 가입 동의 체크 */
 .auth-agree { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 8px; font-size: 0.9375rem; line-height: 1.5; color: var(--text); cursor: pointer; }
