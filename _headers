@@ -10,3 +10,44 @@
 # 404 페이지는 검색엔진에 나오지 않게
 /404.html
   X-Robots-Tag: noindex
+
+# ----------------------------------------------------------------
+# 캐시: index.html 은 매번 새로 확인 (no-cache) → 새 배포의 ?v= 주소를 바로 받아요
+#       js · css · 법적 문서는 주소에 ?v=커밋해시 가 붙어서 (build.sh) 배포마다 주소가 바뀌어요 → 길게 캐시해도 안전
+#       (assets/ 이미지는 ?v= 가 없어서 기본 캐시 그대로)
+# ----------------------------------------------------------------
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/config.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/lang.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/auth.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/session.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/app.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/lang/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/legal/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/cnc/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/ui/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -181,6 +181,66 @@ function cncAdminUnmarkCommissionPaid(repId, year, month, reason) {
   return cncRpc('admin_unmark_commission_paid', { p_rep: repId, p_year: year, p_month: month, p_reason: String(reason || '').trim() });
 }
 
+// 직원마다 첫 요율 시작일 → { rep_id: 'YYYY-MM-DD' } (요율이 없던 건의 "왜 요율 없음" 설명용)
+//   RLS: owner 는 전부, 영업 본인은 자기 것만 읽혀요. 못 읽으면 {}
+async function cncRepFirstRateDates() {
+  try {
+    var rows = cncCheck(await sb.from('sales_rep_rates').select('rep_id, effective_from')) || [];
+    var out = {};
+    rows.forEach(function (r) {
+      var d = String(r.effective_from || '').slice(0, 10);
+      if (d && (!out[r.rep_id] || d < out[r.rep_id])) out[r.rep_id] = d;
+    });
+    return out;
+  } catch (err) {
+    return {};
+  }
+}
+
+// 고객 담당 지정과 함께 채울 수 있는 예전 입금: 승인됨 + 담당 없음 (+ owner 면 그 담당자의 정산 잠긴 달 제외)
+//   manager 는 정산 기록을 못 읽어서 잠긴 달도 목록에 들어가요 → 적용할 때 COMMISSION_LOCKED 로 건너뜀
+//   016 전(칸 없음)이면 []
+async function cncCustomerUnassignedPayments(userId, repId) {
+  var rows;
+  try {
+    rows = cncCheck(await sb.from('topup_requests').select('id, reviewed_at, sales_rep_id')
+      .eq('user_id', userId).eq('status', 'approved').is('sales_rep_id', null)) || [];
+  } catch (err) {
+    return [];
+  }
+  if (!rows.length || !repId || typeof cncHasRole !== 'function' || !cncHasRole('owner')) return rows;
+  try {
+    var paid = cncCheck(await sb.from('commission_payouts').select('year, month').eq('rep_id', repId)) || [];
+    var locked = {};
+    paid.forEach(function (p) { locked[p.year + '-' + String(p.month).padStart(2, '0')] = true; });
+    return rows.filter(function (r) { return !locked[cncBkkMonthKey(r.reviewed_at)]; });
+  } catch (err) {
+    return rows;
+  }
+}
+
+// 시각 → 방콕 'YYYY-MM'
+function cncBkkMonthKey(iso) {
+  var t = Date.parse(iso);
+  if (isNaN(t)) return '';
+  return new Date(t + 7 * 3600000).toISOString().slice(0, 7);
+}
+
+// 예전 입금들에 담당 지정 (한 건씩) → { done, locked, failed }
+async function cncBackfillTopupRep(rows, repId, reason) {
+  var res = { done: 0, locked: 0, failed: 0 };
+  for (var i = 0; i < rows.length; i++) {
+    try {
+      await cncAdminSetTopupRep(rows[i].id, repId, reason);
+      res.done++;
+    } catch (err) {
+      if (cncErrorCode(err) === 'COMMISSION_LOCKED') res.locked++;
+      else { console.warn('backfill', rows[i].id, err); res.failed++; }
+    }
+  }
+  return res;
+}
+
 // 방콕 기준 지금 연 · 월 (1~12)
 function cncBkkYearMonth() {
   var s = (typeof cncBkkToday === 'function') ? cncBkkToday() : new Date().toISOString().slice(0, 10);

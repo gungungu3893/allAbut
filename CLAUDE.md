@@ -16,7 +16,11 @@
   - `build.sh` 가 공개 파일만 `dist/` 에 복사 → `*.md`, `sql/`, `supabase/` 는 배포되지 않아 404
   - **사이트에 새 파일·폴더를 추가하면 `build.sh` 목록에도 추가** (안 하면 사이트에서 404)
   - `404.html` 은 지우지 않는다 (없으면 Cloudflare 가 없는 주소에 index.html 을 200 으로 보여줌)
-  - `_redirects` (빌드 설정을 깜빡했을 때 문서 주소 → 404 페이지 안전장치), `_headers` (기본 보안 헤더)
+  - `_redirects` (빌드 설정을 깜빡했을 때 문서 주소 → 404 페이지 안전장치), `_headers` (기본 보안 헤더 + 캐시)
+  - **캐시 깨기**: `build.sh` 가 `dist/index.html` 의 내 js · css 주소 뒤에 `?v=버전`(Cloudflare `CF_PAGES_COMMIT_SHA` 앞 12자 → 없으면 git 해시 → 빌드 시각)을 붙이고
+    `<meta name="asset-version" content="dev">` 도 같은 값으로 바꿔요. 동적으로 불러오는 법적 문서(`legal/*.js`)는 `cncAssetQuery()`(cnc/cnc-legal.js)가 같은 `?v=` 를 붙여요.
+    `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 5개 · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
+    → 배포 뒤 Ctrl+Shift+R 없이 새 화면. **index.html 에 새 js · css 를 넣으면 상대 경로(`src="ui/…"`)로** (자동으로 ?v= 가 붙어요), 새로 동적으로 불러오는 내 파일이 생기면 그 주소에도 `cncAssetQuery()`
 - GitHub Pages(gungungu3893.github.io/allAbut)는 **더 이상 사용하지 않는다**
 - 사이트 주소는 하드코딩 금지:
   - 브라우저: `config.js` 의 `SITE_URL` 하나만 사용 (예: 회원가입 인증 메일 링크 `emailRedirectTo`)
@@ -213,8 +217,10 @@
   #/about 이면 메뉴가 굵게 + 골드 밑줄 (`setActiveNav`, 로그인 전 화면도). 좁은 화면(420px 미만)은 로고 · 회사소개 · 로그인 한 줄 + 언어 선택은 둘째 줄
 
 ## 매출 대시보드 (sql/004_finance.sql, 설정 안내: FINANCE_SETUP.md)
-- Admin → Dashboard 순서: ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
-  → ② "현재 현황" (단계별 카드, 기한 임박 목록) → ③ 구분선 + ◀ 월 ▶ + "월별 통계" ([주문 | 매출] 탭 전환, 매출은 owner 만)
+- Admin → Dashboard 순서: ⓪ (owner) 작은 요약 "이번 달 입금 합계 · 지난달 대비"(▲▼ %, `admin_finance_trend` 마지막 두 달) + [매출 보기](이번 달 + 매출 탭으로 바꾸고 스크롤, `goRevenue`)
+  → ① "지금 처리할 일" (대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로)
+  → ② "현재 현황" (단계별 카드, 기한 임박 목록) → ②-1 방문 통계(**기본 접힘**: 제목 + 오늘 방문 수 + [펼치기], 펼침 상태 `localStorage.allabut_dash_visits_open`)
+  → ③ 구분선 + ◀ 월 ▶ + "월별 통계" ([주문 | 매출] 탭 전환, 매출은 owner 만 — 선택은 `localStorage.allabut_dash_zone` 에 기억)
 - 섹션 제목은 얇은 글자 + 아래 골드 선 (`.dash-section-title`), 전환은 밑줄 탭 (`.dash-tab`)
 - 집계는 DB 함수만 (관리자 전용, 방콕 시간 기준 달, month 는 1~12): `admin_finance_month`, `admin_finance_trend`, `admin_outstanding_credits`, `admin_topups_export`
 - 입금 = 승인일(reviewed_at) 기준 VAT 포함 total. 사용 가치 = `credit_lot_usage`(restored_at 없음) × 묶음 unit_price (VAT 별도)
@@ -343,11 +349,18 @@
 - 화면 (`ui/page-admin-sales.js` + `cnc/cnc-sales.js`):
   - Team 탭(owner): 역할에 "영업" (015 실행 뒤에만), 팀원마다 "영업 담당" 스위치(sales 역할은 항상 켜짐) + "커미션 설정" 창(**입금액의 % / 충전 크레딧 1개당 THB** · 값 · 적용 시작일 `uiDateField` 기본 오늘 · "입금 승인일 기준으로 적용돼요" → 요율 이력 표: 적용 중 · 예정 · 지난)
   - Top-ups 탭: 승인된 입금마다 "담당" 칸 + "담당 영업" 필터(전체 · 담당 없음 · 사람별, 016 전이면 숨김) / 상세 "담당 영업" + 변경(manager 이상). 승인하면 그 줄을 다시 읽어 담당을 바로 보여줘요
-  - Customers 상세: "담당 영업" 선택 (앞으로의 입금에만 — 안내 문구)
-  - 커미션 탭 `#/admin/commission`(owner, 기본 = 지난달): ◀ 월 ▶ · 직원별 카드(입금 건수 · 입금액 · 환불 차감(빨강) · 커미션 · 지급 상태) · 펼치면 건별 상세(승인일 · 고객 · 요청번호 · 패키지 · 금액 · 적용 요율 · 커미션, 환불 줄은 빨간 바탕) ·
-    "지급 완료"(확인창 + 메모) / "지급 취소"(사유) · CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙, 종류 payment/refund) ·
-    "담당 미지정 입금 n건 → 지정하기"(Top-ups 탭: 승인됨 + 담당 없음 + 그 달 승인 칩) · "확인 필요" 환불 목록
-  - 영업 탭 `#/admin/sales`(영업 담당, 기본 = 이번 달): 내 월별 커미션 카드 + 건별 상세, 내 담당 고객 입금 내역 표 (환자 · 주문 정보 없음)
+  - Customers 상세: "담당 영업" 선택 (앞으로의 입금에 적용). 저장한 뒤 그 고객의 **"승인됨 + 담당 없음"** 입금이 있으면 (owner 는 그 담당자의 정산 잠긴 달을 빼고 셈)
+    "이미 승인된 입금 n건에도 지정할까요?" → 예 = 한 건씩 `admin_set_topup_rep`(사유 `rep_backfill_reason` "고객 담당 지정과 함께"), 잠긴 달은 건너뜀 / 아니요 = 앞으로만. 담당이 있는 입금은 안 건드림
+  - 커미션 탭 `#/admin/commission`(owner) · 영업 탭 `#/admin/sales`(영업 담당): **들어올 때마다(탭 클릭 · 주소) 항상 이번 달(방콕)** — `resetMonthTab()` 이 보던 달을 지워요.
+    ◀ 월 ▶ 가운데에 이번 달이 아니면 [이번 달] 바로가기
+  - 커미션 탭: 직원별 카드(제목 옆 상태 배지 "미지급"(회색) / "지급 완료 · 날짜"(초록), 입금 건수 · 입금액 · 환불 차감(빨강) · 커미션) ·
+    펼치면 건별 상세(승인일 · 고객 · 요청번호 · 패키지 · 금액 · **계산 근거** "57,000.00 THB × 5%" / "30 크레딧 × 100.00 THB" / 환불 "− 환불 …" /
+    요율 없음 → "요율 없음 (요율 시작일 … 이전 승인)" 또는 "(요율이 설정되지 않았어요)" — 첫 요율 시작일은 `cncRepFirstRateDates()`, 커미션) ·
+    **[지급 완료로 표시하기]** 는 달이 끝났고 미지급일 때만 (달이 안 끝났으면 버튼 대신 "11월이 끝난 뒤(12월 1일부터) 지급 완료로 표시할 수 있어요") / 지급됐으면 [지급 취소](사유) ·
+    CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙, 종류 payment/refund) · "담당 미지정 입금 n건 → 지정하기"(Top-ups 탭: 승인됨 + 담당 없음 + 그 달 승인 칩) · "확인 필요" 환불 목록.
+    **담당 입금이 없는 달**은 카드 대신 "이 달에 승인된 담당 입금이 없어요" + 담당 미지정 입금 수(+ 지정하기) + [지난달] [이번 달]
+  - 영업 탭: 내 월별 커미션 카드 + 건별 상세(계산 근거 포함), 내 담당 고객 입금 내역 표 (고객 이름 · 날짜 · 금액만), 빈 달은 같은 안내
+  - 커미션 · 영업 화면에는 예전 주문 기준 문구(주문 · 치아 · 배송일 · 유료 치아)를 쓰지 않아요. 015 때 정산(basis 'order')은 "예전 방식"으로만 표시
   - 015 실행 전이면 담당 칸 · 필터 · 영업 역할이 안 보이고, 커미션 탭은 "DB 업데이트(sql/015 · sql/016)" 안내만
 - 팀 함수(owner): `admin_list_team`, `admin_add_member(email, role, name)`(가입한 이메일만, USER_NOT_FOUND), `admin_set_role`, `admin_set_member_name`, `admin_remove_member` (자기 자신·마지막 owner 불가: CANNOT_REMOVE_SELF / LAST_OWNER)
 - 작업 기록 `admin_audit_log`: staff 이상 읽기, 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경)

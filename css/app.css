@@ -2479,7 +2479,7 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 
 /* ===== 영업 · 담당자 · 커미션 (ui/page-admin-sales.js, sql/015) ===== */
 .badge.badge-green { background: #DCFCE7; color: #166534; }
-.badge.comm-unpaid { background: #FEF3C7; color: #92400E; }
+.badge.comm-unpaid { background: #F3F4F6; color: #4B5563; }   /* 미지급 = 회색 */
 .rep-cell { white-space: nowrap; }
 .rep-none { font-size: 0.9375rem; }
 #btn-set-rep { margin-inline-start: 8px; }
@@ -2498,7 +2498,7 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .comm-unassigned { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; }
 .comm-total { font-size: 1.125rem; color: var(--navy); margin: 12px 0; }
 .comm-total b { font-size: 1.375rem; }
-.comm-rep .card-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.comm-rep .card-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-start; }   /* 상태 배지는 이름 바로 옆 */
 .comm-head-line { margin: 4px 0 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .comm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 8px 0; }
 .comm-stats .admin-stat { margin: 0; padding: 12px 14px; }
@@ -2517,3 +2517,26 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .comm-unresolved p { margin: 4px 0; }
 .comm-unresolved-list { margin: 6px 0 0; padding-inline-start: 20px; }
 .comm-unresolved-list li { margin: 2px 0; }
+
+/* 커미션 · 영업 탭 개선: 이번 달 바로가기 · 지급 안내 · 계산 근거 · 빈 달 */
+.month-title-box { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.month-now-btn { min-height: 40px; }
+.comm-pay-later { margin: 0; color: var(--muted); font-size: 1rem; }
+.comm-basis { white-space: nowrap; color: var(--navy); }
+.comm-basis .muted { white-space: normal; }
+.comm-empty { text-align: center; padding: 28px 20px; }
+.comm-empty-title { font-size: 1.125rem; font-weight: 600; color: var(--navy); margin: 0 0 8px; }
+.comm-empty .action-row { justify-content: center; margin-top: 12px; }
+
+/* 대시보드: 맨 위 이번 달 입금 요약 (owner) · 방문 통계 접기 */
+.dash-rev-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-bottom: 16px; padding: 16px 20px; }
+.dash-rev-summary.is-loading { min-height: 72px; }
+.rev-sum-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.rev-sum-amount { font-size: 1.5rem; font-weight: 600; color: var(--navy); }
+.rev-sum-cmp { font-size: 0.9375rem; }
+.rev-delta.up { color: #15803D; font-weight: 600; }
+.rev-delta.down { color: #B91C1C; font-weight: 600; }
+.dash-visits-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.dash-visits-head .dash-section-title { margin-bottom: 0; flex: 1 1 auto; }
+.vs-today { color: var(--navy); }
+.vs-toggle { min-height: 44px; }

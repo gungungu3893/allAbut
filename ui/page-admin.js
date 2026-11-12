@@ -73,6 +73,7 @@ var PageAdmin = {
     this.main = main;
     var m = /^#\/admin\/([a-z]+)/.exec(location.hash || '');
     this.tab = (m && this.canSeeTab(m[1])) ? m[1] : this.defaultTab();
+    if (this.resetMonthTab) this.resetMonthTab(this.tab);   // 영업 · 커미션 탭은 항상 이번 달로 (ui/page-admin-sales.js)
     // 권한 없는 탭 주소로 들어왔으면 주소도 처음 탭으로
     if (!m || m[1] !== this.tab) history.replaceState(null, '', '#/admin/' + this.tab);
     this.drawFrame();
@@ -125,6 +126,7 @@ var PageAdmin = {
     if (this.tab === id) return;
     if (!this.canSeeTab(id)) return;
     this.tab = id;
+    if (this.resetMonthTab) this.resetMonthTab(id);   // 영업 · 커미션 탭은 항상 이번 달로
     history.replaceState(null, '', '#/admin/' + id);   // 주소만 바꾸고 페이지는 다시 열지 않아요
     this.drawFrame();
     this.loadTab();
@@ -226,7 +228,7 @@ var PageAdmin = {
     }
     this.drawBody();
     // 방문 통계 — 따로 불러와요 (주문 통계를 막지 않게)
-    if (this.loadVisits && cncHasRole('staff')) this.loadVisits();
+    if (this.loadVisitsForDash && cncHasRole('staff')) this.loadVisitsForDash();   // 펼쳤으면 통계, 접혔으면 오늘 방문 수
     // 매출(Revenue) 구역 — 주문 통계와 따로 불러와요 (매출 쪽 오류가 주문 통계를 막지 않게)
     if (!cncHasRole('owner')) return;   // 매출은 owner 만
     await this.loadFinance(token);
@@ -284,8 +286,12 @@ var PageAdmin = {
     var d = this.dash;
     if (d.error) return this.errorBox('PageAdmin.loadDash()', d.error);
     var owner = cncHasRole('owner');
+    if (owner && d.zone == null) {   // [주문 | 매출] 선택 기억 (owner 만)
+      try { d.zone = localStorage.getItem('allabut_dash_zone') || 'orders'; } catch (e) { d.zone = 'orders'; }
+    }
     var zone = owner && d.zone === 'revenue' ? 'revenue' : 'orders';
-    var html = this.actionNowHtml() + this.currentStatusHtml();
+    // 맨 위: (owner) 이번 달 입금 합계 · 지난달 대비 + 매출 보기
+    var html = (owner ? this.revenueSummaryHtml() : '') + this.actionNowHtml() + this.currentStatusHtml();
     // 방문 통계 (현재 현황 아래 · 월별 통계 위, ui/page-admin-visits.js)
     if (this.visitsHtml) html += this.visitsHtml();
 
@@ -313,7 +319,41 @@ var PageAdmin = {
   // 월별 통계 탭 바꾸기 (주문 / 매출)
   setDashZone: function (zone) {
     this.dash.zone = zone;
+    if (cncHasRole('owner')) { try { localStorage.setItem('allabut_dash_zone', zone); } catch (e) { /* 무시 */ } }
     this.drawBody();
+  },
+
+  // (owner) 대시보드 맨 위 작은 요약: 이번 달 입금 합계(VAT 포함, 승인일 기준) · 지난달 대비 — admin_finance_trend 의 마지막 두 달
+  revenueSummaryHtml: function () {
+    var f = this.fin || {};
+    if (f.missing || f.error) return '';
+    var tr = f.trend;
+    if (!tr || !tr.length) return '<div class="card dash-rev-summary is-loading">' + uiLoading() + '</div>';
+    var cur = tr[tr.length - 1], prev = tr.length > 1 ? tr[tr.length - 2] : null;
+    var cmp = '';
+    if (prev && prev.topups > 0) {
+      var pct = (cur.topups - prev.topups) / prev.topups * 100;
+      var up = pct >= 0;
+      cmp = '<span class="rev-delta ' + (up ? 'up' : 'down') + '">' + (up ? '▲' : '▼') + ' <span class="mono">' + escHtml(Math.abs(pct).toFixed(1)) + '</span>%</span>' +
+        ' <span class="muted">' + escHtml(t('dash_rev_vs_last')) + ' (<span class="mono">' + escHtml(formatTHB(prev.topups)) + '</span>)</span>';
+    } else if (prev) {
+      cmp = '<span class="muted">' + escHtml(t('dash_rev_vs_last')) + ' (<span class="mono">' + escHtml(formatTHB(prev.topups)) + '</span>)</span>';
+    }
+    return '<div class="card dash-rev-summary">' +
+      '<div class="rev-sum-text"><span class="admin-stat-label">💰 ' + escHtml(t('dash_rev_this_month')) + '</span>' +
+        '<span class="rev-sum-amount mono">' + escHtml(formatTHB(cur.topups)) + '</span>' +
+        (cmp ? '<span class="rev-sum-cmp">' + cmp + '</span>' : '') + '</div>' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.goRevenue()">' + escHtml(t('dash_rev_view')) + ' →</button>' +
+      '</div>';
+  },
+
+  // "매출 보기": 이번 달 + [매출] 탭으로 바꾸고 그 자리로 스크롤
+  goRevenue: async function () {
+    var now = new Date();
+    this.setDashZone('revenue');
+    if (this.dash.year !== now.getFullYear() || this.dash.month !== now.getMonth()) await this.setMonth(now.getFullYear(), now.getMonth());
+    var el = document.getElementById('zone-revenue');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   // 1) 지금 처리할 일

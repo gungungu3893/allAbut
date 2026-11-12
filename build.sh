@@ -62,9 +62,24 @@ done
 # 3) 혹시 공개 폴더 안에 안내문(.md)이 들어가 있으면 지워요
 find "$OUT" -name '*.md' -delete
 
+# 3-1) 캐시 깨기: 배포마다 바뀌는 버전 값(커밋 해시)을 index.html 의 내 js · css 주소 뒤에 ?v= 로 붙여요
+#      → 브라우저가 예전 파일을 캐시에서 꺼내 쓰지 않아요 (Ctrl+Shift+R 없이 새 화면).
+#      Cloudflare Pages 는 CF_PAGES_COMMIT_SHA 를 줘요. 없으면 git 해시 → 그것도 없으면 빌드 시각.
+#      _headers: index.html 은 no-cache, ?v= 가 붙는 js · css 는 길게 캐시.
+#      법적 문서(legal/*.js)는 cnc/cnc-legal.js 가 <meta name="asset-version"> 값으로 같은 ?v= 를 붙여요.
+VER="${CF_PAGES_COMMIT_SHA:-}"
+if [ -z "$VER" ]; then VER="$(git rev-parse --short=8 HEAD 2>/dev/null || true)"; fi
+if [ -z "$VER" ]; then VER="$(date -u +%Y%m%d%H%M%S)"; fi
+VER="${VER:0:12}"
+sed -E -i \
+  -e "s#((src|href)=\")([^\":?]+\.(js|css))(\")#\1\3?v=${VER}\5#g" \
+  -e "s#(<meta name=\"asset-version\" content=\")dev(\")#\1${VER}\2#" \
+  "$OUT/index.html"
+echo "버전 값: ${VER}"
+
 # 4) 검사: index.html 이 부르는 내 파일(src="..." / href="...")이 dist/ 에 모두 있는지
 missing=0
-for ref in $(grep -oE '(src|href)="[^"#:]+"' index.html | sed -E 's/^(src|href)="//; s/"$//' | grep -vE '^(https?:)?//' | sort -u); do
+for ref in $(grep -oE '(src|href)="[^"#:?]+"' index.html | sed -E 's/^(src|href)="//; s/"$//' | grep -vE '^(https?:)?//' | sort -u); do
   if [ ! -f "$OUT/$ref" ]; then
     echo "index.html 이 부르는데 dist/ 에 없는 파일: $ref  → build.sh 목록에 추가하세요" >&2
     missing=1

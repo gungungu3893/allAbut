@@ -3,16 +3,23 @@
 // ================================================================
 // page-admin.js 의 PageAdmin 에 함수를 덧붙여요 (page-admin-team.js 다음에 불러와요). 로직은 cnc/cnc-sales.js
 //   영업 탭     (#/admin/sales, 영업 담당만) : 내 월별 커미션 + 내 담당 고객 입금 내역 (환자 · 주문 정보 없음)
-//   커미션 탭   (#/admin/commission, owner) : ◀ 월 ▶ · 직원별 카드(입금 건수 · 입금액 · 환불 차감 · 커미션 · 지급 상태) · 건별 상세 ·
-//                                            지급 완료/취소 · CSV · "담당 미지정 입금 n건 → 지정하기" · 추적 안 되는 환불 "확인 필요"
+//   커미션 탭   (#/admin/commission, owner) : ◀ 월 ▶ + 이번 달 · 직원별 카드(제목 옆 지급 상태 배지, 입금 건수 · 입금액 · 환불 차감 · 커미션) ·
+//                                            건별 상세(계산 근거 칸) · 지급 완료로 표시하기/지급 취소 · CSV · "담당 미지정 입금 n건 → 지정하기" · 추적 안 되는 환불 "확인 필요"
+//   영업 · 커미션 탭은 들어올 때마다 항상 "이번 달"(방콕)로 열려요 (resetMonthTab — 보던 달을 기억하지 않아요)
 //   Top-ups 탭  : 승인된 입금마다 "담당" 칸 · "담당 영업" 필터 · 상세의 변경 버튼(manager 이상)
-//   고객 상세   : "담당 영업" 선택 (앞으로의 입금에만 적용)
+//   고객 상세   : "담당 영업" 선택 (앞으로의 입금 + 확인하면 "승인됨 · 담당 없음" 예전 입금에도)
 //   Team 탭     : 팀원마다 "영업 담당" 스위치 · 커미션 설정(입금액의 % / 충전 크레딧 1개당 THB · 값 · 적용 시작일 → 요율 이력)
 
 Object.assign(PageAdmin, {
 
-  sales: { year: null, month: null, payments: null, comm: null, error: false },
-  commission: { year: null, month: null, data: null, error: false, missing: false },   // missing: 015 · 016 실행 전
+  sales: { year: null, month: null, payments: null, comm: null, firstRates: {}, error: false },
+  commission: { year: null, month: null, data: null, firstRates: {}, error: false, missing: false },   // missing: 015 · 016 실행 전
+
+  // 탭에 들어올 때 (클릭 · 주소): 영업 · 커미션 탭은 보던 달을 잊고 이번 달로 (page-admin.js 의 render · setTab 이 불러요)
+  resetMonthTab: function (id) {
+    if (id === 'commission') { this.commission.year = null; this.commission.month = null; }
+    if (id === 'sales') { this.sales.year = null; this.sales.month = null; this.sales.payments = null; }
+  },
 
   // ================================================================
   // 공통: 영업 담당 목록 (staff 이상)
@@ -169,13 +176,33 @@ Object.assign(PageAdmin, {
     if (!ok) return;
     st.busy = true;
     this.drawCustomer();
+    var saved = false;
     try {
       await cncAdminSetCustomerRep(st.user.id, rep);
       st.profile.sales_rep_id = rep;
+      saved = true;
       uiToast(t('rep_customer_saved'), 'success');
     } catch (err) {
       console.error(err);
       uiToast(uiErrorMessage(err), 'error');
+    }
+    // 이미 승인됐는데 담당이 없는 입금 (정산 안 잠긴 달) → 이 담당자를 같이 지정할지 물어봐요. 담당이 있는 입금은 건드리지 않아요
+    if (saved && rep) {
+      var rows = await cncCustomerUnassignedPayments(st.user.id, rep);
+      if (rows.length) {
+        var yes = await uiConfirm({
+          title: t('rep_backfill_title'),
+          message: tf('rep_backfill_confirm', { n: rows.length, rep: cncRepName(this.reps, rep) }),
+          okLabel: t('rep_backfill_yes'),
+          cancelLabel: t('rep_backfill_no')
+        });
+        if (yes) {
+          var res = await cncBackfillTopupRep(rows, rep, t('rep_backfill_reason'));
+          uiToast(tf('rep_backfill_done', { n: res.done }) +
+            (res.locked ? ' · ' + tf('rep_backfill_locked', { n: res.locked }) : '') +
+            (res.failed ? ' · ' + tf('rep_backfill_failed', { n: res.failed }) : ''), res.failed ? 'error' : 'success');
+        }
+      }
     }
     st.busy = false;
     this.drawCustomer();
@@ -308,24 +335,99 @@ Object.assign(PageAdmin, {
   // ================================================================
   // 월 이동 (영업 · 커미션 탭 공통) — month 는 1~12, 방콕 기준
   // ================================================================
+  // 처음(또는 탭에 다시 들어왔을 때) = 이번 달 (방콕)
   ensureSalesMonth: function (st) {
     if (st.year == null) {
       var now = cncBkkYearMonth();
-      // 커미션 탭은 정산하는 지난달부터, 영업 탭은 이번 달부터
-      var start = st === this.commission ? cncShiftMonth(now.year, now.month, -1) : now;
-      st.year = start.year;
-      st.month = start.month;
+      st.year = now.year;
+      st.month = now.month;
     }
   },
 
-  salesMonthNavHtml: function (st, fn) {
+  isNowMonth: function (st) {
     var now = cncBkkYearMonth();
-    var isNow = st.year === now.year && st.month === now.month;
+    return st.year === now.year && st.month === now.month;
+  },
+
+  // ◀ 지난달 · [이번 달] · 다음 달 ▶ — fn = 'shiftSalesMonth' | 'shiftCommissionMonth'
+  salesMonthNavHtml: function (st, fn) {
+    var isNow = this.isNowMonth(st);
+    var which = fn === 'shiftSalesMonth' ? 'sales' : 'commission';
     return '<div class="month-nav">' +
       '<button type="button" class="btn btn-outline" onclick="PageAdmin.' + fn + '(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
-      '<h2 class="month-title">' + escHtml(this.monthLabel(st.year, st.month - 1)) + '</h2>' +
+      '<div class="month-title-box"><h2 class="month-title">' + escHtml(this.monthLabel(st.year, st.month - 1)) + '</h2>' +
+        (isNow ? '' : '<button type="button" class="btn btn-outline btn-sm month-now-btn" onclick="PageAdmin.jumpMonth(\'' + which + '\', 0)">' + escHtml(t('comm_this_month')) + '</button>') +
+      '</div>' +
       '<button type="button" class="btn btn-outline" onclick="PageAdmin.' + fn + '(1)"' + (isNow ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
       '</div>';
+  },
+
+  // 바로가기: offset 0 = 이번 달, -1 = 지난달 (방콕)
+  jumpMonth: function (which, offset) {
+    var st = which === 'sales' ? this.sales : this.commission;
+    var now = cncBkkYearMonth();
+    var m = cncShiftMonth(now.year, now.month, offset || 0);
+    st.year = m.year;
+    st.month = m.month;
+    if (which === 'sales') this.loadSales(); else this.loadCommission();
+  },
+
+  // 월 이름만 ("11월" / "November")
+  monthNameOnly: function (year, month) {
+    try { return new Intl.DateTimeFormat(localeTag(), { month: 'long' }).format(new Date(year, month - 1, 1)); }
+    catch (e) { return String(month); }
+  },
+
+  // 숫자만 .mono: "57,000.00 THB"
+  thbHtml: function (v) {
+    var n = Number(v) || 0;
+    var s;
+    try { s = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch (e) { s = n.toFixed(2); }
+    return '<span class="mono">' + escHtml(s) + '</span> THB';
+  },
+
+  // 계산 근거: "57,000.00 THB × 5%" / "30 크레딧 × 100.00 THB" (환불 줄은 "− 환불 …"), 요율이 없던 건은 이유까지
+  basisHtml: function (i, firstRate) {
+    if (i.kind === 'order') return '<span class="muted">—</span>';
+    var pre = i.kind === 'refund' ? '− ' + escHtml(t('comm_refund')) + ' ' : '';
+    if (!i.rateType) {
+      return '<span class="muted">' + escHtml(firstRate ? tf('comm_basis_no_rate_before', { date: formatDate(firstRate) }) : t('comm_basis_no_rate_none')) + '</span>';
+    }
+    if (i.rateType === 'percent') {
+      return pre + this.thbHtml(i.amount) + ' × <span class="mono">' + escHtml(formatNumber(i.rateValue)) + '</span>%';
+    }
+    return pre + '<span class="mono">' + escHtml(formatNumber(i.credits)) + '</span> ' + escHtml(t('credit_unit')) + ' × ' + this.thbHtml(i.rateValue);
+  },
+
+  // 지급 완료로 표시하기 (달이 끝났고 아직 지급 안 됐을 때만) / 달이 안 끝났으면 언제부터 할 수 있는지 안내 / 지급됐으면 지급 취소
+  payActionHtml: function (r, st, ended) {
+    if (r.paid) {
+      return '<button type="button" class="btn btn-outline btn-danger-text" onclick="PageAdmin.unmarkPaid(\'' + escHtml(r.repId) + '\')">' + escHtml(t('comm_unmark')) + '</button>';
+    }
+    if (!ended) {
+      var next = cncShiftMonth(st.year, st.month, 1);
+      var first = next.year + '-' + String(next.month).padStart(2, '0') + '-01';
+      return '<p class="comm-pay-later"><span aria-hidden="true">🗓</span> ' +
+        escHtml(tf('comm_mark_after', { month: this.monthNameOnly(st.year, st.month), date: formatDate(first) })) + '</p>';
+    }
+    return '<button type="button" class="btn btn-primary" onclick="PageAdmin.markPaid(\'' + escHtml(r.repId) + '\')">✓ ' + escHtml(t('comm_mark_paid')) + '</button>';
+  },
+
+  // 이 달에 숫자가 있는지 (입금 · 환불 건 또는 지급 기록)
+  repHasData: function (r) {
+    return !!(r && (r.items.length || r.paid));
+  },
+
+  // 데이터가 없는 달: 안내 + (관리자) 담당 미지정 입금 수 + 지난달 · 이번 달 바로가기
+  emptyMonthHtml: function (which, unassigned) {
+    return '<div class="card comm-empty">' +
+      '<p class="comm-empty-title"><span aria-hidden="true">📭</span> ' + escHtml(t('comm_empty_month')) + '</p>' +
+      (unassigned != null ? '<p class="field-help">' + escHtml(tf('comm_empty_unassigned', { n: formatNumber(unassigned) })) +
+        (unassigned > 0 ? ' <button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.assignUnassigned()">' + escHtml(t('comm_assign_now')) + ' →</button>' : '') + '</p>' : '') +
+      '<div class="action-row">' +
+        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpMonth(\'' + which + '\', -1)">◀ ' + escHtml(t('comm_last_month')) + '</button>' +
+        '<button type="button" class="btn btn-outline" onclick="PageAdmin.jumpMonth(\'' + which + '\', 0)">' + escHtml(t('comm_this_month')) + '</button>' +
+      '</div></div>';
   },
 
   // 숫자 카드 4개: 입금 건수 · 입금액(VAT 제외) · 환불 차감 · 커미션
@@ -349,13 +451,15 @@ Object.assign(PageAdmin, {
     return '<span class="badge comm-unpaid">' + escHtml(t('comm_unpaid')) + '</span>';
   },
 
-  // 건별 상세 표: 승인일(환불은 환불일) · 고객 · 요청번호 · 패키지 · 금액(VAT 제외) · 적용 요율 · 커미션
-  commissionItemsHtml: function (items) {
+  // 건별 상세 표: 승인일(환불은 환불일) · 고객 · 요청번호 · 패키지 · 금액(VAT 제외) · 계산 근거 · 커미션
+  //   firstRate: 이 직원의 첫 요율 시작일 (요율이 없던 건의 이유)
+  commissionItemsHtml: function (items, firstRate) {
+    var self = this;
     if (!items.length) return '<p class="muted">' + escHtml(t('comm_no_payments')) + '</p>';
     return '<div class="table-wrap"><table class="table comm-table"><thead><tr>' +
       '<th>' + escHtml(t('comm_date')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('topup_request_no')) + '</th>' +
       '<th>' + escHtml(t('topup_package')) + '</th><th>' + escHtml(t('comm_amount')) + '</th>' +
-      '<th>' + escHtml(t('rate_label')) + '</th><th>' + escHtml(t('comm_commission')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('comm_basis')) + '</th><th>' + escHtml(t('comm_commission')) + '</th></tr></thead><tbody>' +
       items.map(function (i) {
         var refund = i.kind === 'refund';
         var legacy = i.kind === 'order';
@@ -367,7 +471,7 @@ Object.assign(PageAdmin, {
           '<td class="mono nowrap">' + escHtml(i.topupId) + '</td>' +
           '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(refund ? -i.credits : i.credits)) + '</span> ' + escHtml(t('credit_unit')) + '</td>' +
           '<td class="mono nowrap">' + (refund ? '−' : '') + escHtml(formatTHB(i.amount)) + '</td>' +
-          '<td class="nowrap">' + (i.rateType ? escHtml(cncRateText({ type: i.rateType, value: i.rateValue })) : '<span class="muted">' + escHtml(t('rate_none')) + '</span>') + '</td>' +
+          '<td class="comm-basis">' + self.basisHtml(i, firstRate) + '</td>' +
           '<td class="mono nowrap"><b>' + escHtml(formatTHB(i.commission)) + '</b></td></tr>';
       }).join('') + '</tbody></table></div>';
   },
@@ -385,11 +489,13 @@ Object.assign(PageAdmin, {
     try {
       var res = await Promise.all([
         st.payments ? Promise.resolve(st.payments) : cncSalesMyPayments(),
-        cncMyCommissionMonth(st.year, st.month)
+        cncMyCommissionMonth(st.year, st.month),
+        cncRepFirstRateDates()
       ]);
       if (token !== this.loadToken) return;
       st.payments = res[0];
       st.comm = res[1];
+      st.firstRates = res[2] || {};
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -418,7 +524,7 @@ Object.assign(PageAdmin, {
       this.salesMonthNavHtml(st, 'shiftSalesMonth');
     var r = st.comm && st.comm.reps[0];
     if (!st.comm) html += uiLoading();
-    else if (!r) html += '<p class="muted">' + escHtml(t('comm_no_payments')) + '</p>';
+    else if (!this.repHasData(r)) html += this.emptyMonthHtml('sales', null);
     else {
       html += '<p class="comm-head-line">' + this.paidBadgeHtml(r) +
         ' <span class="muted">' + escHtml(t('rate_now')) + '</span> ' + escHtml(cncRateText(r.rate)) + '</p>' +
@@ -426,7 +532,7 @@ Object.assign(PageAdmin, {
         (r.paid && r.paid.note ? '<p class="field-help">' + escHtml(t('comm_note')) + ': ' + escHtml(r.paid.note) + '</p>' : '') +
         (!r.paid && !st.comm.monthEnded ? '<p class="field-help">' + escHtml(t('comm_month_running')) + '</p>' : '') +
         '<details class="comm-details"' + (r.items.length ? ' open' : '') + '><summary>' + escHtml(tf('comm_details_n', { n: r.items.length })) + '</summary>' +
-          this.commissionItemsHtml(r.items) + '</details>';
+          this.commissionItemsHtml(r.items, st.firstRates[r.repId]) + '</details>';
     }
     html += '<p class="field-help">' + escHtml(t('comm_rule_help')) + '</p></section>';
 
@@ -462,9 +568,10 @@ Object.assign(PageAdmin, {
     st.data = null;
     this.drawBody();
     try {
-      var d = await cncAdminCommissionMonth(st.year, st.month);
+      var res = await Promise.all([cncAdminCommissionMonth(st.year, st.month), cncRepFirstRateDates()]);
       if (token !== this.loadToken) return;
-      st.data = d;
+      st.data = res[0];
+      st.firstRates = res[1] || {};
     } catch (err) {
       if (token !== this.loadToken) return;
       // sql/015 실행 전 → 안내만 (오류 상자 대신)
@@ -497,9 +604,10 @@ Object.assign(PageAdmin, {
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.downloadCommissionCsv()"' + (d ? '' : ' disabled') + '>⬇ ' + escHtml(t('comm_csv')) + '</button>' +
         '</div></section>';
     if (!d) return html + '<div class="card">' + uiLoading() + '</div></div>';
+    var empty = d.reps.length > 0 && !d.reps.some(function (r) { return self.repHasData(r); });   // 담당 입금이 하나도 없는 달
 
-    // 담당 미지정 입금 경고
-    if (d.unassigned > 0) {
+    // 담당 미지정 입금 경고 (빈 달이면 아래 안내 안에 같이 보여요)
+    if (d.unassigned > 0 && !empty) {
       html += '<div class="notice-warn comm-unassigned" role="alert"><span aria-hidden="true">⚠</span> ' +
         escHtml(tf('comm_unassigned', { n: formatNumber(d.unassigned) })) +
         ' <button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.assignUnassigned()">' + escHtml(t('comm_assign_now')) + ' →</button></div>';
@@ -514,9 +622,10 @@ Object.assign(PageAdmin, {
             ' · <span class="mono">' + escHtml(formatNumber(u.credits)) + '</span> ' + escHtml(t('credit_unit')) + '</li>';
         }).join('') + '</ul></div>';
     }
-    if (!d.monthEnded) html += '<p class="notice-inline"><span aria-hidden="true">ℹ</span> ' + escHtml(t('comm_month_running')) + '</p>';
-
     if (!d.reps.length) return html + '<div class="card"><p class="empty-text">' + escHtml(t('comm_no_reps')) + '</p></div></div>';
+    // 이 달에 담당 입금이 하나도 없으면 안내만 (+ 담당 미지정 입금 수 · 지난달 / 이번 달 바로가기)
+    if (empty) return html + this.emptyMonthHtml('commission', d.unassigned || 0) + '</div>';
+    if (!d.monthEnded) html += '<p class="notice-inline"><span aria-hidden="true">ℹ</span> ' + escHtml(t('comm_month_running')) + '</p>';
 
     // 합계
     var total = d.reps.reduce(function (s, r) { return s + r.commission; }, 0);
@@ -532,12 +641,8 @@ Object.assign(PageAdmin, {
         (r.paid ? '<p class="field-help">' + escHtml(tf('comm_paid_by', { name: r.paid.by || '—', date: formatDateTime(r.paid.paidAt) })) +
           (r.paid.note ? ' · ' + escHtml(r.paid.note) : '') + ' · ' + escHtml(t('comm_snapshot_note')) + '</p>' : '') +
         '<details class="comm-details"><summary>' + escHtml(tf('comm_details_n', { n: r.items.length })) + '</summary>' +
-          self.commissionItemsHtml(r.items) + '</details>' +
-        '<div class="action-row">' +
-          (r.paid
-            ? '<button type="button" class="btn btn-outline btn-danger-text" onclick="PageAdmin.unmarkPaid(\'' + escHtml(r.repId) + '\')">' + escHtml(t('comm_unmark')) + '</button>'
-            : '<button type="button" class="btn btn-primary" onclick="PageAdmin.markPaid(\'' + escHtml(r.repId) + '\')"' + (d.monthEnded ? '' : ' disabled title="' + escHtml(t('comm_month_running')) + '"') + '>✓ ' + escHtml(t('comm_mark_paid')) + '</button>') +
-        '</div></section>';
+          self.commissionItemsHtml(r.items, st.firstRates[r.repId]) + '</details>' +
+        '<div class="action-row">' + self.payActionHtml(r, st, d.monthEnded) + '</div></section>';
     }).join('') + '</div>';
     return html;
   },

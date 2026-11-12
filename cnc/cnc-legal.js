@@ -22,6 +22,13 @@ function isLegalRoute(route) {
   return !!legalDocForRoute(route);
 }
 
+// 배포 버전 → '?v=1a2b3c4d' (index.html 의 <meta name="asset-version">, build.sh 가 채워요. 로컬 'dev' 면 빈 글자)
+function cncAssetQuery() {
+  var m = document.querySelector('meta[name="asset-version"]');
+  var v = m ? String(m.getAttribute('content') || '') : '';
+  return v && v !== 'dev' ? '?v=' + encodeURIComponent(v) : '';
+}
+
 // 문서 본문 파일 불러오기 → LEGAL_DOCS['terms.en'] 같은 값
 var _legalLoading = {};
 function cncLoadLegalDoc(doc, lang) {
@@ -31,7 +38,7 @@ function cncLoadLegalDoc(doc, lang) {
   if (_legalLoading[key]) return _legalLoading[key];
   _legalLoading[key] = new Promise(function (resolve, reject) {
     var s = document.createElement('script');
-    s.src = 'legal/' + key + '.js';
+    s.src = 'legal/' + key + '.js' + cncAssetQuery();   // 배포마다 바뀌는 ?v= (예전 문서가 캐시에 남지 않게)
     s.onload = function () { LEGAL_DOCS[key] ? resolve(LEGAL_DOCS[key]) : reject(new Error('missing ' + key)); };
     s.onerror = function () { delete _legalLoading[key]; reject(new Error('load failed ' + key)); };
     document.head.appendChild(s);

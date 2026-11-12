@@ -7,6 +7,7 @@
 //   - 그래프: 날짜별 방문 · 순 방문자 (하루만 고르면 0~23시), 기존 매출 그래프(.fin-chart) 모양
 //   - 표: 많이 본 화면 · 들어온 곳 · 기기 · 언어 · 나라 / 전환: 기간 안 신규 가입 수 + 순 방문자 대비 %
 //   - CSV (owner): 날짜별 방문 · 순 방문자 · 페이지뷰 · 로봇 · 직원
+//   - 기본은 접힘: 제목 + 오늘 방문 수(get_visit_counts) + [펼치기]. 펼침 상태는 localStorage 'allabut_dash_visits_open' 에 기억
 
 // 화면 경로 → 사람이 읽는 이름 (번역 키)
 var VISIT_PATH_LABELS = {
@@ -17,12 +18,50 @@ var VISIT_PATH_LABELS = {
 };
 
 Object.assign(PageAdmin, {
-  visits: { range: '7d', from: '', to: '', noBots: false, noStaff: false, data: null, error: null, missing: false, loading: false, token: 0 },
+  visits: { range: '7d', from: '', to: '', noBots: false, noStaff: false, data: null, error: null, missing: false, loading: false, token: 0, today: null },
+
+  // 펼쳐 둘지 (기억한 값, 기본 접힘)
+  visitsOpen: function () {
+    try { return localStorage.getItem('allabut_dash_visits_open') === '1'; } catch (e) { return false; }
+  },
 
   // 대시보드 안 자리 (내용은 drawVisits 가 채워요)
   visitsHtml: function () {
     if (!cncHasRole('staff')) return '';
-    return '<section class="dash-section dash-visits" id="dash-visits">' + this.visitsInnerHtml() + '</section>';
+    return '<section class="dash-section dash-visits" id="dash-visits">' + this.visitsSectionHtml() + '</section>';
+  },
+
+  // 머리줄(제목 · 오늘 방문 수 · 펼치기/접기) + 펼쳤으면 본문
+  visitsSectionHtml: function () {
+    var open = this.visitsOpen();
+    var v = this.visits;
+    var head = '<div class="dash-visits-head">' +
+      '<h2 class="dash-section-title">' + escHtml(t('vs_title')) + '</h2>' +
+      (!open && v.today != null ? '<span class="vs-today">' + escHtml(t('vs_today_label')) + ' <b class="mono">' + escHtml(formatNumber(v.today)) + '</b></span>' : '') +
+      '<button type="button" class="btn btn-outline btn-sm vs-toggle" aria-expanded="' + open + '" onclick="PageAdmin.toggleVisits()">' +
+        escHtml(t(open ? 'vs_collapse' : 'vs_expand')) + '</button>' +
+      '</div>';
+    return head + (open ? this.visitsInnerHtml(true) : '');
+  },
+
+  // 접힌 상태: 오늘 방문 수만 (랜딩 TODAY 와 같은 값)
+  loadVisitsToday: async function () {
+    var c = await cncGetVisitCounts();
+    this.visits.today = c ? c.today : null;
+    this.drawVisits();
+  },
+
+  toggleVisits: function () {
+    var open = !this.visitsOpen();
+    try { localStorage.setItem('allabut_dash_visits_open', open ? '1' : '0'); } catch (e) { /* 무시 */ }
+    this.drawVisits();
+    if (open && !this.visits.data && !this.visits.loading) this.loadVisits();
+    if (!open && this.visits.today == null) this.loadVisitsToday();
+  },
+
+  // 대시보드가 열릴 때 (page-admin.js loadDash): 펼쳤으면 통계, 접혔으면 오늘 방문 수만
+  loadVisitsForDash: function () {
+    if (this.visitsOpen()) this.loadVisits(); else this.loadVisitsToday();
   },
 
   loadVisits: async function () {
@@ -47,7 +86,7 @@ Object.assign(PageAdmin, {
 
   drawVisits: function () {
     var box = document.getElementById('dash-visits');
-    if (box) box.innerHTML = this.visitsInnerHtml();
+    if (box) box.innerHTML = this.visitsSectionHtml();
   },
 
   setVisitRange: function (key) {
@@ -80,10 +119,11 @@ Object.assign(PageAdmin, {
     return p || '—';
   },
 
-  visitsInnerHtml: function () {
+  // noTitle: 머리줄(visitsSectionHtml)에 이미 제목이 있을 때
+  visitsInnerHtml: function (noTitle) {
     var self = this;
     var v = this.visits;
-    var html = '<h2 class="dash-section-title">' + escHtml(t('vs_title')) + '</h2>';
+    var html = noTitle ? '' : '<h2 class="dash-section-title">' + escHtml(t('vs_title')) + '</h2>';
     if (v.missing) return html + '<p class="muted">' + escHtml(t('vs_missing')) + '</p>';
 
     // 기간 · 필터
