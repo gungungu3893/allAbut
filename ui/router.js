@@ -163,8 +163,8 @@ function renderRoute() {
   if (!/^#\/[a-z-]+/.test(location.hash || '')) {
     history.replaceState(null, '', '#/' + name);   // 주소를 #/home 처럼 맞춰 둬요
   }
-  // 관리자가 아닌 사람이 #/admin 으로 들어오면 홈으로
-  if (name === 'admin' && !APP.isAdmin) {
+  // 관리 팀도 영업 담당도 아닌 사람이 #/admin 으로 들어오면 홈으로 (영업만이면 PageAdmin 이 "영업" 탭만 보여줘요)
+  if (name === 'admin' && !cncCanOpenAdmin()) {
     name = 'home';
     history.replaceState(null, '', '#/home');
   }

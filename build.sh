@@ -37,9 +37,9 @@ FILES=(
 #    css/  — 화면 스타일
 #    lang/ — 9개 언어 문구
 #    legal/ — 법적 문서 본문
-#    cnc/  — 주문·관리자·매출 로직
+#    cnc/  — 주문·관리자·매출 로직 (영업 · 커미션 cnc/cnc-sales.js 포함)
 #    assets/ — 공개 이미지 (assets/brand/line-icon.png = LINE 알림 카드 맨 위 로고, line-notify 가 SITE_URL 로 불러요)
-#    ui/   — 화면 (공통 부품 layout.js, line-connect.js, datepicker.js, router.js + 각 페이지, 회사소개 page-about.js)
+#    ui/   — 화면 (공통 부품 layout.js, line-connect.js, datepicker.js, router.js + 각 페이지, 회사소개 page-about.js, 영업 · 커미션 page-admin-sales.js)
 #    (회사소개 제품 사진을 img/ 같은 새 폴더에 넣으면 아래 DIRS 에도 추가하세요)
 DIRS=(
   css

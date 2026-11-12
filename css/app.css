@@ -2476,3 +2476,36 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .vs-table .table td { padding: 8px 10px; }
 .vs-table .num { text-align: end; white-space: nowrap; }
 .vs-actions { margin-top: 12px; }
+
+/* ===== 영업 · 담당자 · 커미션 (ui/page-admin-sales.js, sql/015) ===== */
+.badge.badge-green { background: #DCFCE7; color: #166534; }
+.badge.comm-unpaid { background: #FEF3C7; color: #92400E; }
+.rep-cell { white-space: nowrap; }
+.rep-none { font-size: 0.9375rem; }
+#btn-set-rep { margin-inline-start: 8px; }
+.timeline-rep { margin: 4px 0 0; color: var(--navy); }
+.filter-chip-row { margin: 4px 0 12px; }
+.filter-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 14px; border-radius: 999px;
+  background: #EEF2F7; color: var(--navy); font-weight: 600; }
+.filter-chip .link-btn { font-size: 1.125rem; min-width: 32px; min-height: 32px; }
+.customer-rep-box { margin-top: 16px; }
+.customer-rep-box .btn { margin-top: 8px; }
+.team-sales-cell { min-width: 180px; }
+.team-sales-cell .team-rate { margin: 6px 0; }
+.switch-row { white-space: nowrap; }
+.comm-tools { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.comm-tools .field-help { margin: 0; flex: 1 1 280px; }
+.comm-unassigned { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; }
+.comm-total { font-size: 1.125rem; color: var(--navy); margin: 12px 0; }
+.comm-total b { font-size: 1.375rem; }
+.comm-rep .card-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.comm-head-line { margin: 4px 0 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.comm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 8px 0; }
+.comm-stats .admin-stat { margin: 0; padding: 12px 14px; }
+.comm-stats .comm-sub { display: block; font-family: var(--font-sans); font-size: 0.875rem; color: var(--muted); font-weight: 400; }
+.comm-details { margin: 10px 0; }
+.comm-details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--navy); }
+.comm-table td, .comm-table th, .rate-table td, .rate-table th, .sales-orders-table td { padding: 8px 10px; }
+.admin-sales .card, .admin-commission .card { margin-bottom: 16px; }
+.comm-stats .admin-stat-num { font-size: 1.375rem; overflow-wrap: anywhere; }
+.admin-commission .month-nav, .admin-sales .month-nav { margin-top: 0; padding-top: 0; border-top: 0; }

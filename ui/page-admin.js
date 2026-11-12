@@ -1,7 +1,9 @@
 // ===== 관리자 화면 #/admin =====
-// 탭 7개: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Activity(작업 기록) / Team(팀) / Settings(가격·결제·LINE 그룹)
-// 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/activity, #/admin/team, #/admin/settings
+// 탭: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Activity(작업 기록) / Team(팀) / Settings(가격·결제·LINE 그룹)
+//      + 영업(내 담당 주문 · 내 커미션 — 영업 담당만) / 커미션(직원별 월 정산 — owner)  ← ui/page-admin-sales.js (sql/015)
+// 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/activity, #/admin/team, #/admin/settings, #/admin/sales, #/admin/commission
 // 역할(sql/005_team.sql)에 따라 탭·버튼이 보여요: staff = Orders·Activity / manager = + Top-ups·Customers·Dashboard(주문 통계) / owner = 전부
+// sales 역할(영업)은 "영업" 탭 하나만 (관리 팀 탭은 없음)
 // (권한 없는 탭 주소로 들어오면 Orders 로 — 실제 보호는 DB 규칙)
 // Team·Activity·LINE 그룹 화면은 ui/page-admin-team.js 에 있어요.
 // 데이터 처리는 cnc/cnc-admin.js 가 하고, 이 파일은 화면만 그려요.
@@ -12,7 +14,9 @@ var PageAdmin = {
   loadToken: 0,
 
   // Orders 탭 상태
-  orders: { stage: 'active', search: '', sort: 'newest', rows: [], hasMore: false, loading: false, error: false },
+  orders: { stage: 'active', search: '', sort: 'newest', rep: 'all', shipped: null, rows: [], hasMore: false, loading: false, error: false },
+  // 영업 담당 목록 (staff 이상, sql/015 — 실행 전이면 null → 담당 칸 숨김)
+  reps: null,
   // Dashboard 탭 상태 (now: 지금 기준, month: 선택한 달, trend: 최근 12개월)
   dash: { year: null, month: null, now: null, monthData: null, trend: null, error: false },
   // Customers 탭 상태
@@ -33,12 +37,20 @@ var PageAdmin = {
     { id: 'dashboard', key: 'admin_tab_dashboard', min: 'manager' },
     { id: 'activity', key: 'admin_tab_activity', min: 'staff' },
     { id: 'team', key: 'admin_tab_team', min: 'owner' },
-    { id: 'settings', key: 'admin_tab_settings', min: 'owner' }
+    { id: 'commission', key: 'admin_tab_commission', min: 'owner' },
+    { id: 'settings', key: 'admin_tab_settings', min: 'owner' },
+    { id: 'sales', key: 'admin_tab_sales', sales: true }   // 영업 담당만 (역할과 상관없이)
   ],
 
   // 지금 역할로 볼 수 있는 탭
   allowedTabs: function () {
-    return this.TABS.filter(function (x) { return cncHasRole(x.min); });
+    return this.TABS.filter(function (x) { return x.sales ? !!APP.isSalesRep : cncHasRole(x.min); });
+  },
+
+  // 처음 열 탭 (관리 팀 = Orders, 영업만 = 영업)
+  defaultTab: function () {
+    var tabs = this.allowedTabs();
+    return tabs.length ? tabs[0].id : 'orders';
   },
 
   canSeeTab: function (id) {
@@ -60,10 +72,11 @@ var PageAdmin = {
   render: function (main) {
     this.main = main;
     var m = /^#\/admin\/([a-z]+)/.exec(location.hash || '');
-    this.tab = (m && this.canSeeTab(m[1])) ? m[1] : 'orders';
-    // 권한 없는 탭 주소로 들어왔으면 주소도 Orders 로
-    if (m && m[1] !== this.tab) history.replaceState(null, '', '#/admin/orders');
+    this.tab = (m && this.canSeeTab(m[1])) ? m[1] : this.defaultTab();
+    // 권한 없는 탭 주소로 들어왔으면 주소도 처음 탭으로
+    if (!m || m[1] !== this.tab) history.replaceState(null, '', '#/admin/' + this.tab);
     this.drawFrame();
+    this.loadReps();
     this.loadTab();
     // LINE 링크 #/admin/orders?order=CA… → 그 주문 상세 창을 바로 열어요 (router.js 의 applyDeepLink 가 넣어 줘요)
     if (this.pendingOrder) {
@@ -95,13 +108,15 @@ var PageAdmin = {
     this.main.innerHTML =
       '<div class="page page-admin">' +
         '<div class="page-head">' +
-          '<h1 class="page-title"><span class="admin-badge admin-badge-lg">' + escHtml(t('nav_admin')) + adminRoleTagHtml() + '</span> ' + escHtml(t('admin_title')) + '</h1>' +
+          (APP.isAdmin
+            ? '<h1 class="page-title"><span class="admin-badge admin-badge-lg">' + escHtml(t('nav_admin')) + adminRoleTagHtml() + '</span> ' + escHtml(t('admin_title')) + '</h1>'
+            : '<h1 class="page-title"><span class="admin-badge admin-badge-lg">💼 ' + escHtml(t('nav_sales')) + '</span> ' + escHtml(t('sales_title')) + '</h1>') +
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button>' +
         '</div>' +
-        '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().map(function (x) {
+        (this.allowedTabs().length < 2 ? '' : '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().map(function (x) {
           var on = self.tab === x.id;
           return '<button type="button" role="tab" class="seg-btn' + (on ? ' active' : '') + '" aria-selected="' + on + '" onclick="PageAdmin.setTab(\'' + x.id + '\')">' + escHtml(t(x.key)) + '</button>';
-        }).join('') + '</div>' +
+        }).join('') + '</div>') +
         '<div id="admin-body"></div>' +
       '</div>';
   },
@@ -116,6 +131,7 @@ var PageAdmin = {
   },
 
   refresh: function () {
+    this.loadReps();
     this.loadTab();
     if (this.detail) this.loadDetail();
     if (this.customer) this.loadCustomer();
@@ -129,6 +145,8 @@ var PageAdmin = {
     if (this.tab === 'settings') return this.loadSettings();
     if (this.tab === 'activity') return this.loadActivity();
     if (this.tab === 'team') return this.loadTeam();
+    if (this.tab === 'sales') return this.loadSales();
+    if (this.tab === 'commission') return this.loadCommission();
     return this.loadDash();
   },
 
@@ -141,6 +159,8 @@ var PageAdmin = {
     else if (this.tab === 'settings') { box.innerHTML = this.settingsHtml(); this.drawLineGroups(); if (this.settingsTab.settings) this.loadSignupGrants(); }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
+    else if (this.tab === 'sales') box.innerHTML = this.salesHtml();
+    else if (this.tab === 'commission') box.innerHTML = this.commissionHtml();
     else box.innerHTML = this.dashHtml();
   },
 
@@ -462,7 +482,11 @@ var PageAdmin = {
     if (!document.getElementById('admin-orders-list')) this.drawBody();
     this.drawOrdersList();
     try {
-      var res = await cncAdminListOrders({ stage: o.stage, search: o.search, sort: o.sort, offset: more ? o.rows.length : 0 });
+      var res = await cncAdminListOrders({
+        stage: o.stage, search: o.search, sort: o.sort, offset: more ? o.rows.length : 0,
+        rep: this.reps ? o.rep : 'all',
+        shippedFrom: o.shipped ? o.shipped.from : null, shippedTo: o.shipped ? o.shipped.to : null
+      });
       if (token !== this.loadToken) return;
       o.rows = more ? o.rows.concat(res.rows) : res.rows;
       o.hasMore = res.hasMore;
@@ -495,6 +519,7 @@ var PageAdmin = {
             '<option value="deadline"' + (o.sort === 'deadline' ? ' selected' : '') + '>' + escHtml(t('admin_sort_deadline')) + '</option>' +
           '</select>' +
         '</div>' +
+        this.repFilterHtml() +
         '<div class="field admin-search">' +
           '<label class="field-label" for="admin-search">' + escHtml(t('admin_search_orders')) + '</label>' +
           '<div class="search-box"><span class="search-icon" aria-hidden="true">🔍</span>' +
@@ -502,6 +527,7 @@ var PageAdmin = {
             'placeholder="' + escHtml(t('admin_search_orders_ph')) + '" oninput="PageAdmin.onOrderSearch(this.value)"></div>' +
         '</div>' +
       '</div>' +
+      this.shippedChipHtml() +
       '<div id="admin-orders-list"></div>';
   },
 
@@ -530,7 +556,7 @@ var PageAdmin = {
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('order_number')) + '</th><th>' + escHtml(t('admin_received')) + '</th><th>' + escHtml(t('clinic_name')) + '</th>' +
       '<th>' + escHtml(t('patient_label')) + '</th><th>' + escHtml(t('teeth_label')) + '</th><th>' + escHtml(t('case_deadline_label')) + '</th>' +
-      '<th>' + escHtml(t('admin_stage')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('admin_stage')) + '</th>' + (self.reps ? '<th>' + escHtml(t('rep_label')) + '</th>' : '') + '</tr></thead><tbody>' +
       o.rows.map(function (r) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openOrder(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openOrder(\'' + escHtml(r.id) + '\')">' +
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b>' + self.freeBadgeHtml(r, true) + '</td>' +
@@ -539,7 +565,8 @@ var PageAdmin = {
           '<td>' + escHtml(r.patient || t('anonymous')) + '</td>' +
           '<td class="mono">' + formatNumber(r.teeth_count) + '</td>' +
           '<td class="nowrap">' + self.dueHtml(r) + '</td>' +
-          '<td>' + uiStageBadge(r.stage) + '</td></tr>';
+          '<td>' + uiStageBadge(r.stage) + '</td>' +
+          (self.reps ? '<td class="rep-cell">' + self.repNameHtml(r.sales_rep_id) + '</td>' : '') + '</tr>';
       }).join('') + '</tbody></table></div>';
 
     // 모바일: 카드
@@ -553,6 +580,7 @@ var PageAdmin = {
           '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(r.teeth_count) + '</span></span>' +
           '<span><span class="muted">' + escHtml(t('case_deadline_label')) + '</span> ' + self.dueHtml(r) + '</span>' +
           '<span><span class="muted">' + escHtml(t('admin_received')) + '</span> ' + escHtml(formatDate(r.created_at)) + '</span>' +
+          (self.reps ? '<span><span class="muted">' + escHtml(t('rep_label')) + '</span> ' + self.repNameHtml(r.sales_rep_id) + '</span>' : '') +
         '</span></button></li>';
     }).join('') + '</ul>';
 
@@ -655,6 +683,10 @@ var PageAdmin = {
             : '')) +
         row('credits_use', formatNumber(o.credits_used), true) +
         (Number(o.bonus_used || 0) > 0 ? row('admin_free_used', formatNumber(o.bonus_used), true) : '') +
+        // 담당 영업 + 변경 (manager 이상) — sql/015
+        (this.reps ? row('rep_label', '<span id="order-rep-name">' + this.repNameHtml(o.sales_rep_id) + '</span>' +
+          (cncHasRole('manager') ? ' <button type="button" class="btn btn-outline btn-sm" id="btn-set-rep" onclick="PageAdmin.openSetOrderRep()">' + escHtml(t('rep_change')) + '</button>' : '')) : '') +
+        (o.shipped_at ? row('shipped_date_label', escHtml(formatDate(o.shipped_at))) : '') +
         (o.carrier ? row('carrier_label', escHtml(o.carrier)) : '') +
         (o.tracking_number ? row('tracking_label', escHtml(o.tracking_number), true) : '') +
       '</section></div>';
@@ -1276,6 +1308,9 @@ var PageAdmin = {
       html += '<p class="error-text"><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(st.error)) + '</p>' +
         '<button type="button" class="btn btn-outline" onclick="PageAdmin.loadCustomer()">' + escHtml(t('btn_retry')) + '</button>';
     }
+
+    // 담당 영업 (manager 이상, sql/015)
+    html += this.customerRepHtml(st);
 
     // 🎁 무료 크레딧 지급 · 회수 (manager 이상, sql/009)
     html += this.freeGrantHtml(st);

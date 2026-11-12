@@ -104,8 +104,9 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015.
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
+  **005 를 다시 실행하면 015 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
 
 ## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
 - 이유: 디자인을 주고받는 동안 시간이 지나서, 주문할 때 미리 정한 납기를 못 지킬 수 있어요
@@ -259,11 +260,13 @@
 - `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)
 - `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
 - `cnc/cnc-admin.js` — 관리자 로직 (화면 코드 없음): 대시보드 집계, 주문 목록·상세, 단계 처리, 디자인 업로드, 배송, 취소·환불, 고객·크레딧
-- `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/activity`, `#/admin/team`, `#/admin/settings` (역할에 따라 보이는 탭이 달라요)
+- `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/activity`, `#/admin/team`, `#/admin/commission`, `#/admin/settings`, `#/admin/sales` (역할에 따라 보이는 탭이 달라요)
 - `cnc/cnc-finance.js` — 매출 집계 RPC 호출, CSV 만들기·내려받기 (로직만)
 - `ui/page-admin-finance.js` — Dashboard 의 Revenue 구역 (`PageAdmin` 에 함수 덧붙임: 카드, ? 설명, 패키지 표, 상위 고객, SVG 그래프, CSV 버튼)
 - `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회, 관리자 LINE 그룹·그룹 코드 (로직만)
 - `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-sales.js` — 영업 담당 목록 · 요율 · 담당자 지정 · 커미션 계산 결과 · 정산 · CSV (로직만, sql/015)
+- `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · 주문/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
 - `ui/page-admin-free.js` — 무료 크레딧 사용 배지, 무료 크레딧 지급·회수, 신규 가입 이벤트 설정, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008·009)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
@@ -301,13 +304,44 @@
   헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인
 
 ## 팀 권한 · 작업 기록 (sql/005_team.sql, 설정 안내: TEAM_SETUP.md)
-- 역할: owner ⊃ manager ⊃ staff (`admins.role`). DB: `admin_role()`, `has_admin_role(p_min)`, `is_admin()` = 역할이 있으면 true (예전 규칙 호환)
+- 역할: owner ⊃ manager ⊃ staff (`admins.role`) + 별개 역할 **sales(영업)** (sql/015). DB: `admin_role()`, `has_admin_role(p_min)`,
+  `is_admin()` = **owner · manager · staff 만 true** (015 부터 — sales 는 false. RLS 의 "관리자 읽기"가 전부 is_admin/has_admin_role 이라 sales 에게 안 열려요)
   - staff: 주문 조회·단계 변경·디자인 업로드·배송 (cnc_orders, cnc-files·cnc-designs), Activity
   - manager: + 충전 승인/거절, 크레딧 지급/차감, 주문 관리자 취소, 고객 목록·프로필·돈 정보, 계정 삭제 요청, Dashboard 주문 통계
   - owner: + 현금 환불, 가격·결제·회사 정보·법적 버전 수정, 매출(admin_finance_*), Team, LINE 그룹
 - 005 는 기존 관리자 함수 정의 안의 `is_admin()` 만 `has_admin_role('…')` 로 바꿔 끼워요 → **002·003·004 를 다시 실행하면 005 도 다시**
-- 새 관리자 함수를 만들 때는 처음부터 `has_admin_role('필요한 역할')` 로 확인하고, 화면은 `cncHasRole('…')` 로 버튼·탭을 숨긴다
-- 화면: `APP.adminRole`, `APP.adminName` (로그인 때 `admin_me()`. 005 미실행이면 is_admin → owner 로 봄). `PageAdmin.TABS` 의 `min` 으로 탭 제한, 권한 없는 탭 주소는 Orders 로
+- 새 관리자 함수를 만들 때는 처음부터 `has_admin_role('필요한 역할')` 로 확인하고, 화면은 `cncHasRole('…')` 로 버튼·탭을 숨긴다.
+  **`admins` 표를 직접 조회해서 권한을 판단하지 않는다** (sales 도 admins 에 있어서 열려요 — 015 가 그런 RLS 규칙이 있으면 notice 로 알려줘요)
+- 화면: `APP.adminRole`, `APP.adminName`, `APP.isAdmin`(관리 팀만), `APP.isSalesRep`(켜진 영업 담당) ← 로그인 때 `admin_me()` → `cncApplyAdminMe()` (005 미실행이면 is_admin → owner 로 봄).
+  `PageAdmin.TABS` 의 `min` 으로 탭 제한(`sales: true` 탭은 영업 담당만), 권한 없는 탭 주소는 첫 탭으로 (`defaultTab()`). #/admin 은 `cncCanOpenAdmin()` = 관리 팀 또는 영업 담당
+
+## 영업 · 담당자 · 커미션 (sql/015_sales_commission.sql)
+- **sales 역할**: `_admin_role_rank('sales') = 0` → `has_admin_role('staff' 이상)` false, `is_admin()` false. 화면은 Admin 메뉴 대신 **"영업" 메뉴 하나**(`SALES_NAV_ITEM` → `#/admin/sales`, 탭 줄 없음).
+  `is_sales_rep()` = 팀원 + 켜진 `sales_reps` / `my_sales_rep_id()`. owner · manager · staff 도 Team 탭 "영업 담당" 스위치로 켜면 Admin 안에 "영업" 탭이 같이 보여요
+- 표: `sales_reps`(user_id pk · active), `sales_rep_rates`(rep_id · type 'percent'|'per_tooth' · value · effective_from · created_by), `commission_payouts`(rep_id · year · month · total · orders 스냅샷 · paid_at · paid_by · note, 직원·달마다 1줄).
+  읽기 RLS: 영업 담당 = 본인 또는 staff 이상 / 요율 · 정산 = 본인 또는 owner. **쓰기는 전부 함수로만**
+- `profiles.sales_rep_id`(고객 담당) · `cnc_orders.sales_rep_id`(주문 담당) · `cnc_orders.shipped_at`(배송 시각, 015 가 review_history 의 'shipped' 기록 → 없으면 updated_at 으로 처음 채움)
+  - 트리거 `_trg_orders_sales_rep`: 새 주문 = 고객의 (켜진) 담당자 자동 복사 (create_cnc_order 는 그대로), 처음 shipped/done 이 될 때 shipped_at = now(), 담당 · shipped_at 직접 수정은 되돌림
+  - 트리거 `_trg_profile_sales_rep`: 고객이 자기 프로필의 담당 칸을 못 바꿈. 바꾸는 함수만 `set_config('allabut.rep_ok','1', true)` 로 허용
+  - 팀원 역할이 sales 가 되면 영업 담당 자동 켜짐, 팀에서 빠지면 꺼짐 (`_trg_admins_sales_rep`, 지난 주문 · 정산 기록은 남김)
+- 담당 지정 (manager 이상): `admin_set_customer_rep(p_user, p_rep, p_apply_open_orders)`(배송 전 주문만 같이), `admin_set_order_rep(p_order, p_rep, p_reason)`(이미 담당이 있으면 사유 필수)
+  → review_history `{ action: 'rep_changed', old_rep, new_rep, by:'admin' }`(사유는 고객이 볼 수 있는 기록이라 안 넣음) + `admin_audit_log` 'order_rep' · 'customer_rep'(사유 포함).
+  지급 완료한 달의 주문은 `COMMISSION_LOCKED`. 고객 화면 타임라인은 'rep_changed' 를 숨겨요 (`ADMIN_ONLY_HISTORY_ACTIONS`), 관리자 타임라인은 이전 → 새 담당 이름. LINE 알림 없음 (단계·납기가 안 바뀌어서)
+- 커미션 (방콕 달): 그 달에 shipped_at 이 있는 주문, cancelled 제외, 담당자 있는 것 (`_commission_rows`)
+  - 매출 = credit_lot_usage(restored_at 없음) × 묶음 unit_price (VAT 별도, 매출 대시보드와 같은 규칙 → 무료 · 이전 잔액 묶음은 단가 0)
+  - percent = 매출 × 값% / per_tooth = 유료 치아 수(무료 묶음 'free'·'bonus' 사용분을 뺀 크레딧, 묶음 기록이 없는 예전 주문은 credits_used − bonus_used) × 값. 소수 2자리
+  - 요율 = 배송일(방콕)에 유효한 것 (effective_from ≤ 배송일 중 가장 최근, 같은 날이면 나중에 넣은 것). 요율이 없으면 0
+  - `admin_commission_month(y, m)`(owner, + 담당 미지정 배송 주문 수 `unassigned`) / `my_commission_month(y, m)`(영업 본인) / `sales_my_orders()`(영업 본인: 주문번호 · 치과명 · 치아 수 · 단계 · 배송일만)
+  - 정산 `admin_mark_commission_paid(rep, y, m, note)`(owner, 달이 끝나야 `MONTH_NOT_ENDED`, `ALREADY_PAID`) → 스냅샷 저장 = 잠금 (그 뒤엔 다시 계산 안 함) /
+    `admin_unmark_commission_paid(rep, y, m, reason)`(owner, 사유 필수 → 잠금 풀림, 지금 데이터로 다시 계산)
+- 요율: `admin_set_rep_rate(rep, type, value, effective_from)`(owner, percent 0~100 · per_tooth 0~1,000,000 THB, 이력은 지우지 않음), 목록 `admin_list_sales_reps()`(staff 이상 이름 · 켜짐 / 요율은 owner 에게만)
+- 화면 (`ui/page-admin-sales.js` + `cnc/cnc-sales.js`):
+  - Team 탭(owner): 역할에 "영업" (015 실행 뒤에만), 팀원마다 "영업 담당" 스위치(sales 역할은 항상 켜짐) + "커미션 설정" 창(매출 % / 치아당 THB · 값 · 적용 시작일 `uiDateField` 기본 오늘 → 요율 이력 표: 적용 중 · 예정 · 지난)
+  - Orders: "담당" 칸 + "담당 영업" 필터(전체 · 담당 없음 · 사람별) / 상세 "담당 영업" + 변경 버튼(manager 이상) / Customers 상세 "담당 영업" 선택 + "아직 배송 전인 주문도 같이 바꾸기"(기본 체크)
+  - 커미션 탭 `#/admin/commission`(owner, 기본 = 지난달): ◀ 월 ▶ · 직원별 카드(주문 · 치아 · 매출 · 커미션 · 지급 상태) · 펼치면 주문별 상세 · "지급 완료"(확인창 + 메모) / "지급 취소"(사유) ·
+    CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙) · "담당 미지정 n건 → 지정하기"(Orders 탭: 전체 단계 + 담당 없음 + 그 달 배송 칩)
+  - 영업 탭 `#/admin/sales`(영업 담당, 기본 = 이번 달): 내 월별 커미션 카드 + 주문별 상세, 내 담당 주문 표 (환자 · 파일 · 연락처 없음)
+  - 015 실행 전이면 담당 칸 · 필터 · 영업 역할이 안 보이고 나머지는 그대로 (`cncAdminListSalesReps()` → null)
 - 팀 함수(owner): `admin_list_team`, `admin_add_member(email, role, name)`(가입한 이메일만, USER_NOT_FOUND), `admin_set_role`, `admin_set_member_name`, `admin_remove_member` (자기 자신·마지막 owner 불가: CANNOT_REMOVE_SELF / LAST_OWNER)
 - 작업 기록 `admin_audit_log`: staff 이상 읽기, 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경)
 - `review_history` 의 관리자 기록은 `by: 'admin'` 그대로 + DB 트리거가 `by_name`·`by_id`(실제 처리자)를 붙임. 관리자 화면 타임라인만 이름 표시 (`uiHistoryList(history, true)`), 고객 화면은 "관리자"

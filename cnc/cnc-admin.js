@@ -164,6 +164,13 @@ async function cncAdminListOrders(opts) {
   var q = cncCleanSearch(opts.search);
   if (q) query = query.or('id.ilike.*' + q + '*,patient.ilike.*' + q + '*,clinic.ilike.*' + q + '*');
 
+  // 담당 영업 (sql/015): 'none' = 담당 없음, 그 밖 = 담당자 id ('all' · 빈 값이면 조건 없음 → 015 전에도 오류 없음)
+  if (opts.rep === 'none') query = query.is('sales_rep_id', null);
+  else if (opts.rep && opts.rep !== 'all') query = query.eq('sales_rep_id', opts.rep);
+  // 배송한 달 (커미션 탭의 "담당 미지정 n건 → 지정하기")
+  if (opts.shippedFrom) query = query.gte('shipped_at', opts.shippedFrom);
+  if (opts.shippedTo) query = query.lt('shipped_at', opts.shippedTo);
+
   if (opts.sort === 'deadline') {
     query = query.order('deadline', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false });
   } else {

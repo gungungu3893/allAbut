@@ -3,13 +3,14 @@
 // ================================================================
 // page-admin.js 의 PageAdmin 에 함수를 덧붙여요 (이 파일은 page-admin.js 다음에 불러와요).
 // 로직(DB 호출)은 cnc/cnc-team.js 에 있어요.
-//   Team      (owner)    : 멤버 목록 · 추가(가입한 이메일만) · 역할 변경 · 이름 변경 · 제거
+//   Team      (owner)    : 멤버 목록 · 추가(가입한 이메일만) · 역할 변경(영업 포함) · 이름 변경 · 제거
+//                          + 팀원마다 "영업 담당" 스위치 · 커미션 설정 (칸 내용은 ui/page-admin-sales.js, sql/015)
 //   Activity  (staff 이상): admin_audit_log 최신순, 처리자·작업·대상 필터
 //   LINE groups (owner)  : 연결된 그룹(카테고리·켜기/끄기·삭제) + 그룹 연결 코드(30분, 5초마다 연결 확인)
 
 Object.assign(PageAdmin, {
 
-  team: { rows: null, error: false, adding: false, errors: {} },
+  team: { rows: null, reps: null, error: false, adding: false, errors: {} },
   activity: { rows: [], hasMore: false, loading: false, error: false, actor: '', group: '', target: '', actors: {} },
   lineGroups: { targets: null, error: false, code: null, expiresAt: null, linked: false, expired: false },
   lineGroupTimers: { poll: null, tick: null },
@@ -28,9 +29,14 @@ Object.assign(PageAdmin, {
     st.error = false;
     this.drawBody();
     try {
-      var rows = await cncAdminListTeam();
+      var res = await Promise.all([
+        cncAdminListTeam(),
+        cncAdminListSalesReps(true).catch(function (err) { console.warn('sales reps', err); return null; })   // 015 전이면 null
+      ]);
       if (token !== this.loadToken) return;
-      st.rows = rows;
+      st.rows = res[0];
+      st.reps = res[1];
+      if (res[1]) this.reps = res[1];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -45,8 +51,10 @@ Object.assign(PageAdmin, {
     var me = APP.user && APP.user.id;
     var site = (typeof SITE_URL === 'string' ? SITE_URL : 'https://allabut.com').replace(/^https?:\/\//, '');
 
+    // 영업(sales) 역할은 015 실행 뒤에만 고를 수 있어요 (영업 담당 목록을 못 받으면 015 전)
+    var roles = st.reps ? TEAM_ROLES : ADMIN_ROLES;
     function roleOptions(selected) {
-      return ADMIN_ROLES.map(function (r) {
+      return roles.map(function (r) {
         return '<option value="' + r + '"' + (r === selected ? ' selected' : '') + '>' + escHtml(t('role_' + r)) + '</option>';
       }).join('');
     }
@@ -67,7 +75,7 @@ Object.assign(PageAdmin, {
         '<div class="field team-add-btn"><button type="submit" class="btn btn-primary btn-lg"' + (st.adding ? ' disabled' : '') + '>' +
           escHtml(st.adding ? t('admin_processing') : t('team_add_btn')) + '</button></div>' +
       '</form>' +
-      '<div class="role-legend">' + ADMIN_ROLES.map(function (r) {
+      '<div class="role-legend">' + roles.map(function (r) {
         return '<p><span class="role-chip role-' + r + '">' + escHtml(t('role_' + r)) + '</span> ' + escHtml(t('role_desc_' + r)) + '</p>';
       }).join('') + '</div>' +
       '</section>';
@@ -77,6 +85,7 @@ Object.assign(PageAdmin, {
     if (!st.rows) list = uiLoading();
     else list = '<div class="table-wrap"><table class="table team-table"><thead><tr>' +
       '<th>' + escHtml(t('email_label')) + '</th><th>' + escHtml(t('team_name_label')) + '</th><th>' + escHtml(t('team_role_label')) + '</th>' +
+      (st.reps ? '<th>' + escHtml(t('sales_rep_col')) + '</th>' : '') +
       '<th>' + escHtml(t('team_added')) + '</th><th></th></tr></thead><tbody>' +
       st.rows.map(function (m) {
         var self = m.user_id === me;
@@ -85,6 +94,7 @@ Object.assign(PageAdmin, {
           '<td><span class="team-name">' + escHtml(m.display_name || '—') + '</span> ' +
             '<button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.renameMember(\'' + escHtml(m.user_id) + '\')">' + escHtml(t('team_rename')) + '</button></td>' +
           '<td><select class="input team-role-select" aria-label="' + escHtml(t('team_role_label')) + '" onchange="PageAdmin.changeRole(\'' + escHtml(m.user_id) + '\', this)">' + roleOptions(m.role) + '</select></td>' +
+          (st.reps ? '<td class="team-sales-cell">' + PageAdmin.teamSalesCellHtml(m) + '</td>' : '') +
           '<td class="nowrap">' + escHtml(formatDate(m.created_at)) + (m.added_by_name ? '<br><span class="muted">' + escHtml(tf('team_added_by', { name: m.added_by_name })) + '</span>' : '') + '</td>' +
           '<td>' + (self ? '' : '<button type="button" class="btn btn-outline btn-sm btn-danger-text" onclick="PageAdmin.removeMember(\'' + escHtml(m.user_id) + '\')">' + escHtml(t('team_remove')) + '</button>') + '</td>' +
           '</tr>';
@@ -165,12 +175,10 @@ Object.assign(PageAdmin, {
   // 내 역할이 바뀌면 헤더·탭을 다시 그려요
   reloadMyRole: async function () {
     var me = await cncLoadAdminMe();
-    APP.adminRole = me ? me.role : null;
-    APP.adminName = me ? me.name : '';
-    APP.isAdmin = !!APP.adminRole;
+    cncApplyAdminMe(me);   // 역할 · 이름 · 관리 팀 여부 · 영업 담당 여부
     renderLayout();
-    if (!APP.isAdmin) { location.hash = '#/home'; return; }
-    history.replaceState(null, '', '#/admin/orders');
+    if (!cncCanOpenAdmin()) { location.hash = '#/home'; return; }
+    history.replaceState(null, '', '#/admin/' + this.defaultTab());
     this.render(this.main);
   },
 
@@ -254,7 +262,7 @@ Object.assign(PageAdmin, {
     var st = this.activity;
     var actors = Object.keys(st.actors).map(function (id) { return { id: id, name: st.actors[id] }; })
       .sort(function (a, b) { return a.name.localeCompare(b.name); });
-    var groups = ['orders', 'topups', 'credits', 'team', 'settings'];
+    var groups = ['orders', 'topups', 'credits', 'team', 'sales', 'settings'];
     var tools = '<div class="activity-tools card">' +
       '<div class="field"><label class="field-label" for="act-actor">' + escHtml(t('audit_filter_actor')) + '</label>' +
         '<select class="input" id="act-actor" onchange="PageAdmin.setActivityFilter(\'actor\', this.value)">' +
@@ -342,6 +350,14 @@ Object.assign(PageAdmin, {
         return t('role_' + d.from) + ' → ' + t('role_' + d.to);
       case 'team_remove':
         return d.role ? t('role_' + d.role) : '';
+      // 영업 · 커미션 (sql/015)
+      case 'order_rep': case 'customer_rep':
+        return (d.from_name || t('rep_none')) + ' → ' + (d.to_name || t('rep_none')) +
+          (d.clinic ? ' · ' + d.clinic : '') + (d.open_orders ? ' · ' + tf('rep_open_orders_n', { n: d.open_orders }) : '') + (d.reason ? ' · ' + d.reason : '');
+      case 'commission_rate':
+        return cncRateText({ type: d.type, value: d.value }) + ' · ' + tf('rate_from_fmt', { date: d.effective_from ? formatDate(d.effective_from) : '—' });
+      case 'commission_paid': case 'commission_unpaid':
+        return (d.year || '') + '-' + String(d.month || '').padStart(2, '0') + ' · ' + formatTHB(d.total || 0) + (d.reason ? ' · ' + d.reason : (d.note ? ' · ' + d.note : ''));
       case 'settings_changed':
         return t('audit_table_' + r.target_type) + (Array.isArray(d.changed) && d.changed.length ? ' · ' + d.changed.join(', ') : (d.op ? ' · ' + d.op : ''));
       default:

@@ -4,15 +4,18 @@
 // DB: sql/005_team.sql
 //   역할: owner ⊃ manager ⊃ staff  (APP.adminRole 에 저장)
 //     staff   : 주문 처리 (Orders), 작업 기록 (Activity)
-//     manager : + 충전 승인, 고객·크레딧, 주문 관리자 취소, Dashboard 주문 통계
-//     owner   : + 환불, 매출, 설정, 팀, LINE 그룹
+//     manager : + 충전 승인, 고객·크레딧, 주문 관리자 취소, Dashboard 주문 통계, 담당 영업 지정
+//     owner   : + 환불, 매출, 설정, 팀, LINE 그룹, 커미션
+//   + 'sales' (영업, sql/015) — 위 계층과 별개: 관리자 탭은 하나도 없고 "영업" 메뉴(#/admin/sales)만.
+//     cncHasRole('staff' 이상) 은 sales 에게 false. 팀원 누구나 "영업 담당"을 켤 수 있어요 (APP.isSalesRep)
 //   화면에서 숨기는 것은 편의일 뿐, 실제 보호는 DB 규칙(RLS·함수 안의 역할 확인)이 해요.
 
 // 팀 관련 서버 에러 코드 — "USER_NOT_FOUND" 가 "NOT_FOUND" 보다 먼저 찾아지게 맨 앞에 붙여요
 CNC_ERROR_CODES = ['USER_NOT_FOUND', 'ALREADY_MEMBER', 'INVALID_ROLE', 'NOT_MEMBER', 'LAST_OWNER', 'CANNOT_REMOVE_SELF'].concat(CNC_ERROR_CODES);
 
-var ADMIN_ROLES = ['owner', 'manager', 'staff'];
-var ADMIN_ROLE_RANK = { owner: 3, manager: 2, staff: 1 };
+var ADMIN_ROLES = ['owner', 'manager', 'staff'];            // 관리 계층 (관리자 탭)
+var TEAM_ROLES = ADMIN_ROLES.concat(['sales']);             // 팀 역할 선택 (영업 포함, sql/015)
+var ADMIN_ROLE_RANK = { owner: 3, manager: 2, staff: 1 };   // sales 는 0 → 관리자 권한 없음
 
 // 지금 사용자가 이 역할 이상인지 (예: cncHasRole('manager'))
 function cncHasRole(min) {
@@ -26,14 +29,16 @@ function cncIsMissingFunction(err) {
   return !!c && (c.code === 'PGRST202' || c.code === '42883' || /Could not find the function|does not exist/i.test(String(c.message || '')));
 }
 
-// 로그인할 때: 내 역할·이름 { role, name } (팀이 아니면 null)
+// 로그인할 때: 내 역할·이름 { role, name, salesRep } (팀이 아니면 null)
 //   005 를 아직 실행 안 했으면 예전처럼 is_admin() → 관리자면 owner 로 봐요
+//   salesRep: 켜진 영업 담당인지 (sql/015 의 admin_me 가 알려줘요, 015 전이면 false)
 async function cncLoadAdminMe() {
   try {
     var result = await sb.rpc('admin_me');
     if (!result.error) {
       var d = result.data;
-      if (d && typeof d === 'object' && ADMIN_ROLES.indexOf(d.role) !== -1) return { role: d.role, name: d.name || '' };
+      if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+      if (d && typeof d === 'object' && TEAM_ROLES.indexOf(d.role) !== -1) return { role: d.role, name: d.name || '', salesRep: !!d.sales_rep };
       return null;
     }
     if (!cncIsMissingFunction(result.error)) return null;
@@ -41,7 +46,22 @@ async function cncLoadAdminMe() {
     return null;
   }
   var legacy = await cncCheckAdmin();
-  return legacy ? { role: 'owner', name: '', legacy: true } : null;
+  return legacy ? { role: 'owner', name: '', salesRep: false, legacy: true } : null;
+}
+
+// admin_me 결과를 APP 에 넣기 (로그인 · 내 역할이 바뀌었을 때 같이 써요)
+//   APP.isAdmin    = 관리 팀(owner · manager · staff) → Admin 메뉴
+//   APP.isSalesRep = 켜진 영업 담당 → "영업" 탭 (sales 역할이면 "영업" 메뉴 하나만)
+function cncApplyAdminMe(me) {
+  APP.adminRole = me ? me.role : null;
+  APP.adminName = me ? me.name : '';
+  APP.isAdmin = !!me && ADMIN_ROLES.indexOf(me.role) !== -1;
+  APP.isSalesRep = !!me && !!me.salesRep;
+}
+
+// 관리자 화면(#/admin)에 들어갈 수 있는지 (관리 팀 또는 영업 담당)
+function cncCanOpenAdmin() {
+  return !!(window.APP && (APP.isAdmin || APP.isSalesRep));
 }
 
 // ----------------------------------------------------------------
@@ -77,6 +97,7 @@ var AUDIT_ACTION_GROUPS = {
   topups: ['topup_approved', 'topup_rejected', 'refund_cash'],
   credits: ['credits_added', 'credits_removed'],
   team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code'],
+  sales: ['order_rep', 'customer_rep', 'sales_rep_on', 'sales_rep_off', 'commission_rate', 'commission_paid', 'commission_unpaid'],
   settings: ['settings_changed']
 };
 

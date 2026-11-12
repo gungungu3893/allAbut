@@ -78,11 +78,19 @@ var NAV_ITEMS = [
 ];
 // 관리자에게만 보이는 메뉴
 var ADMIN_NAV_ITEM = { route: 'admin', icon: '🛠', key: 'nav_admin', admin: true };
+// 영업 담당(관리 팀이 아닌 sales 역할)에게 Admin 대신 보이는 메뉴 하나 → #/admin/sales (sql/015)
+var SALES_NAV_ITEM = { route: 'admin', href: 'admin/sales', icon: '💼', key: 'nav_sales', admin: true, sales: true };
 
-// Admin 배지 옆 역할 (Owner / Manager / Staff)
+// 메뉴 주소 (#/ 뒤)
+function navHref(n) {
+  return n.href || n.route;
+}
+
+// Admin 배지 옆 역할 (Owner / Manager / Staff) — 영업 메뉴에는 안 붙여요 (글자가 겹쳐서)
 function adminRoleTagHtml() {
   var role = window.APP && APP.adminRole;
-  return role ? ' <span class="admin-role-tag">' + escHtml(t('role_' + role)) + '</span>' : '';
+  if (!role || (window.APP && !APP.isAdmin)) return '';
+  return ' <span class="admin-role-tag">' + escHtml(t('role_' + role)) + '</span>';
 }
 
 // 푸터 문의 줄: "문의: support@… · LINE @925caqxb" (값은 company_settings, 비면 숨김)
@@ -103,7 +111,9 @@ function uiContactHelpHtml() {
 
 // 지금 사용자에게 보여줄 메뉴 목록
 function navItems() {
-  return (window.APP && APP.isAdmin) ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
+  if (window.APP && APP.isAdmin) return NAV_ITEMS.concat([ADMIN_NAV_ITEM]);
+  if (window.APP && APP.isSalesRep) return NAV_ITEMS.concat([SALES_NAV_ITEM]);
+  return NAV_ITEMS;
 }
 
 function sessionBadgeHtml() {
@@ -156,7 +166,7 @@ function renderLayout() {
       '<a href="#/home" class="hdr-logo">' + logoHtml() + '</a>' +
       '<nav class="hdr-nav" aria-label="Main">' +
         navItems().map(function (n) {
-          return '<a href="#/' + n.route + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
+          return '<a href="#/' + navHref(n) + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
             (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + adminRoleTagHtml() + '</span>'
               : (n.showIcon ? '<span aria-hidden="true">' + n.icon + '</span>&nbsp;' : '') + escHtml(t(n.key))) + '</a>';
         }).join('') +
@@ -192,7 +202,7 @@ function renderLayout() {
   var shown = items.filter(function (n) { return !n.noTab; });
   tabbar.style.gridTemplateColumns = 'repeat(' + shown.length + ', 1fr)';
   tabbar.innerHTML = items.map(function (n) {
-    return '<a href="#/' + n.route + '" class="tab-link' + (n.noTab ? ' tab-pc-only' : '') + '" data-nav="' + n.route + '">' +
+    return '<a href="#/' + navHref(n) + '" class="tab-link' + (n.noTab ? ' tab-pc-only' : '') + '" data-nav="' + n.route + '">' +
       '<span class="tab-icon" aria-hidden="true">' + n.icon + '</span>' +
       '<span class="tab-label">' + escHtml(t(n.key)) + '</span></a>';
   }).join('');
@@ -695,7 +705,16 @@ function uiErrorMessage(err) {
     TAX_ID_TAKEN: 'err_tax_id_taken',
     TAX_ID_INVALID: 'err_tax_id_checksum',
     EMAIL_DISPOSABLE: 'err_email_disposable',
-    PROFILE_INCOMPLETE: 'err_profile_incomplete'
+    PROFILE_INCOMPLETE: 'err_profile_incomplete',
+    // 영업 · 커미션 (sql/015)
+    COMMISSION_LOCKED: 'rep_err_locked',
+    REP_NOT_FOUND: 'rep_err_not_found',
+    MONTH_NOT_ENDED: 'comm_err_month',
+    ALREADY_PAID: 'comm_err_already_paid',
+    NOT_PAID: 'comm_err_not_paid',
+    NOT_SALES: 'admin_err_not_admin',
+    INVALID_RATE_VALUE: 'rate_err_value',
+    INVALID_RATE_TYPE: 'rate_err_type'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });
@@ -738,8 +757,13 @@ function uiDesignVersions(versions, viewCall) {
 
 // 처리 이력 타임라인 (review_history)
 // showNames: 관리자 화면에서만 true → 처리한 직원 이름(by_name)을 보여줘요 (고객 화면은 "관리자")
+// 고객 화면에서 숨기는 관리자 전용 기록 (담당 영업 변경 — sql/015)
+var ADMIN_ONLY_HISTORY_ACTIONS = ['rep_changed'];
+
 function uiHistoryList(history, showNames) {
-  history = history || [];
+  history = (history || []).filter(function (h) {
+    return showNames || !h || ADMIN_ONLY_HISTORY_ACTIONS.indexOf(h.action) === -1;
+  });
   if (!history.length) return '<p class="muted">' + escHtml(t('history_empty')) + '</p>';
   return '<ol class="timeline">' + history.slice().reverse().map(function (h) {
     h = h || {};
@@ -754,12 +778,21 @@ function uiHistoryList(history, showNames) {
         // 납품일 (디자인 승인 때 확정 · 관리자 납기 변경 — sql/012)
         (h.deadline ? '<p class="timeline-deadline">📅 ' + escHtml(t('case_deadline_label')) + ': ' +
           (h.old_deadline ? escHtml(formatDate(h.old_deadline)) + ' → ' : '') + '<b>' + escHtml(formatDate(h.deadline)) + '</b></p>' : '') +
+        // 담당 영업 변경 (관리자 화면만): 이전 → 새 담당 이름 (이름은 영업 담당 목록에서)
+        (h.action === 'rep_changed' ? '<p class="timeline-rep">👤 ' + escHtml(uiRepNameOrNone(h.old_rep)) + ' → <b>' + escHtml(uiRepNameOrNone(h.new_rep)) + '</b></p>' : '') +
         (h.note ? '<p class="pre timeline-note">' + escHtml(h.note) + '</p>' : '') +
       '</div></li>';
   }).join('') + '</ol>';
 }
 
 
+
+// 담당 영업 이름 (없으면 "담당 없음", 목록에 없으면 id 앞자리)
+function uiRepNameOrNone(id) {
+  if (!id) return t('rep_none');
+  var name = (typeof cncRepName === 'function' && typeof _salesRepsCache !== 'undefined') ? cncRepName(_salesRepsCache, id) : '';
+  return name || String(id).slice(0, 8);
+}
 
 // ================================================================
 // 10) 작은 팝오버 (버튼 아래 말풍선) — 새 주문 단계의 "? Help"

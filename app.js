@@ -10,7 +10,8 @@ var APP = {
   profile: null,   // profiles 행
   balance: null,   // 크레딧 잔액
   isAdmin: false,  // 관리자(팀원)인지
-  adminRole: null, // 'owner' | 'manager' | 'staff' | null (sql/005_team.sql)
+  adminRole: null, // 'owner' | 'manager' | 'staff' | 'sales' | null (sql/005_team.sql, sales = sql/015)
+  isSalesRep: false, // 켜진 영업 담당인지 → 관리자 화면의 "영업" 탭 (sql/015)
   adminName: ''    // 팀에서 쓰는 내 이름
 };
 
@@ -109,9 +110,7 @@ async function enterApp() {
     APP.user = session.user;
     var loaded = await Promise.all([getProfile(), cncLoadAdminMe(), cncGetLegalVersions(true).catch(function () { return null; })]);
     APP.profile = loaded[0];
-    APP.adminRole = loaded[1] ? loaded[1].role : null;
-    APP.adminName = loaded[1] ? loaded[1].name : '';
-    APP.isAdmin = !!APP.adminRole;
+    cncApplyAdminMe(loaded[1]);   // adminRole · adminName · isAdmin(관리 팀) · isSalesRep(영업 담당)
     APP.legal = loaded[2];
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
 
@@ -207,6 +206,7 @@ function onSessionEnded() {
   APP.profile = null;
   APP.balance = null;
   APP.isAdmin = false;
+  APP.isSalesRep = false;
   APP.adminRole = null;
   APP.adminName = '';
   APP.needsConsent = false;
