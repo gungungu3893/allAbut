@@ -757,7 +757,7 @@ function uiDesignVersions(versions, viewCall) {
 
 // 처리 이력 타임라인 (review_history)
 // showNames: 관리자 화면에서만 true → 처리한 직원 이름(by_name)을 보여줘요 (고객 화면은 "관리자")
-// 고객 화면에서 숨기는 관리자 전용 기록 (담당 영업 변경 — sql/015)
+// 고객 화면에서 숨기는 관리자 전용 기록 (담당 영업 변경 — sql/015 때 주문에 남은 기록, 016 부터는 새로 안 생겨요)
 var ADMIN_ONLY_HISTORY_ACTIONS = ['rep_changed'];
 
 function uiHistoryList(history, showNames) {

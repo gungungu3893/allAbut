@@ -164,13 +164,6 @@ async function cncAdminListOrders(opts) {
   var q = cncCleanSearch(opts.search);
   if (q) query = query.or('id.ilike.*' + q + '*,patient.ilike.*' + q + '*,clinic.ilike.*' + q + '*');
 
-  // 담당 영업 (sql/015): 'none' = 담당 없음, 그 밖 = 담당자 id ('all' · 빈 값이면 조건 없음 → 015 전에도 오류 없음)
-  if (opts.rep === 'none') query = query.is('sales_rep_id', null);
-  else if (opts.rep && opts.rep !== 'all') query = query.eq('sales_rep_id', opts.rep);
-  // 배송한 달 (커미션 탭의 "담당 미지정 n건 → 지정하기")
-  if (opts.shippedFrom) query = query.gte('shipped_at', opts.shippedFrom);
-  if (opts.shippedTo) query = query.lt('shipped_at', opts.shippedTo);
-
   if (opts.sort === 'deadline') {
     query = query.order('deadline', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false });
   } else {
@@ -504,6 +497,12 @@ async function cncAdminListTopups(opts) {
   var query = sb.from('topup_requests').select('*');
   if (opts.status && opts.status !== 'all') query = query.eq('status', opts.status);
   if (opts.userId) query = query.eq('user_id', opts.userId);
+  // 담당 영업 (sql/016): 'none' = 담당 없음, 그 밖 = 담당자 id ('all' · 빈 값이면 조건 없음 → 016 전에도 오류 없음)
+  if (opts.rep === 'none') query = query.is('sales_rep_id', null);
+  else if (opts.rep && opts.rep !== 'all') query = query.eq('sales_rep_id', opts.rep);
+  // 승인한 달 (커미션 탭의 "담당 미지정 입금 n건 → 지정하기")
+  if (opts.approvedFrom) query = query.gte('reviewed_at', opts.approvedFrom);
+  if (opts.approvedTo) query = query.lt('reviewed_at', opts.approvedTo);
   query = query.order('created_at', { ascending: opts.status === 'pending' });   // 대기 중은 오래된 것부터
   var rows = cncCheck(await query.range(offset, offset + limit)) || [];
   var page = rows.slice(0, limit);
@@ -517,6 +516,11 @@ async function cncAdminListTopups(opts) {
     }
   }
   return { rows: page, hasMore: rows.length > limit };
+}
+
+// 충전 요청 하나 (승인 뒤 담당 영업 등 서버가 채운 값을 다시 읽을 때)
+async function cncAdminGetTopup(id) {
+  return cncCheck(await sb.from('topup_requests').select('*').eq('id', id).maybeSingle());
 }
 
 async function cncAdminPendingTopupCount() {

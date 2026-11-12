@@ -97,7 +97,7 @@ var AUDIT_ACTION_GROUPS = {
   topups: ['topup_approved', 'topup_rejected', 'refund_cash'],
   credits: ['credits_added', 'credits_removed'],
   team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code'],
-  sales: ['order_rep', 'customer_rep', 'sales_rep_on', 'sales_rep_off', 'commission_rate', 'commission_paid', 'commission_unpaid'],
+  sales: ['topup_rep', 'order_rep', 'customer_rep', 'sales_rep_on', 'sales_rep_off', 'commission_rate', 'commission_paid', 'commission_unpaid'],
   settings: ['settings_changed']
 };
 

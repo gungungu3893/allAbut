@@ -104,9 +104,11 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016.
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
-  **005 를 다시 실행하면 015 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
+  **005 를 다시 실행하면 015 → 016 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
+  **002 · 004 를 다시 실행하면 005 → 016 도 다시** (admin_refund_cash 가 묶음별 환불 기록이 없는 예전 모양으로 돌아가서 → 환불 마이너스 커미션이 "확인 필요"로만 남아요)
+  **015 를 다시 실행하면 016 도 다시** (주문 기준 함수 · 칸 · 트리거가 다시 생겨서)
 
 ## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
 - 이유: 디자인을 주고받는 동안 시간이 지나서, 주문할 때 미리 정한 납기를 못 지킬 수 있어요
@@ -217,7 +219,7 @@
 - 집계는 DB 함수만 (관리자 전용, 방콕 시간 기준 달, month 는 1~12): `admin_finance_month`, `admin_finance_trend`, `admin_outstanding_credits`, `admin_topups_export`
 - 입금 = 승인일(reviewed_at) 기준 VAT 포함 total. 사용 가치 = `credit_lot_usage`(restored_at 없음) × 묶음 unit_price (VAT 별도)
 - 현금 환불 금액은 `credit_history.amount_thb` (004 에서 추가, `admin_refund_cash` 가 저장)
-- 002 를 다시 실행하면 004 도 다시 실행 (admin_refund_cash 가 예전 모양으로 돌아가서)
+- 002 를 다시 실행하면 004 도 다시 실행 (admin_refund_cash 가 예전 모양으로 돌아가서) → 그 다음 005 → 016 도 (권한 · 묶음별 환불 기록)
 - CSV: UTF-8 BOM, 금액은 쉼표 없는 숫자, Tax ID 는 `="..."`, 수식 주입 방지(' 붙임), 파일명 `allabut-topups-YYYY-MM.csv`
 
 ## 제외 (나중에)
@@ -265,8 +267,8 @@
 - `ui/page-admin-finance.js` — Dashboard 의 Revenue 구역 (`PageAdmin` 에 함수 덧붙임: 카드, ? 설명, 패키지 표, 상위 고객, SVG 그래프, CSV 버튼)
 - `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회, 관리자 LINE 그룹·그룹 코드 (로직만)
 - `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
-- `cnc/cnc-sales.js` — 영업 담당 목록 · 요율 · 담당자 지정 · 커미션 계산 결과 · 정산 · CSV (로직만, sql/015)
-- `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · 주문/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-sales.js` — 영업 담당 목록 · 요율 · 입금/고객 담당자 지정 · 수금 기준 커미션 결과 · 정산 · CSV (로직만, sql/015 · 016)
+- `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · Top-ups/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
 - `ui/page-admin-free.js` — 무료 크레딧 사용 배지, 무료 크레딧 지급·회수, 신규 가입 이벤트 설정, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008·009)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
@@ -315,33 +317,38 @@
 - 화면: `APP.adminRole`, `APP.adminName`, `APP.isAdmin`(관리 팀만), `APP.isSalesRep`(켜진 영업 담당) ← 로그인 때 `admin_me()` → `cncApplyAdminMe()` (005 미실행이면 is_admin → owner 로 봄).
   `PageAdmin.TABS` 의 `min` 으로 탭 제한(`sales: true` 탭은 영업 담당만), 권한 없는 탭 주소는 첫 탭으로 (`defaultTab()`). #/admin 은 `cncCanOpenAdmin()` = 관리 팀 또는 영업 담당
 
-## 영업 · 담당자 · 커미션 (sql/015_sales_commission.sql)
+## 영업 · 담당자 · 커미션 — 수금(충전 입금 승인) 기준 (sql/015_sales_commission.sql + sql/016_commission_on_payments.sql)
 - **sales 역할**: `_admin_role_rank('sales') = 0` → `has_admin_role('staff' 이상)` false, `is_admin()` false. 화면은 Admin 메뉴 대신 **"영업" 메뉴 하나**(`SALES_NAV_ITEM` → `#/admin/sales`, 탭 줄 없음).
   `is_sales_rep()` = 팀원 + 켜진 `sales_reps` / `my_sales_rep_id()`. owner · manager · staff 도 Team 탭 "영업 담당" 스위치로 켜면 Admin 안에 "영업" 탭이 같이 보여요
-- 표: `sales_reps`(user_id pk · active), `sales_rep_rates`(rep_id · type 'percent'|'per_tooth' · value · effective_from · created_by), `commission_payouts`(rep_id · year · month · total · orders 스냅샷 · paid_at · paid_by · note, 직원·달마다 1줄).
-  읽기 RLS: 영업 담당 = 본인 또는 staff 이상 / 요율 · 정산 = 본인 또는 owner. **쓰기는 전부 함수로만**
-- `profiles.sales_rep_id`(고객 담당) · `cnc_orders.sales_rep_id`(주문 담당) · `cnc_orders.shipped_at`(배송 시각, 015 가 review_history 의 'shipped' 기록 → 없으면 updated_at 으로 처음 채움)
-  - 트리거 `_trg_orders_sales_rep`: 새 주문 = 고객의 (켜진) 담당자 자동 복사 (create_cnc_order 는 그대로), 처음 shipped/done 이 될 때 shipped_at = now(), 담당 · shipped_at 직접 수정은 되돌림
-  - 트리거 `_trg_profile_sales_rep`: 고객이 자기 프로필의 담당 칸을 못 바꿈. 바꾸는 함수만 `set_config('allabut.rep_ok','1', true)` 로 허용
-  - 팀원 역할이 sales 가 되면 영업 담당 자동 켜짐, 팀에서 빠지면 꺼짐 (`_trg_admins_sales_rep`, 지난 주문 · 정산 기록은 남김)
-- 담당 지정 (manager 이상): `admin_set_customer_rep(p_user, p_rep, p_apply_open_orders)`(배송 전 주문만 같이), `admin_set_order_rep(p_order, p_rep, p_reason)`(이미 담당이 있으면 사유 필수)
-  → review_history `{ action: 'rep_changed', old_rep, new_rep, by:'admin' }`(사유는 고객이 볼 수 있는 기록이라 안 넣음) + `admin_audit_log` 'order_rep' · 'customer_rep'(사유 포함).
-  지급 완료한 달의 주문은 `COMMISSION_LOCKED`. 고객 화면 타임라인은 'rep_changed' 를 숨겨요 (`ADMIN_ONLY_HISTORY_ACTIONS`), 관리자 타임라인은 이전 → 새 담당 이름. LINE 알림 없음 (단계·납기가 안 바뀌어서)
-- 커미션 (방콕 달): 그 달에 shipped_at 이 있는 주문, cancelled 제외, 담당자 있는 것 (`_commission_rows`)
-  - 매출 = credit_lot_usage(restored_at 없음) × 묶음 unit_price (VAT 별도, 매출 대시보드와 같은 규칙 → 무료 · 이전 잔액 묶음은 단가 0)
-  - percent = 매출 × 값% / per_tooth = 유료 치아 수(무료 묶음 'free'·'bonus' 사용분을 뺀 크레딧, 묶음 기록이 없는 예전 주문은 credits_used − bonus_used) × 값. 소수 2자리
-  - 요율 = 배송일(방콕)에 유효한 것 (effective_from ≤ 배송일 중 가장 최근, 같은 날이면 나중에 넣은 것). 요율이 없으면 0
-  - `admin_commission_month(y, m)`(owner, + 담당 미지정 배송 주문 수 `unassigned`) / `my_commission_month(y, m)`(영업 본인) / `sales_my_orders()`(영업 본인: 주문번호 · 치과명 · 치아 수 · 단계 · 배송일만)
-  - 정산 `admin_mark_commission_paid(rep, y, m, note)`(owner, 달이 끝나야 `MONTH_NOT_ENDED`, `ALREADY_PAID`) → 스냅샷 저장 = 잠금 (그 뒤엔 다시 계산 안 함) /
+- 표: `sales_reps`(user_id pk · active), `sales_rep_rates`(rep_id · type **'percent' | 'per_credit'** · value · effective_from · created_by — 015 의 'per_tooth' 는 016 이 'per_credit' 로 이름만 바꿈),
+  `commission_payouts`(rep_id · year · month · total · orders 스냅샷 · paid_at · paid_by · note · **basis** 'payment' | 'order'(015 때 정산, 숫자 그대로 보여줌), 직원·달마다 1줄),
+  `refund_cash_lots`(현금 환불을 묶음 → 충전 요청별로 나눈 기록: history_id · lot_id · topup_id · credits · amount_thb, owner 만 읽기).
+  읽기 RLS: 영업 담당 = 본인 또는 staff 이상 / 요율 · 정산 = 본인 또는 owner / 충전 요청 표는 sales 에게 안 열려요 (자기 담당 입금은 `sales_my_payments()` 로만). **쓰기는 전부 함수로만**
+- **실적 = 수금**: `topup_requests.sales_rep_id` — 트리거 `_trg_topup_sales_rep` 가 **승인(approved)되는 순간** 그 고객의 `profiles.sales_rep_id`(켜진 담당자만, 없으면 null)를 기록.
+  직접 수정은 되돌림 (관리자 함수만 `set_config('allabut.rep_ok','1', true)`). 016 이 이미 승인된 예전 충전을 지금 고객 담당자로 한 번 채움(null 인 것만). 충전 승인 함수(`admin_approve_topup`)는 그대로
+  - 커미션 달 = 승인 시각(reviewed_at)의 방콕 달 / 요율 = 승인일(방콕)에 유효한 것 (effective_from ≤ 승인일 중 가장 최근, 같은 날이면 나중에 넣은 것, 없으면 0)
+  - percent = 입금 subtotal(VAT 제외) × 값% / per_credit = 충전 크레딧 수 × 값 THB, 소수 2자리. 무료 크레딧 지급(관리자 · 이벤트)은 topup_requests 가 아니라 실적 아님
+  - **현금 환불 차감**: `admin_refund_cash`(004 본문 + owner 권한 + `refund_cash_lots` 기록, 실제 송금액을 묶음 환불 가능액 비율로 나눔) → 그 충전의 담당자에게 **환불한 달**에 마이너스
+    (percent → 환불액(VAT 제외 = 환불액 × subtotal/total) × 원래 % / per_credit → 환불된 크레딧 × 원래 THB, 원래 = 그 충전 승인일의 요율).
+    추적이 안 되는 환불(016 전 환불 · 충전 기록 없는 묶음)은 마이너스 없이 커미션 탭에 **"확인 필요"** (`_commission_unresolved_refunds`)
+- 담당 지정 (manager 이상): `admin_set_customer_rep(p_user, p_rep, p_apply_open_orders)` = **앞으로의 입금에만** (세 번째 인자는 호환용, 무시) /
+  `admin_set_topup_rep(p_topup, p_rep, p_reason)` = 승인된 입금 한 건 (아니면 `NOT_EDITABLE`, 이미 담당이 있으면 사유 필수, 지급 완료한 달(승인한 달 · 그 충전의 환불이 있는 달)이면 `COMMISSION_LOCKED`) → 작업 기록 'topup_rep' · 'customer_rep'
+- **주문 기준은 016 에서 없앴어요**: `cnc_orders.sales_rep_id` · `shipped_at` · 주문 트리거 · `admin_set_order_rep` · `sales_my_orders` · 배송일 기준 계산. `create_cnc_order` 는 015·016 모두 안 바꿈 (012 정의 그대로).
+  015 때 주문에 남은 review_history 'rep_changed' 는 고객 화면에서 숨기고(`ADMIN_ONLY_HISTORY_ACTIONS`) 관리자 타임라인에만 이름으로. 작업 기록 'order_rep' 도 예전 기록으로 보여줌
+- 함수: `admin_commission_month(y, m)`(owner: 직원별 입금 건수 · 입금액(VAT 제외) · 충전 크레딧 · 환불 건수 · 환불 차감 · 커미션 + 건별 상세(입금 'payment' · 환불 'refund'), `unassigned` = 담당 미지정 승인 입금 수, `unresolved_refunds`) /
+  `my_commission_month(y, m)`(영업 본인) / `sales_my_payments()`(영업 본인: 요청번호 · 고객(치과명) · 승인일 · 크레딧 · 금액 — 슬립 · 환자 · 주문 없음)
+  - 정산 `admin_mark_commission_paid(rep, y, m, note)`(owner, 달이 끝나야 `MONTH_NOT_ENDED`, `ALREADY_PAID`) → 입금 기준 건별 스냅샷 저장(basis 'payment') = 잠금 /
     `admin_unmark_commission_paid(rep, y, m, reason)`(owner, 사유 필수 → 잠금 풀림, 지금 데이터로 다시 계산)
-- 요율: `admin_set_rep_rate(rep, type, value, effective_from)`(owner, percent 0~100 · per_tooth 0~1,000,000 THB, 이력은 지우지 않음), 목록 `admin_list_sales_reps()`(staff 이상 이름 · 켜짐 / 요율은 owner 에게만)
+- 요율: `admin_set_rep_rate(rep, type, value, effective_from)`(owner, 'percent' 0~100 · 'per_credit' 0~1,000,000 THB, 예전 'per_tooth' 로 불러도 per_credit, 이력은 지우지 않음), 목록 `admin_list_sales_reps()`(staff 이상 이름 · 켜짐 / 요율은 owner 에게만)
 - 화면 (`ui/page-admin-sales.js` + `cnc/cnc-sales.js`):
-  - Team 탭(owner): 역할에 "영업" (015 실행 뒤에만), 팀원마다 "영업 담당" 스위치(sales 역할은 항상 켜짐) + "커미션 설정" 창(매출 % / 치아당 THB · 값 · 적용 시작일 `uiDateField` 기본 오늘 → 요율 이력 표: 적용 중 · 예정 · 지난)
-  - Orders: "담당" 칸 + "담당 영업" 필터(전체 · 담당 없음 · 사람별) / 상세 "담당 영업" + 변경 버튼(manager 이상) / Customers 상세 "담당 영업" 선택 + "아직 배송 전인 주문도 같이 바꾸기"(기본 체크)
-  - 커미션 탭 `#/admin/commission`(owner, 기본 = 지난달): ◀ 월 ▶ · 직원별 카드(주문 · 치아 · 매출 · 커미션 · 지급 상태) · 펼치면 주문별 상세 · "지급 완료"(확인창 + 메모) / "지급 취소"(사유) ·
-    CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙) · "담당 미지정 n건 → 지정하기"(Orders 탭: 전체 단계 + 담당 없음 + 그 달 배송 칩)
-  - 영업 탭 `#/admin/sales`(영업 담당, 기본 = 이번 달): 내 월별 커미션 카드 + 주문별 상세, 내 담당 주문 표 (환자 · 파일 · 연락처 없음)
-  - 015 실행 전이면 담당 칸 · 필터 · 영업 역할이 안 보이고 나머지는 그대로 (`cncAdminListSalesReps()` → null)
+  - Team 탭(owner): 역할에 "영업" (015 실행 뒤에만), 팀원마다 "영업 담당" 스위치(sales 역할은 항상 켜짐) + "커미션 설정" 창(**입금액의 % / 충전 크레딧 1개당 THB** · 값 · 적용 시작일 `uiDateField` 기본 오늘 · "입금 승인일 기준으로 적용돼요" → 요율 이력 표: 적용 중 · 예정 · 지난)
+  - Top-ups 탭: 승인된 입금마다 "담당" 칸 + "담당 영업" 필터(전체 · 담당 없음 · 사람별, 016 전이면 숨김) / 상세 "담당 영업" + 변경(manager 이상). 승인하면 그 줄을 다시 읽어 담당을 바로 보여줘요
+  - Customers 상세: "담당 영업" 선택 (앞으로의 입금에만 — 안내 문구)
+  - 커미션 탭 `#/admin/commission`(owner, 기본 = 지난달): ◀ 월 ▶ · 직원별 카드(입금 건수 · 입금액 · 환불 차감(빨강) · 커미션 · 지급 상태) · 펼치면 건별 상세(승인일 · 고객 · 요청번호 · 패키지 · 금액 · 적용 요율 · 커미션, 환불 줄은 빨간 바탕) ·
+    "지급 완료"(확인창 + 메모) / "지급 취소"(사유) · CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙, 종류 payment/refund) ·
+    "담당 미지정 입금 n건 → 지정하기"(Top-ups 탭: 승인됨 + 담당 없음 + 그 달 승인 칩) · "확인 필요" 환불 목록
+  - 영업 탭 `#/admin/sales`(영업 담당, 기본 = 이번 달): 내 월별 커미션 카드 + 건별 상세, 내 담당 고객 입금 내역 표 (환자 · 주문 정보 없음)
+  - 015 실행 전이면 담당 칸 · 필터 · 영업 역할이 안 보이고, 커미션 탭은 "DB 업데이트(sql/015 · sql/016)" 안내만
 - 팀 함수(owner): `admin_list_team`, `admin_add_member(email, role, name)`(가입한 이메일만, USER_NOT_FOUND), `admin_set_role`, `admin_set_member_name`, `admin_remove_member` (자기 자신·마지막 owner 불가: CANNOT_REMOVE_SELF / LAST_OWNER)
 - 작업 기록 `admin_audit_log`: staff 이상 읽기, 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경)
 - `review_history` 의 관리자 기록은 `by: 'admin'` 그대로 + DB 트리거가 `by_name`·`by_id`(실제 처리자)를 붙임. 관리자 화면 타임라인만 이름 표시 (`uiHistoryList(history, true)`), 고객 화면은 "관리자"

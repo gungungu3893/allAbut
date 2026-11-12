@@ -350,10 +350,11 @@ Object.assign(PageAdmin, {
         return t('role_' + d.from) + ' → ' + t('role_' + d.to);
       case 'team_remove':
         return d.role ? t('role_' + d.role) : '';
-      // 영업 · 커미션 (sql/015)
-      case 'order_rep': case 'customer_rep':
+      // 영업 · 커미션 (sql/015 · 016) — order_rep 는 015 때 기록 (지금은 입금 기준 topup_rep)
+      case 'topup_rep': case 'order_rep': case 'customer_rep':
         return (d.from_name || t('rep_none')) + ' → ' + (d.to_name || t('rep_none')) +
-          (d.clinic ? ' · ' + d.clinic : '') + (d.open_orders ? ' · ' + tf('rep_open_orders_n', { n: d.open_orders }) : '') + (d.reason ? ' · ' + d.reason : '');
+          ((d.customer || d.clinic) ? ' · ' + (d.customer || d.clinic) : '') +
+          (d.subtotal != null ? ' · ' + formatTHB(d.subtotal) : '') + (d.reason ? ' · ' + d.reason : '');
       case 'commission_rate':
         return cncRateText({ type: d.type, value: d.value }) + ' · ' + tf('rate_from_fmt', { date: d.effective_from ? formatDate(d.effective_from) : '—' });
       case 'commission_paid': case 'commission_unpaid':

@@ -1,20 +1,25 @@
 // ================================================================
-// allAbut — 영업(sales) · 주문 담당자 · 커미션 (로직만, 화면 코드 없음) — DB: sql/015_sales_commission.sql
+// allAbut — 영업(sales) · 담당자 · 커미션 (로직만, 화면 코드 없음)
+//   DB: sql/015_sales_commission.sql (역할 · 담당 · 요율 · 정산) + sql/016_commission_on_payments.sql (수금 기준)
 // ================================================================
 // 역할 'sales' (영업)는 owner ⊃ manager ⊃ staff 계층과 별개예요.
-//   - sales 역할: 관리자 화면 대신 "영업" 메뉴 하나 (#/admin/sales) — 내 담당 주문 + 내 월별 커미션
+//   - sales 역할: 관리자 화면 대신 "영업" 메뉴 하나 (#/admin/sales) — 내 담당 고객 입금 내역 + 내 월별 커미션
 //   - 팀원 누구나(owner · manager · staff) "영업 담당"을 켤 수 있어요 → Admin 안에 "영업" 탭이 같이 보여요
-//   - 다른 고객 주문 · 프로필 · 돈 정보는 DB 가 막아요 (is_admin() 이 sales 에게 false). 화면에서 숨기는 것은 편의일 뿐
-// 커미션 = 그 달(방콕)에 배송된 주문 × 배송일에 유효한 요율
-//   percent   : 주문 매출(묶음 단가 × 사용 크레딧, VAT 별도, 무료 묶음 0) × 값%
-//   per_tooth : 유료 묶음으로 만든 치아 수 × 값 (THB)
-// 지급 완료한 달은 스냅샷 숫자 그대로 (다시 계산 안 함), 그 달 주문은 담당자 변경 불가
+//   - 다른 고객 정보 · 돈 정보는 DB 가 막아요 (is_admin() 이 sales 에게 false). 화면에서 숨기는 것은 편의일 뿐
+// 커미션 = 수금 기준 (sql/016)
+//   실적 = 충전 입금이 승인(approved)된 건. 승인되는 순간 그 고객의 담당 영업이 충전 요청에 기록돼요 (topup_requests.sales_rep_id)
+//   커미션 달 = 승인 시각의 방콕 달 / 요율 = 승인일에 유효한 요율
+//     percent    : 입금 subtotal(VAT 제외) × 값%
+//     per_credit : 충전 크레딧 수 × 값 THB
+//   현금 환불 → 그 충전의 담당자에게 환불한 달에 마이너스 (원래 요율로). 추적이 안 되는 환불은 "확인 필요"
+//   무료 크레딧 지급(관리자 · 이벤트)은 실적 아님
+// 지급 완료한 달은 스냅샷 숫자 그대로 (다시 계산 안 함), 그 달 입금은 담당자 변경 불가 (COMMISSION_LOCKED)
 
 // 서버 에러 코드 (긴 이름 먼저 — 'NOT_PAID' 가 다른 코드 안에서 먼저 찾아지지 않게)
 CNC_ERROR_CODES = ['COMMISSION_LOCKED', 'REP_NOT_FOUND', 'MONTH_NOT_ENDED', 'ALREADY_PAID', 'NOT_PAID', 'NOT_SALES',
   'INVALID_RATE_VALUE', 'INVALID_RATE_TYPE', 'INVALID_MONTH'].concat(CNC_ERROR_CODES);
 
-var RATE_TYPES = ['percent', 'per_tooth'];
+var RATE_TYPES = ['percent', 'per_credit'];
 
 // ----------------------------------------------------------------
 // 영업 담당 목록 (staff 이상: 이름 · 켜짐 / owner 는 지금 요율도)
@@ -56,7 +61,7 @@ function cncAdminSetSalesRep(userId, active) {
   return cncRpc('admin_set_sales_rep', { p_user: userId, p_active: !!active });
 }
 
-// 요율 검사 → 에러 키 또는 '' (DB 와 같은 규칙: percent 0~100, 치아당 0~1,000,000 THB)
+// 요율 검사 → 에러 키 또는 '' (DB 와 같은 규칙: percent 0~100, 크레딧 1개당 0~1,000,000 THB)
 function cncValidateRate(type, value) {
   if (RATE_TYPES.indexOf(type) === -1) return 'rate_err_type';
   var s = String(value == null ? '' : value).trim();
@@ -78,22 +83,29 @@ async function cncAdminRepRates(repId) {
     .order('effective_from', { ascending: false }).order('created_at', { ascending: false })) || [];
 }
 
-// 요율 글자: "10%" / "300.00 THB / 치아"
+// 요율 방식 이름 키 (015 의 'per_tooth' 가 남아 있어도 크레딧 1개당으로 보여줘요)
+function cncRateTypeKey(type) {
+  return type === 'percent' ? 'rate_type_percent' : 'rate_type_per_credit';
+}
+
+// 요율 글자: "10%" / "300.00 THB / 크레딧"
 function cncRateText(rate) {
   if (!rate || rate.type == null) return t('rate_none');
   if (rate.type === 'percent') return formatNumber(Number(rate.value)) + '%';
-  return tf('rate_per_tooth_text', { amount: formatTHB(Number(rate.value)) });
+  return tf('rate_per_credit_text', { amount: formatTHB(Number(rate.value)) });
 }
 
 // ----------------------------------------------------------------
 // 담당자 지정 (manager 이상)
 // ----------------------------------------------------------------
-function cncAdminSetOrderRep(orderId, repId, reason) {
-  return cncRpc('admin_set_order_rep', { p_order: orderId, p_rep: repId || null, p_reason: String(reason || '').trim() });
+// 승인된 입금 한 건의 담당 (이미 담당이 있으면 사유 필수)
+function cncAdminSetTopupRep(topupId, repId, reason) {
+  return cncRpc('admin_set_topup_rep', { p_topup: topupId, p_rep: repId || null, p_reason: String(reason || '').trim() });
 }
 
-function cncAdminSetCustomerRep(userId, repId, applyOpenOrders) {
-  return cncRpc('admin_set_customer_rep', { p_user: userId, p_rep: repId || null, p_apply_open_orders: !!applyOpenOrders });
+// 고객 담당 (앞으로의 입금에만 적용 — 세 번째 인자는 DB 가 무시해요)
+function cncAdminSetCustomerRep(userId, repId) {
+  return cncRpc('admin_set_customer_rep', { p_user: userId, p_rep: repId || null, p_apply_open_orders: false });
 }
 
 // ----------------------------------------------------------------
@@ -104,6 +116,24 @@ function cncParseJson(d) {
   return d;
 }
 
+// 건별 상세 한 줄 → 화면용 (입금 'payment' / 환불 차감 'refund' / 015 때 주문 기준 정산 'order')
+function cncCommissionItem(i) {
+  var n = function (v) { return Number(v) || 0; };
+  if (i.kind === 'payment' || i.kind === 'refund') {
+    return {
+      kind: i.kind, topupId: i.topup_id || '', customer: i.customer || '', date: i.date,
+      packageCredits: n(i.package_credits), credits: n(i.credits),
+      amount: n(i.subtotal),                 // VAT 제외 (환불은 환불액의 VAT 제외 금액)
+      total: n(i.kind === 'refund' ? i.amount_thb : i.total),
+      rateType: i.rate_type || null, rateValue: i.rate_value == null ? null : n(i.rate_value), commission: n(i.commission)
+    };
+  }
+  // 예전(주문 기준) 스냅샷: 주문번호 · 커미션만
+  return { kind: 'order', topupId: i.order_id || '', customer: i.clinic || '', date: i.shipped_at || null, packageCredits: 0,
+    credits: n(i.paid_teeth), amount: n(i.revenue), total: n(i.revenue),
+    rateType: i.rate_type || null, rateValue: i.rate_value == null ? null : n(i.rate_value), commission: n(i.commission) };
+}
+
 // 숫자 정리 (스냅샷 · 계산 모두 같은 모양으로)
 function cncNormalizeCommission(d) {
   d = cncParseJson(d) || {};
@@ -111,18 +141,17 @@ function cncNormalizeCommission(d) {
   return {
     year: n(d.year), month: n(d.month), monthEnded: !!d.month_ended,
     unassigned: d.unassigned == null ? null : n(d.unassigned),
+    unresolved: (d.unresolved_refunds || []).map(function (u) {
+      return { customer: u.customer || '', date: u.refunded_at, credits: n(u.credits), amount: n(u.amount_thb), reason: u.reason || '' };
+    }),
     reps: (d.reps || []).map(function (r) {
       return {
-        repId: r.rep_id, name: r.name || '', active: !!r.active,
-        orders: n(r.orders), teeth: n(r.teeth), paidTeeth: n(r.paid_teeth), revenue: n(r.revenue), commission: n(r.commission),
+        repId: r.rep_id, name: r.name || '', active: !!r.active, basis: r.basis || 'payment',
+        payments: n(r.payments), amount: n(r.amount), credits: n(r.credits),
+        refunds: n(r.refunds), refundDeduction: n(r.refund_deduction), commission: n(r.commission),
         rate: r.rate || null,
         paid: r.paid ? { paidAt: r.paid.paid_at, by: r.paid.paid_by_name || '', note: r.paid.note || '', total: n(r.paid.total) } : null,
-        items: (r.items || []).map(function (i) {
-          return {
-            orderId: i.order_id, clinic: i.clinic || '', shippedAt: i.shipped_at, teeth: n(i.teeth), paidTeeth: n(i.paid_teeth),
-            revenue: n(i.revenue), rateType: i.rate_type || null, rateValue: i.rate_value == null ? null : n(i.rate_value), commission: n(i.commission)
-          };
-        })
+        items: (r.items || []).map(cncCommissionItem)
       };
     })
   };
@@ -138,9 +167,9 @@ async function cncMyCommissionMonth(year, month) {
   return cncNormalizeCommission(await cncRpc('my_commission_month', { p_year: year, p_month: month }));
 }
 
-// 영업 본인: 내 담당 주문 (주문번호 · 치과명 · 치아 수 · 단계 · 배송일)
-async function cncSalesMyOrders() {
-  var d = cncParseJson(await cncRpc('sales_my_orders', { p_limit: 300 }));
+// 영업 본인: 내 담당 고객 입금 내역 (요청번호 · 고객 · 승인일 · 크레딧 · 금액만)
+async function cncSalesMyPayments() {
+  var d = cncParseJson(await cncRpc('sales_my_payments', { p_limit: 300 }));
   return Array.isArray(d) ? d : [];
 }
 
@@ -165,26 +194,27 @@ function cncShiftMonth(year, month, delta) {
   return { year: year + Math.floor(m / 12), month: ((m % 12) + 12) % 12 + 1 };
 }
 
-// 그 달(방콕)의 시작 · 끝 ISO (주문 목록 "배송한 달" 필터용) → { from, to } (to 는 다음 달 1일, 미포함)
+// 그 달(방콕)의 시작 · 끝 ISO (충전 목록 "승인한 달" 필터용) → { from, to } (to 는 다음 달 1일, 미포함)
 function cncBkkMonthRange(year, month) {
   var next = cncShiftMonth(year, month, 1);
   var pad = function (v) { return String(v).padStart(2, '0'); };
   return { from: year + '-' + pad(month) + '-01T00:00:00+07:00', to: next.year + '-' + pad(next.month) + '-01T00:00:00+07:00' };
 }
 
-// CSV (owner): 직원별 주문 한 줄씩 — 기존 CSV 규칙 (UTF-8 BOM, 금액은 쉼표 없는 숫자, 수식 주입 방지 cncCsvCell)
+// CSV (owner): 직원별 건 한 줄씩 (입금 + 환불 차감) — 기존 CSV 규칙 (UTF-8 BOM, 금액은 쉼표 없는 숫자, 수식 주입 방지 cncCsvCell)
 function cncCommissionCsv(data, headers) {
   var lines = [headers.map(function (h) { return cncCsvCell(h, true); }).join(',')];
   (data.reps || []).forEach(function (r) {
     r.items.forEach(function (i) {
       lines.push([
         cncCsvCell(r.name, true),
-        cncCsvCell(i.orderId, true),
-        cncCsvCell(i.clinic, true),
-        cncCsvCell(i.shippedAt ? String(i.shippedAt).slice(0, 10) : '', true),
-        cncCsvCell(i.teeth),
-        cncCsvCell(i.paidTeeth),
-        cncCsvMoney(i.revenue),
+        cncCsvCell(i.kind, true),
+        cncCsvCell(i.topupId, true),
+        cncCsvCell(i.date ? String(i.date).slice(0, 10) : '', true),
+        cncCsvCell(i.customer, true),
+        cncCsvCell(i.credits),
+        cncCsvMoney(i.amount),
+        cncCsvMoney(i.total),
         cncCsvCell(i.rateType || '', true),
         i.rateValue == null ? '' : cncCsvMoney(i.rateValue),
         cncCsvMoney(i.commission),

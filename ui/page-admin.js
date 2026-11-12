@@ -1,6 +1,6 @@
 // ===== 관리자 화면 #/admin =====
 // 탭: Orders(주문 처리) / Top-ups(충전 승인) / Customers(고객·크레딧) / Dashboard(현황) / Activity(작업 기록) / Team(팀) / Settings(가격·결제·LINE 그룹)
-//      + 영업(내 담당 주문 · 내 커미션 — 영업 담당만) / 커미션(직원별 월 정산 — owner)  ← ui/page-admin-sales.js (sql/015)
+//      + 영업(내 담당 고객 입금 · 내 커미션 — 영업 담당만) / 커미션(직원별 월 정산, 수금 기준 — owner)  ← ui/page-admin-sales.js (sql/015 · 016)
 // 주소: #/admin/orders, #/admin/topups, #/admin/customers, #/admin/dashboard, #/admin/activity, #/admin/team, #/admin/settings, #/admin/sales, #/admin/commission
 // 역할(sql/005_team.sql)에 따라 탭·버튼이 보여요: staff = Orders·Activity / manager = + Top-ups·Customers·Dashboard(주문 통계) / owner = 전부
 // sales 역할(영업)은 "영업" 탭 하나만 (관리 팀 탭은 없음)
@@ -14,8 +14,8 @@ var PageAdmin = {
   loadToken: 0,
 
   // Orders 탭 상태
-  orders: { stage: 'active', search: '', sort: 'newest', rep: 'all', shipped: null, rows: [], hasMore: false, loading: false, error: false },
-  // 영업 담당 목록 (staff 이상, sql/015 — 실행 전이면 null → 담당 칸 숨김)
+  orders: { stage: 'active', search: '', sort: 'newest', rows: [], hasMore: false, loading: false, error: false },
+  // 영업 담당 목록 (staff 이상, sql/015 — 실행 전이면 null → Top-ups 의 담당 칸 · 고객 담당 숨김)
   reps: null,
   // Dashboard 탭 상태 (now: 지금 기준, month: 선택한 달, trend: 최근 12개월)
   dash: { year: null, month: null, now: null, monthData: null, trend: null, error: false },
@@ -58,7 +58,7 @@ var PageAdmin = {
   },
 
   // Top-ups 탭 상태
-  topups: { status: 'pending', rows: [], hasMore: false, loading: false, error: false },
+  topups: { status: 'pending', rep: 'all', month: null, rows: [], hasMore: false, loading: false, error: false },   // rep · month: 담당 영업 필터 (sql/016)
   topupDetail: null,     // { modal, row, busy, slipUrl, slipError }
   // Settings 탭 상태
   settingsTab: { packages: null, settings: null, company: null, versions: null, error: false, saving: false, savingCompany: false },
@@ -482,11 +482,7 @@ var PageAdmin = {
     if (!document.getElementById('admin-orders-list')) this.drawBody();
     this.drawOrdersList();
     try {
-      var res = await cncAdminListOrders({
-        stage: o.stage, search: o.search, sort: o.sort, offset: more ? o.rows.length : 0,
-        rep: this.reps ? o.rep : 'all',
-        shippedFrom: o.shipped ? o.shipped.from : null, shippedTo: o.shipped ? o.shipped.to : null
-      });
+      var res = await cncAdminListOrders({ stage: o.stage, search: o.search, sort: o.sort, offset: more ? o.rows.length : 0 });
       if (token !== this.loadToken) return;
       o.rows = more ? o.rows.concat(res.rows) : res.rows;
       o.hasMore = res.hasMore;
@@ -519,7 +515,6 @@ var PageAdmin = {
             '<option value="deadline"' + (o.sort === 'deadline' ? ' selected' : '') + '>' + escHtml(t('admin_sort_deadline')) + '</option>' +
           '</select>' +
         '</div>' +
-        this.repFilterHtml() +
         '<div class="field admin-search">' +
           '<label class="field-label" for="admin-search">' + escHtml(t('admin_search_orders')) + '</label>' +
           '<div class="search-box"><span class="search-icon" aria-hidden="true">🔍</span>' +
@@ -527,7 +522,6 @@ var PageAdmin = {
             'placeholder="' + escHtml(t('admin_search_orders_ph')) + '" oninput="PageAdmin.onOrderSearch(this.value)"></div>' +
         '</div>' +
       '</div>' +
-      this.shippedChipHtml() +
       '<div id="admin-orders-list"></div>';
   },
 
@@ -556,7 +550,7 @@ var PageAdmin = {
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('order_number')) + '</th><th>' + escHtml(t('admin_received')) + '</th><th>' + escHtml(t('clinic_name')) + '</th>' +
       '<th>' + escHtml(t('patient_label')) + '</th><th>' + escHtml(t('teeth_label')) + '</th><th>' + escHtml(t('case_deadline_label')) + '</th>' +
-      '<th>' + escHtml(t('admin_stage')) + '</th>' + (self.reps ? '<th>' + escHtml(t('rep_label')) + '</th>' : '') + '</tr></thead><tbody>' +
+      '<th>' + escHtml(t('admin_stage')) + '</th></tr></thead><tbody>' +
       o.rows.map(function (r) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openOrder(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openOrder(\'' + escHtml(r.id) + '\')">' +
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b>' + self.freeBadgeHtml(r, true) + '</td>' +
@@ -565,8 +559,7 @@ var PageAdmin = {
           '<td>' + escHtml(r.patient || t('anonymous')) + '</td>' +
           '<td class="mono">' + formatNumber(r.teeth_count) + '</td>' +
           '<td class="nowrap">' + self.dueHtml(r) + '</td>' +
-          '<td>' + uiStageBadge(r.stage) + '</td>' +
-          (self.reps ? '<td class="rep-cell">' + self.repNameHtml(r.sales_rep_id) + '</td>' : '') + '</tr>';
+          '<td>' + uiStageBadge(r.stage) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     // 모바일: 카드
@@ -580,7 +573,6 @@ var PageAdmin = {
           '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(r.teeth_count) + '</span></span>' +
           '<span><span class="muted">' + escHtml(t('case_deadline_label')) + '</span> ' + self.dueHtml(r) + '</span>' +
           '<span><span class="muted">' + escHtml(t('admin_received')) + '</span> ' + escHtml(formatDate(r.created_at)) + '</span>' +
-          (self.reps ? '<span><span class="muted">' + escHtml(t('rep_label')) + '</span> ' + self.repNameHtml(r.sales_rep_id) + '</span>' : '') +
         '</span></button></li>';
     }).join('') + '</ul>';
 
@@ -683,10 +675,6 @@ var PageAdmin = {
             : '')) +
         row('credits_use', formatNumber(o.credits_used), true) +
         (Number(o.bonus_used || 0) > 0 ? row('admin_free_used', formatNumber(o.bonus_used), true) : '') +
-        // 담당 영업 + 변경 (manager 이상) — sql/015
-        (this.reps ? row('rep_label', '<span id="order-rep-name">' + this.repNameHtml(o.sales_rep_id) + '</span>' +
-          (cncHasRole('manager') ? ' <button type="button" class="btn btn-outline btn-sm" id="btn-set-rep" onclick="PageAdmin.openSetOrderRep()">' + escHtml(t('rep_change')) + '</button>' : '')) : '') +
-        (o.shipped_at ? row('shipped_date_label', escHtml(formatDate(o.shipped_at))) : '') +
         (o.carrier ? row('carrier_label', escHtml(o.carrier)) : '') +
         (o.tracking_number ? row('tracking_label', escHtml(o.tracking_number), true) : '') +
       '</section></div>';
@@ -1407,7 +1395,11 @@ var PageAdmin = {
     if (!document.getElementById('admin-topups-list')) this.drawBody();
     this.drawTopupsList();
     try {
-      var res = await cncAdminListTopups({ status: tp.status, offset: more ? tp.rows.length : 0 });
+      var res = await cncAdminListTopups({
+        status: tp.status, offset: more ? tp.rows.length : 0,
+        rep: this.reps ? tp.rep : 'all',
+        approvedFrom: tp.month ? tp.month.from : null, approvedTo: tp.month ? tp.month.to : null
+      });
       if (token !== this.loadToken) return;
       tp.rows = more ? tp.rows.concat(res.rows) : res.rows;
       tp.hasMore = res.hasMore;
@@ -1431,7 +1423,9 @@ var PageAdmin = {
             }).join('') +
           '</select>' +
         '</div>' +
+        this.topupRepFilterHtml() +
       '</div>' +
+      this.topupMonthChipHtml() +
       '<div id="admin-topups-list"></div>';
   },
 
@@ -1456,7 +1450,8 @@ var PageAdmin = {
 
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
-      '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('col_status')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('admin_requested')) + '</th><th>' + escHtml(t('col_status')) + '</th>' +
+      (self.reps ? '<th>' + escHtml(t('rep_label')) + '</th>' : '') + '</tr></thead><tbody>' +
       tp.rows.map(function (r) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b></td>' +
@@ -1464,7 +1459,8 @@ var PageAdmin = {
           '<td class="mono">' + formatNumber(r.credits) + '</td>' +
           '<td class="mono nowrap">' + formatTHB(r.total) + '</td>' +
           '<td class="nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
-          '<td>' + uiTopupBadge(r.status) + '</td></tr>';
+          '<td>' + uiTopupBadge(r.status) + '</td>' +
+          (self.reps ? '<td class="rep-cell">' + (r.status === 'approved' ? self.repNameHtml(r.sales_rep_id) : '<span class="muted">—</span>') + '</td>' : '') + '</tr>';
       }).join('') + '</tbody></table></div>';
 
     var cards = '<ul class="admin-order-cards">' + tp.rows.map(function (r) {
@@ -1472,7 +1468,8 @@ var PageAdmin = {
         '<span class="order-top"><span class="order-id mono">' + escHtml(r.id) + '</span>' + uiTopupBadge(r.status) + '</span>' +
         '<span class="admin-card-clinic">' + escHtml(self.customerName(r)) + '</span>' +
         '<span class="order-meta"><span><span class="mono">' + formatNumber(r.credits) + '</span> ' + escHtml(t('credit_unit')) + '</span>' +
-        '<span class="mono">' + formatTHB(r.total) + '</span><span>' + escHtml(formatDateTime(r.created_at)) + '</span></span>' +
+        '<span class="mono">' + formatTHB(r.total) + '</span><span>' + escHtml(formatDateTime(r.created_at)) + '</span>' +
+        (self.reps && r.status === 'approved' ? '<span><span class="muted">' + escHtml(t('rep_label')) + '</span> ' + self.repNameHtml(r.sales_rep_id) + '</span>' : '') + '</span>' +
         '</button></li>';
     }).join('') + '</ul>';
 
@@ -1549,6 +1546,9 @@ var PageAdmin = {
           row('topup_vat_label', formatTHB(r.vat_amount), true) +
           row('topup_total', '<b>' + formatTHB(r.total) + '</b>', true) +
           row('admin_requested', escHtml(formatDateTime(r.created_at))) +
+          // 담당 영업 (승인된 입금만) + 변경 (manager 이상) — sql/016
+          (this.reps && r.status === 'approved' ? row('rep_label', '<span id="topup-rep-name">' + this.repNameHtml(r.sales_rep_id) + '</span>' +
+            (cncHasRole('manager') ? ' <button type="button" class="btn btn-outline btn-sm" id="btn-set-topup-rep" onclick="PageAdmin.openSetTopupRep()">' + escHtml(t('rep_change')) + '</button>' : '')) : '') +
         '</section>' +
         '<section><h3 class="detail-title">' + escHtml(t('admin_slip')) + '</h3>' + slip + '</section>' +
       '</div></div>';
@@ -1604,6 +1604,11 @@ var PageAdmin = {
       st.row.status = newStatus;
       st.row.reviewed_at = new Date().toISOString();
       if (reason) st.row.reject_reason = reason;
+      // 승인하면 DB 트리거가 담당 영업을 적어요 (sql/016) → 그 줄만 다시 읽기 (실패해도 괜찮아요)
+      try {
+        var fresh = await cncAdminGetTopup(st.row.id);
+        if (fresh) Object.assign(st.row, fresh, { customer: st.row.customer });
+      } catch (e2) { console.warn('topup reload', e2); }
       uiToast(t(successKey), 'success');
     } catch (err) {
       console.error(err);
