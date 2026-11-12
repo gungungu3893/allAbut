@@ -51,6 +51,12 @@ function showScreen(name) {
         next.classList.add('visible');
         isSwitching = false;
 
+        // 방문 집계: 랜딩 · 로그인 화면 페이지뷰 (cnc/cnc-analytics.js, 실패해도 조용히)
+        if (window.cncTrackPage) {
+          if (name === 'landing') cncTrackPage('/landing');
+          else if (name === 'auth') cncTrackPage('/signin');
+        }
+
         // 랜딩이 처음 보일 때 로고 인트로 (탭당 1번). 페이드인(0.4초)이 끝난 뒤 — LogoIntro 가 글꼴 로딩 + 0.5초 더 기다려요
         if (name === 'landing' && window.LogoIntro) {
           setTimeout(function () {
@@ -512,6 +518,10 @@ function leaveLegalPage(event, toSignIn) {
 (async function boot() {
   // 예전 메타버스 버전이 남긴 저장값 정리 (게임 위치)
   try { localStorage.removeItem('allabut_location'); } catch (e) { /* 무시 */ }
+
+  // 방문 집계: 사이트를 열 때마다 1번 (새로고침 포함). 기록이 끝나면 랜딩 TODAY / TOTAL 을 불러와요 (내 방문 포함)
+  //   화면을 막지 않게 기다리지 않아요 (실패해도 조용히)
+  if (window.cncTrackVisit) cncTrackVisit().then(function () { if (window.VisitCounter) VisitCounter.load(); });
 
   applyLangToDocument();   // 저장된 언어 반영 (아랍어·페르시아어는 RTL)
   applyFontScale();        // 저장된 글자 크기 반영

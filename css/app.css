@@ -2458,3 +2458,21 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .approve-warn { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--radius-sm, 8px); background: #FFF7ED; border: 1px solid #FED7AA; color: #9A3412; font-weight: 500; line-height: 1.5; }
 .timeline-deadline { margin: 4px 0 0; color: var(--navy); }
 #btn-set-deadline { margin-inline-start: 8px; }
+
+/* ===== 관리자 Dashboard — 방문 통계 (ui/page-admin-visits.js) ===== */
+.vs-controls { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.vs-ranges { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip.vs-range.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.vs-filters { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.vs-custom { margin: 6px 0 10px; max-width: 640px; }
+.vs-period-line { margin: 4px 0 12px; }
+.vs-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.vs-cards.is-loading { opacity: 0.55; }
+.vs-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.vs-card .admin-stat-value { font-size: 1.75rem; font-weight: 600; color: var(--navy); }
+.vs-kinds { margin: 2px 0 6px; }
+.vs-conversion { margin: 4px 0 14px; color: var(--navy); }
+.vs-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+.vs-table .table td { padding: 8px 10px; }
+.vs-table .num { text-align: end; white-space: nowrap; }
+.vs-actions { margin-top: 12px; }

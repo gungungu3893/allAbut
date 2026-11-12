@@ -205,6 +205,8 @@ var PageAdmin = {
       d.error = err;
     }
     this.drawBody();
+    // 방문 통계 — 따로 불러와요 (주문 통계를 막지 않게)
+    if (this.loadVisits && cncHasRole('staff')) this.loadVisits();
     // 매출(Revenue) 구역 — 주문 통계와 따로 불러와요 (매출 쪽 오류가 주문 통계를 막지 않게)
     if (!cncHasRole('owner')) return;   // 매출은 owner 만
     await this.loadFinance(token);
@@ -256,6 +258,7 @@ var PageAdmin = {
   // 대시보드 순서
   //   1) 지금 처리할 일: 대기 중 충전 요청 / 접수 대기 주문 / 기한 임박 — 누르면 그 탭·필터로
   //   2) 현재 현황: 단계별 주문 카드, 기한 임박 목록
+  //   2-1) 방문 통계 (ui/page-admin-visits.js, staff 이상 — 대시보드 탭 자체는 manager 이상)
   //   3) 구분선 + ◀ 월 ▶ + "월별 통계" — (owner) [주문 | 매출] 탭으로 전환
   dashHtml: function () {
     var d = this.dash;
@@ -263,6 +266,8 @@ var PageAdmin = {
     var owner = cncHasRole('owner');
     var zone = owner && d.zone === 'revenue' ? 'revenue' : 'orders';
     var html = this.actionNowHtml() + this.currentStatusHtml();
+    // 방문 통계 (현재 현황 아래 · 월별 통계 위, ui/page-admin-visits.js)
+    if (this.visitsHtml) html += this.visitsHtml();
 
     html += '<div class="dash-monthly">' +
       this.monthNavHtml() +

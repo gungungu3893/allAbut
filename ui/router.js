@@ -133,6 +133,7 @@ function renderPublicRoute() {
     window.currentRoute = name;
     currentPage = ROUTES[name]();
     publicPageActive = true;
+    if (window.cncTrackPage) cncTrackPage(cncNormPath(location.hash));   // 방문 집계 (페이지뷰)
     document.title = pageTitle(name);
     setActiveNav(name);   // 로그인 전 헤더의 "회사소개" 강조
     showScreen('legal');
@@ -181,6 +182,7 @@ function renderRoute() {
   window.currentRoute = name;
   currentPage = ROUTES[name]();
   setActiveNav(name);
+  if (window.cncTrackPage) cncTrackPage(cncNormPath(location.hash));   // 방문 집계 (페이지뷰, 쿼리 · id 는 빼요)
   document.title = pageTitle(name);
   applyDeepLink(name);   // #/orders?id=… · #/admin/orders?order=…
   main.innerHTML = '';

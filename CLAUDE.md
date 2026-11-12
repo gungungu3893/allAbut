@@ -104,7 +104,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013.
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
 
 ## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
@@ -155,6 +155,21 @@
 - **Cloudflare Turnstile**: `config.js` 의 `TURNSTILE_SITE_KEY` (비어 있으면 위젯 숨김, 예전처럼 동작). 회원가입·로그인·비밀번호 찾기 폼의 `.ts-box[data-ts]` (`ui/turnstile.js`), 토큰은 `captchaToken` 으로 Supabase Auth 에 전달, 호출 뒤 `tsReset`.
   **시크릿 키는 코드에 절대 넣지 않는다** → Supabase → Authentication → Bot and Abuse Protection 에만
 - 재실행 순서: 002 → 008 → 009 → 010 → 012 (008 을 다시 실행하면 009 → 010 → 012 도)
+
+## 방문자 집계 (sql/013_site_analytics.sql) — 전부 카운트
+- 목적: 나중에 광고 배너 판매용 → **걸러내지 않고 전부 기록** (로봇 · 직원 · 새로고침 포함). 대신 `is_bot` · `is_staff` 를 같이 저장해서 관리자 화면에서 나눠 봐요
+- 표 `site_events` (RLS, 직접 읽기·쓰기 없음 → 함수로만): kind 'visit' | 'pageview', 방콕 날짜 `day`, visitor_id · session_id(무작위 UUID), path(쿼리 뺀 경로), referrer_host, device, lang, country(cf-ipcountry), user_id, is_bot, is_staff.
+  **IP 원문 · 전체 user agent 는 저장하지 않는다**
+- 기록 `log_site_event(...)` (anon·authenticated): user_id · is_staff(`has_admin_role('staff')`) · country 는 서버가 정함, 길이 제한(path·referrer 100자, lang 10자)
+- 브라우저 `cnc/cnc-analytics.js` (로직만): visitor_id = `localStorage.allabut_visitor_id`, session_id = `sessionStorage.allabut_session_id`.
+  visit = 사이트를 열 때마다 1번 (app.js boot `cncTrackVisit()`), pageview = 경로가 바뀔 때마다 1번 (router + showScreen, 같은 경로 연속은 1번 `cncTrackPage`).
+  경로: 랜딩 '/landing', 로그인 화면 '/signin', 나머지 `cncNormPath(location.hash)` (#/orders?id=… → #/orders). is_bot = UA(bot·crawler·spider·preview·headless·lighthouse…) 또는 navigator.webdriver.
+  device = UA·폭·터치, referrer = document.referrer 호스트(같은 사이트면 빈 값, LINE 앱 안 브라우저면 'line'). 실패해도 조용히, 화면을 기다리게 하지 않음
+- 랜딩 "TODAY 12 · TOTAL 1,234" (`ui/visit-counter.js`, `get_visit_counts()` = visit 전부): 흰 메뉴 줄 아래 다크 본문 오른쪽 위(RTL 왼쪽, 480px 미만 가운데 한 줄),
+  숫자 .mono 골드 + 0.8초 카운트업(움직임 줄이기면 바로), 라벨 영어 그대로. 이번 방문이 기록된 뒤에 불러와요. 못 받으면 안 보임
+- 관리자 Dashboard "방문 통계" (`ui/page-admin-visits.js`, `admin_visit_stats(from, to, no_bots, no_staff)` staff 이상 — 대시보드 탭 자체는 manager 이상): "현재 현황" 아래 · 월별 통계 위.
+  기간(오늘·어제·7일·30일·이번 달·지난달·직접 `uiDateField`) / 카드(방문 · 순 방문자 · 페이지뷰 · 방문당 페이지뷰 · 신규 방문자) / [로봇 제외] [직원 제외] (기본 전부 포함) /
+  그래프(날짜별, 하루면 0~23시) / 표(많이 본 화면 `VISIT_PATH_LABELS` · 들어온 곳 `cncReferrerGroups` · 기기 · 언어 · 나라) / 전환(기간 안 가입 수 ÷ 순 방문자) / CSV(owner, BOM)
 
 ## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
 - 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
@@ -216,6 +231,9 @@
 - `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`
 - `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
 - `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)
+- `cnc/cnc-analytics.js` — 방문 · 페이지뷰 기록, 방문자 ID, 기기·로봇·들어온 곳 판별, TODAY/TOTAL, 관리자 방문 통계·CSV (로직만)
+- `ui/visit-counter.js` — 랜딩 "TODAY · TOTAL" 숫자
+- `ui/page-admin-visits.js` — 관리자 Dashboard 방문 통계 (`PageAdmin` 에 덧붙임)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)
 - `ui/page-complete.js` — 필수 정보 입력 `#/complete`
 - `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지

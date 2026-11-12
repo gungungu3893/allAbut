@@ -145,6 +145,23 @@ a { color: inherit; }
 #screen-landing .slogan { font-size: 0.875rem; margin-top: 22px; position: relative; z-index: 1; }
 #screen-landing .campaign-banner { position: relative; z-index: 1; }
 
+/* 랜딩 방문자 숫자 "TODAY 12 · TOTAL 1,234" (ui/visit-counter.js)
+   흰 메뉴 줄 바로 아래 · 어두운 본문 오른쪽 위 (RTL 은 왼쪽). absolute 라서 숫자가 늦게 와도 레이아웃이 안 흔들려요 */
+.visit-counter {
+  position: absolute; top: 92px; inset-inline-end: 20px; z-index: 1;
+  display: inline-flex; align-items: baseline; gap: 10px;
+  margin: 0; font-size: 0.8125rem; line-height: 1.4; white-space: nowrap;
+}
+.visit-counter[hidden] { display: none; }
+.visit-counter .vc-item { display: inline-flex; align-items: baseline; gap: 6px; }
+.visit-counter .vc-label { font-family: var(--font-sans); color: var(--muted-light); letter-spacing: 1.5px; font-size: 0.75rem; text-transform: uppercase; }
+.visit-counter .vc-num { color: var(--gold); font-weight: 600; font-size: 0.9375rem; }
+.visit-counter .vc-sep { color: var(--muted-light); }
+@media (max-width: 479px) {
+  /* 좁은 화면: 메뉴 줄(두 줄) 아래 가운데 한 줄 */
+  .visit-counter { top: 122px; inset-inline-start: 0; inset-inline-end: 0; justify-content: center; }
+}
+
 /* 랜딩 큰 로고 */
 .logo-hero { font-size: clamp(40px, 11vw, 72px); position: relative; z-index: 1; }
 
