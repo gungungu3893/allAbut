@@ -21,7 +21,7 @@ LEGAL_DOCS['privacy.en'] = {
           'Order data: patient ID (a chart number or code — not a name), tooth positions, implant and shade details, notes, scan files (STL, PLY, OBJ, 3MF), photos and PDF documents.',
           'Payment data: credit top-up requests, payment slips and refund records.',
           'LINE: if you connect LINE notifications, your LINE user identifier.',
-          'Technical data: login times, actions in the Service and error logs needed to run and secure the Service.'
+          'Technical data: login times, actions in the Service and error logs; visit statistics (pages viewed, date and time, device type, browser language, country and the website or app you came from); and the IP address and device identifier recorded at sign-up to prevent duplicate or fraudulent accounts.'
         ],
         'Scan files and photos relate to patients\' health and are treated as sensitive personal data. Please do not include patient names in patient IDs, file names or file contents.'
       ]
@@ -33,6 +33,8 @@ LEGAL_DOCS['privacy.en'] = {
           'To provide the Service and fulfil orders: design, production, delivery, notifications and support — performance of a contract.',
           'To process payments, credits, refunds and tax documents — performance of a contract and legal obligations (tax and accounting law).',
           'To keep the Service secure, prevent fraud and improve the Service — our legitimate interests.',
+          'To produce usage statistics (visits and page views) to run and improve the Service — our legitimate interests.',
+          'To prevent duplicate sign-ups, fraudulent accounts and misuse of free credit promotions — our legitimate interests.',
           'To send you notifications on LINE — your choice to connect LINE; you can disconnect at any time.'
         ],
         'We do not sell personal data and we do not use it for advertising.'
@@ -74,7 +76,9 @@ LEGAL_DOCS['privacy.en'] = {
           'Account and clinic information: until your account is deleted.',
           'Orders, scan files, photos and design files: 2 years after the order is completed or cancelled, then deleted.',
           'Payment slips, invoices, credit notes and payment records: for the period required by Thai tax and accounting law (generally 5 years).',
-          'Security logs: for a limited period needed to investigate incidents.'
+          'Security logs: for a limited period needed to investigate incidents.',
+          'Visit statistics: up to 24 months, then deleted automatically.',
+          'Sign-up IP address and device identifier: while your account exists and, after your account is deleted, only for as long as required by law, then deleted.'
         ]
       ]
     },
@@ -106,7 +110,8 @@ LEGAL_DOCS['privacy.en'] = {
     {
       title: 'Cookies and local storage',
       body: [
-        'We do not use advertising or tracking cookies. The Service uses your browser\'s local storage only to keep you signed in, remember your language and text size, and save an unfinished order on your device.'
+        'We do not use advertising or tracking cookies. The Service uses your browser\'s local storage to keep you signed in, remember your language and text size, save an unfinished order on your device, and keep two random identifiers that contain no personal details: a visitor ID used to count visits and page views, and a device ID used to prevent duplicate sign-ups and misuse of free credit promotions.',
+        'Visit statistics are used by allAbut to run and improve the Service and may be shared only as combined totals (for example, total monthly visitors) that do not identify anyone. We do not sell personal data.'
       ]
     },
     {

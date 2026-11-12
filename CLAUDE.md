@@ -104,7 +104,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014.
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
 
 ## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
@@ -170,6 +170,9 @@
 - 관리자 Dashboard "방문 통계" (`ui/page-admin-visits.js`, `admin_visit_stats(from, to, no_bots, no_staff)` staff 이상 — 대시보드 탭 자체는 manager 이상): "현재 현황" 아래 · 월별 통계 위.
   기간(오늘·어제·7일·30일·이번 달·지난달·직접 `uiDateField`) / 카드(방문 · 순 방문자 · 페이지뷰 · 방문당 페이지뷰 · 신규 방문자) / [로봇 제외] [직원 제외] (기본 전부 포함) /
   그래프(날짜별, 하루면 0~23시) / 표(많이 본 화면 `VISIT_PATH_LABELS` · 들어온 곳 `cncReferrerGroups` · 기기 · 언어 · 나라) / 전환(기간 안 가입 수 ÷ 순 방문자) / CSV(owner, BOM)
+- **보관 기간 24개월** (sql/014_visit_log_retention.sql): `purge_old_site_events()` 가 `day < 방콕 오늘 - 24개월` 을 지움 (브라우저 권한 없음).
+  pg_cron `allabut-purge-site-events` 매일 방콕 01:30 = UTC `30 18 * * *` (기존 01:00 만료 · 01:05 알림과 안 겹침). pg_cron 이 없으면 건너뛰고 notice.
+  → 랜딩 TOTAL 도 최근 24개월 합계가 돼요 (2028-11 부터 차이). 개인정보처리방침 "보유 기간"·"쿠키 및 로컬 저장소"에 공개한 내용과 맞춰야 해요 — 보관 기간을 바꾸면 방침 3개 언어도
 
 ## 법적 문서 · 동의 (sql/003_legal.sql, 설정 안내: LEGAL_SETUP.md)
 - 운영 국가 태국, 태국 PDPA. 치과 = 환자 개인정보 Controller, allAbut = Processor. 환자 데이터(스캔·사진·환자 ID)는 민감정보 — 실명 대신 차트번호 등 가명 ID
@@ -178,7 +181,9 @@
   본문 배열에서 문자열 = 문단, 배열 = 목록, '{{PRICE_TABLE}}' / '{{REFUND_EXAMPLE}}' = 가격표·환불 예시 (credit_packages 에서 자동)
 - 회사 정보는 하드코딩 금지 → `company_settings` 에서 읽어 `{company_name}` 등 자리에 자동 삽입 (비면 [자리표시])
 - "초안 · 법률 검토 필요" 표시는 관리자에게만
-- 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
+- 개인정보처리방침에 공개한 것: 방문 통계(본 화면 · 날짜 · 기기 · 브라우저 언어 · 나라 · 들어온 곳, 24개월), 가입 IP · 기기 ID(중복 가입·부정 이용 방지, 계정이 있는 동안 + 삭제 후 법정 기간),
+  로컬 저장소의 방문자 ID(`allabut_visitor_id`) · 기기 ID(`allabut_device_id`), 방문 통계는 누구도 식별 못 하는 합계로만 외부 공유. **수집 항목을 늘리면 방침도 같이 고치고 새 버전 등록**
+- 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순, 이름은 날짜 `YYYY-MM-DD`). **새 버전은 코드·SQL 로 자동 추가하지 않는다** (owner 가 관리자 Settings → 법적 버전에서). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
 - 가입: 동의 체크 필수 → `accept_legal()`. 충전 결제: Credit & Refund Policy 읽음 체크 필수
 - 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
 - 모든 화면 아래 푸터: 문의 줄("문의: 이메일 · LINE @id") + Terms · Privacy · Credit & Refund Policy · © 2026 회사명 (`renderFooters()`)
