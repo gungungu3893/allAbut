@@ -19,7 +19,7 @@
 | `05-shipped-customer` | 배송 시작 (택배사·송장번호) | 고객 |
 | `06-topup-completed-customer` | 충전 완료 (충전 크레딧, 결제 금액, 유효기간, 잔액) | 고객 |
 | `07-topup-request-admin` | 충전 요청 (패키지·단가·공급가액·VAT 7%·합계) | 관리자 |
-| `08-customer-copy-unlinked` | 고객 알림 사본 — LINE 미연결 고객 (회색 "COPY OF CUSTOMER NOTICE", 빨간 경고 + 전화번호) | 관리자 |
+| `08-customer-copy-unlinked` | 고객 알림 사본 — LINE 미연결 고객 (윗줄 "COPY" 배지, "● " 빨간 경고 + 전화번호) | 관리자 |
 | `09-shipped-customer-th` | 배송 시작 — 태국어 고객 | 고객 |
 | `10-free-credits-customer` | 🎁 무료 크레딧 지급 (크레딧 수 · 이벤트 · 유효기간 · 등록 주소 전용 안내 · 주문하기 버튼) | 고객 |
 | `11-free-credits-copy-admin` | 🎁 무료 크레딧 지급 사본 (이벤트 · 배송 제한 · 지급한 직원) | 관리자 |
@@ -28,21 +28,28 @@
 모든 버튼은 `https://allabut.com/?openExternalBrowser=1#/…` 형식이에요 (LINE 안의 작은 브라우저 대신 휴대폰 기본 브라우저로 열려요).
 주문 카드는 그 주문으로 바로 가요: 고객 `#/orders?id=CA…` (자동으로 펼침) / 관리자 `#/admin/orders?order=CA…` (상세 창이 열림).
 
-## 카드 구조 (모든 알림 공통 — `buildReceiptCard()`)
-1. 상단 가운데: 로고 아이콘 → 제목(종류별 색 글씨) → `allAbut · Order notice` → 문서번호 → 날짜·시간(방콕)
-2. 섹션(있는 것만): Clinic / Case / Teeth(최대 6줄 + "+n more") / 이벤트별 상세(배송·사유·처리자)
-3. 합계: 작은 줄들 + 마지막 줄 크게 (`Credit balance` 또는 `Total ฿…`)
-4. 하단: 테두리 버튼 + "This is an automatic notification from allAbut." + 회사명 · Tax ID · allabut.com
+## 카드 구조 v2 (모든 알림 공통 — `buildReceiptCard()`)
+1. **맨 위 4px 색 띠** (header) — 그 알림의 제목 색
+2. 윗줄: 로고 28px + "allAbut" (네이비) … 사본이면 오른쪽 회색 **COPY** 배지
+3. 제목 (`xl` bold, 알림 색, 왼쪽) → 한 줄에 문서번호(왼쪽) · 날짜(오른쪽, `13 NOV 2026 · 11:11 AM`)
+4. 안내 문장(있을 때만) → 구분선
+5. 섹션들 (Clinic / Case / Teeth / Details / Shipping …) — **섹션 사이엔 구분선 없이 여백만**
+6. 구분선 → 합계: 작은 줄 → 큰 줄(`Credit balance` 또는 `Total ฿…`, 값 `xxl`) → `Paid n · Free n`
+7. 하단: 네이비 버튼(흰 글씨) + 회색 안내 두 줄 (자동 알림 문구 · 회사명 · Tax ID · allabut.com)
 
-## 글자 위계 · 여백 (LINE MAN 영수증처럼)
+## 글자 · 여백 규칙 (Flex 값)
 | 부분 | Flex 값 |
 |---|---|
-| 섹션 제목 (Clinic · Case · Teeth · Details · Shipping …) | `lg` · bold · `#111827` |
-| 내용 첫 줄 (치과명 · 고객 이름) | `sm` · bold · `#111827`, 제목과 `md` |
-| 내용 나머지 줄 (주소 · 전화 · 이메일 · "Sent to customer LINE") | `sm` · regular · `#6B7280` · wrap, 줄 간격 `xs` (LINE 미연결 경고만 빨강 `#B91C1C`) |
-| 항목 줄 (Valid until · Handled by · Paid …) | 라벨 `sm` bold `#374151` / 값 `sm` bold `#111827` 오른쪽 · wrap, 묶음 좌우 들여쓰기 `lg`, 줄 사이 `md` |
-| 합계 | 작은 줄 = 항목 줄과 같음 (들여쓰기) / 마지막 큰 줄 = 라벨 `lg` bold · 값 `xxl` bold / "Paid n · Free n" = `xs` 회색 오른쪽 |
-| 여백 | 상단 ↔ 첫 내용: separator + 위아래 `xl` / **모든 섹션 사이: separator(`#E5E7EB`) + 위아래 `xxl`** / 본문 `paddingAll xl` / 버튼 위 `xl` / 하단 안내 위 separator + `lg` |
+| 카드 | bubble `mega`, header 4px 색 띠(`paddingAll 0px`), body `paddingAll xl`, footer `paddingAll xl` · `paddingTop 0px` |
+| 윗줄 | 로고 image `28px` flex 0 · "allAbut" `sm` bold `#001D4A` (`margin md`) · filler · COPY 배지(`#F3F4F6`, 모서리 4px, 글씨 `xxs` bold `#4B5563`) |
+| 제목 / 문서번호 · 날짜 | 제목 `xl` bold 알림 색 (`margin xl`) / 문서번호 `xs` bold `#374151` · 날짜 `xs` `#6B7280` (`margin sm`) |
+| 안내 문장 | `sm` `#374151` (`margin lg`) → separator `#E5E7EB` (`margin xl`) |
+| 섹션 | 상자마다 `margin xxl`, 제목 `md` bold `#111827`, 첫 내용 `margin md` |
+| Clinic | 이름 `sm` bold `#111827` + 회색 `sm` 최대 2줄 (주소 / "전화 · 이메일"), LINE 미연결 = "● " + `sm` `#B91C1C` (`margin md`) |
+| 항목 줄 | 라벨 `sm` regular `#6B7280` flex 4 / 값 `sm` regular `#111827` 오른쪽 flex 6 wrap, 줄 사이 `md`, 들여쓰기 없음. 날짜 값은 `20 Nov 2026` |
+| 치아 줄 | 번호 `sm` bold `#111827` flex 2 / 브랜드 `sm` `#6B7280` flex 6 / 쉐이드 `sm` `#111827` 오른쪽 flex 2 |
+| 합계 | separator (`margin xxl`) → 상자 (`margin xl`): 작은 줄 = 항목 줄 / 큰 줄 라벨 `md` bold · 값 `xxl` bold 오른쪽 flex 0 (`margin lg`) / "Paid n · Free n" `xs` `#6B7280` 오른쪽 |
+| 하단 | 버튼 `#001D4A` 모서리 8px · 글씨 `sm` bold `#FFFFFF` / 안내 `xxs` `#9CA3AF` (`margin lg` · `xs`) |
 
 샘플 다시 만들기: 가짜 서버로 실제 함수를 돌려서 저장해요 (개발용 스크립트, 저장소 밖).
 

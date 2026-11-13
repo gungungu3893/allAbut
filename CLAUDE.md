@@ -389,19 +389,22 @@
     사본 카드를 관리자에게도 보냄 (고객명 + 이메일, 내용, 처리자, LINE 연결 여부 + 미연결이면 전화번호).
     관리자 알림이 이미 가는 일(새 주문·고객 승인·수정 요청·수령·고객 취소·충전 요청)은 사본 없음.
     사본에 처리자가 들어가는 일은, 사본을 받는 그룹에 "… by 이름" 카드를 따로 안 보냄 (중복 방지). 대상이 하나도 없으면 LINE_ADMIN_USER_ID
-  - **카드 모양 = 영수증 스타일, 모든 알림이 `buildReceiptCard()` 하나** (관리자·사본·고객 공통, 흰 바탕):
-    상단 가운데 로고 아이콘(`SITE_URL/assets/brand/line-icon.png`, 192×192 PNG) → 제목(색은 글씨에만) → "allAbut · Order notice" → 문서번호 → 날짜·시간(방콕 "10 NOV 2026 / 08:59 AM") →
-    섹션(있는 것만: Clinic / Case / Teeth "#36 Osstem A2" 최대 6줄 + "+n more" / 이벤트별 상세) → 합계(작은 줄 + 마지막 줄 크게: 주문·크레딧 "Credit balance", 충전 "Total ฿…") →
-    테두리 버튼 1개 + "This is an automatic notification from allAbut." + company_settings 회사명 · Tax ID · 사이트 주소
-  - **글자 위계 · 여백** (LINE MAN 영수증처럼, `sectionBox()` · `rowsBox()` · `bigRow()`):
-    섹션 제목 `lg` bold #111827 / 내용 첫 줄(치과명·고객 이름) `sm` bold #111827(제목과 `md`) / 나머지 줄(주소·전화·이메일·"Sent to customer LINE") `sm` regular #6B7280 wrap(`xs`), LINE 미연결 경고만 빨강 /
-    항목 줄 = 라벨 `sm` bold #374151 · 값 `sm` bold #111827 오른쪽 wrap, 묶음 좌우 `lg` 들여쓰기, 줄 사이 `md` (치아 줄도 같은 들여쓰기) /
-    합계 = 작은 줄은 항목 줄과 같음 + 마지막 큰 줄 라벨 `lg` · 값 `xxl`(flex 0, 금액이 안 꺾이게) + "Paid n · Free n" `xs` 회색 오른쪽 /
-    여백 = 상단 ↔ 첫 내용 separator + 위아래 `xl`, **모든 섹션(안내 글 · 섹션 · 합계) 사이 separator(#E5E7EB) + 위아래 `xxl`**, 본문 `paddingAll xl`, 버튼 위 `xl`, 하단 안내 위 separator + `lg`.
-    빈 줄 · 빈 섹션은 빼요 (Flex 는 빈 text 를 못 받아서). 휴대폰 폭(약 300px)에서 긴 치과명 · 주소는 줄바꿈 (`docs/flex-samples/` 로 확인)
+  - **카드 모양 v2 — 심플 · 전문적, 모든 알림이 `buildReceiptCard()` 하나** (관리자·사본·고객 9개 언어 공통, 흰 바탕, bubble `mega`):
+    - header = 높이 4px 색 띠 하나 (그 알림의 제목 색, `paddingAll 0px`)
+    - body `paddingAll xl`: ① 윗줄 [로고 `SITE_URL/assets/brand/line-icon.png` 28px] [“allAbut” sm bold #001D4A] … [사본이면 오른쪽 "COPY" 배지(#F3F4F6 · 글씨 xxs bold #4B5563)]
+      ② 제목 `xl` bold 알림 색, 왼쪽 정렬 ③ 한 줄 [문서번호 xs bold #374151] … [날짜 xs #6B7280, 방콕 "13 NOV 2026 · 11:11 AM"] (문서번호가 길면 줄바꿈)
+      ④ 안내 문장(있을 때만) sm #374151 ⑤ 구분선 #E5E7EB (`xl`) ⑥ 섹션들 — **섹션 사이 구분선 없이 여백(`xxl`)만** ⑦ 구분선(`xxl`) → 합계
+    - 섹션: 제목 `md` bold #111827 / 첫 내용 `md`. Clinic = 이름 sm bold + 회색 sm **최대 2줄**(첫 줄 = 주소, 둘째 줄 = 나머지 "전화 · 이메일"을 " · " 로 합침),
+      LINE 미연결 = "● " + 빨간 sm regular (상자 없이), "Sent to customer LINE" = 회색 sm.
+      항목 줄 = 라벨 sm regular #6B7280 flex 4 · 값 sm regular #111827 오른쪽 flex 6 wrap, 줄 사이 `md`, **들여쓰기 없음**. 치아 줄 = 번호 sm bold · 브랜드 sm 회색 · 쉐이드 sm 오른쪽.
+      날짜 값(납기 · 유효기간 · 확정 납품일 등 'YYYY-MM-DD')은 "20 Nov 2026" (`niceDate()`)
+    - 합계: 작은 줄(항목 줄과 같음) → 큰 줄 [라벨 md bold] [값 `xxl` bold 오른쪽 flex 0 — 금액이 안 꺾이게] → "Paid n · Free n" xs 회색 오른쪽. 회색 상자 · 빨강 상자는 안 써요
+    - footer `paddingAll xl` · `paddingTop 0px`: 네이비(#001D4A) 버튼(모서리 8px, 흰 글씨 sm bold) + 안내 두 줄 xxs #9CA3AF 가운데 (자동 알림 문구 `R.auto_note` / 회사명 · Tax ID · 사이트)
+    - "allAbut · Order notice" 같은 부제목 줄과 "COPY OF CUSTOMER NOTICE" 줄은 없어요 (ReceiptOpts 의 `subtitle` 은 호환용으로만 남음, `copyLabel` 이 있으면 COPY 배지)
+    - 빈 줄 · 빈 섹션은 빼요 (Flex 는 빈 text 를 못 받아서). 휴대폰 폭(약 300px)에서 긴 치과명 · 주소 · 태국어는 줄바꿈 (`docs/flex-samples/` 로 확인)
   - 만드는 함수: `orderReceipt()`(cnc_orders 의 cases·clinic·addr·phone·patient·deadline·credits_used + credit_wallets 잔액), `topupReceipt()`(topup_requests 의 credits·unit_price·subtotal·vat_amount·total), `creditReceipt()`
-  - 제목 색: 관리자 = `ADMIN_NOTICE_STYLES` 의 종류별 색·제목(title) / 고객 = 네이비, 취소·충전 거절만 빨강. 글씨 #111827 · 회색 #6B7280 · 구분선 #E5E7EB
-  - 사본: 문서번호 위 회색 "COPY OF CUSTOMER NOTICE", Clinic 섹션에 고객 이메일, LINE 미연결이면 그 아래 빨간 작은 글씨 + 전화번호, 처리자는 상세의 "Handled by"
+  - 제목 색(= 맨 위 4px 띠 색): 관리자 = `ADMIN_NOTICE_STYLES` 의 종류별 색·제목(title) / 고객 = 네이비, 취소·충전 거절만 빨강. 글씨 #111827 · 회색 #6B7280 · 구분선 #E5E7EB
+  - 사본: 윗줄 오른쪽 "COPY" 배지, Clinic 섹션 둘째 줄에 고객 이메일, LINE 미연결이면 그 아래 "● " 빨간 글씨 + 전화번호, 처리자는 상세의 "Handled by"
   - altText = "제목 · 문서번호" (사본은 앞에 "COPY · "). 고객 문구는 9개 언어(`T` + 영수증 문구 `R`), 관리자·사본은 영어
   - Flex 의 text 는 빈 글자를 못 받아서 값이 빈 줄은 빼요. 샘플: `docs/flex-samples/` (사이트에 안 올라감)
   - 관리자 주문 카드: `bonus_used > 0` 이면 Shipping 섹션에 "🎁 Free credits used · ship to registered clinic address only" (`freeShipSection`)

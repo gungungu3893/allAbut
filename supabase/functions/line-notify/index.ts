@@ -491,7 +491,7 @@ function stamp(v?: unknown): string {
   for (const x of new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Bangkok', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
   }).formatToParts(d)) p[x.type] = x.value;
-  return `${p.day} ${String(p.month).toUpperCase()} ${p.year} / ${p.hour}:${p.minute} ${String(p.dayPeriod || '').toUpperCase()}`;
+  return `${p.day} ${String(p.month).toUpperCase()} ${p.year} · ${p.hour}:${p.minute} ${String(p.dayPeriod || '').toUpperCase()}`;
 }
 
 // 금액: 21935 → "฿21,935.00"
@@ -556,14 +556,14 @@ function orderTeeth(o: any): { tooth: string; brand: string; shade: string }[] {
 // ================================================================
 type ClinicInfo = {
   name: string;                 // 내용 첫 줄 (sm · bold · 진한 글씨)
-  lines?: string[];             // 주소·전화·이메일 (sm · 회색, 줄바꿈)
-  warning?: string[];           // 빨간 글씨 (사본: 고객 LINE 미연결)
+  lines?: string[];             // 주소·전화·이메일 → 회색 최대 2줄 (주소 / 나머지 " · " 로 합침)
+  warning?: string[];           // "● " + 빨간 글씨 (사본: 고객 LINE 미연결)
   info?: string;                // 회색 글씨 한 줄 (사본: 고객 LINE 으로 보냄)
 };
 type Section = {
   title?: string;
   clinic?: ClinicInfo;
-  rows?: Row[];                 // 항목 줄: 라벨 왼쪽 / 값 오른쪽 (좌우 들여쓰기)
+  rows?: Row[];                 // 항목 줄: 라벨 회색 왼쪽 / 값 오른쪽 (들여쓰기 없음)
   teeth?: { tooth: string; brand: string; shade: string }[];
   moreTpl?: string;             // "+{n} more"
   text?: string;                // 긴 글 (예: 수정 요청 사유)
@@ -572,8 +572,8 @@ type Section = {
 type ReceiptOpts = {
   title: string;                // 알림 종류 이름 (색 글씨)
   color: string;
-  subtitle: string;             // "allAbut · Order notice"
-  copyLabel?: string;           // "COPY OF CUSTOMER NOTICE"
+  subtitle: string;             // "allAbut · Order notice" (v2 카드에는 안 보여요 — 호환용으로 남김)
+  copyLabel?: string;           // 있으면 사본 → 윗줄 오른쪽 "COPY" 배지 (v2)
   docNo?: string;               // 주문번호 · 충전 요청 번호
   when?: unknown;               // 날짜·시간 (없으면 지금)
   message?: string;             // 짧은 안내 글
@@ -590,135 +590,155 @@ function textNode(text: string, o: Record<string, unknown> = {}) {
 }
 
 // ----------------------------------------------------------------
-// 글자 위계 · 여백 (LINE MAN 영수증처럼 — 섹션 제목 / 내용 / 항목 줄이 한눈에 구분되게)
-//   섹션 제목      : lg · bold · #111827
-//   내용 첫 줄     : sm · bold · #111827 (제목과 md)       ← 치과명 · 고객 이름
-//   내용 나머지 줄 : sm · regular · #6B7280 · wrap (xs)    ← 주소 · 전화 · 이메일 · "Sent to customer LINE" (LINE 미연결 경고만 빨강)
-//   항목 줄        : 라벨 sm bold #374151 / 값 sm bold #111827 오른쪽 · wrap, 묶음은 좌우 lg 들여쓰기, 줄 사이 md
-//   합계           : 작은 줄 = 항목 줄과 같음(들여쓰기) / 마지막 큰 줄 = 라벨 lg bold · 값 xxl bold / "Paid n · Free n" = xs 회색 오른쪽
-//   여백           : 상단 ↔ 첫 내용 = separator + 위아래 xl / 모든 섹션 사이 = separator(#E5E7EB) + 위아래 xxl
-//                    본문 paddingAll xl / 버튼 위 xl / 하단 안내 위 separator + lg
+// 카드 디자인 v2 — 심플 · 전문적 (내용 · 문구 · 버튼 링크 · 종류별 색은 그대로)
+//   header : 높이 4px 색 띠 하나 (그 알림의 제목 색)
+//   body   : [로고 28px · "allAbut" · (사본이면 COPY 배지)] → 제목 xl bold 알림 색(왼쪽) → [문서번호 · 날짜] →
+//            (안내 문장) → 구분선 → 섹션들(구분선 없이 여백 xxl) → 구분선 → 합계(작은 줄 → 큰 줄 → Paid · Free)
+//   섹션   : 제목 md bold / 항목 줄 = 라벨 sm 회색 flex 4 · 값 sm 진한 글씨 오른쪽 flex 6 (들여쓰기 없음)
+//   footer : 네이비 버튼(흰 글씨) + 안내 두 줄 xxs #9CA3AF
 // ----------------------------------------------------------------
-const LABEL = '#374151';   // 항목 줄 라벨
+const LABEL = '#374151';     // 문서번호 · 안내 문장
+const FOOT_GRAY = '#9CA3AF'; // 하단 안내 두 줄
+const BRAND_NAVY = '#001D4A';
+const BADGE_BG = '#F3F4F6';
+const BADGE_INK = '#4B5563';
+const FILLER = { type: 'filler' };
 
-// 라벨 ─ 값 한 줄 (값은 오른쪽 정렬, 길면 줄바꿈). first = 묶음의 첫 줄 (위 여백 없음)
-function kvRow(label: string, value: string, first = false) {
-  return {
-    type: 'box', layout: 'horizontal', spacing: 'md', ...(first ? {} : { margin: 'md' }),
-    contents: [
-      textNode(label, { size: 'sm', weight: 'bold', color: LABEL, flex: 5 }),
-      textNode(value, { size: 'sm', weight: 'bold', color: INK, align: 'end', flex: 5 }),
-    ],
-  };
+// 'YYYY-MM-DD' → "20 Nov 2026" (납기 · 유효기간 등 날짜 값). 다른 글자는 그대로
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function niceDate(v: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || '').trim());
+  if (!m) return v;
+  const mi = Number(m[2]) - 1;
+  return MONTHS[mi] ? `${Number(m[3])} ${MONTHS[mi]} ${m[1]}` : v;
 }
 
-// 항목 줄 묶음 (좌우 들여쓰기). margin = 위 내용과의 간격 (첫 덩어리면 없음)
-function rowsBox(rows: Row[], margin?: string) {
-  return {
-    type: 'box', layout: 'vertical', paddingStart: 'lg', paddingEnd: 'lg', ...(margin ? { margin } : {}),
-    contents: rows.map(([k, v], i) => kvRow(k, v, i === 0)),
-  };
-}
-
-// 마지막 큰 줄 (Credit balance · Total) — 값은 글자 너비만큼(flex 0) → 금액이 두 줄로 꺾이지 않아요
-function bigRow(label: string, value: string, margin?: string) {
+// 항목 줄: 라벨(회색) ─ 값(오른쪽, 길면 줄바꿈). first = 섹션 · 묶음의 첫 줄이면 margin 은 바깥에서
+function kvRow(label: string, value: string, margin?: string) {
   return {
     type: 'box', layout: 'horizontal', spacing: 'md', ...(margin ? { margin } : {}),
     contents: [
-      textNode(label, { size: 'lg', weight: 'bold', color: INK, flex: 1, gravity: 'center' }),
-      { type: 'text', text: str(value, 40) || '—', size: 'xxl', weight: 'bold', color: INK, align: 'end', flex: 0, gravity: 'center' },
+      textNode(label, { size: 'sm', weight: 'regular', color: GRAY, flex: 4 }),
+      textNode(niceDate(value), { size: 'sm', weight: 'regular', color: INK, align: 'end', flex: 6 }),
     ],
   };
 }
 
 // 섹션 하나 → 세로 상자 1개 (내용이 없으면 null → 빼요. Flex 는 빈 글자를 못 받아서)
 function sectionBox(s: Section): any | null {
-  const parts: any[] = [];   // 제목 아래 덩어리들 (첫 덩어리는 제목과 md)
-  const push = (node: any, gap: string) => { parts.push(parts.length || s.title ? { ...node, margin: gap } : node); };
+  const parts: any[] = [];   // 제목 아래 내용들 (첫 내용은 제목과 md, 그 다음은 각자 간격)
+  const add = (node: any, gap: string) => { parts.push(parts.length || str(s.title) ? { ...node, margin: gap } : node); };
 
   if (s.clinic) {
+    // 이름 + 회색 최대 2줄: 첫 줄 = 주소(첫 값), 둘째 줄 = 나머지(전화 · 이메일 …)를 " · " 로 합쳐서
+    const vals = (s.clinic.lines || []).map((x) => str(x)).filter(Boolean);
     const c: any[] = [textNode(s.clinic.name, { size: 'sm', weight: 'bold', color: INK })];
-    for (const l of (s.clinic.lines || []).filter((x) => str(x))) c.push(textNode(l, { size: 'sm', weight: 'regular', color: GRAY, margin: 'xs' }));
-    for (const w of (s.clinic.warning || []).filter((x) => str(x))) c.push(textNode(w, { size: 'sm', weight: 'bold', color: RED, margin: 'sm' }));
-    if (str(s.clinic.info)) c.push(textNode(s.clinic.info as string, { size: 'sm', weight: 'regular', color: GRAY, margin: 'xs' }));
-    push({ type: 'box', layout: 'vertical', contents: c }, 'md');
+    if (vals[0]) c.push(textNode(vals[0], { size: 'sm', color: GRAY, margin: 'xs' }));
+    if (vals.length > 1) c.push(textNode(vals.slice(1).join(' · '), { size: 'sm', color: GRAY, margin: 'xs' }));
+    for (const w of (s.clinic.warning || []).filter((x) => str(x))) c.push(textNode('● ' + w, { size: 'sm', weight: 'regular', color: RED, margin: 'md' }));
+    if (str(s.clinic.info)) c.push(textNode(s.clinic.info as string, { size: 'sm', color: GRAY, margin: 'md' }));
+    add({ type: 'box', layout: 'vertical', contents: c }, 'md');
   }
-  const rows = rowsOf(s.rows || []);
-  if (rows.length) push(rowsBox(rows), 'md');
+  for (const [k, v] of rowsOf(s.rows || [])) add(kvRow(k, v), 'md');
   if (s.teeth && s.teeth.length) {
     const shown = s.teeth.slice(0, 6);
-    const lines: any[] = shown.map((t, i) => ({
-      type: 'box', layout: 'horizontal', spacing: 'md', ...(i ? { margin: 'md' } : {}),
-      contents: [
-        textNode('#' + t.tooth, { size: 'sm', weight: 'bold', color: INK, flex: 2 }),
-        textNode(t.brand || '—', { size: 'sm', color: INK, flex: 6 }),
-        textNode(t.shade || '—', { size: 'sm', weight: 'bold', color: INK, align: 'end', flex: 2 }),
-      ],
-    }));
-    if (s.teeth.length > shown.length) {
-      lines.push(textNode((s.moreTpl || '+{n} more').replace('{n}', String(s.teeth.length - shown.length)), { size: 'xs', color: GRAY, margin: 'md' }));
+    for (const t of shown) {
+      add({
+        type: 'box', layout: 'horizontal', spacing: 'md',
+        contents: [
+          textNode('#' + t.tooth, { size: 'sm', weight: 'bold', color: INK, flex: 2 }),
+          textNode(t.brand || '—', { size: 'sm', color: GRAY, flex: 6 }),
+          textNode(t.shade || '—', { size: 'sm', color: INK, align: 'end', flex: 2 }),
+        ],
+      }, 'md');
     }
-    push({ type: 'box', layout: 'vertical', paddingStart: 'lg', paddingEnd: 'lg', contents: lines }, 'md');
+    if (s.teeth.length > shown.length) {
+      add(textNode((s.moreTpl || '+{n} more').replace('{n}', String(s.teeth.length - shown.length)), { size: 'xs', color: GRAY }), 'md');
+    }
   }
-  if (str(s.text)) push(textNode(s.text as string, { size: 'sm', color: INK }), 'md');
-  if (str(s.big)) push(textNode(s.big as string, { size: 'xl', weight: 'bold', color: INK }), 'md');
+  if (str(s.text)) add(textNode(s.text as string, { size: 'sm', color: INK }), 'md');
+  if (str(s.big)) add(textNode(niceDate(s.big as string), { size: 'xl', weight: 'bold', color: INK }), 'md');
   if (!parts.length) return null;
 
   const contents: any[] = [];
-  if (str(s.title)) contents.push(textNode(s.title as string, { size: 'lg', weight: 'bold', color: INK }));
+  if (str(s.title)) contents.push(textNode(s.title as string, { size: 'md', weight: 'bold', color: INK }));
   contents.push(...parts);
-  return { type: 'box', layout: 'vertical', contents };
+  return { type: 'box', layout: 'vertical', margin: 'xxl', contents };
 }
 
 function buildReceiptCard(o: ReceiptOpts) {
-  const top: any[] = [
-    { type: 'image', url: LOGO_URL, size: '48px', aspectRatio: '1:1', aspectMode: 'cover', align: 'center' },
-    textNode(o.title, { size: 'lg', weight: 'bold', color: o.color, align: 'center', margin: 'md' }),
-    textNode(o.subtitle, { size: 'xs', color: GRAY, align: 'center', margin: 'xs' }),
+  // 1) 윗줄: 로고 · allAbut · (사본이면 COPY 배지)
+  const brand: any[] = [
+    { type: 'image', url: LOGO_URL, size: '28px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0 },
+    { type: 'text', text: 'allAbut', size: 'sm', weight: 'bold', color: BRAND_NAVY, gravity: 'center', margin: 'md', flex: 0 },
+    FILLER,
   ];
-  if (o.copyLabel) top.push(textNode(o.copyLabel, { size: 'xxs', color: GRAY, weight: 'bold', align: 'center', margin: 'lg' }));
-  if (o.docNo) top.push(textNode(o.docNo, { size: 'md', weight: 'bold', color: INK, align: 'center', margin: o.copyLabel ? 'xs' : 'lg' }));
-  top.push(textNode(stamp(o.when), { size: 'xs', color: GRAY, align: 'center', margin: 'xs' }));
+  if (o.copyLabel) {
+    brand.push({
+      type: 'box', layout: 'vertical', flex: 0, backgroundColor: BADGE_BG, cornerRadius: '4px',
+      paddingTop: 'xs', paddingBottom: 'xs', paddingStart: 'md', paddingEnd: 'md', justifyContent: 'center',
+      contents: [{ type: 'text', text: 'COPY', size: 'xxs', weight: 'bold', color: BADGE_INK }],
+    });
+  }
+  const body: any[] = [{ type: 'box', layout: 'horizontal', alignItems: 'center', contents: brand }];
 
-  // 상단 아래 덩어리들: 안내 글 · 섹션들 · 합계 — 첫 덩어리는 separator + 위아래 xl, 그 뒤로는 덩어리마다 separator + 위아래 xxl
-  const blocks: any[] = [];
-  if (str(o.message)) blocks.push(textNode(o.message as string, { size: 'sm', color: INK }));
+  // 2) 제목 (알림 색, 왼쪽) · 3) 문서번호 ─ 날짜
+  body.push(textNode(o.title, { size: 'xl', weight: 'bold', color: o.color, margin: 'xl' }));
+  const when = stamp(o.when);
+  body.push(str(o.docNo)
+    ? {
+        type: 'box', layout: 'horizontal', margin: 'sm', contents: [
+          // 문서번호는 보통 짧아서 글자 너비만큼(flex 0). 계정 알림처럼 이름이 들어가 길면 줄바꿈해서 날짜를 밀어내지 않게
+          str(o.docNo).length > 18
+            ? textNode(str(o.docNo, 80), { size: 'xs', weight: 'bold', color: LABEL, flex: 1 })
+            : { type: 'text', text: str(o.docNo, 80), size: 'xs', weight: 'bold', color: LABEL, flex: 0 },
+          FILLER,
+          { type: 'text', text: when, size: 'xs', color: GRAY, flex: 0 },
+        ],
+      }
+    : textNode(when, { size: 'xs', color: GRAY, margin: 'sm' }));
+
+  // 4) 안내 문장 (있을 때만) · 5) 구분선
+  if (str(o.message)) body.push(textNode(o.message as string, { size: 'sm', color: LABEL, margin: 'lg' }));
+  body.push({ type: 'separator', margin: 'xl', color: LINE_GRAY });
+
+  // 6) 섹션들 — 구분선 없이 여백(xxl)만
   for (const s of o.sections) {
     const b = sectionBox(s);
-    if (b) blocks.push(b);
+    if (b) body.push(b);
   }
+
+  // 7) 합계: 구분선 → 작은 줄 → 큰 줄 → Paid · Free
   const tRows = rowsOf(o.totals?.rows || []);
   const final = o.totals?.final && str(o.totals.final[1]) ? o.totals.final : null;
   if (tRows.length || final) {
-    const t: any[] = [];
-    if (tRows.length) t.push(rowsBox(tRows));
+    const t: any[] = tRows.map(([k, v], i) => kvRow(k, v, i ? 'md' : undefined));
     if (final) {
-      if (tRows.length) t.push({ type: 'separator', margin: 'lg', color: LINE_GRAY });
-      t.push(bigRow(final[0], final[1], tRows.length ? 'lg' : undefined));
+      t.push({
+        type: 'box', layout: 'horizontal', ...(t.length ? { margin: 'lg' } : {}),
+        contents: [
+          textNode(final[0], { size: 'md', weight: 'bold', color: INK, gravity: 'center', flex: 1 }),
+          // 값은 글자 너비만큼(flex 0) → 금액이 두 줄로 꺾이지 않아요
+          { type: 'text', text: str(final[1], 40) || '—', size: 'xxl', weight: 'bold', color: INK, align: 'end', gravity: 'center', flex: 0 },
+        ],
+      });
       if (str(o.totals?.split)) t.push(textNode(o.totals!.split as string, { size: 'xs', color: GRAY, align: 'end', margin: 'xs' }));
     }
-    blocks.push({ type: 'box', layout: 'vertical', contents: t });
+    body.push({ type: 'separator', margin: 'xxl', color: LINE_GRAY });
+    body.push({ type: 'box', layout: 'vertical', margin: 'xl', contents: t });
   }
-
-  const body: any[] = [...top];
-  blocks.forEach((b, i) => {
-    const gap = i === 0 ? 'xl' : 'xxl';
-    body.push({ type: 'separator', margin: gap, color: LINE_GRAY });
-    body.push({ ...b, margin: gap });
-  });
 
   const footer = {
     type: 'box', layout: 'vertical', paddingAll: 'xl', paddingTop: '0px',
     contents: [
-      // 테두리만 있는 버튼 (Flex 기본 버튼은 테두리 모양이 없어서 상자 + 동작으로 만들어요) — 위 여백 xl
+      // 네이비 버튼 (Flex 기본 버튼 대신 상자 + 동작 — 모서리 · 색을 맞추려고)
       {
-        type: 'box', layout: 'vertical', margin: 'xl', borderWidth: '1px', borderColor: '#D1D5DB', cornerRadius: '8px', paddingAll: '12px',
+        type: 'box', layout: 'vertical', backgroundColor: BRAND_NAVY, cornerRadius: '8px', paddingAll: '12px',
         action: { type: 'uri', label: str(o.button.label, 40) || 'Open', uri: o.button.url },
-        contents: [textNode(o.button.label, { size: 'sm', weight: 'bold', color: INK, align: 'center' })],
+        contents: [textNode(o.button.label, { size: 'sm', weight: 'bold', color: '#FFFFFF', align: 'center' })],
       },
-      { type: 'separator', margin: 'lg', color: LINE_GRAY },
-      textNode(o.autoNote, { size: 'xxs', color: GRAY, align: 'center', margin: 'lg' }),
-      textNode(o.company, { size: 'xxs', color: GRAY, align: 'center', margin: 'xs' }),
+      textNode(o.autoNote, { size: 'xxs', color: FOOT_GRAY, align: 'center', margin: 'lg' }),
+      textNode(o.company, { size: 'xxs', color: FOOT_GRAY, align: 'center', margin: 'xs' }),
     ],
   };
 
@@ -728,6 +748,11 @@ function buildReceiptCard(o: ReceiptOpts) {
     altText: str(alt, 380) || 'allAbut',
     contents: {
       type: 'bubble', size: 'mega',
+      // 맨 위 4px 색 띠 (그 알림의 제목 색)
+      header: {
+        type: 'box', layout: 'vertical', paddingAll: '0px',
+        contents: [{ type: 'box', layout: 'vertical', height: '4px', backgroundColor: o.color, contents: [FILLER] }],
+      },
       styles: { body: { backgroundColor: '#FFFFFF' }, footer: { backgroundColor: '#FFFFFF' } },
       body: { type: 'box', layout: 'vertical', paddingAll: 'xl', contents: body },
       footer,

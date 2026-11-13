@@ -4,6 +4,24 @@
   "contents": {
     "type": "bubble",
     "size": "mega",
+    "header": {
+      "type": "box",
+      "layout": "vertical",
+      "paddingAll": "0px",
+      "contents": [
+        {
+          "type": "box",
+          "layout": "vertical",
+          "height": "4px",
+          "backgroundColor": "#B91C1C",
+          "contents": [
+            {
+              "type": "filler"
+            }
+          ]
+        }
+      ]
+    },
     "styles": {
       "body": {
         "backgroundColor": "#FFFFFF"
@@ -18,50 +36,74 @@
       "paddingAll": "xl",
       "contents": [
         {
-          "type": "image",
-          "url": "https://allabut.com/assets/brand/line-icon.png",
-          "size": "48px",
-          "aspectRatio": "1:1",
-          "aspectMode": "cover",
-          "align": "center"
+          "type": "box",
+          "layout": "horizontal",
+          "alignItems": "center",
+          "contents": [
+            {
+              "type": "image",
+              "url": "https://allabut.com/assets/brand/line-icon.png",
+              "size": "28px",
+              "aspectRatio": "1:1",
+              "aspectMode": "cover",
+              "flex": 0
+            },
+            {
+              "type": "text",
+              "text": "allAbut",
+              "size": "sm",
+              "weight": "bold",
+              "color": "#001D4A",
+              "gravity": "center",
+              "margin": "md",
+              "flex": 0
+            },
+            {
+              "type": "filler"
+            }
+          ]
         },
         {
           "type": "text",
           "text": "Order cancelled by allAbut",
           "wrap": true,
-          "size": "lg",
+          "size": "xl",
           "weight": "bold",
           "color": "#B91C1C",
-          "align": "center",
-          "margin": "md"
+          "margin": "xl"
+        },
+        {
+          "type": "box",
+          "layout": "horizontal",
+          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "CA261110-0012",
+              "size": "xs",
+              "weight": "bold",
+              "color": "#374151",
+              "flex": 0
+            },
+            {
+              "type": "filler"
+            },
+            {
+              "type": "text",
+              "text": "13 NOV 2026 · 01:13 PM",
+              "size": "xs",
+              "color": "#6B7280",
+              "flex": 0
+            }
+          ]
         },
         {
           "type": "text",
-          "text": "allAbut · Order notice",
+          "text": "Your order was cancelled and the credits were returned to your balance.",
           "wrap": true,
-          "size": "xs",
-          "color": "#6B7280",
-          "align": "center",
-          "margin": "xs"
-        },
-        {
-          "type": "text",
-          "text": "CA261110-0012",
-          "wrap": true,
-          "size": "md",
-          "weight": "bold",
-          "color": "#111827",
-          "align": "center",
+          "size": "sm",
+          "color": "#374151",
           "margin": "lg"
-        },
-        {
-          "type": "text",
-          "text": "13 NOV 2026 / 11:11 AM",
-          "wrap": true,
-          "size": "xs",
-          "color": "#6B7280",
-          "align": "center",
-          "margin": "xs"
         },
         {
           "type": "separator",
@@ -69,27 +111,15 @@
           "color": "#E5E7EB"
         },
         {
-          "type": "text",
-          "text": "Your order was cancelled and the credits were returned to your balance.",
-          "wrap": true,
-          "size": "sm",
-          "color": "#111827",
-          "margin": "xl"
-        },
-        {
-          "type": "separator",
-          "margin": "xxl",
-          "color": "#E5E7EB"
-        },
-        {
           "type": "box",
           "layout": "vertical",
+          "margin": "xxl",
           "contents": [
             {
               "type": "text",
               "text": "Clinic",
               "wrap": true,
-              "size": "lg",
+              "size": "md",
               "weight": "bold",
               "color": "#111827"
             },
@@ -110,7 +140,6 @@
                   "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
                   "wrap": true,
                   "size": "sm",
-                  "weight": "regular",
                   "color": "#6B7280",
                   "margin": "xs"
                 },
@@ -119,376 +148,319 @@
                   "text": "02-123-4567",
                   "wrap": true,
                   "size": "sm",
-                  "weight": "regular",
                   "color": "#6B7280",
                   "margin": "xs"
                 }
               ],
               "margin": "md"
             }
-          ],
-          "margin": "xxl"
-        },
-        {
-          "type": "separator",
-          "margin": "xxl",
-          "color": "#E5E7EB"
+          ]
         },
         {
           "type": "box",
           "layout": "vertical",
+          "margin": "xxl",
           "contents": [
             {
               "type": "text",
               "text": "Case",
               "wrap": true,
-              "size": "lg",
+              "size": "md",
               "weight": "bold",
               "color": "#111827"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "paddingStart": "lg",
-              "paddingEnd": "lg",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "Patient",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#374151",
-                      "flex": 5
-                    },
-                    {
-                      "type": "text",
-                      "text": "HN-20481",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 5
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "margin": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "Deadline",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#374151",
-                      "flex": 5
-                    },
-                    {
-                      "type": "text",
-                      "text": "2026-11-20",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 5
-                    }
-                  ]
-                }
-              ],
-              "margin": "md"
-            }
-          ],
-          "margin": "xxl"
-        },
-        {
-          "type": "separator",
-          "margin": "xxl",
-          "color": "#E5E7EB"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "text",
-              "text": "Teeth",
-              "wrap": true,
-              "size": "lg",
-              "weight": "bold",
-              "color": "#111827"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "paddingStart": "lg",
-              "paddingEnd": "lg",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "#36",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "flex": 2
-                    },
-                    {
-                      "type": "text",
-                      "text": "Osstem TS III",
-                      "wrap": true,
-                      "size": "sm",
-                      "color": "#111827",
-                      "flex": 6
-                    },
-                    {
-                      "type": "text",
-                      "text": "A2",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 2
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "margin": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "#37",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "flex": 2
-                    },
-                    {
-                      "type": "text",
-                      "text": "Osstem TS III",
-                      "wrap": true,
-                      "size": "sm",
-                      "color": "#111827",
-                      "flex": 6
-                    },
-                    {
-                      "type": "text",
-                      "text": "A2",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 2
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "margin": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "#46",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "flex": 2
-                    },
-                    {
-                      "type": "text",
-                      "text": "Straumann BLT",
-                      "wrap": true,
-                      "size": "sm",
-                      "color": "#111827",
-                      "flex": 6
-                    },
-                    {
-                      "type": "text",
-                      "text": "A3",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 2
-                    }
-                  ]
-                }
-              ],
-              "margin": "md"
-            }
-          ],
-          "margin": "xxl"
-        },
-        {
-          "type": "separator",
-          "margin": "xxl",
-          "color": "#E5E7EB"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "text",
-              "text": "Details",
-              "wrap": true,
-              "size": "lg",
-              "weight": "bold",
-              "color": "#111827"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "paddingStart": "lg",
-              "paddingEnd": "lg",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "Reason",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#374151",
-                      "flex": 5
-                    },
-                    {
-                      "type": "text",
-                      "text": "Duplicate order",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 5
-                    }
-                  ]
-                }
-              ],
-              "margin": "md"
-            }
-          ],
-          "margin": "xxl"
-        },
-        {
-          "type": "separator",
-          "margin": "xxl",
-          "color": "#E5E7EB"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "box",
-              "layout": "vertical",
-              "paddingStart": "lg",
-              "paddingEnd": "lg",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "Credits used",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#374151",
-                      "flex": 5
-                    },
-                    {
-                      "type": "text",
-                      "text": "3",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 5
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "spacing": "md",
-                  "margin": "md",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "Refunded",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#374151",
-                      "flex": 5
-                    },
-                    {
-                      "type": "text",
-                      "text": "+3",
-                      "wrap": true,
-                      "size": "sm",
-                      "weight": "bold",
-                      "color": "#111827",
-                      "align": "end",
-                      "flex": 5
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "separator",
-              "margin": "lg",
-              "color": "#E5E7EB"
             },
             {
               "type": "box",
               "layout": "horizontal",
               "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Patient",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "flex": 4
+                },
+                {
+                  "type": "text",
+                  "text": "HN-20481",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 6
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Deadline",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "flex": 4
+                },
+                {
+                  "type": "text",
+                  "text": "20 Nov 2026",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 6
+                }
+              ],
+              "margin": "md"
+            }
+          ]
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "xxl",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Teeth",
+              "wrap": true,
+              "size": "md",
+              "weight": "bold",
+              "color": "#111827"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "#36",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "bold",
+                  "color": "#111827",
+                  "flex": 2
+                },
+                {
+                  "type": "text",
+                  "text": "Osstem TS III",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "flex": 6
+                },
+                {
+                  "type": "text",
+                  "text": "A2",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 2
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "#37",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "bold",
+                  "color": "#111827",
+                  "flex": 2
+                },
+                {
+                  "type": "text",
+                  "text": "Osstem TS III",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "flex": 6
+                },
+                {
+                  "type": "text",
+                  "text": "A2",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 2
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "#46",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "bold",
+                  "color": "#111827",
+                  "flex": 2
+                },
+                {
+                  "type": "text",
+                  "text": "Straumann BLT",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#6B7280",
+                  "flex": 6
+                },
+                {
+                  "type": "text",
+                  "text": "A3",
+                  "wrap": true,
+                  "size": "sm",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 2
+                }
+              ],
+              "margin": "md"
+            }
+          ]
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "xxl",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Details",
+              "wrap": true,
+              "size": "md",
+              "weight": "bold",
+              "color": "#111827"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Reason",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "flex": 4
+                },
+                {
+                  "type": "text",
+                  "text": "Duplicate order",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 6
+                }
+              ],
+              "margin": "md"
+            }
+          ]
+        },
+        {
+          "type": "separator",
+          "margin": "xxl",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "xl",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Credits used",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "flex": 4
+                },
+                {
+                  "type": "text",
+                  "text": "3",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 6
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "md",
+              "margin": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Refunded",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "flex": 4
+                },
+                {
+                  "type": "text",
+                  "text": "+3",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#111827",
+                  "align": "end",
+                  "flex": 6
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
               "margin": "lg",
               "contents": [
                 {
                   "type": "text",
                   "text": "Credit balance",
                   "wrap": true,
-                  "size": "lg",
+                  "size": "md",
                   "weight": "bold",
                   "color": "#111827",
-                  "flex": 1,
-                  "gravity": "center"
+                  "gravity": "center",
+                  "flex": 1
                 },
                 {
                   "type": "text",
@@ -497,8 +469,8 @@
                   "weight": "bold",
                   "color": "#111827",
                   "align": "end",
-                  "flex": 0,
-                  "gravity": "center"
+                  "gravity": "center",
+                  "flex": 0
                 }
               ]
             },
@@ -511,8 +483,7 @@
               "align": "end",
               "margin": "xs"
             }
-          ],
-          "margin": "xxl"
+          ]
         }
       ]
     },
@@ -525,9 +496,7 @@
         {
           "type": "box",
           "layout": "vertical",
-          "margin": "xl",
-          "borderWidth": "1px",
-          "borderColor": "#D1D5DB",
+          "backgroundColor": "#001D4A",
           "cornerRadius": "8px",
           "paddingAll": "12px",
           "action": {
@@ -542,22 +511,17 @@
               "wrap": true,
               "size": "sm",
               "weight": "bold",
-              "color": "#111827",
+              "color": "#FFFFFF",
               "align": "center"
             }
           ]
-        },
-        {
-          "type": "separator",
-          "margin": "lg",
-          "color": "#E5E7EB"
         },
         {
           "type": "text",
           "text": "This is an automatic notification from allAbut.",
           "wrap": true,
           "size": "xxs",
-          "color": "#6B7280",
+          "color": "#9CA3AF",
           "align": "center",
           "margin": "lg"
         },
@@ -566,7 +530,7 @@
           "text": "allAbut Co., Ltd. · Tax ID 0105569012345 · allabut.com",
           "wrap": true,
           "size": "xxs",
-          "color": "#6B7280",
+          "color": "#9CA3AF",
           "align": "center",
           "margin": "xs"
         }
