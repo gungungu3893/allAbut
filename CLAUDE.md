@@ -393,6 +393,12 @@
     상단 가운데 로고 아이콘(`SITE_URL/assets/brand/line-icon.png`, 192×192 PNG) → 제목(색은 글씨에만) → "allAbut · Order notice" → 문서번호 → 날짜·시간(방콕 "10 NOV 2026 / 08:59 AM") →
     섹션(있는 것만: Clinic / Case / Teeth "#36 Osstem A2" 최대 6줄 + "+n more" / 이벤트별 상세) → 합계(작은 줄 + 마지막 줄 크게: 주문·크레딧 "Credit balance", 충전 "Total ฿…") →
     테두리 버튼 1개 + "This is an automatic notification from allAbut." + company_settings 회사명 · Tax ID · 사이트 주소
+  - **글자 위계 · 여백** (LINE MAN 영수증처럼, `sectionBox()` · `rowsBox()` · `bigRow()`):
+    섹션 제목 `lg` bold #111827 / 내용 첫 줄(치과명·고객 이름) `sm` bold #111827(제목과 `md`) / 나머지 줄(주소·전화·이메일·"Sent to customer LINE") `sm` regular #6B7280 wrap(`xs`), LINE 미연결 경고만 빨강 /
+    항목 줄 = 라벨 `sm` bold #374151 · 값 `sm` bold #111827 오른쪽 wrap, 묶음 좌우 `lg` 들여쓰기, 줄 사이 `md` (치아 줄도 같은 들여쓰기) /
+    합계 = 작은 줄은 항목 줄과 같음 + 마지막 큰 줄 라벨 `lg` · 값 `xxl`(flex 0, 금액이 안 꺾이게) + "Paid n · Free n" `xs` 회색 오른쪽 /
+    여백 = 상단 ↔ 첫 내용 separator + 위아래 `xl`, **모든 섹션(안내 글 · 섹션 · 합계) 사이 separator(#E5E7EB) + 위아래 `xxl`**, 본문 `paddingAll xl`, 버튼 위 `xl`, 하단 안내 위 separator + `lg`.
+    빈 줄 · 빈 섹션은 빼요 (Flex 는 빈 text 를 못 받아서). 휴대폰 폭(약 300px)에서 긴 치과명 · 주소는 줄바꿈 (`docs/flex-samples/` 로 확인)
   - 만드는 함수: `orderReceipt()`(cnc_orders 의 cases·clinic·addr·phone·patient·deadline·credits_used + credit_wallets 잔액), `topupReceipt()`(topup_requests 의 credits·unit_price·subtotal·vat_amount·total), `creditReceipt()`
   - 제목 색: 관리자 = `ADMIN_NOTICE_STYLES` 의 종류별 색·제목(title) / 고객 = 네이비, 취소·충전 거절만 빨강. 글씨 #111827 · 회색 #6B7280 · 구분선 #E5E7EB
   - 사본: 문서번호 위 회색 "COPY OF CUSTOMER NOTICE", Clinic 섹션에 고객 이메일, LINE 미연결이면 그 아래 빨간 작은 글씨 + 전화번호, 처리자는 상세의 "Handled by"

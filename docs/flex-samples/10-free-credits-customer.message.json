@@ -15,7 +15,7 @@
     "body": {
       "type": "box",
       "layout": "vertical",
-      "paddingAll": "20px",
+      "paddingAll": "xl",
       "contents": [
         {
           "type": "image",
@@ -55,7 +55,7 @@
         },
         {
           "type": "separator",
-          "margin": "lg",
+          "margin": "xl",
           "color": "#E5E7EB"
         },
         {
@@ -64,199 +64,243 @@
           "wrap": true,
           "size": "sm",
           "color": "#111827",
-          "margin": "lg"
+          "margin": "xl"
         },
         {
-          "type": "text",
-          "text": "Clinic",
-          "wrap": true,
-          "size": "sm",
-          "weight": "bold",
-          "color": "#111827",
-          "margin": "lg"
+          "type": "separator",
+          "margin": "xxl",
+          "color": "#E5E7EB"
         },
         {
           "type": "box",
           "layout": "vertical",
-          "margin": "sm",
           "contents": [
             {
               "type": "text",
-              "text": "Bright Smile Dental Clinic",
+              "text": "Clinic",
               "wrap": true,
-              "size": "sm",
+              "size": "lg",
               "weight": "bold",
               "color": "#111827"
             },
             {
-              "type": "text",
-              "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
-              "wrap": true,
-              "size": "xs",
-              "color": "#6B7280",
-              "margin": "xs"
-            },
-            {
-              "type": "text",
-              "text": "02-123-4567",
-              "wrap": true,
-              "size": "xs",
-              "color": "#6B7280",
-              "margin": "xs"
+              "type": "box",
+              "layout": "vertical",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Bright Smile Dental Clinic",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "bold",
+                  "color": "#111827"
+                },
+                {
+                  "type": "text",
+                  "text": "99 Sukhumvit Rd, Khlong Toei, Bangkok 10110",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "margin": "xs"
+                },
+                {
+                  "type": "text",
+                  "text": "02-123-4567",
+                  "wrap": true,
+                  "size": "sm",
+                  "weight": "regular",
+                  "color": "#6B7280",
+                  "margin": "xs"
+                }
+              ],
+              "margin": "md"
             }
-          ]
+          ],
+          "margin": "xxl"
         },
         {
-          "type": "text",
-          "text": "Details",
-          "wrap": true,
-          "size": "sm",
-          "weight": "bold",
-          "color": "#111827",
-          "margin": "lg"
+          "type": "separator",
+          "margin": "xxl",
+          "color": "#E5E7EB"
         },
         {
           "type": "box",
           "layout": "vertical",
-          "margin": "sm",
+          "contents": [
+            {
+              "type": "text",
+              "text": "Details",
+              "wrap": true,
+              "size": "lg",
+              "weight": "bold",
+              "color": "#111827"
+            },
+            {
+              "type": "box",
+              "layout": "vertical",
+              "paddingStart": "lg",
+              "paddingEnd": "lg",
+              "contents": [
+                {
+                  "type": "box",
+                  "layout": "horizontal",
+                  "spacing": "md",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": "Event",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#374151",
+                      "flex": 5
+                    },
+                    {
+                      "type": "text",
+                      "text": "Dental Expo 2026",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#111827",
+                      "align": "end",
+                      "flex": 5
+                    }
+                  ]
+                },
+                {
+                  "type": "box",
+                  "layout": "horizontal",
+                  "spacing": "md",
+                  "margin": "md",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": "Valid until",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#374151",
+                      "flex": 5
+                    },
+                    {
+                      "type": "text",
+                      "text": "2027-11-10",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#111827",
+                      "align": "end",
+                      "flex": 5
+                    }
+                  ]
+                }
+              ],
+              "margin": "md"
+            }
+          ],
+          "margin": "xxl"
+        },
+        {
+          "type": "separator",
+          "margin": "xxl",
+          "color": "#E5E7EB"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
           "contents": [
             {
               "type": "box",
-              "layout": "horizontal",
-              "spacing": "md",
-              "margin": "sm",
+              "layout": "vertical",
+              "paddingStart": "lg",
+              "paddingEnd": "lg",
               "contents": [
                 {
-                  "type": "text",
-                  "text": "Event",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#6B7280",
-                  "weight": "regular",
-                  "flex": 5,
-                  "gravity": "center"
-                },
-                {
-                  "type": "text",
-                  "text": "Dental Expo 2026",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#111827",
-                  "weight": "bold",
-                  "align": "end",
-                  "flex": 5,
-                  "gravity": "center"
+                  "type": "box",
+                  "layout": "horizontal",
+                  "spacing": "md",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": "Credits added",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#374151",
+                      "flex": 5
+                    },
+                    {
+                      "type": "text",
+                      "text": "+5",
+                      "wrap": true,
+                      "size": "sm",
+                      "weight": "bold",
+                      "color": "#111827",
+                      "align": "end",
+                      "flex": 5
+                    }
+                  ]
                 }
               ]
+            },
+            {
+              "type": "separator",
+              "margin": "lg",
+              "color": "#E5E7EB"
             },
             {
               "type": "box",
               "layout": "horizontal",
               "spacing": "md",
-              "margin": "sm",
+              "margin": "lg",
               "contents": [
                 {
                   "type": "text",
-                  "text": "Valid until",
+                  "text": "Credit balance",
                   "wrap": true,
-                  "size": "sm",
-                  "color": "#6B7280",
-                  "weight": "regular",
-                  "flex": 5,
+                  "size": "lg",
+                  "weight": "bold",
+                  "color": "#111827",
+                  "flex": 1,
                   "gravity": "center"
                 },
                 {
                   "type": "text",
-                  "text": "2027-11-10",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#111827",
+                  "text": "97",
+                  "size": "xxl",
                   "weight": "bold",
+                  "color": "#111827",
                   "align": "end",
-                  "flex": 5,
+                  "flex": 0,
                   "gravity": "center"
                 }
               ]
-            }
-          ]
-        },
-        {
-          "type": "separator",
-          "margin": "lg",
-          "color": "#E5E7EB"
-        },
-        {
-          "type": "box",
-          "layout": "horizontal",
-          "spacing": "md",
-          "margin": "sm",
-          "contents": [
+            },
             {
               "type": "text",
-              "text": "Credits added",
+              "text": "Paid 0 · Free 0",
               "wrap": true,
-              "size": "sm",
+              "size": "xs",
               "color": "#6B7280",
-              "weight": "regular",
-              "flex": 5,
-              "gravity": "center"
-            },
-            {
-              "type": "text",
-              "text": "+5",
-              "wrap": true,
-              "size": "sm",
-              "color": "#111827",
-              "weight": "bold",
               "align": "end",
-              "flex": 5,
-              "gravity": "center"
+              "margin": "xs"
             }
-          ]
-        },
-        {
-          "type": "separator",
-          "margin": "md",
-          "color": "#E5E7EB"
-        },
-        {
-          "type": "box",
-          "layout": "horizontal",
-          "spacing": "md",
-          "margin": "md",
-          "contents": [
-            {
-              "type": "text",
-              "text": "Credit balance",
-              "wrap": true,
-              "size": "md",
-              "color": "#111827",
-              "weight": "bold",
-              "flex": 1,
-              "gravity": "center"
-            },
-            {
-              "type": "text",
-              "text": "97",
-              "size": "xl",
-              "color": "#111827",
-              "weight": "bold",
-              "align": "end",
-              "flex": 0,
-              "gravity": "center"
-            }
-          ]
+          ],
+          "margin": "xxl"
         }
       ]
     },
     "footer": {
       "type": "box",
       "layout": "vertical",
+      "paddingAll": "xl",
       "paddingTop": "0px",
       "contents": [
         {
           "type": "box",
           "layout": "vertical",
+          "margin": "xl",
           "borderWidth": "1px",
           "borderColor": "#D1D5DB",
           "cornerRadius": "8px",
@@ -290,7 +334,7 @@
           "size": "xxs",
           "color": "#6B7280",
           "align": "center",
-          "margin": "md"
+          "margin": "lg"
         },
         {
           "type": "text",

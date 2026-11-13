@@ -34,4 +34,16 @@
 3. 합계: 작은 줄들 + 마지막 줄 크게 (`Credit balance` 또는 `Total ฿…`)
 4. 하단: 테두리 버튼 + "This is an automatic notification from allAbut." + 회사명 · Tax ID · allabut.com
 
+## 글자 위계 · 여백 (LINE MAN 영수증처럼)
+| 부분 | Flex 값 |
+|---|---|
+| 섹션 제목 (Clinic · Case · Teeth · Details · Shipping …) | `lg` · bold · `#111827` |
+| 내용 첫 줄 (치과명 · 고객 이름) | `sm` · bold · `#111827`, 제목과 `md` |
+| 내용 나머지 줄 (주소 · 전화 · 이메일 · "Sent to customer LINE") | `sm` · regular · `#6B7280` · wrap, 줄 간격 `xs` (LINE 미연결 경고만 빨강 `#B91C1C`) |
+| 항목 줄 (Valid until · Handled by · Paid …) | 라벨 `sm` bold `#374151` / 값 `sm` bold `#111827` 오른쪽 · wrap, 묶음 좌우 들여쓰기 `lg`, 줄 사이 `md` |
+| 합계 | 작은 줄 = 항목 줄과 같음 (들여쓰기) / 마지막 큰 줄 = 라벨 `lg` bold · 값 `xxl` bold / "Paid n · Free n" = `xs` 회색 오른쪽 |
+| 여백 | 상단 ↔ 첫 내용: separator + 위아래 `xl` / **모든 섹션 사이: separator(`#E5E7EB`) + 위아래 `xxl`** / 본문 `paddingAll xl` / 버튼 위 `xl` / 하단 안내 위 separator + `lg` |
+
+샘플 다시 만들기: 가짜 서버로 실제 함수를 돌려서 저장해요 (개발용 스크립트, 저장소 밖).
+
 ※ 샘플의 회사명·Tax ID·치과·환자 값은 예시예요. 실제 카드는 `company_settings` 와 주문 값으로 채워져요.
