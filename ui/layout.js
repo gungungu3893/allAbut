@@ -235,7 +235,11 @@ function renderLayout() {
 //   fit-5: 로고 조금 작게
 //   fit-6: 위쪽 메뉴 글자 조금 작게 + 가이드 아이콘·Admin 역할 글자·크레딧 단위 숨김 (회사소개까지 메뉴가 7개라)
 //   fit-7: (PC) 위쪽 메뉴 대신 아래 탭 메뉴(이때는 회사소개 탭도 보여요), 로고의 작은 5μm 숨김
-var HEADER_FIT_LEVELS = 7;
+//   fit-8: (아주 좁을 때 — 예: 360px · 아랍어 · 글자 130%) 헤더 양옆 여백 · 버튼 사이 간격 · 버튼 안 여백 좁게, 로고 조금 더 작게,
+//          LINE 버튼은 글자 "LINE" 만(초록 버튼 그대로), ☰ 메뉴 버튼은 글자만 ("메뉴"), 크레딧 아이콘 작게
+//   fit-9: (그래도 안 되면) 크레딧 숫자 · 버튼 글자를 조금 작게 — 글자 라벨은 끝까지 남겨요 (아이콘만 있는 버튼 금지)
+var HEADER_FIT_LEVELS = 9;
+var HEADER_TABBAR_LEVEL = 7;   // fit-7 부터 위쪽 메뉴 대신 아래 탭
 function fitHeader() {
   var header = document.getElementById('app-header');
   if (!header) return;
@@ -247,7 +251,7 @@ function fitHeader() {
     if (inner.scrollWidth <= inner.clientWidth) break;
     header.classList.add('fit-' + lv);
   }
-  document.body.classList.toggle('hdr-tabbar', header.classList.contains('fit-' + HEADER_FIT_LEVELS));
+  document.body.classList.toggle('hdr-tabbar', header.classList.contains('fit-' + HEADER_TABBAR_LEVEL));
 }
 var _fitTimer = null;
 window.addEventListener('resize', function () {
