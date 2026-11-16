@@ -34,7 +34,10 @@
 
       <!-- 상단 메뉴 줄 (흰 배경): 로고 · 회사소개 · 언어 · 로그인 -->
       <header class="landing-nav">
-        <span class="logo logo-light landing-nav-logo" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
+        <div class="landing-nav-brand">
+          <span class="logo logo-light landing-nav-logo" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
+          <span class="test-badge-slot" hidden></span><!-- 테스트 서비스면 "TEST" 배지 (ui/service-badge.js) -->
+        </div>
         <nav class="landing-nav-right" aria-label="Main">
           <a href="#/about" class="landing-nav-link" data-i18n="about_nav">About</a>
           <label class="public-lang landing-lang">
@@ -54,8 +57,11 @@
         <span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>
       </div>
 
-      <!-- 슬로건 -->
-      <p class="slogan" data-i18n="slogan">Precision Custom Abutment</p>
+      <!-- 슬로건 (+ 테스트 서비스면 옆에 "Beta test service" — ui/service-badge.js) -->
+      <div class="slogan-row">
+        <p class="slogan" data-i18n="slogan">Precision Custom Abutment</p>
+        <span class="beta-note" id="beta-note" hidden></span>
+      </div>
 
       <!-- 🎁 신규 가입 무료 크레딧 이벤트 (진행 중일 때만, app.js 의 renderCampaignBanners) -->
       <p class="campaign-banner" hidden></p>
@@ -68,9 +74,12 @@
 
       <!-- 상단 메뉴 줄 (흰 배경, 랜딩과 같은 모양): 로고(→ 첫 화면) · 언어 -->
       <header class="landing-nav auth-nav">
-        <button type="button" class="auth-nav-home" onclick="showScreen('landing')" aria-label="allAbut 5μm">
-          <span class="logo logo-light landing-nav-logo"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
-        </button>
+        <div class="landing-nav-brand">
+          <button type="button" class="auth-nav-home" onclick="showScreen('landing')" aria-label="allAbut 5μm">
+            <span class="logo logo-light landing-nav-logo"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
+          </button>
+          <span class="test-badge-slot" hidden></span>
+        </div>
         <nav class="landing-nav-right">
           <label class="public-lang landing-lang">
             <span aria-hidden="true">🌐</span>
@@ -218,6 +227,7 @@
           <a href="#/" class="hdr-logo" onclick="leaveLegalPage(event)">
             <span class="logo logo-light" aria-label="allAbut 5μm"><span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span></span>
           </a>
+          <span class="test-badge-slot" hidden></span>
           <a href="#/about" class="hdr-link legal-about-link" data-nav="about" data-i18n="about_nav">About</a>
           <div class="hdr-right">
             <label class="lang-select public-lang-light">
@@ -292,12 +302,14 @@
   <script src="cnc/cnc-identity.js"></script>
   <script src="cnc/cnc-analytics.js"></script>
   <script src="cnc/cnc-sales.js"></script>
+  <script src="cnc/cnc-service.js"></script>
 
   <!-- 화면 -->
   <script src="ui/layout.js"></script>
   <script src="ui/turnstile.js"></script>
   <script src="ui/logo-intro.js"></script>
   <script src="ui/visit-counter.js"></script>
+  <script src="ui/service-badge.js"></script>
   <script src="ui/line-connect.js"></script>
   <script src="ui/datepicker.js"></script>
   <script src="ui/page-home.js"></script>

@@ -1434,6 +1434,23 @@ LANG.es = {
   role_desc_sales: 'Solo vendedor: ve los pagos de sus propios clientes y su propia comisión.',
   rep_customer_help: 'Se aplica a los pagos futuros de este cliente. Si hay pagos aprobados sin vendedor, se le preguntará si también quiere asignarlos.',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: 'Servicio de prueba — ¿qué significa?',
+  test_badge_info: 'Este servicio está en pruebas. Los registros de pedidos y créditos se borrarán en el lanzamiento oficial.',
+  beta_note: 'Servicio en prueba beta',
+  svc_admin_title: 'Estado del servicio',
+  svc_admin_help: 'En modo Prueba se muestra una insignia TEST junto al logotipo, junto al eslogan de la portada y en las tarjetas de LINE. Cambia a En vivo el día del lanzamiento, después de borrar los datos de prueba.',
+  svc_mode_test: 'Prueba',
+  svc_mode_live: 'En vivo',
+  svc_current: 'Ahora: {mode}',
+  svc_save: 'Guardar',
+  svc_confirm_title: '¿Cambiar el estado del servicio?',
+  svc_confirm_live: '¿Cambiar a En vivo? La insignia TEST desaparecerá del sitio y de las tarjetas de LINE.',
+  svc_confirm_test: '¿Volver a Prueba? La insignia TEST se mostrará de nuevo en el sitio y en las tarjetas de LINE.',
+  svc_saved: 'Estado del servicio guardado',
+  svc_missing: 'El estado del servicio aún no está configurado. Ejecuta primero sql/017_service_mode.sql.',
+  audit_service_mode: 'Estado del servicio cambiado',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

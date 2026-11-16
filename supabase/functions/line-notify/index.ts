@@ -10,12 +10,12 @@
 // 버튼 링크·로고 이미지의 사이트 주소: Secrets 의 SITE_URL (없으면 https://allabut.com)
 // 버튼 링크는 전부 siteLink() → {SITE_URL}/?openExternalBrowser=1#/… (휴대폰 기본 브라우저로 열림, 주문 카드는 그 주문으로 바로)
 //
-// ── 카드 모양: 모든 알림이 buildReceiptCard() 하나를 써요 (LINE MAN 영수증 같은 흰 카드) ──
-//   1) 상단 가운데: 로고 아이콘(SITE_URL/assets/brand/line-icon.png) → 제목(종류별 색 글씨) → "allAbut · Order notice"
-//      → (고객 알림 사본이면 "COPY OF CUSTOMER NOTICE") → 문서번호(주문·충전 요청 번호) → 날짜·시간(방콕) → 구분선
-//   2) 섹션(있는 것만): Clinic(치과명 + 주소·전화) / Case(환자·납기) / Teeth("#36  Osstem  A2", 최대 6줄 + "+n more") / 이벤트별 상세
-//   3) 합계(영수증의 Total 처럼): 작은 줄들 + 마지막 줄 크게 — 주문·크레딧은 "Credit balance 97", 충전은 "Total ฿21,935.00"
-//   4) 하단: 테두리만 있는 버튼 1개 + 구분선 아래 "This is an automatic notification from allAbut." + 회사명 · Tax ID · allabut.com
+// ── 카드 모양 v2: 모든 알림이 buildReceiptCard() 하나를 써요 (흰 카드, 자세한 규칙은 CLAUDE.md · docs/flex-samples) ──
+//   1) 맨 위 4px 색 띠 → 윗줄 [로고 · allAbut] … [테스트 서비스면 회색 "TEST" 배지(sql/017)] [사본이면 회색 "COPY" 배지]
+//      → 제목(종류별 색) → 문서번호 ─ 날짜·시간(방콕) → 안내 문장 → 구분선
+//   2) 섹션(있는 것만): Clinic / Case / Teeth / 이벤트별 상세 (섹션 사이 여백만)
+//   3) 합계: 작은 줄들 + 마지막 줄 크게 — 주문·크레딧은 "Credit balance 97", 충전은 "Total ฿21,935.00"
+//   4) 하단: 네이비 버튼 1개 + "This is an automatic notification from allAbut." + 회사명 · Tax ID · allabut.com
 //   altText(알림 미리보기) = "제목 · 문서번호" (사본은 앞에 "COPY · ")
 //
 // 관리자 알림 받는 곳 (sql/005_team.sql)
@@ -25,7 +25,7 @@
 //   - 직원이 처리한 일(확인·디자인 업로드·가공·발송·완료 처리·관리자 취소·충전 승인/거절)은
 //     연결된 그룹에만 "Confirmed by Ken" 카드 (LINE_ADMIN_USER_ID 로는 보내지 않아요)
 //   - 고객 알림 사본: 고객에게 가는 알림은 고객 LINE 연결 여부와 상관없이 관리자에게도 사본 카드
-//     (COPY OF CUSTOMER NOTICE 라벨, 고객 이메일, 처리자, LINE 미연결이면 빨간 글씨 + 전화번호)
+//     (윗줄 COPY 배지, 고객 이메일, 처리자, LINE 미연결이면 빨간 글씨 + 전화번호)
 //     사본에 처리자 이름이 들어가는 일은, 사본을 받는 그룹에 "Confirmed by Ken" 카드를 따로 보내지 않아요 (중복 방지)
 //
 // 관리자에게 (영어): 새 주문 / 고객 디자인 승인 / 수정 요청(사유) / 고객 수령 / 고객 취소 / 충전 요청 / 충전 취소 / 계정 삭제 요청
@@ -666,6 +666,15 @@ function sectionBox(s: Section): any | null {
   return { type: 'box', layout: 'vertical', margin: 'xxl', contents };
 }
 
+// 윗줄 오른쪽 작은 회색 배지 (TEST · COPY 같은 모양, 둘 다면 TEST → COPY 순서)
+function smallBadge(label: string) {
+  return {
+    type: 'box', layout: 'vertical', flex: 0, backgroundColor: BADGE_BG, cornerRadius: '4px', margin: 'sm',
+    paddingTop: 'xs', paddingBottom: 'xs', paddingStart: 'md', paddingEnd: 'md', justifyContent: 'center',
+    contents: [{ type: 'text', text: label, size: 'xxs', weight: 'bold', color: BADGE_INK }],
+  };
+}
+
 function buildReceiptCard(o: ReceiptOpts) {
   // 1) 윗줄: 로고 · allAbut · (사본이면 COPY 배지)
   const brand: any[] = [
@@ -673,13 +682,8 @@ function buildReceiptCard(o: ReceiptOpts) {
     { type: 'text', text: 'allAbut', size: 'sm', weight: 'bold', color: BRAND_NAVY, gravity: 'center', margin: 'md', flex: 0 },
     FILLER,
   ];
-  if (o.copyLabel) {
-    brand.push({
-      type: 'box', layout: 'vertical', flex: 0, backgroundColor: BADGE_BG, cornerRadius: '4px',
-      paddingTop: 'xs', paddingBottom: 'xs', paddingStart: 'md', paddingEnd: 'md', justifyContent: 'center',
-      contents: [{ type: 'text', text: 'COPY', size: 'xxs', weight: 'bold', color: BADGE_INK }],
-    });
-  }
+  if (_testMode) brand.push(smallBadge('TEST'));   // 테스트 서비스 (sql/017)
+  if (o.copyLabel) brand.push(smallBadge('COPY'));
   const body: any[] = [{ type: 'box', layout: 'horizontal', alignItems: 'center', contents: brand }];
 
   // 2) 제목 (알림 색, 왼쪽) · 3) 문서번호 ─ 날짜
@@ -832,6 +836,19 @@ async function companyLine(): Promise<string> {
   const line = [name || 'allAbut', tax ? 'Tax ID ' + tax : '', SITE_HOST].filter(Boolean).join(' · ');
   _company = { at: Date.now(), line };
   return line;
+}
+
+// 서비스 상태 (sql/017 payment_settings.service_mode) — 'test' 면 카드 윗줄 오른쪽에 회색 "TEST" 배지
+// 알림마다 handle() 시작할 때 한 번 읽어요 (관리자가 바꾸면 다음 알림부터 바로 반영). 못 읽으면(017 전 · 오류) 배지 없음
+let _testMode = false;
+async function refreshServiceMode(): Promise<void> {
+  try {
+    const { data, error } = await db.from('payment_settings').select('service_mode').eq('id', 1).maybeSingle();
+    _testMode = !error && data?.service_mode === 'test';
+  } catch (err) {
+    console.error('service mode read failed', err);
+    _testMode = false;
+  }
 }
 
 // 고객 이메일 (auth.users, 서버 관리 키). 못 읽으면 빈 글자
@@ -1511,8 +1528,9 @@ async function handleSignupGrant(type: string, rec: any, old: any): Promise<void
 async function handle(payload: any): Promise<void> {
   const { type, table, record, old_record } = payload ?? {};
 
+  if (type !== 'EXPIRY_REMINDER' && !record) return;
+  await refreshServiceMode();   // TEST 배지 여부 (알림마다 새로)
   if (type === 'EXPIRY_REMINDER') { await handleReminder(payload); return; }
-  if (!record) return;
 
   if (table === 'topup_requests') { await handleTopup(type, record, old_record); return; }
   if (table === 'account_deletion_requests') { if (type === 'INSERT') await handleDeletionRequest(record); return; }

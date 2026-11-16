@@ -1434,6 +1434,23 @@ LANG.zh = {
   role_desc_sales: '仅销售：只能查看自己客户的付款和自己的佣金。',
   rep_customer_help: '适用于该客户今后的付款。如果有已批准但没有负责人的付款，会询问是否一并指定。',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: '测试服务 — 这是什么意思？',
+  test_badge_info: '本服务正在测试中。正式上线时，订单和积分记录将被清空。',
+  beta_note: 'Beta 测试服务',
+  svc_admin_title: '服务状态',
+  svc_admin_help: '测试状态下，徽标旁、首页标语旁和 LINE 卡片上会显示 TEST 标记。上线当天清空测试数据后，再切换为正式。',
+  svc_mode_test: '测试',
+  svc_mode_live: '正式',
+  svc_current: '当前：{mode}',
+  svc_save: '保存',
+  svc_confirm_title: '更改服务状态？',
+  svc_confirm_live: '切换为正式？网站和 LINE 卡片上的 TEST 标记将消失。',
+  svc_confirm_test: '切换回测试？网站和 LINE 卡片上将再次显示 TEST 标记。',
+  svc_saved: '服务状态已保存',
+  svc_missing: '服务状态尚未设置。请先运行 sql/017_service_mode.sql。',
+  audit_service_mode: '服务状态变更',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

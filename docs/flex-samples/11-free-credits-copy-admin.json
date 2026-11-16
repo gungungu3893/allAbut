@@ -64,6 +64,7 @@
             "flex": 0,
             "backgroundColor": "#F3F4F6",
             "cornerRadius": "4px",
+            "margin": "sm",
             "paddingTop": "xs",
             "paddingBottom": "xs",
             "paddingStart": "md",

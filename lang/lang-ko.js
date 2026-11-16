@@ -1435,6 +1435,23 @@ LANG.ko = {
   role_desc_sales: '영업 담당만: 자기 담당 고객의 입금 내역과 자기 커미션만 봐요.',
   rep_customer_help: '이 고객의 앞으로의 입금에 적용돼요. 이미 승인됐는데 담당이 없는 입금이 있으면 같이 지정할지 물어봐요.',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: '테스트 서비스 — 무슨 뜻인가요?',
+  test_badge_info: '테스트 중인 서비스예요. 정식 오픈 때 주문·크레딧 기록은 초기화돼요.',
+  beta_note: '베타 테스트 서비스',
+  svc_admin_title: '서비스 상태',
+  svc_admin_help: '테스트 상태에서는 로고 옆 · 랜딩 슬로건 옆 · LINE 카드에 TEST 배지가 보여요. 정식 오픈 날 테스트 데이터 초기화 후 정식으로 바꾸세요.',
+  svc_mode_test: '테스트',
+  svc_mode_live: '정식',
+  svc_current: '지금: {mode}',
+  svc_save: '저장',
+  svc_confirm_title: '서비스 상태를 바꿀까요?',
+  svc_confirm_live: '정식으로 바꿀까요? 사이트와 LINE 카드에서 TEST 배지가 사라져요.',
+  svc_confirm_test: '테스트로 되돌릴까요? 사이트와 LINE 카드에 TEST 배지가 다시 보여요.',
+  svc_saved: '서비스 상태를 저장했어요',
+  svc_missing: '서비스 상태가 아직 준비되지 않았어요. sql/017_service_mode.sql 을 먼저 실행하세요.',
+  audit_service_mode: '서비스 상태 변경',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

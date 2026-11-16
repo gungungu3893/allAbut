@@ -1434,6 +1434,23 @@ LANG.tr = {
   role_desc_sales: 'Yalnızca satış temsilcisi: kendi müşterilerinin ödemelerini ve kendi komisyonunu görür.',
   rep_customer_help: 'Bu müşterinin gelecekteki ödemelerine uygulanır. Temsilcisi olmayan onaylı ödemeler varsa bunlara da atanıp atanmayacağı sorulur.',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: 'Test hizmeti — bu ne anlama geliyor?',
+  test_badge_info: 'Bu hizmet test aşamasında. Resmî açılışta sipariş ve kredi kayıtları sıfırlanacak.',
+  beta_note: 'Beta test hizmeti',
+  svc_admin_title: 'Hizmet durumu',
+  svc_admin_help: 'Test modundayken logonun yanında, giriş sayfası sloganının yanında ve LINE kartlarında TEST rozeti görünür. Açılış günü test verileri sıfırlandıktan sonra Canlı’ya geçin.',
+  svc_mode_test: 'Test',
+  svc_mode_live: 'Canlı',
+  svc_current: 'Şu an: {mode}',
+  svc_save: 'Kaydet',
+  svc_confirm_title: 'Hizmet durumu değiştirilsin mi?',
+  svc_confirm_live: 'Canlı’ya geçilsin mi? TEST rozeti siteden ve LINE kartlarından kalkacak.',
+  svc_confirm_test: 'Test’e geri dönülsün mü? TEST rozeti sitede ve LINE kartlarında yeniden görünecek.',
+  svc_saved: 'Hizmet durumu kaydedildi',
+  svc_missing: 'Hizmet durumu henüz ayarlanmadı. Önce sql/017_service_mode.sql dosyasını çalıştırın.',
+  audit_service_mode: 'Hizmet durumu değişti',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

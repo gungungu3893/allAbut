@@ -23,6 +23,7 @@
 | `09-shipped-customer-th` | 배송 시작 — 태국어 고객 | 고객 |
 | `10-free-credits-customer` | 🎁 무료 크레딧 지급 (크레딧 수 · 이벤트 · 유효기간 · 등록 주소 전용 안내 · 주문하기 버튼) | 고객 |
 | `11-free-credits-copy-admin` | 🎁 무료 크레딧 지급 사본 (이벤트 · 배송 제한 · 지급한 직원) | 관리자 |
+| `12-test-mode-copy-admin` | 테스트 서비스(sql/017 service_mode = 'test')일 때 — 윗줄 오른쪽 "TEST" + "COPY" 배지 | 관리자 |
 
 ## 버튼 링크
 모든 버튼은 `https://allabut.com/?openExternalBrowser=1#/…` 형식이에요 (LINE 안의 작은 브라우저 대신 휴대폰 기본 브라우저로 열려요).
@@ -30,7 +31,7 @@
 
 ## 카드 구조 v2 (모든 알림 공통 — `buildReceiptCard()`)
 1. **맨 위 4px 색 띠** (header) — 그 알림의 제목 색
-2. 윗줄: 로고 28px + "allAbut" (네이비) … 사본이면 오른쪽 회색 **COPY** 배지
+2. 윗줄: 로고 28px + "allAbut" (네이비) … 테스트 서비스면 회색 **TEST** 배지, 사본이면 회색 **COPY** 배지 (둘 다면 TEST → COPY)
 3. 제목 (`xl` bold, 알림 색, 왼쪽) → 한 줄에 문서번호(왼쪽) · 날짜(오른쪽, `13 NOV 2026 · 11:11 AM`)
 4. 안내 문장(있을 때만) → 구분선
 5. 섹션들 (Clinic / Case / Teeth / Details / Shipping …) — **섹션 사이엔 구분선 없이 여백만**
@@ -41,7 +42,7 @@
 | 부분 | Flex 값 |
 |---|---|
 | 카드 | bubble `mega`, header 4px 색 띠(`paddingAll 0px`), body `paddingAll xl`, footer `paddingAll xl` · `paddingTop 0px` |
-| 윗줄 | 로고 image `28px` flex 0 · "allAbut" `sm` bold `#001D4A` (`margin md`) · filler · COPY 배지(`#F3F4F6`, 모서리 4px, 글씨 `xxs` bold `#4B5563`) |
+| 윗줄 | 로고 image `28px` flex 0 · "allAbut" `sm` bold `#001D4A` (`margin md`) · filler · TEST / COPY 배지(`#F3F4F6`, 모서리 4px, `margin sm`, 글씨 `xxs` bold `#4B5563`) |
 | 제목 / 문서번호 · 날짜 | 제목 `xl` bold 알림 색 (`margin xl`) / 문서번호 `xs` bold `#374151` · 날짜 `xs` `#6B7280` (`margin sm`) |
 | 안내 문장 | `sm` `#374151` (`margin lg`) → separator `#E5E7EB` (`margin xl`) |
 | 섹션 | 상자마다 `margin xxl`, 제목 `md` bold `#111827`, 첫 내용 `margin md` |

@@ -1434,6 +1434,23 @@ LANG.vi = {
   role_desc_sales: 'Chỉ NV kinh doanh: xem thanh toán của khách mình và hoa hồng của mình.',
   rep_customer_help: 'Áp dụng cho các thanh toán sau này của khách. Nếu có thanh toán đã duyệt chưa có NV kinh doanh, bạn sẽ được hỏi có gán luôn không.',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: 'Dịch vụ thử nghiệm — nghĩa là gì?',
+  test_badge_info: 'Dịch vụ đang trong giai đoạn thử nghiệm. Dữ liệu đơn hàng và tín dụng sẽ được xóa khi ra mắt chính thức.',
+  beta_note: 'Dịch vụ thử nghiệm Beta',
+  svc_admin_title: 'Trạng thái dịch vụ',
+  svc_admin_help: 'Khi ở chế độ Thử nghiệm, huy hiệu TEST hiện cạnh logo, cạnh khẩu hiệu trang đầu và trên thẻ LINE. Chuyển sang Chính thức vào ngày ra mắt, sau khi xóa dữ liệu thử nghiệm.',
+  svc_mode_test: 'Thử nghiệm',
+  svc_mode_live: 'Chính thức',
+  svc_current: 'Hiện tại: {mode}',
+  svc_save: 'Lưu',
+  svc_confirm_title: 'Đổi trạng thái dịch vụ?',
+  svc_confirm_live: 'Chuyển sang Chính thức? Huy hiệu TEST sẽ biến mất khỏi trang web và thẻ LINE.',
+  svc_confirm_test: 'Quay lại Thử nghiệm? Huy hiệu TEST sẽ hiện lại trên trang web và thẻ LINE.',
+  svc_saved: 'Đã lưu trạng thái dịch vụ',
+  svc_missing: 'Chưa thiết lập trạng thái dịch vụ. Hãy chạy sql/017_service_mode.sql trước.',
+  audit_service_mode: 'Đổi trạng thái dịch vụ',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

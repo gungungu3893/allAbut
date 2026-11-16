@@ -408,3 +408,15 @@ body.on-auth .public-footer { position: static; padding-top: 14px; }
 .auth-agree { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 8px; font-size: 0.9375rem; line-height: 1.5; color: var(--text); cursor: pointer; }
 .auth-agree input { width: 22px; height: 22px; margin-top: 1px; flex: 0 0 auto; accent-color: var(--navy); }
 .auth-agree a { color: var(--navy); font-weight: 600; }
+
+/* ===== 슬로건 줄 + "Beta test service" (테스트 서비스일 때만, ui/service-badge.js) ===== */
+.slogan-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 12px;
+  margin-top: 22px; position: relative; z-index: 1; padding: 0 16px; text-align: center;
+}
+#screen-landing .slogan-row .slogan { margin-top: 0; }
+.beta-note {
+  font-family: var(--font-sans); font-size: 0.6875rem; font-weight: 600; letter-spacing: 1px;
+  color: #FBBF24; white-space: nowrap;
+}
+.beta-note[hidden] { display: none; }

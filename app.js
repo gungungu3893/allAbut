@@ -532,6 +532,8 @@ function leaveLegalPage(event, toSignIn) {
   cncGetCompany().then(renderFooters).catch(function () { /* SQL 실행 전이면 기본값 */ });
 
   renderCampaignBanners(true);   // 🎁 신규 가입 이벤트 배너 (진행 중일 때만)
+  // 서비스 상태 (테스트 / 정식) — 'test' 면 로고 옆 TEST 배지 · 슬로건 옆 Beta test service. 화면을 막지 않게 기다리지 않아요
+  if (window.cncLoadServiceMode) cncLoadServiceMode().then(function () { if (window.ServiceBadge) ServiceBadge.render(); });
 
   // 비밀번호 재설정 메일의 링크로 들어왔으면 → 새 비밀번호 화면 (1시간 세션 검사보다 먼저)
   if (window.__passwordRecovery) {

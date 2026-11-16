@@ -2540,3 +2540,43 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .dash-visits-head .dash-section-title { margin-bottom: 0; flex: 1 1 auto; }
 .vs-today { color: var(--navy); }
 .vs-toggle { min-height: 44px; }
+
+/* ================================================================
+   테스트 서비스 배지 "TEST" (ui/service-badge.js · 서비스 상태 'test' 일 때만)
+   랜딩 · 로그인 화면 흰 메뉴 줄, 앱 헤더, 법률 문서 헤더의 로고 옆
+   ================================================================ */
+.test-badge-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.test-badge-slot[hidden] { display: none; }
+.test-badge {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 20px; padding: 0 8px;
+  border: 1px solid #D97706; border-radius: 999px;
+  background: #FFFBEB; color: #B45309;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.06em;
+  white-space: nowrap; cursor: pointer; direction: ltr;
+}
+.test-badge::after { content: ''; position: absolute; inset: -10px -6px; }   /* 손가락으로 누르기 쉽게 (보이는 크기는 그대로) */
+.test-badge:hover { background: #FEF3C7; }
+.test-badge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.test-badge-static { cursor: default; vertical-align: 1px; margin-inline-end: 6px; }
+.test-badge-static::after { display: none; }
+.test-badge-info { margin: 0; line-height: 1.6; color: var(--text); }
+/* 로고와 배지 사이는 조금만 (헤더 줄 간격 16px 보다 좁게) */
+.hdr-inner > .test-badge-slot { margin-inline-start: -8px; }
+.landing-nav-brand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex: 0 0 auto; }
+@media (max-width: 479px) {
+  .landing-nav-brand { margin-top: 15px; gap: 6px; }
+  .landing-nav-brand .landing-nav-logo { margin-top: 0; }
+  .auth-nav .landing-nav-brand { margin-top: 0; }
+}
+/* 헤더 자리가 모자라면 배지 글자만 작게 (fitHeader 단계) */
+#app-header.fit-4 .test-badge { height: 18px; padding: 0 6px; font-size: 10px; letter-spacing: 0.04em; }
+#app-header.fit-5 .hdr-inner > .test-badge-slot { margin-inline-start: -4px; }
+#app-header.fit-6 .test-badge { height: 16px; padding: 0 5px; font-size: 9px; letter-spacing: 0.02em; }
+/* 관리자 Settings → 서비스 상태 카드 */
+.svc-current { display: inline-flex; align-items: center; font-size: 0.9375rem; font-weight: 600; color: #B45309; }
+.svc-current-live { color: var(--success); }
+.svc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
+#app-header.fit-7 .test-badge { height: 15px; padding: 0 3px; font-size: 8px; letter-spacing: 0; border-radius: 6px; }
+#app-header.fit-7 .hdr-inner > .test-badge-slot { margin-inline-start: -6px; }

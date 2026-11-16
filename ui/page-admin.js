@@ -61,7 +61,7 @@ var PageAdmin = {
   topups: { status: 'pending', rep: 'all', month: null, rows: [], hasMore: false, loading: false, error: false },   // rep · month: 담당 영업 필터 (sql/016)
   topupDetail: null,     // { modal, row, busy, slipUrl, slipError }
   // Settings 탭 상태
-  settingsTab: { packages: null, settings: null, company: null, versions: null, error: false, saving: false, savingCompany: false },
+  settingsTab: { packages: null, settings: null, company: null, versions: null, error: false, saving: false, savingCompany: false, svcPick: null, svcSaving: false },
   // Customers 탭의 계정 삭제 요청
   deletions: { rows: null, status: 'pending', error: false },
   pendingOrder: null,    // LINE 링크로 들어온 주문번호 (열고 나면 비워요)
@@ -1734,8 +1734,68 @@ var PageAdmin = {
         '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '</section>';
 
-    return '<div class="admin-settings">' + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
+    return '<div class="admin-settings">' + this.serviceModeHtml(s) + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
       this.signupEventHtml(s) + packages + '</div>';
+  },
+
+  // ----- 서비스 상태 (테스트 / 정식) — owner, sql/017 -----
+  // 'test' 이면 사이트 로고 옆 · 랜딩 슬로건 옆 · LINE 카드에 TEST 배지. 고른 뒤 [저장] → 확인 창 → 저장 (작업 기록 'service_mode')
+  serviceModeHtml: function (s) {
+    if (typeof cncHasRole === 'function' && !cncHasRole('owner')) return '';
+    var sx = this.settingsTab;
+    var head = '<div class="card-head"><h2 class="card-title">' + escHtml(t('svc_admin_title')) + '</h2>';
+    if (!s || (s.service_mode !== 'test' && s.service_mode !== 'live')) {
+      return '<section class="card svc-card">' + head + '</div><p class="card-desc">' + escHtml(t('svc_missing')) + '</p></section>';
+    }
+    var cur = s.service_mode;
+    var pick = sx.svcPick === 'test' || sx.svcPick === 'live' ? sx.svcPick : cur;
+    var curLabel = t(cur === 'test' ? 'svc_mode_test' : 'svc_mode_live');
+    var curHtml = cur === 'test'
+      ? '<span class="svc-current"><span class="test-badge test-badge-static" aria-hidden="true">TEST</span>' + escHtml(tf('svc_current', { mode: curLabel })) + '</span>'
+      : '<span class="svc-current svc-current-live">' + escHtml(tf('svc_current', { mode: curLabel })) + '</span>';
+    function opt(mode) {
+      var on = pick === mode;
+      return '<button type="button" role="radio" class="seg-btn' + (on ? ' active' : '') + '" aria-checked="' + on + '" onclick="PageAdmin.pickServiceMode(\'' + mode + '\')">' +
+        escHtml(t(mode === 'test' ? 'svc_mode_test' : 'svc_mode_live')) + '</button>';
+    }
+    return '<section class="card svc-card">' + head + curHtml + '</div>' +
+      '<p class="card-desc">' + escHtml(t('svc_admin_help')) + '</p>' +
+      '<div class="svc-row">' +
+        '<div class="seg" role="radiogroup" aria-label="' + escHtml(t('svc_admin_title')) + '">' + opt('test') + opt('live') + '</div>' +
+        '<button type="button" class="btn btn-primary" onclick="PageAdmin.saveServiceMode()"' + (pick === cur || sx.svcSaving ? ' disabled' : '') + '>' +
+          escHtml(sx.svcSaving ? t('saving') : t('svc_save')) + '</button>' +
+      '</div></section>';
+  },
+
+  pickServiceMode: function (mode) {
+    this.settingsTab.svcPick = mode;
+    this.drawBody();
+  },
+
+  saveServiceMode: async function () {
+    var sx = this.settingsTab;
+    var cur = sx.settings && sx.settings.service_mode;
+    var mode = sx.svcPick;
+    if (sx.svcSaving || (mode !== 'test' && mode !== 'live') || mode === cur) return;
+    var ok = await uiConfirm({
+      title: t('svc_confirm_title'),
+      message: t(mode === 'live' ? 'svc_confirm_live' : 'svc_confirm_test'),
+      okLabel: t('svc_save')
+    });
+    if (!ok) return;
+    sx.svcSaving = true;
+    this.drawBody();
+    var r = await cncSetServiceMode(mode);
+    sx.svcSaving = false;
+    if (r.ok) {
+      sx.settings.service_mode = r.mode;
+      sx.svcPick = null;
+      uiToast(t('svc_saved'), 'success');
+      if (typeof ServiceBadge === 'object') ServiceBadge.render();   // 이 화면의 헤더 배지도 바로
+    } else {
+      uiToast(uiErrorMessage({ message: r.error }), 'error');
+    }
+    this.drawBody();
   },
 
   saveSettings: async function (event) {

@@ -1437,6 +1437,23 @@ LANG.en = {
   role_desc_sales: 'Sales rep only: sees payments from their own customers and their own commission.',
   rep_customer_help: 'Applies to this customer’s future payments. If there are approved payments without a sales rep, you will be asked whether to assign them too.',
 
+  // ----- 서비스 상태 · TEST 배지 (sql/017) -----
+  test_badge_aria: 'Test service — what does this mean?',
+  test_badge_info: 'This service is in testing. Order and credit records will be reset at the official launch.',
+  beta_note: 'Beta test service',
+  svc_admin_title: 'Service status',
+  svc_admin_help: 'While Test is on, a TEST badge shows next to the logo, next to the landing slogan and on LINE cards. Switch to Live on launch day, after the test data reset.',
+  svc_mode_test: 'Test',
+  svc_mode_live: 'Live',
+  svc_current: 'Current: {mode}',
+  svc_save: 'Save',
+  svc_confirm_title: 'Change service status?',
+  svc_confirm_live: 'Switch to Live? The TEST badge will disappear from the site and LINE cards.',
+  svc_confirm_test: 'Switch back to Test? The TEST badge will show again on the site and LINE cards.',
+  svc_saved: 'Service status saved',
+  svc_missing: 'Service status is not set up yet. Run sql/017_service_mode.sql first.',
+  audit_service_mode: 'Service status changed',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

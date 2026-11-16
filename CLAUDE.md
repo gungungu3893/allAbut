@@ -108,11 +108,33 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017.
+  **`sql/launch_reset.sql` 은 일반 재실행 순서에 포함하지 않는다** (정식 오픈 날 1번만, 아래 "서비스 상태 · TEST 배지 · 정식 오픈 초기화")
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
   **005 를 다시 실행하면 015 → 016 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
   **002 · 004 를 다시 실행하면 005 → 016 도 다시** (admin_refund_cash 가 묶음별 환불 기록이 없는 예전 모양으로 돌아가서 → 환불 마이너스 커미션이 "확인 필요"로만 남아요)
   **015 를 다시 실행하면 016 도 다시** (주문 기준 함수 · 칸 · 트리거가 다시 생겨서)
+
+## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
+- `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
+- 'test' 이면:
+  - 사이트: 로고 옆 작은 알약 "TEST" (테두리 #D97706 · 글씨 #B45309 · 배경 #FFFBEB) — 랜딩 흰 메뉴 줄 · 로그인 화면 메뉴 줄 · 앱 헤더 · 법률 문서 헤더의 `<span class="test-badge-slot">`.
+    마우스를 올리면 title 툴팁, 누르면 `uiPopover` 설명 (`test_badge_info`, 9개 언어). 랜딩 슬로건 옆 "Beta test service" (`#beta-note`, `beta_note`)
+  - 헤더가 좁으면 **배지 글씨만** 작게: fit-4 10px → fit-6 9px → fit-7 8px (360 · 1024 · 1440px 에서 넘침 없게 확인)
+  - LINE 카드: 윗줄 오른쪽 회색 "TEST" 배지 (사본이면 TEST → COPY 순서, `smallBadge()`). line-notify 가 알림마다 `refreshServiceMode()` 로 새로 읽어요 (못 읽으면 배지 없음). altText 는 그대로
+- 'live' 이거나 값을 못 읽으면(017 실행 전 · 오류) 아무것도 안 보여요
+- 로직 `cnc/cnc-service.js` (`CNC_SERVICE_MODE`, `cncLoadServiceMode()`, `cncSetServiceMode()`), 화면 `ui/service-badge.js` (`ServiceBadge.render()` — boot · 언어 변경 · renderLayout · 관리자 저장 후)
+- 관리자 Settings 맨 위 "서비스 상태" 카드 (owner 만): [테스트 | 정식] 고르기 → 저장 → 확인 창 → 저장 (작업 기록)
+- **service_mode 를 코드나 SQL 로 자동으로 'live' 로 바꾸지 않는다** (정식 전환은 관리자 화면에서 사람이)
+- **`sql/launch_reset.sql` (번호 없음) = 정식 오픈 날 1번만, 사용자가 직접 실행.** 일반 재실행 순서에 포함하지 않는다. 되돌릴 수 없음 · 실행 전 백업
+  - 안전장치: `v_confirm` 을 직접 'DELETE-ALL-TEST-DATA' 로 고쳐야 실행 (아니면 오류로 멈춤), 하나의 do 블록 = 한 트랜잭션 (오류면 전부 취소)
+  - 지움(TRUNCATE … RESTART IDENTITY, 줄 트리거 · LINE 웹훅 안 돎): 주문 · 크레딧 묶음/사용/이력 · 충전 요청 · 환불 묶음 · 커미션 정산 · 가입 선물 기록 · 치과 정보 변경 요청 · 계정 삭제 요청 · 작업 기록 · 방문 기록 · 그룹 연결 코드 · invoices
+    + 지갑 잔액 0 + 주문번호(cnc_order_seq) · 충전 요청번호(topup_seq) 1 부터
+  - 남김: 가격 · 패키지 · payment_settings(이벤트 · 서비스 상태 포함) · company_settings · legal_versions · admins · sales_reps · sales_rep_rates · admin_notify_targets · blocked_email_domains · profiles
+  - 옵션 `v_delete_customer_accounts` (기본 false): true 면 팀원(admins)이 아닌 계정의 profiles → auth.users 삭제
+  - 끝나면 notice 로 지운 줄 수. Storage(cnc-files · cnc-designs · topup-slips)는 Supabase → Storage 에서 Empty bucket
+  - 새 테스트 데이터 표를 만들면 launch_reset.sql 의 지울 표 목록에도 넣는다 (남길 설정 표가 그 표를 외래키로 가리키면 TRUNCATE 가 오류로 멈춰요 → 안전)
+- 오픈 날 순서: `LAUNCH_CHECKLIST.md` (사이트에 안 올라감)
 
 ## 납품일은 디자인 승인 때 (sql/012_deadline_at_approval.sql)
 - 이유: 디자인을 주고받는 동안 시간이 지나서, 주문할 때 미리 정한 납기를 못 지킬 수 있어요
@@ -247,6 +269,8 @@
 - `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)
 - `cnc/cnc-analytics.js` — 방문 · 페이지뷰 기록, 방문자 ID, 기기·로봇·들어온 곳 판별, TODAY/TOTAL, 관리자 방문 통계·CSV (로직만)
 - `ui/visit-counter.js` — 랜딩 "TODAY · TOTAL" 숫자
+- `cnc/cnc-service.js` — 서비스 상태 (테스트 / 정식) 읽기 · 바꾸기 (로직만, sql/017)
+- `ui/service-badge.js` — 로고 옆 "TEST" 배지 · 슬로건 옆 "Beta test service" · 설명 팝오버
 - `ui/page-admin-visits.js` — 관리자 Dashboard 방문 통계 (`PageAdmin` 에 덧붙임)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)
 - `ui/page-complete.js` — 필수 정보 입력 `#/complete`
@@ -404,6 +428,7 @@
     - 빈 줄 · 빈 섹션은 빼요 (Flex 는 빈 text 를 못 받아서). 휴대폰 폭(약 300px)에서 긴 치과명 · 주소 · 태국어는 줄바꿈 (`docs/flex-samples/` 로 확인)
   - 만드는 함수: `orderReceipt()`(cnc_orders 의 cases·clinic·addr·phone·patient·deadline·credits_used + credit_wallets 잔액), `topupReceipt()`(topup_requests 의 credits·unit_price·subtotal·vat_amount·total), `creditReceipt()`
   - 제목 색(= 맨 위 4px 띠 색): 관리자 = `ADMIN_NOTICE_STYLES` 의 종류별 색·제목(title) / 고객 = 네이비, 취소·충전 거절만 빨강. 글씨 #111827 · 회색 #6B7280 · 구분선 #E5E7EB
+  - 테스트 서비스(sql/017 'test'): 윗줄 오른쪽 회색 "TEST" 배지 (COPY 와 같은 모양, 둘 다면 TEST → COPY). 샘플 `12-test-mode-copy-admin`
   - 사본: 윗줄 오른쪽 "COPY" 배지, Clinic 섹션 둘째 줄에 고객 이메일, LINE 미연결이면 그 아래 "● " 빨간 글씨 + 전화번호, 처리자는 상세의 "Handled by"
   - altText = "제목 · 문서번호" (사본은 앞에 "COPY · "). 고객 문구는 9개 언어(`T` + 영수증 문구 `R`), 관리자·사본은 영어
   - Flex 의 text 는 빈 글자를 못 받아서 값이 빈 줄은 빼요. 샘플: `docs/flex-samples/` (사이트에 안 올라감)

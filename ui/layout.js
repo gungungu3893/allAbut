@@ -164,6 +164,7 @@ function renderLayout() {
   header.innerHTML =
     '<div class="hdr-inner">' +
       '<a href="#/home" class="hdr-logo">' + logoHtml() + '</a>' +
+      '<span class="test-badge-slot" hidden></span>' +   // 테스트 서비스면 "TEST" 배지 (ui/service-badge.js)
       '<nav class="hdr-nav" aria-label="Main">' +
         navItems().map(function (n) {
           return '<a href="#/' + navHref(n) + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
@@ -207,6 +208,7 @@ function renderLayout() {
       '<span class="tab-label">' + escHtml(t(n.key)) + '</span></a>';
   }).join('');
 
+  if (typeof ServiceBadge === 'object') ServiceBadge.render();   // 새로 만든 헤더의 TEST 배지 칸 채우기
   applyFontScale();
   if (typeof updateSessionDisplays === 'function') updateSessionDisplays();
   if (window.currentRoute) setActiveNav(window.currentRoute);
