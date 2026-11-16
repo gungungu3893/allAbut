@@ -345,6 +345,7 @@ type ReceiptTexts = {
   view_order: string; view_credits: string; view_topup: string; auto_note: string;
   added: string; adjusted: string; expired: string; package: string; unit_price: string;
   free_title: string; free_body: string; free_event: string; free_address_only: string; free_any_address: string; order_now: string;
+  product: string; prod_abutment: string; prod_crown_set: string; bal_abutment: string; bal_crown_set: string;   // 상품 종류 (sql/018)
 };
 const R: Record<string, ReceiptTexts> = {
   en: {
@@ -356,6 +357,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Credits added', adjusted: 'Adjusted', expired: 'Expired', package: 'Package', unit_price: 'Unit price',
     free_title: "🎁 Free credits", free_body: "{n} free credits have been added (valid until {date}).", free_event: "Event",
     free_address_only: "Can only be used for orders shipped to your registered clinic address.", free_any_address: "Can be used for any order.", order_now: "Order now",
+    product: "Product", prod_abutment: "Abutment credits", prod_crown_set: "Crown set credits", bal_abutment: "Abutment", bal_crown_set: "Crown set",
   },
   ko: {
     notice_order: '주문 알림', notice_credit: '크레딧 알림', notice_topup: '충전 알림',
@@ -366,6 +368,7 @@ const R: Record<string, ReceiptTexts> = {
     added: '충전 크레딧', adjusted: '조정', expired: '만료', package: '패키지', unit_price: '단가',
     free_title: "🎁 무료 크레딧", free_body: "무료 크레딧 {n}개가 들어왔어요 (유효기간 ~{date}).", free_event: "이벤트",
     free_address_only: "등록된 치과 주소로 배송하는 주문에만 쓸 수 있어요.", free_any_address: "모든 주문에 쓸 수 있어요.", order_now: "주문하기",
+    product: "제품", prod_abutment: "어버트먼트 크레딧", prod_crown_set: "크라운 세트 크레딧", bal_abutment: "어버트먼트", bal_crown_set: "크라운 세트",
   },
   th: {
     notice_order: 'แจ้งเตือนคำสั่งงาน', notice_credit: 'แจ้งเตือนเครดิต', notice_topup: 'แจ้งเตือนการเติมเครดิต',
@@ -376,6 +379,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'เครดิตที่เติม', adjusted: 'ปรับปรุง', expired: 'หมดอายุ', package: 'แพ็กเกจ', unit_price: 'ราคาต่อหน่วย',
     free_title: "🎁 เครดิตฟรี", free_body: "ได้รับเครดิตฟรี {n} เครดิตแล้ว (ใช้ได้ถึง {date})", free_event: "กิจกรรม",
     free_address_only: "ใช้ได้เฉพาะคำสั่งงานที่จัดส่งไปยังที่อยู่คลินิกที่ลงทะเบียน", free_any_address: "ใช้ได้กับทุกคำสั่งงาน", order_now: "สั่งงานเลย",
+    product: "สินค้า", prod_abutment: "เครดิตแอบัทเมนต์", prod_crown_set: "เครดิตชุดครอบฟัน", bal_abutment: "แอบัทเมนต์", bal_crown_set: "ชุดครอบฟัน",
   },
   zh: {
     notice_order: '订单通知', notice_credit: '积分通知', notice_topup: '充值通知',
@@ -386,6 +390,7 @@ const R: Record<string, ReceiptTexts> = {
     added: '充值积分', adjusted: '调整', expired: '过期', package: '套餐', unit_price: '单价',
     free_title: "🎁 免费积分", free_body: "已到账 {n} 个免费积分（有效期至 {date}）。", free_event: "活动",
     free_address_only: "只能用于寄往已登记诊所地址的订单。", free_any_address: "可用于任何订单。", order_now: "立即下单",
+    product: "产品", prod_abutment: "基台积分", prod_crown_set: "牙冠套装积分", bal_abutment: "基台", bal_crown_set: "牙冠套装",
   },
   vi: {
     notice_order: 'Thông báo đơn hàng', notice_credit: 'Thông báo tín dụng', notice_topup: 'Thông báo nạp tín dụng',
@@ -396,6 +401,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Tín dụng đã nạp', adjusted: 'Điều chỉnh', expired: 'Hết hạn', package: 'Gói', unit_price: 'Đơn giá',
     free_title: "🎁 Tín dụng miễn phí", free_body: "Đã nhận {n} tín dụng miễn phí (hiệu lực đến {date}).", free_event: "Sự kiện",
     free_address_only: "Chỉ dùng cho đơn giao đến địa chỉ phòng khám đã đăng ký.", free_any_address: "Dùng được cho mọi đơn hàng.", order_now: "Đặt hàng ngay",
+    product: "Sản phẩm", prod_abutment: "Tín dụng abutment", prod_crown_set: "Tín dụng bộ mão răng", bal_abutment: "Abutment", bal_crown_set: "Bộ mão răng",
   },
   es: {
     notice_order: 'Aviso de pedido', notice_credit: 'Aviso de créditos', notice_topup: 'Aviso de recarga',
@@ -406,6 +412,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Créditos añadidos', adjusted: 'Ajuste', expired: 'Vencidos', package: 'Paquete', unit_price: 'Precio unitario',
     free_title: "🎁 Créditos gratuitos", free_body: "Se añadieron {n} créditos gratuitos (válidos hasta el {date}).", free_event: "Evento",
     free_address_only: "Solo sirven para pedidos enviados a la dirección de su clínica registrada.", free_any_address: "Sirven para cualquier pedido.", order_now: "Hacer un pedido",
+    product: "Producto", prod_abutment: "Créditos de pilar", prod_crown_set: "Créditos de set con corona", bal_abutment: "Pilar", bal_crown_set: "Set con corona",
   },
   tr: {
     notice_order: 'Sipariş bildirimi', notice_credit: 'Kredi bildirimi', notice_topup: 'Yükleme bildirimi',
@@ -416,6 +423,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Yüklenen kredi', adjusted: 'Düzeltme', expired: 'Süresi doldu', package: 'Paket', unit_price: 'Birim fiyat',
     free_title: "🎁 Ücretsiz kredi", free_body: "{n} ücretsiz kredi eklendi ({date} tarihine kadar geçerli).", free_event: "Etkinlik",
     free_address_only: "Yalnızca kayıtlı klinik adresinize gönderilen siparişlerde kullanılabilir.", free_any_address: "Tüm siparişlerde kullanılabilir.", order_now: "Sipariş ver",
+    product: "Ürün", prod_abutment: "Abutment kredisi", prod_crown_set: "Kron seti kredisi", bal_abutment: "Abutment", bal_crown_set: "Kron seti",
   },
   ar: {
     notice_order: 'إشعار طلب', notice_credit: 'إشعار رصيد', notice_topup: 'إشعار شحن الرصيد',
@@ -426,6 +434,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'الرصيد المضاف', adjusted: 'تعديل', expired: 'منتهي', package: 'الباقة', unit_price: 'سعر الوحدة',
     free_title: "🎁 رصيد مجاني", free_body: "تمت إضافة {n} رصيد مجاني (صالح حتى {date}).", free_event: "الفعالية",
     free_address_only: "يُستخدم فقط للطلبات المرسلة إلى عنوان عيادتك المسجلة.", free_any_address: "يمكن استخدامه لأي طلب.", order_now: "اطلب الآن",
+    product: "المنتج", prod_abutment: "أرصدة الدعامة", prod_crown_set: "أرصدة طقم التاج", bal_abutment: "الدعامة", bal_crown_set: "طقم التاج",
   },
   fa: {
     notice_order: 'اعلان سفارش', notice_credit: 'اعلان اعتبار', notice_topup: 'اعلان شارژ',
@@ -436,6 +445,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'اعتبار افزوده', adjusted: 'اصلاح', expired: 'منقضی', package: 'بسته', unit_price: 'قیمت واحد',
     free_title: "🎁 اعتبار رایگان", free_body: "{n} اعتبار رایگان اضافه شد (معتبر تا {date}).", free_event: "رویداد",
     free_address_only: "فقط برای سفارش‌های ارسالی به آدرس کلینیک ثبت‌شده قابل استفاده است.", free_any_address: "برای هر سفارشی قابل استفاده است.", order_now: "سفارش دهید",
+    product: "محصول", prod_abutment: "اعتبار اباتمنت", prod_crown_set: "اعتبار ست روکش", bal_abutment: "اباتمنت", bal_crown_set: "ست روکش",
   },
 };
 
@@ -540,14 +550,22 @@ function lastRevisionNote(history: unknown): string {
 }
 
 // 주문의 치아 목록 [{ tooth, brand, color }] (cases[0].teeth)
-function orderTeeth(o: any): { tooth: string; brand: string; shade: string }[] {
+function orderTeeth(o: any): { tooth: string; brand: string; shade: string; set?: boolean }[] {
   const c = Array.isArray(o?.cases) ? o.cases[0] : null;
   const list = c && Array.isArray(c.teeth) ? c.teeth : [];
   return list.map((t: any) => ({
     tooth: str(t?.tooth ?? t?.number, 4),
     brand: str(t?.brand, 40),
     shade: str(t?.color ?? t?.shade, 12),
+    set: t?.product === 'crown_set',   // 👑 어버트먼트 + 지르코니아 크라운 세트 (sql/018)
   })).filter((t: any) => t.tooth);
+}
+
+// 상품 종류 이름 (크레딧 카드 · 충전 카드의 "Product" 줄): 'mixed' = 두 종류 다
+function productName(L: Lang, product: unknown): string {
+  if (product === 'crown_set') return L.r.prod_crown_set;
+  if (product === 'mixed') return L.r.prod_abutment + ' · ' + L.r.prod_crown_set;
+  return L.r.prod_abutment;
 }
 
 
@@ -564,7 +582,7 @@ type Section = {
   title?: string;
   clinic?: ClinicInfo;
   rows?: Row[];                 // 항목 줄: 라벨 회색 왼쪽 / 값 오른쪽 (들여쓰기 없음)
-  teeth?: { tooth: string; brand: string; shade: string }[];
+  teeth?: { tooth: string; brand: string; shade: string; set?: boolean }[];   // set = 크라운 세트 → 브랜드 옆 "👑 Set"
   moreTpl?: string;             // "+{n} more"
   text?: string;                // 긴 글 (예: 수정 요청 사유)
   big?: string;                 // 크게 보여 줄 값 (예: 확정된 납품일)
@@ -647,7 +665,7 @@ function sectionBox(s: Section): any | null {
         type: 'box', layout: 'horizontal', spacing: 'md',
         contents: [
           textNode('#' + t.tooth, { size: 'sm', weight: 'bold', color: INK, flex: 2 }),
-          textNode(t.brand || '—', { size: 'sm', color: GRAY, flex: 6 }),
+          textNode((t.brand || '—') + (t.set ? ' · 👑 Set' : ''), { size: 'sm', color: GRAY, flex: 6 }),
           textNode(t.shade || '—', { size: 'sm', color: INK, align: 'end', flex: 2 }),
         ],
       }, 'md');
@@ -809,6 +827,37 @@ async function getCreditSplit(userId: string): Promise<{ paid: number; free: num
   }
   return { paid, free };
 }
+// 크라운 세트 잔액 (credit_wallets.balance_crown_set, sql/018). 칸이 없거나 못 읽으면 0
+async function getCrownBalance(userId: string): Promise<number> {
+  if (!userId) return 0;
+  try {
+    const { data, error } = await db.from('credit_wallets').select('balance_crown_set').eq('user_id', userId).maybeSingle();
+    if (error || !data) return 0;
+    return Number(data.balance_crown_set ?? 0) || 0;
+  } catch (_err) {
+    return 0;
+  }
+}
+
+// 합계의 잔액 줄: 크라운 세트가 있거나 이 카드가 세트 관련이면 종류별 "🔩 12 · 👑 3" + 작은 줄 "Abutment 12 · Crown set 3",
+//   아니면 예전처럼 숫자 하나 + "Paid n · Free n" (withSplit = false 면 작은 줄 없음)
+async function balanceTotals(L: Lang, userId: string, balance: number | null, product?: unknown, withSplit = true): Promise<{ final: Row; split: string }> {
+  if (balance == null) return { final: [L.r.credit_balance, ''], split: '' };
+  const crown = await getCrownBalance(userId);
+  if (crown > 0 || product === 'crown_set' || product === 'mixed') {
+    return { final: [L.r.credit_balance, '🔩 ' + balance + ' · 👑 ' + crown],
+             split: `${L.r.bal_abutment} ${balance} · ${L.r.bal_crown_set} ${crown}` };
+  }
+  return { final: [L.r.credit_balance, String(balance)], split: withSplit ? await splitLine(L, userId) : '' };
+}
+
+// 주문의 상품 종류: 'abutment' | 'crown_set' | 'mixed'
+function orderProduct(o: any): string {
+  const n = Number(o?.crown_set_count ?? 0), all = Number(o?.teeth_count ?? 0);
+  if (!(n > 0)) return 'abutment';
+  return n >= all ? 'crown_set' : 'mixed';
+}
+
 // "Paid 9 · Free 3" (고객 언어). 못 읽으면 빈 글자 → 줄 없음
 async function splitLine(L: Lang, userId: string): Promise<string> {
   const sp = await getCreditSplit(userId);
@@ -987,9 +1036,8 @@ async function orderReceipt(L: Lang, o: any, opt: {
     title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_order,
     copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
     docNo: str(o.id, 40), when: opt.when, message: opt.message, sections,
-    // 고객 카드 · 사본 카드만 잔액 아래 "Paid n · Free n" (관리자 새 주문 카드는 없음)
-    totals: { rows: tRows, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)],
-      split: (opt.customer || opt.copy) && opt.balance != null ? await splitLine(L, o.user_id) : '' },
+    // 고객 카드 · 사본 카드만 잔액 아래 "Paid n · Free n" (관리자 새 주문 카드는 없음). 크라운 세트가 있으면 종류별 (sql/018)
+    totals: { rows: tRows, ...(await balanceTotals(L, o.user_id, opt.balance ?? null, orderProduct(o), !!(opt.customer || opt.copy))) },
     button: opt.button, ...(await footerOf(L)),
   });
 }
@@ -1002,7 +1050,8 @@ async function topupReceipt(L: Lang, rec: any, p: Profile | null, opt: {
     clinicSection(L, profileName(p, rec.user_id), [str(p?.address), str(p?.phone)], opt.copy),
     {
       title: L.r.sec_details,
-      rows: [[L.r.package, String(rec.credits ?? '') + ' ' + (L.x === T.en ? 'credits' : L.x.credits)], [L.r.unit_price, rec.unit_price != null ? baht(rec.unit_price) : ''], ...(opt.details || [])],
+      // 상품 종류 (sql/018 이후 요청만 product 가 있어요)
+      rows: [...(rec.product ? [[L.r.product, productName(L, rec.product)] as Row] : []), [L.r.package, String(rec.credits ?? '') + ' ' + (L.x === T.en ? 'credits' : L.x.credits)], [L.r.unit_price, rec.unit_price != null ? baht(rec.unit_price) : ''], ...(opt.details || [])],
     },
   ];
   const tRows: Row[] = [];
@@ -1021,6 +1070,7 @@ async function topupReceipt(L: Lang, rec: any, p: Profile | null, opt: {
 async function creditReceipt(L: Lang, opt: {
   title: string; color: string; message?: string; docNo?: string; userId: string; p: Profile | null; order?: any | null;
   details?: Row[]; amounts: Row[]; balance: number | null; copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
+  product?: string;   // 'abutment' | 'crown_set' | 'mixed' (sql/018) → 상세 맨 위 "Product" 줄 + 종류별 잔액
 }) {
   const o = opt.order;
   const sections: Section[] = [
@@ -1031,14 +1081,14 @@ async function creditReceipt(L: Lang, opt: {
     sections.push({ title: L.r.sec_case, rows: [[L.x.patient, str(o.patient, 60)], [L.x.deadline, str(o.deadline, 20)]] });
     sections.push({ title: L.r.sec_teeth, teeth: orderTeeth(o), moreTpl: L.r.more });
   }
-  if (opt.details && rowsOf(opt.details).length) sections.push({ title: L.r.sec_details, rows: opt.details });
+  const detailRows: Row[] = [...(opt.product ? [[L.r.product, productName(L, opt.product)] as Row] : []), ...(opt.details || [])];
+  if (rowsOf(detailRows).length) sections.push({ title: L.r.sec_details, rows: detailRows });
   return buildReceiptCard({
     title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_credit,
     copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
     docNo: opt.docNo, when: opt.when, message: opt.message, sections,
-    // 크레딧 영수증은 고객 카드 · 사본 카드에서만 써요 → 잔액 아래 "Paid n · Free n"
-    totals: { rows: opt.amounts, final: [L.r.credit_balance, opt.balance == null ? '' : String(opt.balance)],
-      split: opt.balance != null ? await splitLine(L, opt.userId) : '' },
+    // 크레딧 영수증은 고객 카드 · 사본 카드에서만 써요 → 잔액 아래 "Paid n · Free n" (크라운 세트가 있으면 종류별)
+    totals: { rows: opt.amounts, ...(await balanceTotals(L, opt.userId, opt.balance, opt.product)) },
     button: opt.button, ...(await footerOf(L)),
   });
 }
@@ -1279,7 +1329,7 @@ async function notifyFreeCredits(h: any, lot: any | null): Promise<void> {
       title: L.r.free_title, color: NAVY,
       message: L.r.free_body.replace('{n}', String(n)).replace('{date}', exp || '—') + '\n' + (addressOnly ? L.r.free_address_only : L.r.free_any_address),
       userId: h.user_id, p, order: null,
-      details: [[L.r.free_event, event], [L.x.valid_until, exp]],
+      details: [[L.r.free_event, event], [L.x.valid_until, exp]], product: lot?.product || h.product || undefined,
       amounts: [[L.r.added, '+' + n]], balance, when: h.created_at,
       button: { label: L.r.order_now, url: siteLink('/new') },
     }));
@@ -1290,6 +1340,7 @@ async function notifyFreeCredits(h: any, lot: any | null): Promise<void> {
   await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
     title: EN.r.free_title, color: st.color, userId: h.user_id, p, order: null,
     details: withActor([['Event', event], ['Valid until', exp], ['Ship to', addressOnly ? 'Registered clinic address only' : 'Any address']], copy.actor),
+    product: lot?.product || h.product || undefined,
     amounts: [[EN.r.added, '+' + n]], balance, copy, when: h.created_at,
     button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
   }));
@@ -1349,7 +1400,7 @@ async function notifyCredit(h: any): Promise<void> {
     };
     await push(p.line_user_id as string, await creditReceipt(L, {
       title: plainTitle(t[type][0]), color: NAVY, message: t[type][1], docNo, userId: h.user_id, p, order,
-      details: details(L, false), amounts: amounts(L), balance, when: h.created_at,
+      details: details(L, false), amounts: amounts(L), balance, when: h.created_at, product: h.product || undefined,
       button: h.order_id ? { label: L.r.view_order, url: orderLink(h.order_id) } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
     }));
   }
@@ -1362,7 +1413,7 @@ async function notifyCredit(h: any): Promise<void> {
   if (h.order_id) url = adminOrderLink(h.order_id);
   await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
     title: st.title, color: st.color, docNo, userId: h.user_id, p, order,
-    details: withActor(details(EN, true), copy.actor), amounts: amounts(EN), balance, copy, when: h.created_at,
+    details: withActor(details(EN, true), copy.actor), amounts: amounts(EN), balance, copy, when: h.created_at, product: h.product || undefined,
     button: { label: 'Open admin', url },
   }));
 }
@@ -1442,9 +1493,13 @@ async function handleReminder(payload: any): Promise<void> {
   const date = ymd(first);
   const days = first ? Math.max(1, Math.ceil((new Date(first).getTime() - Date.now()) / 86400000)) : Number(payload.days || 0);
   const balance = await getBalance(payload.user_id);
+  // 만료 예정 묶음의 종류 (sql/018 이후 lots 에 product): 한 종류면 그것, 섞였으면 'mixed', 없으면 표시 안 함
+  const prods = Array.from(new Set(lots.map((l: any) => l?.product).filter(Boolean)));
+  const product = prods.length === 0 ? undefined : (prods.length === 1 ? String(prods[0]) : 'mixed');
   if (isLinkedProfile(p) && p) {
     const L = langOf(p.lang);
     await push(p.line_user_id as string, await creditReceipt(L, {
+      product,
       title: plainTitle(L.x.reminder_title.replace('{n}', String(n)).replace('{d}', String(days))), color: NAVY,
       message: L.x.reminder_body.replace('{date}', date), userId: payload.user_id, p,
       details: [[L.x.credits, String(n)], [L.x.valid_until, date]], amounts: [], balance,
@@ -1453,7 +1508,7 @@ async function handleReminder(payload: any): Promise<void> {
   }
   const st = ADMIN_NOTICE_STYLES.expiry_reminder;
   await sendCustomerCopy(payload.user_id, p, '', async (copy) => creditReceipt(EN, {
-    title: n + ' credits expire in ' + days + ' days', color: st.color, userId: payload.user_id, p,
+    title: n + ' credits expire in ' + days + ' days', color: st.color, userId: payload.user_id, p, product,
     details: [['Credits', String(n)], ['Valid until', date]], amounts: [], balance, copy,
     button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
   }));

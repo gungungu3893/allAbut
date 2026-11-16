@@ -1451,6 +1451,28 @@ LANG.ar = {
   svc_missing: 'لم يتم إعداد حالة الخدمة بعد. شغّل sql/017_service_mode.sql أولًا.',
   audit_service_mode: 'تغيير حالة الخدمة',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'دعامة مخصصة',
+  product_abutment_short: 'دعامة',
+  product_crown_set: 'دعامة + طقم تاج زركونيا',
+  product_crown_set_short: 'طقم التاج',
+  product_abutment_only: 'دعامة فقط',
+  product_label: 'المنتج',
+  product_counts_label: 'العدد حسب المنتج',
+  crown_coming_soon: 'قريبًا',
+  crown_coming_soon_text: 'سيتوفر طقم الدعامة + تاج الزركونيا قريبًا. سنخبرك عند فتحه.',
+  crown_credit_note: 'أرصدة طقم التاج منفصلة عن أرصدة الدعامة. رصيد واحد لطقم التاج = سن واحد (دعامة + تاج زركونيا).',
+  crown_set_shade_note: 'طقم التاج: يُستخدم اللون لتاج الزركونيا.',
+  insufficient_credits_abutment: 'أرصدة الدعامة غير كافية. يرجى شحن أرصدة الدعامة.',
+  insufficient_credits_crown_set: 'أرصدة طقم التاج غير كافية. يرجى شحن أرصدة طقم التاج.',
+  err_invalid_product: 'منتج غير معروف. يرجى اختيار المنتج مرة أخرى.',
+  topup_crown_btn: 'شحن أرصدة طقم التاج',
+  admin_crown_pkg_note: 'يرى العملاء هذه الباقات بعد تحديد السعر وتفعيل "معروض للبيع".',
+  admin_refund_single: 'أُعيد الحساب بسعر {price} لكل رصيد',
+  admin_free_product: 'نوع المنح',
+  camp_product: 'نوع المنح',
+  fin_by_product: 'حسب المنتج',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

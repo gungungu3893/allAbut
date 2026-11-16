@@ -24,6 +24,8 @@
 | `10-free-credits-customer` | 🎁 무료 크레딧 지급 (크레딧 수 · 이벤트 · 유효기간 · 등록 주소 전용 안내 · 주문하기 버튼) | 고객 |
 | `11-free-credits-copy-admin` | 🎁 무료 크레딧 지급 사본 (이벤트 · 배송 제한 · 지급한 직원) | 관리자 |
 | `12-test-mode-copy-admin` | 테스트 서비스(sql/017 service_mode = 'test')일 때 — 윗줄 오른쪽 "TEST" + "COPY" 배지 | 관리자 |
+| `13-crown-set-order-admin` | 크라운 세트 치아가 있는 새 주문 (sql/018) — Teeth 줄 "👑 Set", 잔액 "🔩 95 · 👑 9" + "Abutment 95 · Crown set 9" | 관리자 |
+| `14-crown-set-credits-customer` | 크라운 세트 크레딧 충전 — 상세 "Product: Crown set credits", 종류별 잔액 | 고객 |
 
 ## 버튼 링크
 모든 버튼은 `https://allabut.com/?openExternalBrowser=1#/…` 형식이에요 (LINE 안의 작은 브라우저 대신 휴대폰 기본 브라우저로 열려요).

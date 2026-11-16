@@ -29,7 +29,7 @@
 --   cnc_orders · invoices · credit_lot_usage · credit_lots · credit_history · topup_requests · refund_cash_lots ·
 --   commission_payouts · signup_bonus_grants · clinic_change_requests · account_deletion_requests ·
 --   admin_audit_log · site_events · admin_group_link_codes(그룹 연결용 임시 코드)
---   + credit_wallets 는 모든 계정 잔액 0
+--   + credit_wallets 는 모든 계정 잔액 0 (018 이후면 크라운 세트 잔액 balance_crown_set 도 0)
 --   + 번호 다시 처음부터: 주문번호(cnc_order_seq) · 충전 요청번호(topup_seq) · 각 표의 자동 번호(RESTART IDENTITY)
 -- 남기는 것:
 --   credit_packages(가격·패키지) · payment_settings(결제 · 이벤트 · 서비스 상태 포함) · company_settings · legal_versions ·
@@ -100,6 +100,10 @@ begin
   if to_regclass('public.credit_wallets') is not null then
     update public.credit_wallets set balance = 0, updated_at = now() where balance <> 0;
     get diagnostics v_wallets = row_count;
+    -- 크라운 세트 잔액 (sql/018 이후에만 있는 칸)
+    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'credit_wallets' and column_name = 'balance_crown_set') then
+      execute 'update public.credit_wallets set balance_crown_set = 0, updated_at = now() where balance_crown_set <> 0';
+    end if;
   end if;
 
   v_report := v_report

@@ -143,12 +143,23 @@ function fontButtonsHtml() {
     '</div>';
 }
 
+// 크라운 세트 잔액을 보여줄지: 세트 크레딧이 있거나, 판매 중인 세트 패키지가 있을 때 (sql/018)
+function cncShowCrownSet() {
+  var A = window.APP || {};
+  return !!(A.crownSet && Number(A.crownSet.total) > 0) || A.crownSetOnSale === true;
+}
+
 // 크레딧 배지 (곧 만료되는 크레딧이 있으면 작은 주황 점) + "Top up" 버튼
+//   크라운 세트를 보여줄 때는 "🔩 12 · 👑 3" (어버트먼트 · 세트), 아니면 예전처럼 "💳 12 크레딧"
 function creditBadgeHtml() {
   var bal = (window.APP && APP.balance != null) ? formatNumber(APP.balance) : '—';
   var soon = (window.APP && APP.expiringSoon) || 0;
-  return '<a href="#/profile" class="credit-badge" title="' + escHtml(soon ? tf('credit_expiring_soon', { n: soon }) : t('credit_balance')) + '">' +
-    '<span aria-hidden="true">💳</span> <span class="credit-value mono">' + bal + '</span>' +
+  var crown = cncShowCrownSet();
+  var crownBal = (window.APP && APP.crownSet) ? formatNumber(APP.crownSet.total || 0) : '0';
+  return '<a href="#/profile" class="credit-badge' + (crown ? ' two-products' : '') + '" title="' + escHtml(soon ? tf('credit_expiring_soon', { n: soon }) : t('credit_balance')) + '">' +
+    '<span class="credit-abut"><span aria-hidden="true" class="credit-icon">' + (crown ? '🔩' : '💳') + '</span> <span class="credit-value mono">' + bal + '</span></span>' +
+    '<span class="credit-crown"' + (crown ? '' : ' hidden') + '><span class="credit-sep" aria-hidden="true">·</span><span aria-hidden="true">👑</span> ' +
+      '<span class="credit-value-crown mono">' + crownBal + '</span><span class="sr-only"> ' + escHtml(t('product_crown_set_short')) + '</span></span>' +
     '<span class="credit-unit">' + escHtml(t('credit_unit')) + '</span>' +
     '<span class="expiry-dot"' + (soon ? '' : ' hidden') + '><span class="sr-only">' + escHtml(tf('credit_expiring_soon', { n: soon })) + '</span></span>' +
     '</a>' +
@@ -307,6 +318,21 @@ function updateCreditBadges() {
   var els = document.querySelectorAll('.credit-value');
   var text = (window.APP && APP.balance != null) ? formatNumber(APP.balance) : '—';
   for (var i = 0; i < els.length; i++) els[i].textContent = text;
+  // 크라운 세트 (sql/018): 보여줄 때만 "· 👑 n"
+  var crown = cncShowCrownSet();
+  var ctext = formatNumber((window.APP && APP.crownSet && APP.crownSet.total) || 0);
+  var cw = document.querySelectorAll('.credit-crown');
+  for (var c = 0; c < cw.length; c++) {
+    cw[c].hidden = !crown;
+    var cv = cw[c].querySelector('.credit-value-crown');
+    if (cv) cv.textContent = ctext;
+    var b = cw[c].closest('.credit-badge');
+    if (b) {
+      b.classList.toggle('two-products', crown);
+      var ic = b.querySelector('.credit-icon');
+      if (ic) ic.textContent = crown ? '🔩' : '💳';
+    }
+  }
   var soon = (window.APP && APP.expiringSoon) || 0;
   var dots = document.querySelectorAll('.expiry-dot');
   for (var j = 0; j < dots.length; j++) {
@@ -340,12 +366,22 @@ async function refreshBalance() {
       // 보여주기용: 산 크레딧 / 무료 크레딧 전체
       APP.purchasedCredits = res[2].paid;
       APP.freeTotal = res[2].free + res[2].freeOpen;
+      // 크라운 세트 (sql/018) — 위 값들은 전부 어버트먼트
+      var cs = res[2].crownSet || { paid: 0, free: 0, freeOpen: 0, total: 0 };
+      APP.crownSet = {
+        total: cs.total || (cs.paid + cs.free + cs.freeOpen),
+        purchased: cs.paid, freeTotal: cs.free + cs.freeOpen,
+        freeCredits: cs.free, paidCredits: cs.paid + cs.freeOpen
+      };
+      APP.crownSetOnSale = !!res[2].crownSetOnSale;
     } else {
       // 008 실행 전: 전부 산 크레딧으로 봐요
       APP.freeCredits = 0;
       APP.paidCredits = APP.balance || 0;
       APP.purchasedCredits = APP.balance || 0;
       APP.freeTotal = 0;
+      APP.crownSet = { total: 0, purchased: 0, freeTotal: 0, freeCredits: 0, paidCredits: 0 };
+      APP.crownSetOnSale = false;
     }
   } catch (err) {
     console.error('Balance load failed:', err);
@@ -376,6 +412,31 @@ function setBalance(value) {
 //   paid / free / paidExpiry / freeExpiry / restrictedFree → 직접 넘기면 그 값으로 (관리자 고객 상세 등). 이때는 자동 갱신 안 함
 //   cls: 추가 클래스
 // 직접 값을 넘기지 않은 부품은 잔액이 바뀔 때(refreshBalance) 자동으로 다시 그려져요 (uiRefreshCreditSplits)
+// 종류별 지금 값 { balance, purchased, freeTotal, freeCredits(등록 주소 전용), paidCredits(어디로든) } — 'abutment' 는 예전 APP 값 그대로
+function cncProductCredits(product) {
+  var A = window.APP || {};
+  if (cncProductOf(product) === 'crown_set') {
+    var c = A.crownSet || {};
+    return { balance: Number(c.total || 0), purchased: Number(c.purchased || 0), freeTotal: Number(c.freeTotal || 0),
+             freeCredits: Number(c.freeCredits || 0), paidCredits: Number(c.paidCredits || 0), known: A.balance != null };
+  }
+  return { balance: Number(A.balance || 0), purchased: A.purchasedCredits != null ? Number(A.purchasedCredits) : Number(A.balance || 0),
+           freeTotal: Number(A.freeTotal || 0), freeCredits: Number(A.freeCredits || 0),
+           paidCredits: A.paidCredits != null ? Number(A.paidCredits) : Number(A.balance || 0), known: A.balance != null };
+}
+
+// 상품 이름: long = "🔩 커스텀 어버트먼트" / "👑 어버트먼트 + 지르코니아 크라운 세트", 짧게 = "🔩 어버트먼트" / "👑 크라운 세트"
+function uiProductName(product, short) {
+  var c = cncProductOf(product) === 'crown_set';
+  return (c ? '👑 ' : '🔩 ') + t(c ? (short ? 'product_crown_set_short' : 'product_crown_set') : (short ? 'product_abutment_short' : 'product_abutment'));
+}
+
+// 작은 상품 배지 (목록 · 표용)
+function uiProductBadge(product, short) {
+  var c = cncProductOf(product) === 'crown_set';
+  return '<span class="product-badge ' + (c ? 'product-crown' : 'product-abutment') + '">' + escHtml(uiProductName(product, short !== false)) + '</span>';
+}
+
 function uiCreditSplitValues(opts) {
   opts = opts || {};
   var v = {};
@@ -388,14 +449,17 @@ function uiCreditSplitValues(opts) {
     return v;
   }
   var A = window.APP || {};
-  v.paid = A.purchasedCredits != null ? Number(A.purchasedCredits) : Number(A.balance || 0);
-  v.free = A.freeTotal != null ? Number(A.freeTotal) : 0;
-  v.restrictedFree = Number(A.freeCredits || 0);
+  var product = cncProductOf(opts.product);
+  var pc = cncProductCredits(product);
+  v.paid = pc.purchased;
+  v.free = product === 'crown_set' ? pc.freeTotal : (A.freeTotal != null ? Number(A.freeTotal) : 0);
+  v.restrictedFree = pc.freeCredits;
   v.paidExpiry = null;
   v.freeExpiry = null;
   var summary = A.creditSummaryOk !== false && A.freeTotal != null;
   (A.lots || []).forEach(function (l) {
     if (!(Number(l.remaining) > 0) || new Date(l.expires_at) <= new Date()) return;
+    if (cncProductOf(l.product) !== product) return;   // 그 종류의 묶음만 (018 전 묶음은 product 가 없어서 어버트먼트)
     var kind = summary ? cncLotKind(l) : 'paid';
     var key = kind === 'free' ? 'freeExpiry' : 'paidExpiry';
     if (!v[key] || new Date(l.expires_at) < new Date(v[key])) v[key] = l.expires_at;
@@ -425,7 +489,7 @@ function uiCreditSplitInner(opts) {
 function uiCreditSplitHtml(opts) {
   opts = opts || {};
   var live = opts.paid == null && opts.free == null;
-  var flags = (opts.expiry ? 'e' : '') + (opts.note ? 'n' : '');
+  var flags = (opts.expiry ? 'e' : '') + (opts.note ? 'n' : '') + (cncProductOf(opts.product) === 'crown_set' ? 'c' : '');
   return '<span class="credit-split-wrap' + (opts.cls ? ' ' + opts.cls : '') + '"' +
     (live ? ' data-credit-split="' + flags + '"' : '') + '>' + uiCreditSplitInner(opts) + '</span>';
 }
@@ -435,8 +499,39 @@ function uiRefreshCreditSplits() {
   var els = document.querySelectorAll('[data-credit-split]');
   for (var i = 0; i < els.length; i++) {
     var f = els[i].getAttribute('data-credit-split') || '';
-    els[i].innerHTML = uiCreditSplitInner({ expiry: f.indexOf('e') !== -1, note: f.indexOf('n') !== -1 });
+    els[i].innerHTML = uiCreditSplitInner({ expiry: f.indexOf('e') !== -1, note: f.indexOf('n') !== -1, product: f.indexOf('c') !== -1 ? 'crown_set' : 'abutment' });
   }
+  var rows = document.querySelectorAll('[data-product-credits]');
+  for (var j = 0; j < rows.length; j++) {
+    var g = rows[j].getAttribute('data-product-credits') || '';
+    rows[j].innerHTML = uiProductCreditsInner({ expiry: g.indexOf('e') !== -1, note: g.indexOf('n') !== -1, all: g.indexOf('a') !== -1 });
+  }
+}
+
+// 종류별 잔액 (홈 · 내 정보 · 충전): 줄마다 [상품 이름] [합계] + 💳 충전 n · 🎁 무료 n
+//   크라운 세트 줄은 세트 크레딧이 있거나 판매 중일 때만 (opts.all = 항상). 판매 전 + 0 이면 "곧 출시"
+//   잔액이 바뀌면 자동으로 다시 그려요 (uiRefreshCreditSplits)
+function uiProductCreditsInner(opts) {
+  opts = opts || {};
+  var A = window.APP || {};
+  var known = A.balance != null;
+  var list = (opts.all || cncShowCrownSet()) ? CNC_PRODUCTS : ['abutment'];
+  return list.map(function (p) {
+    var pc = cncProductCredits(p);
+    var soon = p === 'crown_set' && !A.crownSetOnSale && !(pc.balance > 0);
+    return '<div class="pc-row pc-' + p + '">' +
+      '<div class="pc-head"><span class="pc-name">' + escHtml(uiProductName(p)) + '</span>' +
+        '<span class="pc-total"><b class="mono">' + (known ? formatNumber(pc.balance) : '—') + '</b> <span class="pc-unit">' + escHtml(t('credit_unit')) + '</span></span></div>' +
+      (soon ? '<p class="pc-soon">' + escHtml(t('crown_coming_soon')) + '</p>'
+        : '<div class="pc-split">' + uiCreditSplitInner({ expiry: opts.expiry, note: opts.note, product: p }) + '</div>') +
+      '</div>';
+  }).join('');
+}
+
+function uiProductCreditsHtml(opts) {
+  opts = opts || {};
+  var flags = (opts.expiry ? 'e' : '') + (opts.note ? 'n' : '') + (opts.all ? 'a' : '');
+  return '<div class="product-credits' + (opts.cls ? ' ' + opts.cls : '') + '" data-product-credits="' + flags + '">' + uiProductCreditsInner(opts) + '</div>';
 }
 
 // 이력 · 묶음 줄의 종류 배지: 💳 충전 / 🎁 무료 (+ 이벤트 이름) / 섞임(주문: 🎁 무료 n · 💳 충전 n)
@@ -463,6 +558,18 @@ function uiDeadlineHtml(o, admin) {
 }
 
 // 이 주문에 쓴 크레딧: 🎁 무료 n / 💳 충전 n (cnc_orders.bonus_used · credits_used 그대로)
+// 주문의 종류별 치아 수 "🔩 어버트먼트 2 · 👑 크라운 세트 1" (크라운 세트가 없으면 빈 글자 — 예전 주문 · 어버트먼트만)
+//   counts: cncOrderProductCounts(order) 또는 cncProductCounts(draft)
+function uiProductCountsHtml(counts, always) {
+  counts = counts || {};
+  var a = Number(counts.abutment || 0), c = Number(counts.crown_set || 0);
+  if (!c && !always) return '';
+  var parts = [];
+  if (a || always) parts.push('<span class="pcount pcount-abutment">' + escHtml(uiProductName('abutment', true)) + ' <b class="mono">' + formatNumber(a) + '</b></span>');
+  if (c || always) parts.push('<span class="pcount pcount-crown">' + escHtml(uiProductName('crown_set', true)) + ' <b class="mono">' + formatNumber(c) + '</b></span>');
+  return '<span class="product-counts">' + parts.join('<span class="pcount-sep" aria-hidden="true"> · </span>') + '</span>';
+}
+
 function uiOrderCreditUseHtml(creditsUsed, bonusUsed) {
   var used = Number(creditsUsed || 0), free = Math.min(used, Math.max(0, Number(bonusUsed || 0)));
   return '<span class="order-credit-use"><span class="mono">' + formatNumber(used) + '</span> ' +
@@ -665,6 +772,9 @@ function uiErrorMessage(err) {
   var code = cncErrorCode(err);
   var map = {
     INSUFFICIENT_CREDITS: 'insufficient_credits_msg',
+    INSUFFICIENT_CREDITS_ABUTMENT: 'insufficient_credits_abutment',
+    INSUFFICIENT_CREDITS_CROWN_SET: 'insufficient_credits_crown_set',
+    INVALID_PRODUCT: 'err_invalid_product',
     NO_TEETH: 'err_no_teeth',
     DELIVERY_REQUIRED: 'err_delivery_required',
     NOT_LOGGED_IN: 'err_not_logged_in',

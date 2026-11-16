@@ -1454,6 +1454,28 @@ LANG.en = {
   svc_missing: 'Service status is not set up yet. Run sql/017_service_mode.sql first.',
   audit_service_mode: 'Service status changed',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'Custom abutment',
+  product_abutment_short: 'Abutment',
+  product_crown_set: 'Abutment + zirconia crown set',
+  product_crown_set_short: 'Crown set',
+  product_abutment_only: 'Abutment only',
+  product_label: 'Product',
+  product_counts_label: 'Products',
+  crown_coming_soon: 'Coming soon',
+  crown_coming_soon_text: 'The abutment + zirconia crown set will be available soon. We will let you know when it opens.',
+  crown_credit_note: 'Crown set credits are separate from abutment credits. 1 crown set credit = 1 tooth (abutment + zirconia crown).',
+  crown_set_shade_note: 'Crown set: the shade is used for the zirconia crown.',
+  insufficient_credits_abutment: 'Not enough abutment credits. Please top up abutment credits.',
+  insufficient_credits_crown_set: 'Not enough crown set credits. Please top up crown set credits.',
+  err_invalid_product: 'Unknown product. Please choose the product again.',
+  topup_crown_btn: 'Top up crown set credits',
+  admin_crown_pkg_note: 'Customers see these packages after you set the price and turn on "On sale".',
+  admin_refund_single: 'Recalculated at {price} per credit',
+  admin_free_product: 'Product to give',
+  camp_product: 'Product to give',
+  fin_by_product: 'By product',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

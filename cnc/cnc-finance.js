@@ -51,8 +51,19 @@ async function cncAdminFinanceMonth(year, month) {
     expired: { credits: cncNum(ex.credits), value: cncNum(ex.value) },
     bonus: { credits: cncNum(bn.credits) },
     free: free,
+    // 상품 종류별 (sql/018): { abutment: { topups, consumed, expired }, crown_set: {...} } — 018 전이면 null
+    byProduct: d.by_product ? CNC_PRODUCTS.reduce(function (acc, pr) {
+      var x = obj(d.by_product[pr]), t2 = obj(x.topups), c2 = obj(x.consumed), e2 = obj(x.expired);
+      acc[pr] = {
+        topups: { count: cncNum(t2.count), credits: cncNum(t2.credits), subtotal: cncNum(t2.subtotal), total: cncNum(t2.total) },
+        consumed: { credits: cncNum(c2.credits), value: cncNum(c2.value), free: cncNum(c2.free) },
+        expired: { credits: cncNum(e2.credits) }
+      };
+      return acc;
+    }, {}) : null,
     byPackage: (d.by_package || []).map(function (p) {
       return {
+        product: p.product ? cncProductOf(p.product) : null,
         credits: cncNum(p.credits), unitPrice: cncNum(p.unit_price), count: cncNum(p.count),
         totalCredits: cncNum(p.total_credits), total: cncNum(p.total)
       };
@@ -82,7 +93,13 @@ async function cncAdminOutstandingCredits() {
     paidCredits: cncNum(d.paid_credits),
     paidValue: cncNum(d.paid_value),
     freeCredits: cncNum(d.free_credits),
-    customers: cncNum(d.customers)
+    customers: cncNum(d.customers),
+    // 상품 종류별 미사용 (sql/018) { abutment: { paidCredits, paidValue, freeCredits }, crown_set: {...} } 또는 null
+    byProduct: d.by_product ? CNC_PRODUCTS.reduce(function (acc, pr) {
+      var x = d.by_product[pr] || {};
+      acc[pr] = { paidCredits: cncNum(x.paid_credits), paidValue: cncNum(x.paid_value), freeCredits: cncNum(x.free_credits) };
+      return acc;
+    }, {}) : null
   };
 }
 
@@ -121,6 +138,7 @@ function cncTopupsCsv(rows, headers) {
       cncCsvCell(r.clinic_name, true),
       // Tax ID 는 0 으로 시작하는 13자리 → 엑셀이 숫자로 바꾸면 앞의 0 이 사라져요. ="..." 로 글자 그대로
       r.tax_id ? '"=""' + String(r.tax_id).replace(/"/g, '') + '"""' : '',
+      cncCsvCell(r.product || 'abutment', true),   // 상품 종류 (sql/018 전이면 칸이 없어서 abutment)
       cncCsvCell(r.package_credits),
       cncCsvCell(r.credits),
       cncCsvMoney(r.unit_price),

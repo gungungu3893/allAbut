@@ -416,6 +416,7 @@ async function cncAdminListUsers() {
     var x = split && split[u.id];
     u.splitOk = !!split;
     u.paid = split ? (x ? x.paid : 0) : Number(u.balance || 0);
+    u.crown = x && x.hasProducts ? x.crownPaid + x.crownFree : 0;   // 크라운 세트 잔액 (sql/018)
     u.free = split ? (x ? x.free : 0) : 0;
   });
   return users;
@@ -439,17 +440,27 @@ async function cncAdminCreditSplit(userIds) {
   var out = {};
   (Array.isArray(d) ? d : []).forEach(function (x) {
     out[x.user_id] = { paid: Number(x.paid || 0), free: Number(x.free || 0), paidExpiry: x.paid_next_expiry || null, freeExpiry: x.free_next_expiry || null };
+    // 크라운 세트 (sql/018) — 위 paid · free 는 어버트먼트. 018 전이면 칸이 없어요 (hasProducts = false)
+    if ('crown_paid' in x) {
+      out[x.user_id].hasProducts = true;
+      out[x.user_id].crownPaid = Number(x.crown_paid || 0);
+      out[x.user_id].crownFree = Number(x.crown_free || 0);
+      out[x.user_id].crownPaidExpiry = x.crown_paid_next_expiry || null;
+      out[x.user_id].crownFreeExpiry = x.crown_free_next_expiry || null;
+    }
   });
   return out;
 }
 
-// 크레딧 충전(+) / 차감(-) → 새 잔액
-async function cncAdminAddCredits(userId, amount, description) {
+// 크레딧 충전(+) / 차감(-) → 새 잔액 (어버트먼트 잔액). product: 'abutment' | 'crown_set' (sql/018, 안 주면 예전처럼 어버트먼트)
+async function cncAdminAddCredits(userId, amount, description, product) {
   amount = parseInt(amount, 10);
   if (!amount || isNaN(amount)) throw cncError('INVALID_AMOUNT');
   var result;
+  var args = { p_user: userId, p_amount: amount, p_description: String(description || '').trim() };
+  if (product) args.p_product = cncProductOf(product);
   try {
-    result = await sb.rpc('admin_add_credits', { p_user: userId, p_amount: amount, p_description: String(description || '').trim() });
+    result = await sb.rpc('admin_add_credits', args);
   } catch (err) {
     throw cncError(cncErrorCode(err), { cause: err });
   }
@@ -560,6 +571,7 @@ async function cncAdminSavePackage(pkg) {
     active: !!pkg.active,
     sort_order: parseInt(pkg.sort_order, 10) || 0
   };
+  if (pkg.product) fields.product = cncProductOf(pkg.product);   // sql/018 의 상품 종류 (그 전 DB 에는 안 보내요)
   if (!fields.credits || fields.credits < 1 || isNaN(fields.unit_price) || fields.unit_price < 0) throw cncError('INVALID_AMOUNT');
   var result = pkg.id
     ? await sb.from('credit_packages').update(fields).eq('id', pkg.id).select()
@@ -688,17 +700,21 @@ async function cncAdminSuspicionFlags(userId) {
 }
 
 // 무료 크레딧 지급 (manager 이상, sql/009) → 잔액
-//   opts: { event, credits, days(기본 365), addressOnly(기본 true) }
+//   opts: { event, credits, days(기본 365), addressOnly(기본 true), product('abutment' 기본 | 'crown_set', sql/018) }
 function cncAdminGrantFreeCredits(userId, opts) {
-  return cncRpc('admin_grant_free_credits', {
+  var args = {
     p_user: userId, p_event: String(opts.event || '').trim(), p_credits: parseInt(opts.credits, 10),
     p_days: parseInt(opts.days, 10) || 365, p_address_only: opts.addressOnly !== false
-  });
+  };
+  if (opts.product) args.p_product = cncProductOf(opts.product);
+  return cncRpc('admin_grant_free_credits', args);
 }
 
-// 무료 크레딧 회수 (사유 필수, 무료 묶음에서만) → 잔액
-function cncAdminRevokeFreeCredits(userId, amount, reason) {
-  return cncRpc('admin_revoke_free_credits', { p_user: userId, p_amount: parseInt(amount, 10), p_reason: String(reason || '').trim() });
+// 무료 크레딧 회수 (사유 필수, 무료 묶음에서만, 그 종류에서만) → 잔액
+function cncAdminRevokeFreeCredits(userId, amount, reason, product) {
+  var args = { p_user: userId, p_amount: parseInt(amount, 10), p_reason: String(reason || '').trim() };
+  if (product) args.p_product = cncProductOf(product);
+  return cncRpc('admin_revoke_free_credits', args);
 }
 
 // 고객의 미사용 무료 크레딧 수 (등록 주소 전용)

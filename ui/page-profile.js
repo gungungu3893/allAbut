@@ -318,6 +318,7 @@ var PageProfile = {
         var free = APP.creditSummaryOk !== false && cncLotKind(l) === 'free';
         return '<tr class="' + (st ? 'lot-' + st : '') + (free ? ' lot-free' : '') + '">' +
           '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' ' +
+            (cncProductOf(l.product) === 'crown_set' ? uiProductBadge('crown_set') + ' ' : '') +
             uiCreditKindBadge({ kind: free ? 'free' : 'paid', event: free ? l.event_name : '' }) +
             (free && cncIsRestrictedLot(l) ? '<span class="lot-free-tag">' + escHtml(t('free_lot_tag')) + '</span>' : '') + '</td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td>' +
@@ -332,8 +333,11 @@ var PageProfile = {
     if (!box) return;
     var self = this;
     var html = '<h2 class="card-title">' + escHtml(t('credit_balance')) + '</h2>' +
-      '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
-      '<p class="credit-split-line" id="credit-split-line">' + uiCreditSplitHtml({ expiry: true }) + '</p>' +
+      // 크라운 세트를 보여줄 때(sql/018): 종류별 줄. 아니면 예전처럼 합계 + 💳 충전 · 🎁 무료
+      (cncShowCrownSet()
+        ? uiProductCreditsHtml({ expiry: true, cls: 'profile-products' })
+        : '<p class="big-number"><span class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+          '<p class="credit-split-line" id="credit-split-line">' + uiCreditSplitHtml({ expiry: true }) + '</p>') +
       ((APP.freeTotal || 0) > 0 ? '<p class="field-help">' + escHtml(t('free_rule_short')) + '</p>' : '') +
       '<p class="card-desc">' + escHtml(t('credit_rule')) + ' · ' + escHtml(t('credit_validity_rule')) + '</p>' +
       '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + '</a>' +
@@ -357,7 +361,7 @@ var PageProfile = {
           return '<tr>' +
             '<td class="mono nowrap">' + escHtml(formatDate(h.created_at)) + '</td>' +
             '<td><span class="badge credit-' + escHtml(h.type) + '">' + escHtml(t('credit_type_' + h.type)) + '</span></td>' +
-            '<td class="kind-cell">' + uiCreditKindBadge(k) + '</td>' +
+            '<td class="kind-cell">' + (h.product === 'crown_set' || h.product === 'mixed' ? uiProductBadge(h.product === 'mixed' ? 'crown_set' : h.product) + ' ' : '') + uiCreditKindBadge(k) + '</td>' +
             '<td class="mono nowrap ' + (amount >= 0 ? 'plus' : 'minus') + '">' + (amount > 0 ? '+' : '') + formatNumber(amount) + '</td>' +
             '<td>' + escHtml(h.description || '') + '</td>' +
             '<td class="mono nowrap">' + escHtml(h.order_id || '—') + '</td>' +

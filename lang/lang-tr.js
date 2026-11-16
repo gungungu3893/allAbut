@@ -1451,6 +1451,28 @@ LANG.tr = {
   svc_missing: 'Hizmet durumu henüz ayarlanmadı. Önce sql/017_service_mode.sql dosyasını çalıştırın.',
   audit_service_mode: 'Hizmet durumu değişti',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'Özel abutment',
+  product_abutment_short: 'Abutment',
+  product_crown_set: 'Abutment + zirkonya kron seti',
+  product_crown_set_short: 'Kron seti',
+  product_abutment_only: 'Yalnızca abutment',
+  product_label: 'Ürün',
+  product_counts_label: 'Ürüne göre adet',
+  crown_coming_soon: 'Yakında',
+  crown_coming_soon_text: 'Abutment + zirkonya kron seti yakında geliyor. Açıldığında size haber vereceğiz.',
+  crown_credit_note: 'Kron seti kredileri abutment kredilerinden ayrıdır. 1 kron seti kredisi = 1 diş (abutment + zirkonya kron).',
+  crown_set_shade_note: 'Kron seti: renk tonu zirkonya kron için kullanılır.',
+  insufficient_credits_abutment: 'Yeterli abutment krediniz yok. Lütfen abutment kredisi yükleyin.',
+  insufficient_credits_crown_set: 'Yeterli kron seti krediniz yok. Lütfen kron seti kredisi yükleyin.',
+  err_invalid_product: 'Bilinmeyen ürün. Lütfen ürünü yeniden seçin.',
+  topup_crown_btn: 'Kron seti kredisi yükle',
+  admin_crown_pkg_note: 'Fiyatı belirleyip "Satışta" seçeneğini açtıktan sonra müşteriler bu paketleri görür.',
+  admin_refund_single: 'Kredi başına {price} ile yeniden hesaplandı',
+  admin_free_product: 'Verilecek ürün',
+  camp_product: 'Verilecek ürün',
+  fin_by_product: 'Ürüne göre',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

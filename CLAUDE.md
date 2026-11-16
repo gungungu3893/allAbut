@@ -70,8 +70,38 @@
 - 브랜드·쉐이드·사이즈는 **치아마다 따로** (브랜드·쉐이드 필수, 사이즈 선택)
 - 한 주문 = 환자 1명 (`cases` 배열에 1개)
 - 파일: STL / PLY / OBJ / 3MF / JPG / PNG / PDF, 파일당 50MB, 최대 10개
-- 1 치아 = 1 크레딧 (차감은 DB 함수 `create_cnc_order` 가 한 번에 처리)
+- 1 치아 = 1 크레딧 (차감은 DB 함수 `create_cnc_order` 가 한 번에 처리). 크레딧은 **상품 종류마다 따로** (아래 "상품 두 종류")
 - 9개 언어: en ko th zh vi es tr ar fa (ar / fa 는 RTL)
+
+## 상품 두 종류 — 🔩 커스텀 어버트먼트 / 👑 어버트먼트 + 지르코니아 크라운 세트 (sql/018_two_products.sql)
+- 종류 값 `'abutment'`(기본) | `'crown_set'`. 화면 이름 `uiProductName(p, short)` = "🔩 커스텀 어버트먼트" · "👑 어버트먼트 + 지르코니아 크라운 세트" (짧게 "🔩 어버트먼트" · "👑 크라운 세트"), 문구 키 `product_*` 9개 언어
+- **크레딧은 종류마다 따로**: 어버트먼트 크레딧으로 크라운 세트를 주문할 수 없고 반대도 안 돼요. 1 치아 = 그 종류 1 크레딧
+- DB 칸: `credit_packages.product` · `topup_requests.product` · `credit_lots.product` (기존 줄 전부 abutment), `credit_wallets.balance` = **어버트먼트**(예전 그대로) + `balance_crown_set`,
+  `cnc_orders.crown_set_count`(세트 치아 수), `credit_history.product`('abutment' | 'crown_set' | 'mixed' — 트리거가 묶음 · 주문을 보고 채움), `payment_settings.signup_bonus_product`, `signup_bonus_grants.product`
+  - 가격표 중복 검사 = (종류, 크레딧). 세트 패키지 5개(1 · 10 · 30 · 50 · 100, 임시 9,999)는 **판매 중지로 시작** → 가격을 정한 뒤 관리자가 켜요
+  - 잔액은 `_credit_recalc` / `_credit_expire_lots` 가 종류별로 계산, 차감 `_credit_take(…, p_product)` · `_credit_take_mode(…, p_product)` (예전 인자 모양 = 어버트먼트)
+- 충전: `create_topup_request` 가 패키지 종류를 요청에 저장 → `admin_approve_topup` 이 같은 종류 묶음. 고객 충전 화면 맨 위 탭 [🔩 어버트먼트] [👑 크라운 세트] (`PageTopup.tab`, 다른 화면에서 보낼 땐 `PageTopup.preset`),
+  판매 중인 세트 패키지가 없으면 세트 탭에 "곧 출시돼요" (탭은 보여요)
+- 주문: 3단계 치아 카드마다 "제품" [어버트먼트만 | 크라운 세트] (`draft.details[n].product`, 기본 abutment, 모두 적용 `applyProductAll`) → `cases[].teeth[].product`.
+  세트 크레딧이 0 이고 판매 중인 세트 패키지도 없으면 세트 버튼 비활성 + "곧 출시". 세트 치아도 쉐이드 필수(지르코니아 크라운 색)
+  - `create_cnc_order` 가 치아마다 product 를 채워 저장(없으면 abutment, 모르는 값 `INVALID_PRODUCT`) → 종류별 필요 수만큼 각 종류 묶음에서 FIFO (무료 · 등록 주소 전용 규칙은 종류별로 그대로).
+    모자라면 `INSUFFICIENT_CREDITS_ABUTMENT` / `INSUFFICIENT_CREDITS_CROWN_SET` (등록 주소 무료로 채울 수 있으면 `bonus_address_only`). 취소 복구는 `credit_lot_usage` → 원래 묶음 (종류 그대로)
+  - 미리보기 `PageNew.creditSplits()` (종류별) / `creditSplit()` (합친 것). 세트 치아가 없으면 요약 · 5단계는 예전 모양 그대로(칸 id `credit-split` · `after-split` · `sum-after`),
+    있으면 "어버트먼트 n · 크라운 세트 n" + 종류마다 상자(세트는 `-crown`), 모자라면 그 종류 충전하기 버튼
+- 잔액 표시: 상태 `APP.balance`(어버트먼트) · `APP.purchasedCredits` · `APP.freeTotal` · `APP.freeCredits` · `APP.paidCredits` 는 **전부 어버트먼트**, 세트는 `APP.crownSet`
+  { total, purchased, freeTotal, freeCredits, paidCredits } + `APP.crownSetOnSale` (`get_my_credit_summary()` 의 `crown_set` · `crown_set_on_sale`). 종류별 값 `cncProductCredits(p)`
+  - 헤더: 세트 크레딧이 있거나 판매 중이면 "🔩 12 · 👑 3" (`cncShowCrownSet()`), 아니면 예전 "💳 12 크레딧". fit-7(가장 좁을 때)은 두 숫자를 위아래 두 줄로 — 360 · 1024 · 1440px 확인
+  - 홈 · 내 정보 · 충전: 세트를 보여줄 때는 종류별 줄 `uiProductCreditsHtml()` (줄마다 합계 + 💳 충전 · 🎁 무료), 아니면 예전 모양. 내 주문 카드 · 상세: 치아별 제품(`uiProductBadge`, `uiProductCountsHtml`)
+- 무료 크레딧: `admin_grant_free_credits(…, p_product)` · `admin_revoke_free_credits(…, p_product)` · `admin_add_credits(…, p_product)` (기본 abutment, 관리자 화면에 "종류" 선택). 신규 가입 이벤트 "지급 종류"(`signup_bonus_product`) —
+  승인 대기 신청은 신청할 때의 종류로
+- 현금 환불 재계산 "1개 가격" = 그 묶음 종류의 1크레딧 패키지 가격 (`_credit_refund_quote` 의 묶음마다 `single_price`)
+- 집계: `admin_finance_month.by_product`(입금 · 사용 · 만료) · `by_package` 에 product, `admin_outstanding_credits.by_product`, `admin_finance_free_month.by_product`, `admin_topups_export` product 칸(CSV 에도),
+  커미션 항목 product (입금 기준 그대로, per_credit 은 종류 상관없이 크레딧 수), `sales_my_payments` product, 만료 알림 lots 에 product, 계정 삭제 요청 남은 크레딧 = 두 종류 합
+- 관리자 화면: Settings 크레딧 패키지 표 두 개(종류별, 각각 "+ 패키지 추가", 세트 표 위 안내 · 새 세트 패키지는 판매 중지로 시작), 충전 요청 목록 · 상세, 고객 목록(👑 n) · 상세(종류별 잔액 · 묶음 배지 · 종류 골라 지급/차감),
+  무료 지급 · 회수, 주문 상세(치아별 제품 + 개수), 매출 대시보드 "종류별" 표, 커미션 상세 · CSV, 이벤트 설정 "지급 종류"
+- LINE: 크레딧 · 충전 카드에 "Product: Abutment credits / Crown set credits" 줄(product 가 있을 때), 세트가 있으면 잔액 줄 "🔩 12 · 👑 3" + 작은 줄 "Abutment 12 · Crown set 3"(9개 언어, `balanceTotals`),
+  주문 카드 Teeth 줄의 세트 치아는 브랜드 옆 "👑 Set". 샘플 `13-crown-set-order-admin` · `14-crown-set-credits-customer`
+- 법적 문서 `{{PRICE_TABLE}}` 은 종류마다 표(판매 중인 패키지가 있는 종류만), `{single_price}` · 환불 예시는 어버트먼트 기준
 
 ## 크레딧 · 충전 정책 (확정)
 - 가격 (VAT 7% 별도, 개당 THB): 1개 2,200 / 10개 2,050 / 30개 1,900 / 50개 1,750 / 100개 1,500
@@ -95,7 +125,7 @@
 - 주문: 등록 주소 전용 무료 크레딧은 주문 1단계의 **"무료 크레딧으로 주문하기"** 를 켠 주문에만 사용 → 배송 정보는 **등록된 치과 정보로 고정**(화면에서 못 고침, DB 도 강제로 바꿈)
   - 켜지 않은 주문은 등록 주소 전용 묶음을 건너뜀. 모자라고 그 묶음으로 채울 수 있으면 에러 `bonus_address_only` (→ "무료 크레딧으로 주문하기" 켜기 / 충전하기 버튼)
   - 켠 주문은 무료 먼저 → 모자라면 나머지. `cnc_orders.bonus_used`(사용한 등록 주소 전용 무료 수), `addr_norm`(주소 정규화 `_norm_addr`) 저장. 판단은 전부 `create_cnc_order(..., p_use_free)` 안에서
-  - 주문 취소는 원래 묶음으로 복구 → restriction 그대로. 크레딧은 커스텀 어버트먼트 주문에만 써요 (다른 상품 없음)
+  - 주문 취소는 원래 묶음으로 복구 → restriction 그대로. 무료 크레딧도 **종류별** (어버트먼트 무료는 어버트먼트 치아에만, 세트 무료는 세트 치아에만 — sql/018)
 - **등록된 치과 정보** = `profiles.reg_clinic / reg_addr / reg_phone / reg_addr_norm / clinic_locked_at`: 치과 이름·주소·전화가 처음 모두 채워지는 순간(가입 때 다 넣었으면 가입 시점) 트리거가 잠금.
   고객이 프로필을 고쳐도 등록 정보는 그대로(유료 주문 배송지만 바뀜). 변경은 `request_clinic_change()` → 관리자(manager 이상) `admin_review_clinic_change()` 승인. 회원가입에 주소 칸(필수, sql/010)
 - **🎁 신규 가입 무료 크레딧 이벤트**: `payment_settings.signup_bonus_credits` + sql/010 의 기간·승인 설정 (아래 "회원 필수 정보 · 신규 가입 이벤트"). Settings 의 별도 카드 `signupEventHtml`
@@ -108,7 +138,9 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018.
+  **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
+  **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   **`sql/launch_reset.sql` 은 일반 재실행 순서에 포함하지 않는다** (정식 오픈 날 1번만, 아래 "서비스 상태 · TEST 배지 · 정식 오픈 초기화")
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
   **005 를 다시 실행하면 015 → 016 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
@@ -272,6 +304,8 @@
 - `cnc/cnc-service.js` — 서비스 상태 (테스트 / 정식) 읽기 · 바꾸기 (로직만, sql/017)
 - `ui/service-badge.js` — 로고 옆 "TEST" 배지 · 슬로건 옆 "Beta test service" · 설명 팝오버
 - `ui/page-admin-visits.js` — 관리자 Dashboard 방문 통계 (`PageAdmin` 에 덧붙임)
+- 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
+  화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)
 - `ui/page-complete.js` — 필수 정보 입력 `#/complete`
 - `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지
@@ -357,7 +391,7 @@
 - **실적 = 수금**: `topup_requests.sales_rep_id` — 트리거 `_trg_topup_sales_rep` 가 **승인(approved)되는 순간** 그 고객의 `profiles.sales_rep_id`(켜진 담당자만, 없으면 null)를 기록.
   직접 수정은 되돌림 (관리자 함수만 `set_config('allabut.rep_ok','1', true)`). 016 이 이미 승인된 예전 충전을 지금 고객 담당자로 한 번 채움(null 인 것만). 충전 승인 함수(`admin_approve_topup`)는 그대로
   - 커미션 달 = 승인 시각(reviewed_at)의 방콕 달 / 요율 = 승인일(방콕)에 유효한 것 (effective_from ≤ 승인일 중 가장 최근, 같은 날이면 나중에 넣은 것, 없으면 0)
-  - percent = 입금 subtotal(VAT 제외) × 값% / per_credit = 충전 크레딧 수 × 값 THB, 소수 2자리. 무료 크레딧 지급(관리자 · 이벤트)은 topup_requests 가 아니라 실적 아님
+  - percent = 입금 subtotal(VAT 제외) × 값% / per_credit = 충전 크레딧 수 × 값 THB (상품 종류 상관없이 크레딧 수, sql/018), 소수 2자리. 무료 크레딧 지급(관리자 · 이벤트)은 topup_requests 가 아니라 실적 아님
   - **현금 환불 차감**: `admin_refund_cash`(004 본문 + owner 권한 + `refund_cash_lots` 기록, 실제 송금액을 묶음 환불 가능액 비율로 나눔) → 그 충전의 담당자에게 **환불한 달**에 마이너스
     (percent → 환불액(VAT 제외 = 환불액 × subtotal/total) × 원래 % / per_credit → 환불된 크레딧 × 원래 THB, 원래 = 그 충전 승인일의 요율).
     추적이 안 되는 환불(016 전 환불 · 충전 기록 없는 묶음)은 마이너스 없이 커미션 탭에 **"확인 필요"** (`_commission_unresolved_refunds`)
@@ -399,7 +433,7 @@
 - 디자인 파일: `cnc-designs/{고객 user_id}/{주문번호}/v{버전}_...` →
   `design_versions` 에 `{ version, paths: [...], names: [...], date }` → stage = `design_ready`
 - 취소·환불은 가공 전 단계만 (`submitted ~ approved`), `admin_cancel_cnc_order` RPC
-- 크레딧 충전/차감: `admin_add_credits(p_user, p_amount, p_description)`
+- 크레딧 충전/차감: `admin_add_credits(p_user, p_amount, p_description, p_product)` (종류 기본 abutment, sql/018)
 - 주의: DB 읽기 규칙이 "자기 것 또는 관리자"라서, 고객용 조회(내 주문·크레딧 이력)는 항상 `user_id = 내 id` 로 거른다
 
 ## LINE 알림 (Supabase Edge Function — 배포 방법은 `LINE_SETUP.md`)

@@ -1,4 +1,6 @@
 // ===== 크레딧 충전 #/topup =====
+// 0) 맨 위 탭: [🔩 어버트먼트] [👑 크라운 세트] (sql/018 — 크레딧은 종류마다 따로). 판매 중인 세트 패키지가 없으면 세트 탭에 "곧 출시돼요"
+//    다른 화면에서 특정 종류로 보내고 싶으면 들어오기 전에 PageTopup.preset = 'crown_set'
 // 1) 패키지 고르기 (크레딧 수, 개당 가격, 할인율, 합계 / VAT / 총액)
 // 2) 결제: 총액 → PromptPay QR(은행 앱으로 스캔) 또는 계좌이체 → 입금 슬립 올리기 → "Submit payment"
 // 3) 완료: "확인 중이에요. 승인되면 LINE 으로 알려드려요"
@@ -9,6 +11,8 @@
 var PageTopup = {
   main: null,
   step: 'choose',      // 'choose' | 'pay' | 'done'
+  tab: 'abutment',     // 지금 보는 상품 종류 'abutment' | 'crown_set'
+  preset: null,        // 다음에 들어올 때 열 탭 (새 주문의 "크라운 세트 충전하기" 등)
   packages: null,
   settings: null,
   selected: null,      // 고른 패키지
@@ -28,6 +32,7 @@ var PageTopup = {
   render: function (main) {
     this.main = main;
     this.step = 'choose';
+    if (this.preset) { this.tab = cncProductOf(this.preset); this.preset = null; }
     this.selected = null;
     this.clearSlip();
     this.submitError = null;
@@ -92,8 +97,10 @@ var PageTopup = {
       lineBannerHtml() +
       '<div class="page-head">' +
         '<h1 class="page-title"><span aria-hidden="true">💳</span> ' + escHtml(t('topup_title')) + '</h1>' +
-        '<p class="topup-balance">' + escHtml(t('credit_balance')) + ': <b class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</b> ' + escHtml(t('credit_unit')) + '</p>' +
-        '<p class="topup-split">' + uiCreditSplitHtml({ expiry: true }) + '</p>' +
+        (cncShowCrownSet()
+          ? uiProductCreditsHtml({ expiry: true, cls: 'topup-products' })
+          : '<p class="topup-balance">' + escHtml(t('credit_balance')) + ': <b class="mono">' + (APP.balance != null ? formatNumber(APP.balance) : '—') + '</b> ' + escHtml(t('credit_unit')) + '</p>' +
+            '<p class="topup-split">' + uiCreditSplitHtml({ expiry: true }) + '</p>') +
       '</div>' +
       '<div id="topup-body"></div>' +
       '<section class="card topup-history" id="topup-history"></section>' +
@@ -117,16 +124,41 @@ var PageTopup = {
     else box.innerHTML = this.chooseHtml();
   },
 
+  // ----- 0) 상품 종류 탭 -----
+  tabsHtml: function () {
+    var self = this;
+    return '<div class="seg product-tabs" role="tablist" aria-label="' + escHtml(t('product_label')) + '">' +
+      CNC_PRODUCTS.map(function (p) {
+        var on = self.tab === p;
+        return '<button type="button" role="tab" class="seg-btn product-tab product-tab-' + p + (on ? ' active' : '') + '" aria-selected="' + on + '" ' +
+          'onclick="PageTopup.setTab(\'' + p + '\')">' + escHtml(uiProductName(p, true)) + '</button>';
+      }).join('') + '</div>';
+  },
+
+  setTab: function (p) {
+    this.tab = cncProductOf(p);
+    this.drawBody();
+  },
+
   // ----- 1) 패키지 -----
   chooseHtml: function () {
     var self = this;
     var vat = Number(this.settings.vat_rate || 0);
-    if (!this.packages.length) return '<div class="card"><p class="empty-text">' + escHtml(t('topup_no_packages')) + '</p></div>';
-    return '<p class="page-desc topup-desc">' + escHtml(tf('topup_desc', { vat: formatNumber(vat) })) + '</p>' +
+    var list = cncPackagesFor(this.packages, this.tab);
+    var head = this.tabsHtml() + '<p class="product-tab-desc">' + escHtml(uiProductName(this.tab)) + '</p>';
+    if (!list.length) {
+      return head + (this.tab === 'crown_set'
+        ? '<div class="card crown-soon" role="status"><p class="crown-soon-title">👑 ' + escHtml(t('crown_coming_soon')) + '</p>' +
+            '<p class="muted">' + escHtml(t('crown_coming_soon_text')) + '</p></div>'
+        : '<div class="card"><p class="empty-text">' + escHtml(t('topup_no_packages')) + '</p></div>');
+    }
+    return head +
+      '<p class="page-desc topup-desc">' + escHtml(tf('topup_desc', { vat: formatNumber(vat) })) + '</p>' +
       '<p class="topup-expiry-note"><span aria-hidden="true">⏳</span> ' + escHtml(t('topup_expiry_note')) + '</p>' +
-      '<div class="package-grid">' + this.packages.map(function (p) {
+      (this.tab === 'crown_set' ? '<p class="topup-product-note">👑 ' + escHtml(t('crown_credit_note')) + '</p>' : '') +
+      '<div class="package-grid">' + list.map(function (p) {
         var price = cncPackagePrice(p, vat);
-        var discount = cncPackageDiscount(p, self.packages);
+        var discount = cncPackageDiscount(p, list);
         var badge = Number(p.credits) === 30 ? '<span class="pkg-badge popular">' + escHtml(t('topup_popular')) + '</span>'
           : (Number(p.credits) === 100 ? '<span class="pkg-badge best">' + escHtml(t('topup_best_value')) + '</span>' : '');
         return '<button type="button" class="package-card' + (badge ? ' featured' : '') + '" onclick="PageTopup.choose(' + Number(p.id) + ')">' +
@@ -193,6 +225,7 @@ var PageTopup = {
     return '<button type="button" class="btn btn-outline btn-sm topup-back" onclick="PageTopup.back()"' + dis + '><span class="arrow" aria-hidden="true">←</span> ' + escHtml(t('topup_change_package')) + '</button>' +
       '<div class="topup-pay">' +
         '<section class="card pay-summary">' +
+          '<p class="pay-product">' + escHtml(uiProductName(p.product)) + '</p>' +
           '<p class="pay-pkg">' + escHtml(tf('topup_pkg_line', { n: formatNumber(p.credits) })) + '</p>' +
           '<p class="pay-total-label">' + escHtml(t('topup_total_vat')) + '</p>' +
           '<p class="pay-total mono">' + formatTHB(price.total) + '</p>' +
@@ -333,6 +366,7 @@ var PageTopup = {
       '<p class="success-text">' + escHtml(linked ? t('topup_done_text') : t('topup_done_text_noline')) + '</p>' +
       '<p class="success-label">' + escHtml(t('topup_request_no')) + '</p>' +
       '<p class="success-id mono">' + escHtml(d.id || '') + '</p>' +
+      '<p class="success-text">' + escHtml(uiProductName(d.product || (this.selected && this.selected.product))) + '</p>' +
       '<p class="success-text">' + escHtml(tf('topup_pkg_line', { n: formatNumber(d.credits || 0) })) + ' · ' + formatTHB(d.total || 0) + '</p>' +
       lineCtaHtml() +
       '<div class="success-actions">' +
@@ -354,11 +388,12 @@ var PageTopup = {
       html += '<p class="empty-text">' + escHtml(t('topup_history_empty')) + '</p>';
     } else {
       html += '<div class="table-wrap"><table class="table"><thead><tr>' +
-        '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
+        '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('product_label')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
         '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('col_status')) + '</th><th></th></tr></thead><tbody>' +
         this.history.map(function (r) {
           return '<tr><td class="mono nowrap">' + escHtml(r.id) + '</td>' +
             '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +
+            '<td>' + uiProductBadge(r.product) + '</td>' +
             '<td class="mono">' + formatNumber(r.credits) + '</td>' +
             '<td class="mono nowrap">' + formatTHB(r.total) + '</td>' +
             '<td>' + uiTopupBadge(r.status) +

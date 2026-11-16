@@ -173,7 +173,8 @@ var PageOrders = {
         '</span>' +
         '<span class="order-meta">' +
           meta('patient_label', escHtml(o.patient || t('anonymous'))) +
-          meta('teeth_label', '<span class="mono">' + formatNumber(o.teeth_count) + '</span>') +
+          meta('teeth_label', '<span class="mono">' + formatNumber(o.teeth_count) + '</span>' +
+            (Number(o.crown_set_count || 0) > 0 ? ' ' + uiProductCountsHtml(cncOrderProductCounts(o)) : '')) +   // 크라운 세트가 있으면 "🔩 2 · 👑 1" (sql/018)
           meta('case_deadline_label', uiDeadlineHtml(o)) +   // 승인 전 = 디자인 승인 때 결정
           meta('order_date', escHtml(formatDate(o.created_at))) +
         '</span>' +
@@ -271,9 +272,10 @@ var PageOrders = {
     // 치아 표
     var teeth = cncOrderTeeth(o);
     html += '<h3 class="detail-title">' + escHtml(t('tooth_details')) + '</h3>' +
-      '<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>' + escHtml(t('brand_label')) + '</th><th>' + escHtml(t('size_label')) + '</th><th>' + escHtml(t('wiz_shade_label')) + '</th></tr></thead><tbody>' +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>' + escHtml(t('product_label')) + '</th><th>' + escHtml(t('brand_label')) + '</th><th>' + escHtml(t('size_label')) + '</th><th>' + escHtml(t('wiz_shade_label')) + '</th></tr></thead><tbody>' +
       teeth.map(function (tt) {
         return '<tr><td><span class="mono">#' + escHtml(tt.tooth) + '</span> <span class="muted">' + escHtml(isValidTooth(tt.tooth) ? t(toothTypeKey(tt.tooth)) : '') + '</span></td>' +
+          '<td>' + uiProductBadge(tt && typeof tt === 'object' ? tt.product : '') + '</td>' +
           '<td>' + escHtml(tt.brand === 'Other' ? t('brand_other') : (tt.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(tt.size || '—') + '</td>' +
           '<td>' + uiShadeChip(tt.color) + ' <span class="mono">' + escHtml(tt.color || '—') + '</span></td></tr>';

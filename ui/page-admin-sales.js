@@ -469,7 +469,8 @@ Object.assign(PageAdmin, {
             (legacy ? ' <span class="badge">' + escHtml(t('comm_legacy_item')) + '</span>' : '') + '</td>' +
           '<td>' + escHtml(i.customer) + '</td>' +
           '<td class="mono nowrap">' + escHtml(i.topupId) + '</td>' +
-          '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(refund ? -i.credits : i.credits)) + '</span> ' + escHtml(t('credit_unit')) + '</td>' +
+          '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(refund ? -i.credits : i.credits)) + '</span> ' + escHtml(t('credit_unit')) +
+            (i.product === 'crown_set' ? ' ' + uiProductBadge('crown_set') : '') + '</td>' +
           '<td class="mono nowrap">' + (refund ? '−' : '') + escHtml(formatTHB(i.amount)) + '</td>' +
           '<td class="comm-basis">' + self.basisHtml(i, firstRate) + '</td>' +
           '<td class="mono nowrap"><b>' + escHtml(formatTHB(i.commission)) + '</b></td></tr>';
@@ -548,7 +549,8 @@ Object.assign(PageAdmin, {
         st.payments.map(function (p) {
           return '<tr><td class="nowrap">' + escHtml(formatDate(p.approved_at)) + '</td><td>' + escHtml(p.customer || '') + '</td>' +
             '<td class="mono nowrap">' + escHtml(p.id) + '</td>' +
-            '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(p.credits)) + '</span> ' + escHtml(t('credit_unit')) + '</td>' +
+            '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(p.credits)) + '</span> ' + escHtml(t('credit_unit')) +
+              (p.product === 'crown_set' ? ' ' + uiProductBadge('crown_set') : '') + '</td>' +
             '<td class="mono nowrap">' + escHtml(formatTHB(p.subtotal)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
@@ -732,7 +734,7 @@ Object.assign(PageAdmin, {
   downloadCommissionCsv: function () {
     var st = this.commission;
     if (!st.data) return;
-    var headers = [t('rep_label'), t('comm_kind'), t('topup_request_no'), t('comm_date'), t('admin_customer'), t('topup_package'),
+    var headers = [t('rep_label'), t('comm_kind'), t('topup_request_no'), t('comm_date'), t('admin_customer'), t('product_label'), t('topup_package'),
       t('comm_amount'), t('topup_total'), t('rate_type'), t('rate_value'), t('comm_commission'), t('col_status')];
     cncDownloadText(cncCommissionCsv(st.data, headers), cncCommissionCsvName(st.year, st.month));
   }

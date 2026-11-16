@@ -106,6 +106,13 @@ Object.assign(PageAdmin, {
           '<input class="input mono" id="fg-days" type="number" min="1" max="3650" step="1" inputmode="numeric" value="365"' + dis + '>' +
           '<div class="err-slot" data-fg-err="days"></div></div>' +
         '<label class="checkbox span-2"><input type="checkbox" id="fg-address-only" checked' + dis + '> <span>' + escHtml(t('admin_free_address_only')) + '</span></label>' +
+        // 지급 종류 (sql/018 이후에만): 기본 어버트먼트
+        (st.split && st.split.hasProducts
+          ? '<div class="field span-2"><label class="field-label" for="fg-product">' + escHtml(t('admin_free_product')) + '</label>' +
+              '<select class="input" id="fg-product"' + dis + '>' + CNC_PRODUCTS.map(function (p) {
+                return '<option value="' + p + '">' + escHtml(uiProductName(p)) + '</option>';
+              }).join('') + '</select></div>'
+          : '') +
       '</div>' +
       '<div class="action-row">' +
         '<button type="button" class="btn btn-gold" onclick="PageAdmin.grantFreeCredits()"' + dis + '>🎁 ' + escHtml(t('admin_free_grant_btn')) + '</button>' +
@@ -123,6 +130,8 @@ Object.assign(PageAdmin, {
     var n = box.querySelector('#fg-credits').value.trim();
     var days = box.querySelector('#fg-days').value.trim() || '365';
     var addressOnly = box.querySelector('#fg-address-only').checked;
+    var prodEl = box.querySelector('#fg-product');
+    var product = prodEl ? cncProductOf(prodEl.value) : null;   // sql/018 전이면 null (예전처럼 어버트먼트)
     var errs = {};
     if (!ev) errs.event = 'admin_free_err_event';
     if (!/^\d{1,4}$/.test(n) || +n < 1 || +n > 1000) errs.credits = 'admin_free_err_credits';
@@ -137,6 +146,7 @@ Object.assign(PageAdmin, {
       body: '<p class="modal-text">' + escHtml(tf('admin_free_grant_confirm', { name: who, n: n })) + '</p>' +
         '<div class="reg-box" id="fg-summary">' +
           '<p><b>' + escHtml(t('admin_free_event')) + ':</b> ' + escHtml(ev) + '</p>' +
+          (product ? '<p><b>' + escHtml(t('admin_free_product')) + ':</b> ' + escHtml(uiProductName(product)) + '</p>' : '') +
           '<p><b>' + escHtml(t('admin_free_credits_n')) + ':</b> <span class="mono">' + escHtml(n) + '</span></p>' +
           '<p><b>' + escHtml(t('lots_expires')) + ':</b> ' + escHtml(formatDate(until.toISOString())) + '</p>' +
           '<p>' + escHtml(t(addressOnly ? 'admin_free_address_only' : 'admin_free_any_address')) + '</p>' +
@@ -146,7 +156,7 @@ Object.assign(PageAdmin, {
         { label: t('admin_free_grant_btn'), kind: 'primary', onClick: async function (close, btn) {
           btn.disabled = true;
           try {
-            var bal = await cncAdminGrantFreeCredits(st.user.id, { event: ev, credits: n, days: days, addressOnly: addressOnly });
+            var bal = await cncAdminGrantFreeCredits(st.user.id, { event: ev, credits: n, days: days, addressOnly: addressOnly, product: product });
             close();
             uiToast(tf('admin_free_granted', { n: n }), 'success');
             if (bal != null) self.syncUserBalance(st.user.id, Number(bal));
@@ -166,9 +176,21 @@ Object.assign(PageAdmin, {
     var self = this;
     var st = this.customer;
     if (!st || st.busy) return;
+    // 종류별 미사용 무료 크레딧 (sql/018 이후: 고른 종류에서만 회수)
+    var products = st.split && st.split.hasProducts;
+    function freeOf(p) {
+      return (st.lots || []).filter(function (l) { return cncIsFreeLot(l) && cncProductOf(l.product) === p && l.remaining > 0 && new Date(l.expires_at) > new Date(); })
+        .reduce(function (s2, l) { return s2 + Number(l.remaining || 0); }, 0);
+    }
     var modal = uiModal({
       title: t('admin_free_revoke_btn'),
       body: '<p class="modal-text">' + escHtml(tf('admin_free_revoke_text', { n: st.free })) + '</p>' +
+        (products
+          ? '<div class="field"><label class="field-label" for="fr-product">' + escHtml(t('product_label')) + '</label>' +
+              '<select class="input" id="fr-product">' + CNC_PRODUCTS.map(function (p) {
+                return '<option value="' + p + '"' + (freeOf(p) ? '' : ' disabled') + '>' + escHtml(uiProductName(p)) + ' (' + formatNumber(freeOf(p)) + ')</option>';
+              }).join('') + '</select></div>'
+          : '') +
         '<div class="field"><label class="field-label" for="fr-amount">' + escHtml(t('admin_free_credits_n')) + ' <span class="required">*</span></label>' +
           '<input class="input mono" id="fr-amount" type="number" min="1" max="' + Number(st.free) + '" step="1" inputmode="numeric"><div class="err-slot" data-fr-err="amount"></div></div>' +
         '<div class="field"><label class="field-label" for="fr-reason">' + escHtml(t('reg_change_reason')) + ' <span class="required">*</span></label>' +
@@ -178,15 +200,18 @@ Object.assign(PageAdmin, {
         { label: t('admin_free_revoke_btn'), kind: 'danger', onClick: async function (close, btn) {
           var amount = modal.el.querySelector('#fr-amount').value.trim();
           var reason = modal.el.querySelector('#fr-reason').value.trim();
+          var pSel = modal.el.querySelector('#fr-product');
+          var product = pSel ? cncProductOf(pSel.value) : null;
+          var max = product ? freeOf(product) : st.free;
           var errs = {};
-          if (!/^\d{1,4}$/.test(amount) || +amount < 1 || +amount > st.free) errs.amount = 'admin_free_err_credits';
+          if (!/^\d{1,4}$/.test(amount) || +amount < 1 || +amount > max) errs.amount = 'admin_free_err_credits';
           if (!reason) errs.reason = 'admin_free_err_reason';
           modal.el.querySelector('[data-fr-err="amount"]').innerHTML = uiFieldError(errs.amount);
           modal.el.querySelector('[data-fr-err="reason"]').innerHTML = uiFieldError(errs.reason);
           if (Object.keys(errs).length) return;
           btn.disabled = true;
           try {
-            var bal = await cncAdminRevokeFreeCredits(st.user.id, amount, reason);
+            var bal = await cncAdminRevokeFreeCredits(st.user.id, amount, reason, product);
             close();
             uiToast(t('admin_settings_saved'), 'success');
             if (bal != null) self.syncUserBalance(st.user.id, Number(bal));
@@ -245,6 +270,13 @@ Object.assign(PageAdmin, {
           '<input class="input" id="se-campaign" type="text" maxlength="100" value="' + escHtml(s.signup_bonus_campaign || '') + '">' +
           '<div class="err-slot" data-se-err="campaign"></div></div>' +
         num('credits', 'camp_credits', credits, 0, 100, '') +
+        // 지급 종류 (sql/018 이후에만)
+        ('signup_bonus_product' in s
+          ? '<div class="field"><label class="field-label" for="se-product">' + escHtml(t('camp_product')) + '</label>' +
+              '<select class="input" id="se-product">' + CNC_PRODUCTS.map(function (p) {
+                return '<option value="' + p + '"' + (cncProductOf(s.signup_bonus_product) === p ? ' selected' : '') + '>' + escHtml(uiProductName(p)) + '</option>';
+              }).join('') + '</select></div>'
+          : '') +
         num('valid_days', 'admin_free_days', s.signup_bonus_valid_days || 365, 1, 3650, '') +
         '<div class="field"><span class="field-label">' + escHtml(t('camp_starts')) + '</span>' +
           uiDateField({ id: 'se-starts', value: s.signup_bonus_starts || '' }) + '<div class="err-slot" data-se-err="starts"></div></div>' +
@@ -308,6 +340,7 @@ Object.assign(PageAdmin, {
       // 배너: en/th/ko 만 고치고 다른 언어 값은 그대로 (빈 칸은 지움 → 기본 문구)
       signup_bonus_banner: Object.assign({}, s.signup_bonus_banner || {})
     };
+    if (document.getElementById('se-product')) fields.signup_bonus_product = cncProductOf(val('product'));   // sql/018
     ['en', 'th', 'ko'].forEach(function (l) {
       var x = val('banner-' + l);
       if (x) fields.signup_bonus_banner[l] = x; else delete fields.signup_bonus_banner[l];

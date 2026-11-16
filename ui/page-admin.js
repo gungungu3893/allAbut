@@ -597,7 +597,7 @@ var PageAdmin = {
           '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +
           '<td>' + escHtml(r.clinic) + '</td>' +
           '<td>' + escHtml(r.patient || t('anonymous')) + '</td>' +
-          '<td class="mono">' + formatNumber(r.teeth_count) + '</td>' +
+          '<td class="nowrap"><span class="mono">' + formatNumber(r.teeth_count) + '</span>' + (Number(r.crown_set_count || 0) > 0 ? ' <span class="crown-mark" title="' + escHtml(t('product_crown_set')) + '">👑 <span class="mono">' + formatNumber(r.crown_set_count) + '</span></span>' : '') + '</td>' +
           '<td class="nowrap">' + self.dueHtml(r) + '</td>' +
           '<td>' + uiStageBadge(r.stage) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -610,7 +610,7 @@ var PageAdmin = {
         '<span class="admin-card-clinic">' + escHtml(r.clinic) + '</span>' +
         '<span class="order-meta">' +
           '<span><span class="muted">' + escHtml(t('patient_label')) + '</span> ' + escHtml(r.patient || t('anonymous')) + '</span>' +
-          '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(r.teeth_count) + '</span></span>' +
+          '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(r.teeth_count) + '</span>' + (Number(r.crown_set_count || 0) > 0 ? ' <span class="crown-mark">👑 <span class="mono">' + formatNumber(r.crown_set_count) + '</span></span>' : '') + '</span>' +
           '<span><span class="muted">' + escHtml(t('case_deadline_label')) + '</span> ' + self.dueHtml(r) + '</span>' +
           '<span><span class="muted">' + escHtml(t('admin_received')) + '</span> ' + escHtml(formatDate(r.created_at)) + '</span>' +
         '</span></button></li>';
@@ -726,11 +726,14 @@ var PageAdmin = {
     // 치아 표
     var teeth = cncOrderTeeth(o);
     html += '<h3 class="detail-title">' + escHtml(t('tooth_details')) + ' (' + teeth.length + ')</h3>' +
-      '<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>' + escHtml(t('admin_tooth_name')) + '</th><th>' + escHtml(t('brand_label')) + '</th><th>' +
+      (Number(o.crown_set_count || 0) > 0 ? '<p class="admin-product-counts">' + uiProductCountsHtml(cncOrderProductCounts(o), true) + '</p>' : '') +
+      '<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>' + escHtml(t('admin_tooth_name')) + '</th><th>' + escHtml(t('product_label')) + '</th><th>' + escHtml(t('brand_label')) + '</th><th>' +
       escHtml(t('size_label')) + '</th><th>' + escHtml(t('wiz_shade_label')) + '</th></tr></thead><tbody>' +
       teeth.map(function (tt) {
-        return '<tr><td class="mono"><b>#' + escHtml(tt.tooth) + '</b></td>' +
+        var crown = tt && typeof tt === 'object' && tt.product === 'crown_set';
+        return '<tr' + (crown ? ' class="tooth-crown-row"' : '') + '><td class="mono"><b>#' + escHtml(tt.tooth) + '</b></td>' +
           '<td>' + escHtml(isValidTooth(tt.tooth) ? t(toothTypeKey(tt.tooth)) : (tt.toothName || '')) + '</td>' +
+          '<td>' + uiProductBadge(crown ? 'crown_set' : 'abutment') + '</td>' +
           '<td>' + escHtml(tt.brand === 'Other' ? t('brand_other') : (tt.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(tt.size || '—') + '</td>' +
           '<td>' + uiShadeChip(tt.color) + ' <span class="mono">' + escHtml(tt.color || '—') + '</span></td></tr>';
@@ -1188,14 +1191,16 @@ var PageAdmin = {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
           '<td>' + escHtml(u.email) + '</td><td>' + escHtml(u.nickname) + '</td><td>' + escHtml(u.clinic_name) + '</td>' +
           '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td>' +
-          '<td class="mono col-paid"><b>' + formatNumber(u.paid != null ? u.paid : u.balance) + '</b></td><td class="mono col-free"><b>' + formatNumber(u.free || 0) + '</b></td>' +
+          '<td class="mono col-paid"><b>' + formatNumber(u.paid != null ? u.paid : u.balance) + '</b></td><td class="mono col-free"><b>' + formatNumber(u.free || 0) + '</b>' +
+            (u.crown ? ' <span class="crown-mark" title="' + escHtml(t('product_crown_set')) + '">👑 ' + formatNumber(u.crown) + '</span>' : '') + '</td>' +
           '<td class="nowrap">' + escHtml(formatDate(u.created_at)) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     var cards = '<ul class="admin-order-cards">' + rows.map(function (u) {
       return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
         '<span class="order-top"><span class="admin-card-clinic">' + escHtml(u.clinic_name || u.nickname || u.email) + '</span>' +
-        '<span class="credit-badge-sm">💳 <span class="mono">' + formatNumber(u.paid != null ? u.paid : u.balance) + '</span> · 🎁 <span class="mono">' + formatNumber(u.free || 0) + '</span></span></span>' +
+        '<span class="credit-badge-sm">💳 <span class="mono">' + formatNumber(u.paid != null ? u.paid : u.balance) + '</span> · 🎁 <span class="mono">' + formatNumber(u.free || 0) + '</span>' +
+          (u.crown ? ' · 👑 <span class="mono">' + formatNumber(u.crown) + '</span>' : '') + '</span></span>' +
         '<span class="order-meta"><span>' + escHtml(u.email) + '</span><span>' + escHtml(u.nickname) + '</span>' +
         '<span class="mono">' + escHtml(u.phone) + '</span>' + self.lineStatusHtml(u) + '</span></button></li>';
     }).join('') + '</ul>';
@@ -1234,7 +1239,8 @@ var PageAdmin = {
         cncAdminUserLots(st.user.id),
         sb.from('profiles').select('*').eq('id', st.user.id).maybeSingle().then(function (r) { return r.data || null; }, function () { return null; }),
         cncHasRole('manager') ? cncAdminSuspicionFlags(st.user.id) : Promise.resolve([]),
-        cncAdminCreditSplit([st.user.id]).catch(function () { return null; })   // 충전 / 무료 (sql/011)
+        cncAdminCreditSplit([st.user.id]).catch(function () { return null; }),   // 충전 / 무료 (sql/011)
+        cncHasProducts()   // 상품 종류 (sql/018)
       ]);
       if (this.customer !== st) return;
       st.lots = res[3];
@@ -1244,6 +1250,8 @@ var PageAdmin = {
       // 충전 / 무료: 011 이 없으면 전부 충전
       st.splitOk = !!res[6];
       st.split = res[6] ? (res[6][st.user.id] || { paid: 0, free: 0 }) : { paid: res[2], free: 0 };
+      // 묶음이 하나도 없는 고객도 (sql/018 이후면) 크라운 세트 칸 · 종류 선택이 보이게
+      if (res[7] && !st.split.hasProducts) Object.assign(st.split, { hasProducts: true, crownPaid: 0, crownFree: 0, crownPaidExpiry: null, crownFreeExpiry: null });
       st.kinds = await cncCreditHistoryKinds(res[0], !res[6]);
       if (this.customer !== st) return;
       // 무료 크레딧 (등록 주소 전용 + 제한 없음 모두)
@@ -1270,7 +1278,7 @@ var PageAdmin = {
       (self.users.rows || []).forEach(function (u) {
         if (u.id !== userId) return;
         u.balance = balance;
-        if (x) { u.paid = x.paid; u.free = x.free; } else if (!u.splitOk) { u.paid = balance; u.free = 0; }
+        if (x) { u.paid = x.paid; u.free = x.free; u.crown = x.hasProducts ? x.crownPaid + x.crownFree : 0; } else if (!u.splitOk) { u.paid = balance; u.free = 0; }
       });
       var st = self.customer;
       if (st && st.user.id === userId && x) st.split = x;
@@ -1317,7 +1325,19 @@ var PageAdmin = {
       '<section class="credit-box">' +
         '<h3 class="review-title">' + escHtml(t('credit_balance')) + '</h3>' +
         '<p class="big-number" id="cust-balance"><span class="mono">' + formatNumber(u.balance) + '</span> <span class="big-number-unit">' + escHtml(t('credit_unit')) + '</span></p>' +
+        (st.split && st.split.hasProducts ? '<p class="cust-product-name">' + escHtml(uiProductName('abutment')) + '</p>' : '') +
         (st.split ? '<p class="credit-split-line" id="cust-split">' + uiCreditSplitHtml({ paid: st.split.paid, free: st.split.free, paidExpiry: st.split.paidExpiry, freeExpiry: st.split.freeExpiry, expiry: true }) + '</p>' : '') +
+        // 크라운 세트 잔액 (sql/018)
+        (st.split && st.split.hasProducts
+          ? '<div class="cust-crown" id="cust-crown"><p class="cust-product-name">' + escHtml(uiProductName('crown_set')) + ' <b class="mono">' + formatNumber(st.split.crownPaid + st.split.crownFree) + '</b></p>' +
+              '<p class="credit-split-line">' + uiCreditSplitHtml({ paid: st.split.crownPaid, free: st.split.crownFree, paidExpiry: st.split.crownPaidExpiry, freeExpiry: st.split.crownFreeExpiry, expiry: true }) + '</p></div>'
+          : '') +
+        (st.split && st.split.hasProducts
+          ? '<div class="field"><label class="field-label" for="cust-product">' + escHtml(t('product_label')) + '</label>' +
+              '<select class="input" id="cust-product"' + dis + '>' + CNC_PRODUCTS.map(function (p) {
+                return '<option value="' + p + '"' + (st.creditProduct === p ? ' selected' : '') + '>' + escHtml(uiProductName(p)) + '</option>';
+              }).join('') + '</select></div>'
+          : '') +
         '<div class="field"><label class="field-label" for="cust-amount">' + escHtml(t('admin_credit_amount')) + '</label>' +
           '<input class="input mono" id="cust-amount" type="number" step="1" inputmode="numeric" placeholder="' + escHtml(t('admin_credit_amount_ph')) + '"' + dis + '>' +
           '<div class="err-slot" data-err="amount"></div></div>' +
@@ -1357,7 +1377,7 @@ var PageAdmin = {
         var amount = Number(h.amount || 0);
         return '<tr><td class="nowrap">' + escHtml(formatDateTime(h.created_at)) + '</td>' +
           '<td><span class="badge credit-' + escHtml(h.type) + '">' + escHtml(t('credit_type_' + h.type)) + '</span></td>' +
-          '<td class="kind-cell">' + uiCreditKindBadge((st.kinds && st.kinds[h.id]) || { kind: 'paid' }) + '</td>' +
+          '<td class="kind-cell">' + (h.product === 'crown_set' || h.product === 'mixed' ? uiProductBadge('crown_set') + ' ' : '') + uiCreditKindBadge((st.kinds && st.kinds[h.id]) || { kind: 'paid' }) + '</td>' +
           '<td class="mono nowrap ' + (amount >= 0 ? 'plus' : 'minus') + '">' + (amount > 0 ? '+' : '') + formatNumber(amount) + '</td>' +
           '<td>' + escHtml(h.description || '') + '</td><td class="mono nowrap">' + escHtml(h.order_id || '—') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -1388,6 +1408,9 @@ var PageAdmin = {
     var el = st.modal.el;
     var amount = quick != null ? quick : parseInt(el.querySelector('#cust-amount').value, 10);
     var desc = el.querySelector('#cust-desc').value.trim();
+    var prodEl = el.querySelector('#cust-product');   // sql/018 이후에만 있어요
+    var product = prodEl ? cncProductOf(prodEl.value) : null;
+    st.creditProduct = product || 'abutment';
     var slot = el.querySelector('[data-err="amount"]');
     if (!amount || isNaN(amount)) {
       slot.innerHTML = uiFieldError('admin_err_amount');
@@ -1396,7 +1419,7 @@ var PageAdmin = {
     }
     var who = st.user.clinic_name || st.user.nickname || st.user.email;
     var ok = await uiConfirm({
-      title: t('admin_add_credits'),
+      title: product ? t('admin_add_credits') + ' · ' + uiProductName(product, true) : t('admin_add_credits'),
       message: amount > 0 ? tf('admin_add_credits_msg', { n: amount, name: who }) : tf('admin_deduct_credits_msg', { n: -amount, name: who }),
       okLabel: t('btn_ok'),
       danger: amount < 0
@@ -1405,7 +1428,7 @@ var PageAdmin = {
     st.busy = true;
     this.drawCustomer();
     try {
-      var balance = await cncAdminAddCredits(st.user.id, amount, desc || (amount > 0 ? 'Admin charge' : 'Admin adjustment'));
+      var balance = await cncAdminAddCredits(st.user.id, amount, desc || (amount > 0 ? 'Admin charge' : 'Admin adjustment'), product);
       st.busy = false;
       if (balance != null) { st.user.balance = balance; this.syncUserBalance(st.user.id, balance); }
       uiToast(tf('admin_credits_done', { balance: formatNumber(st.user.balance) }), 'success');
@@ -1496,7 +1519,7 @@ var PageAdmin = {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b></td>' +
           '<td>' + escHtml(self.customerName(r)) + '</td>' +
-          '<td class="mono">' + formatNumber(r.credits) + '</td>' +
+          '<td class="nowrap"><span class="mono">' + formatNumber(r.credits) + '</span>' + (r.product === 'crown_set' ? ' ' + uiProductBadge('crown_set') : '') + '</td>' +
           '<td class="mono nowrap">' + formatTHB(r.total) + '</td>' +
           '<td class="nowrap">' + escHtml(formatDateTime(r.created_at)) + '</td>' +
           '<td>' + uiTopupBadge(r.status) + '</td>' +
@@ -1507,7 +1530,7 @@ var PageAdmin = {
       return '<li><button type="button" class="card admin-order-card" onclick="PageAdmin.openTopup(\'' + escHtml(r.id) + '\')">' +
         '<span class="order-top"><span class="order-id mono">' + escHtml(r.id) + '</span>' + uiTopupBadge(r.status) + '</span>' +
         '<span class="admin-card-clinic">' + escHtml(self.customerName(r)) + '</span>' +
-        '<span class="order-meta"><span><span class="mono">' + formatNumber(r.credits) + '</span> ' + escHtml(t('credit_unit')) + '</span>' +
+        '<span class="order-meta"><span><span class="mono">' + formatNumber(r.credits) + '</span> ' + escHtml(t('credit_unit')) + (r.product === 'crown_set' ? ' ' + uiProductBadge('crown_set') : '') + '</span>' +
         '<span class="mono">' + formatTHB(r.total) + '</span><span>' + escHtml(formatDateTime(r.created_at)) + '</span>' +
         (self.reps && r.status === 'approved' ? '<span><span class="muted">' + escHtml(t('rep_label')) + '</span> ' + self.repNameHtml(r.sales_rep_id) + '</span>' : '') + '</span>' +
         '</button></li>';
@@ -1580,6 +1603,7 @@ var PageAdmin = {
       '<div class="admin-detail-grid">' +
         '<section>' +
           row('admin_customer', escHtml(this.customerName(r))) +
+          ('product' in r ? row('product_label', uiProductBadge(r.product, false)) : '') +
           row('topup_package', formatNumber(r.credits) + ' ' + escHtml(t('credit_unit')), true) +
           row('topup_each_label', formatTHB(r.unit_price), true) +
           row('topup_subtotal', formatTHB(r.subtotal), true) +
@@ -1600,7 +1624,7 @@ var PageAdmin = {
     var r = st.row;
     var ok = await uiConfirm({
       title: t('admin_approve'),
-      message: tf('admin_approve_topup_msg', { n: formatNumber(r.credits), name: this.customerName(r), total: formatTHB(r.total) }),
+      message: (r.product === 'crown_set' ? uiProductName('crown_set') + ' · ' : '') + tf('admin_approve_topup_msg', { n: formatNumber(r.credits), name: this.customerName(r), total: formatTHB(r.total) }),
       okLabel: t('admin_approve')
     });
     if (!ok) return;
@@ -1713,7 +1737,9 @@ var PageAdmin = {
         '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (sx.saving ? ' disabled' : '') + '>' + escHtml(sx.saving ? t('saving') : t('pe_save')) + '</button></div>' +
       '</form></section>';
 
-    var rows = sx.packages.map(function (p, i) {
+    // 상품 종류별 표 두 개 (sql/018). 018 전 DB(product 칸 없음)면 예전처럼 표 하나
+    var has018 = sx.packages.some(function (p) { return 'product' in p; });
+    function rowHtml(p, i) {
       var price = cncPackagePrice(p, vat);
       return '<tr data-pkg="' + i + '"' + (p.active ? '' : ' class="pkg-off"') + '>' +
         '<td><input class="input mono" type="number" min="1" step="1" data-f="credits" value="' + escHtml(p.credits) + '" aria-label="' + escHtml(t('admin_pkg_credits')) + '"></td>' +
@@ -1723,16 +1749,33 @@ var PageAdmin = {
         '<td><label class="checkbox"><input type="checkbox" data-f="active"' + (p.active ? ' checked' : '') + '> <span>' + escHtml(t('admin_pkg_active')) + '</span></label></td>' +
         '<td><button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.savePackage(' + i + ')">' + escHtml(t('pe_save')) + '</button></td>' +
         '</tr>';
-    }).join('');
-
-    var packages = '<section class="card">' +
-      '<div class="card-head"><h2 class="card-title">' + escHtml(t('admin_packages')) + '</h2>' +
-        '<button type="button" class="btn btn-outline" onclick="PageAdmin.addPackage()">+ ' + escHtml(t('admin_pkg_add')) + '</button></div>' +
-      '<p class="card-desc">' + escHtml(tf('admin_packages_help', { vat: formatNumber(vat) })) + '</p>' +
-      '<div class="table-wrap"><table class="table pkg-table"><thead><tr>' +
+    }
+    function tableHtml(product) {
+      var rows = sx.packages.map(function (p, i) {
+        if (has018 && cncProductOf(p.product) !== product) return '';
+        return rowHtml(p, i);
+      }).join('');
+      return '<div class="table-wrap"><table class="table pkg-table' + (has018 ? ' pkg-table-' + product : '') + '"><thead><tr>' +
         '<th>' + escHtml(t('admin_pkg_credits')) + '</th><th>' + escHtml(t('topup_each_label')) + '</th><th>' + escHtml(t('topup_total_vat')) + '</th>' +
-        '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '</section>';
+        '<th>' + escHtml(t('admin_pkg_order')) + '</th><th>' + escHtml(t('admin_pkg_active')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    var packages = has018
+      ? CNC_PRODUCTS.map(function (product) {
+          return '<section class="card pkg-card pkg-card-' + product + '">' +
+            '<div class="card-head"><h2 class="card-title">' + escHtml(uiProductName(product)) + '</h2>' +
+              '<button type="button" class="btn btn-outline" onclick="PageAdmin.addPackage(\'' + product + '\')">+ ' + escHtml(t('admin_pkg_add')) + '</button></div>' +
+            '<p class="card-desc">' + escHtml(tf('admin_packages_help', { vat: formatNumber(vat) })) + '</p>' +
+            (product === 'crown_set' ? '<p class="notice notice-info pkg-crown-note"><span aria-hidden="true">👑</span> ' + escHtml(t('admin_crown_pkg_note')) + '</p>' : '') +
+            tableHtml(product) +
+            '</section>';
+        }).join('')
+      : '<section class="card">' +
+          '<div class="card-head"><h2 class="card-title">' + escHtml(t('admin_packages')) + '</h2>' +
+            '<button type="button" class="btn btn-outline" onclick="PageAdmin.addPackage()">+ ' + escHtml(t('admin_pkg_add')) + '</button></div>' +
+          '<p class="card-desc">' + escHtml(tf('admin_packages_help', { vat: formatNumber(vat) })) + '</p>' +
+          tableHtml('abutment') +
+          '</section>';
 
     return '<div class="admin-settings">' + this.serviceModeHtml(s) + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
       this.signupEventHtml(s) + packages + '</div>';
@@ -1836,7 +1879,8 @@ var PageAdmin = {
       credits: tr.querySelector('[data-f="credits"]').value,
       unit_price: tr.querySelector('[data-f="unit_price"]').value,
       sort_order: tr.querySelector('[data-f="sort_order"]').value,
-      active: tr.querySelector('[data-f="active"]').checked
+      active: tr.querySelector('[data-f="active"]').checked,
+      product: p.product   // sql/018 (없으면 안 보내요)
     };
   },
 
@@ -1844,7 +1888,7 @@ var PageAdmin = {
     var data = this.readPackageRow(i);
     if (!data) return;
     var ok = await uiConfirm({
-      title: t('admin_packages'),
+      title: data.product ? uiProductName(data.product) : t('admin_packages'),
       message: tf('admin_pkg_save_msg', { n: data.credits, price: formatTHB(data.unit_price) }),
       okLabel: t('pe_save')
     });
@@ -1860,14 +1904,17 @@ var PageAdmin = {
     this.loadSettings();
   },
 
-  addPackage: function () {
+  // product: 'abutment' | 'crown_set' (sql/018 의 표 두 개). 새 세트 패키지는 판매 중지로 시작 (가격을 정한 뒤 켜요)
+  addPackage: function (product) {
     var sx = this.settingsTab;
     if (!sx.packages) return;
     if (sx.packages.some(function (p) { return !p.id; })) return;   // 저장 안 한 새 줄이 이미 있으면
     var maxOrder = sx.packages.reduce(function (m, p) { return Math.max(m, Number(p.sort_order) || 0); }, 0);
-    sx.packages.push({ id: null, credits: '', unit_price: '', sort_order: maxOrder + 1, active: true });
+    var row = { id: null, credits: '', unit_price: '', sort_order: maxOrder + 1, active: true };
+    if (product) { row.product = cncProductOf(product); if (row.product === 'crown_set') row.active = false; }
+    sx.packages.push(row);
     this.drawBody();
-    var inputs = document.querySelectorAll('.pkg-table tr:last-child [data-f="credits"]');
+    var inputs = document.querySelectorAll((product ? '.pkg-table-' + cncProductOf(product) : '.pkg-table') + ' tr:last-child [data-f="credits"]');
     if (inputs[0]) inputs[0].focus();
   },
 
@@ -1886,6 +1933,7 @@ var PageAdmin = {
         var stt = cncExpiryState(l.expires_at);
         var free = st.splitOk && cncLotKind(l) === 'free';   // 011 이 없으면 전부 충전
         return '<tr class="' + (stt ? 'lot-' + stt : '') + (free ? ' lot-free' : '') + '"><td class="nowrap">' + escHtml(formatDate(l.created_at)) + ' ' +
+          ('product' in l ? uiProductBadge(l.product) + ' ' : '') +
           uiCreditKindBadge({ kind: free ? 'free' : 'paid', event: free ? l.event_name : '' }) + ' <span class="badge lot-src">' + escHtml(t('lot_source_' + l.source)) + '</span></td>' +
           '<td class="mono">' + formatNumber(l.quantity) + '</td><td class="mono"><b>' + formatNumber(l.remaining) + '</b></td>' +
           '<td class="mono nowrap">' + (Number(l.unit_price) ? formatTHB(l.unit_price) : '—') + '</td>' +
@@ -1912,11 +1960,13 @@ var PageAdmin = {
           q.lots.map(function (l) {
             var can = l.rule === 'full' || l.rule === 'recalculated';
             return '<tr><td>' + (can ? '<input type="checkbox" class="refund-pick" data-lot="' + escHtml(l.lot_id) + '"' + (rf.selected[l.lot_id] ? ' checked' : '') + ' onchange="PageAdmin.pickRefundLot(this)" aria-label="' + escHtml(t('admin_refund_pick')) + '">' : '') + '</td>' +
-              '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + '</td>' +
+              '<td class="nowrap">' + escHtml(formatDate(l.created_at)) + (l.product ? ' ' + uiProductBadge(l.product) : '') + '</td>' +
               '<td class="mono">' + formatNumber(l.remaining) + ' / ' + formatNumber(l.quantity) + '</td>' +
               '<td class="mono">' + formatNumber(l.used) + '</td>' +
               '<td class="mono nowrap">' + (Number(l.paid_total) ? formatTHB(l.paid_total) : '—') + '</td>' +
-              '<td><span class="badge refund-rule ' + escHtml(l.rule) + '">' + escHtml(t('refund_rule_' + l.rule)) + '</span></td>' +
+              '<td><span class="badge refund-rule ' + escHtml(l.rule) + '">' + escHtml(t('refund_rule_' + l.rule)) + '</span>' +
+                // 재계산 "1개 가격" = 그 묶음 종류의 1크레딧 패키지 가격 (sql/018)
+                (l.rule === 'recalculated' && l.single_price != null ? '<p class="refund-single">' + escHtml(tf('admin_refund_single', { price: formatTHB(l.single_price) })) + '</p>' : '') + '</td>' +
               '<td class="mono nowrap"><b>' + formatTHB(l.refundable) + '</b></td></tr>';
           }).join('') + '</tbody></table></div>';
         var max = this.refundMax(st);

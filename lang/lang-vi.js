@@ -1451,6 +1451,28 @@ LANG.vi = {
   svc_missing: 'Chưa thiết lập trạng thái dịch vụ. Hãy chạy sql/017_service_mode.sql trước.',
   audit_service_mode: 'Đổi trạng thái dịch vụ',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'Abutment tùy chỉnh',
+  product_abutment_short: 'Abutment',
+  product_crown_set: 'Abutment + bộ mão răng zirconia',
+  product_crown_set_short: 'Bộ mão răng',
+  product_abutment_only: 'Chỉ abutment',
+  product_label: 'Sản phẩm',
+  product_counts_label: 'Số lượng theo sản phẩm',
+  crown_coming_soon: 'Sắp ra mắt',
+  crown_coming_soon_text: 'Abutment + bộ mão răng zirconia sẽ sớm ra mắt. Chúng tôi sẽ báo cho bạn khi mở bán.',
+  crown_credit_note: 'Tín dụng bộ mão răng tách riêng với tín dụng abutment. 1 tín dụng bộ mão răng = 1 răng (abutment + mão zirconia).',
+  crown_set_shade_note: 'Bộ mão răng: màu răng dùng cho mão zirconia.',
+  insufficient_credits_abutment: 'Không đủ tín dụng abutment. Vui lòng nạp tín dụng abutment.',
+  insufficient_credits_crown_set: 'Không đủ tín dụng bộ mão răng. Vui lòng nạp tín dụng bộ mão răng.',
+  err_invalid_product: 'Sản phẩm không hợp lệ. Vui lòng chọn lại sản phẩm.',
+  topup_crown_btn: 'Nạp tín dụng bộ mão răng',
+  admin_crown_pkg_note: 'Khách hàng chỉ thấy các gói này sau khi bạn đặt giá và bật "Đang bán".',
+  admin_refund_single: 'Tính lại theo {price} mỗi tín dụng',
+  admin_free_product: 'Loại tặng',
+  camp_product: 'Loại tặng',
+  fin_by_product: 'Theo sản phẩm',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -2580,3 +2580,97 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .svc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
 #app-header.fit-7 .test-badge { height: 15px; padding: 0 3px; font-size: 8px; letter-spacing: 0; border-radius: 6px; }
 #app-header.fit-7 .hdr-inner > .test-badge-slot { margin-inline-start: -6px; }
+
+/* ================================================================
+   상품 두 종류 (sql/018): 🔩 커스텀 어버트먼트 / 👑 어버트먼트 + 지르코니아 크라운 세트
+   ================================================================ */
+/* 헤더 잔액 "🔩 12 · 👑 3" (크라운 세트를 보여줄 때 단위 글자는 숨겨요 — 폭 줄이기) */
+.credit-crown { display: inline-flex; align-items: center; gap: 4px; }
+.credit-crown[hidden] { display: none; }
+.credit-crown .credit-sep { color: var(--muted-light); margin: 0 2px; }
+.credit-value-crown { font-size: 1.0625rem; }
+.credit-badge.two-products .credit-unit { display: none; }
+#app-header.fit-5 .credit-badge.two-products { gap: 3px; }
+#app-header.fit-6 .credit-crown .credit-sep { margin: 0; }
+
+/* 작은 상품 배지 (표 · 목록) */
+.product-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px; font-size: 0.8125rem; font-weight: 600; white-space: nowrap;
+  border: 1px solid var(--border); background: #F3F4F6; color: var(--navy);
+}
+.product-badge.product-crown { background: #FBF6E4; border-color: #EAD9A0; color: var(--gold-dark); }
+.crown-mark { white-space: nowrap; color: var(--gold-dark); font-weight: 600; font-size: 0.875rem; }
+
+/* 종류별 개수 "🔩 어버트먼트 2 · 👑 크라운 세트 1" */
+.product-counts { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; }
+.pcount { white-space: nowrap; }
+.pcount-crown { color: var(--gold-dark); }
+.pcount-sep { color: var(--muted-light); }
+
+/* 종류별 잔액 줄 (홈 · 내 정보 · 충전) */
+.product-credits { display: grid; gap: 10px; margin: 8px 0; }
+.pc-row { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+.pc-row.pc-crown_set { background: #FFFDF5; border-color: #EAD9A0; }
+.pc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pc-name { font-weight: 600; color: var(--navy); }
+.pc-total b { font-size: 1.375rem; color: var(--navy); }
+.pc-unit { font-size: 0.875rem; color: var(--muted); }
+.pc-split { margin-top: 4px; }
+.pc-soon { margin: 4px 0 0; color: var(--muted); font-size: 0.9375rem; }
+.home-card .product-credits { margin: 6px 0; }
+
+/* 새 주문 3단계: 제품 선택 [어버트먼트만 | 크라운 세트] */
+.tooth-product { margin: 8px 0 4px; }
+.product-seg { flex-wrap: wrap; }
+.product-seg .seg-btn { min-height: 48px; padding: 0 16px; font-size: 1rem; }
+.product-seg .seg-btn.product-opt-crown_set.active { background: #FBF6E4; color: var(--gold-dark); }
+.seg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.product-soon { margin-top: 4px; }
+.tooth-card-crown { margin-inline-start: auto; font-size: 0.875rem; font-weight: 600; color: var(--gold-dark); }
+.bulk-product .product-seg { margin-top: 4px; }
+.sum-crown { margin-inline-start: 4px; }
+.sum-product { margin: 0 0 4px; font-weight: 600; color: var(--navy); }
+.sum-credits + .sum-credits { margin-top: 10px; }
+.sum-topup { margin-top: 8px; }
+.credit-box + .credit-box { margin-top: 12px; }
+.credit-box-crown_set { border-color: #EAD9A0; }
+
+/* 충전: 종류 탭 + 곧 출시 */
+.product-tabs { display: flex; width: 100%; max-width: 560px; margin: 4px 0 8px; }
+.product-tabs .seg-btn { flex: 1 1 0; min-height: 52px; }
+.product-tab-desc { margin: 0 0 12px; color: var(--muted); }
+.crown-soon { text-align: center; padding: 28px 20px; }
+.crown-soon-title { font-size: 1.25rem; font-weight: 700; color: var(--gold-dark); margin: 0 0 6px; }
+.topup-product-note { margin: 0 0 12px; color: var(--gold-dark); }
+.pay-product { margin: 0 0 4px; font-weight: 600; color: var(--gold-dark); }
+
+/* 관리자 */
+.pkg-crown-note { margin: 0 0 12px; }
+.cust-product-name { margin: 8px 0 2px; font-weight: 600; color: var(--navy); }
+.cust-crown { margin-top: 6px; }
+.admin-product-counts { margin: 0 0 8px; }
+.tooth-crown-row td { background: #FFFDF5; }
+.refund-single { margin: 4px 0 0; font-size: 0.8125rem; color: var(--muted); }
+.fin-product-table td .muted { font-size: 0.8125rem; }
+
+/* 법적 문서 가격표: 종류 이름 */
+.legal-price-product { margin: 12px 0 6px; }
+/* 가장 좁은 단계(fit-7)에서는 두 숫자를 위아래 두 줄로 (🔩 위 · 👑 아래) — 360px 에서도 넘치지 않게 */
+.credit-abut { display: inline-flex; align-items: center; gap: 6px; }
+#app-header.fit-7 .credit-badge.two-products {
+  position: relative; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 0; padding: 2px 7px; line-height: 1.15; border-radius: 12px;
+}
+#app-header.fit-7 .credit-badge.two-products .credit-icon,
+#app-header.fit-7 .credit-badge.two-products .credit-crown > [aria-hidden="true"]:not(.credit-sep) { font-size: 0.75rem; }
+#app-header.fit-7 .credit-badge.two-products .credit-abut,
+#app-header.fit-7 .credit-badge.two-products .credit-crown { gap: 3px; }
+#app-header.fit-7 .credit-badge.two-products .credit-sep { display: none; }
+#app-header.fit-7 .credit-badge.two-products .credit-value,
+#app-header.fit-7 .credit-badge.two-products .credit-value-crown { font-size: 0.875rem; }
+#app-header.fit-7 .credit-badge.two-products .expiry-dot { position: absolute; top: 4px; inset-inline-end: 4px; }
+.bulk-grid .bulk-product { grid-column: 1 / -1; }
+.bulk-product .product-seg { display: inline-flex; flex-wrap: wrap; }
+.page-head:has(.topup-products) { align-items: flex-start; }
+.page-head .topup-products { flex: 0 1 380px; margin: 0; }

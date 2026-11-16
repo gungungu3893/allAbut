@@ -103,9 +103,12 @@ var PageHome = {
       '<div class="home-card home-card-credits">' +
         '<a href="#/profile" class="home-card-link">' +
           '<span class="home-card-label">' + escHtml(t('home_credits')) + '</span>' +
-          '<span class="home-card-number mono">' + balance + '</span>' +
-          // 💳 충전 n · 🎁 무료 n (항상 둘 다) + 종류마다 가장 빠른 만료일 + 등록 주소 전용 무료 안내
-          uiCreditSplitHtml({ expiry: true, note: true, cls: 'home-split' }) +
+          // 크라운 세트를 보여줄 때(sql/018): 종류별 줄 (🔩 / 👑 각각 💳 충전 · 🎁 무료). 아니면 예전처럼 합계 + 나눔
+          (cncShowCrownSet()
+            ? uiProductCreditsHtml({ expiry: true, note: true, cls: 'home-products' })
+            : '<span class="home-card-number mono">' + balance + '</span>' +
+              // 💳 충전 n · 🎁 무료 n (항상 둘 다) + 종류마다 가장 빠른 만료일 + 등록 주소 전용 무료 안내
+              uiCreditSplitHtml({ expiry: true, note: true, cls: 'home-split' })) +
           '<span class="home-card-desc">' + escHtml(t('credit_rule')) + '</span>' +
           this.expiringHtml() +
         '</a>' +

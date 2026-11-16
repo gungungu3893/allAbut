@@ -84,24 +84,30 @@ var PageLegal = {
     });
   },
 
+  // 1개 패키지 단가 ({single_price} · 환불 예시) — 어버트먼트 기준 (sql/018 전 패키지는 product 가 없어서 어버트먼트)
   singlePrice: function () {
-    var pk = ((this.state && this.state.packages) || []).filter(function (p) { return Number(p.credits) === 1; })[0];
+    var pk = cncPackagesFor((this.state && this.state.packages) || [], 'abutment').filter(function (p) { return Number(p.credits) === 1; })[0];
     return pk ? Number(pk.unit_price) : 0;
   },
 
-  // 가격표 (판매 중인 패키지)
+  // 가격표 (판매 중인 패키지) — 상품 종류마다 표 하나 (판매 중인 패키지가 있는 종류만, sql/018)
   priceTableHtml: function () {
     var st = this.state;
     var vat = st.vat;
     if (!st.packages.length) return '<p class="legal-ph">[' + escHtml(t('legal_prices_unavailable')) + ']</p>';
-    return '<div class="table-wrap legal-table"><table class="table"><thead><tr>' +
-      '<th>' + escHtml(t('admin_pkg_credits')) + '</th><th>' + escHtml(t('topup_each_label')) + '</th>' +
-      '<th>' + escHtml(t('topup_subtotal')) + '</th><th>' + escHtml(tf('topup_vat', { n: formatNumber(vat) })) + '</th><th>' + escHtml(t('topup_total')) + '</th></tr></thead><tbody>' +
-      st.packages.map(function (p) {
-        var price = cncPackagePrice(p, vat);
-        return '<tr><td class="mono">' + formatNumber(p.credits) + '</td><td class="mono">' + formatTHB(p.unit_price) + '</td>' +
-          '<td class="mono">' + formatTHB(price.subtotal) + '</td><td class="mono">' + formatTHB(price.vat) + '</td><td class="mono"><b>' + formatTHB(price.total) + '</b></td></tr>';
-      }).join('') + '</tbody></table></div>';
+    return CNC_PRODUCTS.map(function (product) {
+      var list = cncPackagesFor(st.packages, product);
+      if (!list.length) return '';
+      return '<p class="legal-price-product"><b>' + escHtml(uiProductName(product)) + '</b></p>' +
+        '<div class="table-wrap legal-table legal-table-' + product + '"><table class="table"><thead><tr>' +
+        '<th>' + escHtml(t('admin_pkg_credits')) + '</th><th>' + escHtml(t('topup_each_label')) + '</th>' +
+        '<th>' + escHtml(t('topup_subtotal')) + '</th><th>' + escHtml(tf('topup_vat', { n: formatNumber(vat) })) + '</th><th>' + escHtml(t('topup_total')) + '</th></tr></thead><tbody>' +
+        list.map(function (p) {
+          var price = cncPackagePrice(p, vat);
+          return '<tr><td class="mono">' + formatNumber(p.credits) + '</td><td class="mono">' + formatTHB(p.unit_price) + '</td>' +
+            '<td class="mono">' + formatTHB(price.subtotal) + '</td><td class="mono">' + formatTHB(price.vat) + '</td><td class="mono"><b>' + formatTHB(price.total) + '</b></td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }).join('');
   },
 
   // 환불 계산 예시: 1개보다 큰 가장 작은 패키지에서 3개를 쓴 경우
@@ -109,7 +115,7 @@ var PageLegal = {
     var st = this.state;
     var vat = st.vat;
     var single = this.singlePrice();
-    var pk = st.packages.filter(function (p) { return Number(p.credits) >= 5; })[0];
+    var pk = cncPackagesFor(st.packages, 'abutment').filter(function (p) { return Number(p.credits) >= 5; })[0];
     if (!pk || !single) return '<p class="legal-ph">[' + escHtml(t('legal_prices_unavailable')) + ']</p>';
     var used = 3;
     var paid = cncPackagePrice(pk, vat).total;

@@ -37,6 +37,17 @@ CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['EVENT_REQUIRED', 'REASON_REQUIRED']);
 // sql/012: 납품일 (디자인 승인 때)
 CNC_ERROR_CODES = ['DEADLINE_REQUIRED', 'DEADLINE_TOO_EARLY', 'STAGE_CHANGED'].concat(CNC_ERROR_CODES);
 CNC_ERROR_CODES = ['PHONE_TAKEN', 'PHONE_INVALID', 'TAX_ID_TAKEN', 'TAX_ID_INVALID', 'EMAIL_DISPOSABLE', 'PROFILE_INCOMPLETE'].concat(CNC_ERROR_CODES);
+// sql/018: 상품 두 종류 — 종류별로 모자람 (INSUFFICIENT_CREDITS 보다 먼저 찾아야 해서 맨 앞에)
+CNC_ERROR_CODES = ['INSUFFICIENT_CREDITS_CROWN_SET', 'INSUFFICIENT_CREDITS_ABUTMENT', 'INVALID_PRODUCT'].concat(CNC_ERROR_CODES);
+
+// ----------------------------------------------------------------
+// 상품 종류 (sql/018): 'abutment' = 🔩 커스텀 어버트먼트 / 'crown_set' = 👑 어버트먼트 + 지르코니아 크라운 세트
+//   크레딧도 종류별로 따로예요 (어버트먼트 크레딧으로 크라운 세트를 주문할 수 없어요)
+// ----------------------------------------------------------------
+var CNC_PRODUCTS = ['abutment', 'crown_set'];
+function cncProductOf(value) {
+  return value === 'crown_set' ? 'crown_set' : 'abutment';
+}
 
 
 // ================================================================
@@ -193,7 +204,8 @@ function cncLoadDraft(userId, profile) {
     draft.details[n] = {
       brand: IMPLANT_BRANDS.indexOf(d.brand) !== -1 ? d.brand : '',
       size: String(d.size || ''),
-      shade: TOOTH_COLORS.indexOf(d.shade) !== -1 ? d.shade : ''
+      shade: TOOTH_COLORS.indexOf(d.shade) !== -1 ? d.shade : '',
+      product: cncProductOf(d.product)   // 예전 draft 는 어버트먼트
     };
   });
   draft.memo = String(saved.memo || '');
@@ -239,7 +251,7 @@ function cncToggleTooth(draft, num) {
   if (i === -1) {
     draft.teeth.push(num);
     draft.teeth = sortTeeth(draft.teeth);
-    if (!draft.details[num]) draft.details[num] = { brand: '', size: '', shade: '' };
+    if (!draft.details[num]) draft.details[num] = { brand: '', size: '', shade: '', product: 'abutment' };
   } else {
     draft.teeth.splice(i, 1);
     delete draft.details[num];
@@ -253,8 +265,8 @@ function cncClearTeeth(draft) {
 
 // 치아 하나의 값 바꾸기 (field: 'brand' / 'size' / 'shade')
 function cncSetToothDetail(draft, num, field, value) {
-  if (!draft.details[num]) draft.details[num] = { brand: '', size: '', shade: '' };
-  draft.details[num][field] = String(value || '');
+  if (!draft.details[num]) draft.details[num] = { brand: '', size: '', shade: '', product: 'abutment' };
+  draft.details[num][field] = field === 'product' ? cncProductOf(value) : String(value || '');
 }
 
 // 모든 치아에 같은 값 넣기
@@ -262,9 +274,30 @@ function cncApplyToAll(draft, field, value) {
   draft.teeth.forEach(function (n) { cncSetToothDetail(draft, n, field, value); });
 }
 
-// 쓰는 크레딧 = 치아 수 (치아 1개 = 1크레딧)
+// 쓰는 크레딧 = 치아 수 (치아 1개 = 1크레딧, 종류 상관없이 합계)
 function cncCreditsNeeded(draft) {
   return draft.teeth.length;
+}
+
+// 치아 하나의 상품 종류 (없으면 어버트먼트)
+function cncToothProduct(draft, num) {
+  return cncProductOf(((draft.details || {})[num] || {}).product);
+}
+
+// 종류별 필요 크레딧 { abutment: n, crown_set: n }
+function cncProductCounts(draft) {
+  var out = { abutment: 0, crown_set: 0 };
+  (draft.teeth || []).forEach(function (n) { out[cncToothProduct(draft, n)]++; });
+  return out;
+}
+
+// 저장된 주문(cases)의 종류별 치아 수 { abutment, crown_set } — 치아 칸에 product 가 없으면 어버트먼트
+function cncOrderProductCounts(order) {
+  var out = { abutment: 0, crown_set: 0 };
+  ((order && order.cases) || []).forEach(function (c) {
+    ((c && c.teeth) || []).forEach(function (tt) { out[cncProductOf(tt && typeof tt === 'object' ? tt.product : '')]++; });
+  });
+  return out;
 }
 
 // ----------------------------------------------------------------
@@ -345,10 +378,16 @@ async function cncGetCreditSummary() {
   }
   var d = r.data;
   if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
-  // paid = 산 크레딧, free = 무료 + 등록 주소 전용, freeOpen = 무료 + 제한 없음 (009)
-  return d && typeof d === 'object'
-    ? { paid: Number(d.paid || 0), free: Number(d.free || 0), freeOpen: Number(d.free_open || 0), lots: Array.isArray(d.lots) ? d.lots : [] }
-    : null;
+  // paid = 산 크레딧, free = 무료 + 등록 주소 전용, freeOpen = 무료 + 제한 없음 (009) — 맨 위 값 = 어버트먼트
+  // crownSet = 크라운 세트 { paid, free, freeOpen, total } (018 전이면 전부 0), crownSetOnSale = 판매 중인 세트 패키지가 있는지
+  if (!d || typeof d !== 'object') return null;
+  var c = d.crown_set && typeof d.crown_set === 'object' ? d.crown_set : {};
+  return {
+    paid: Number(d.paid || 0), free: Number(d.free || 0), freeOpen: Number(d.free_open || 0),
+    lots: Array.isArray(d.lots) ? d.lots : [],
+    crownSet: { paid: Number(c.paid || 0), free: Number(c.free || 0), freeOpen: Number(c.free_open || 0), total: Number(c.total || 0) },
+    crownSetOnSale: d.crown_set_on_sale === true
+  };
 }
 
 // 등록 정보 변경 요청 (관리자 승인 후 바뀌어요)
@@ -496,7 +535,8 @@ function cncBuildCases(draft) {
       toothName: getToothNameEn(n),
       brand: d.brand || '',
       size: (d.size || '').trim(),
-      color: d.shade || ''
+      color: d.shade || '',
+      product: cncProductOf(d.product)
     };
   });
   return [{
@@ -975,16 +1015,35 @@ function cncPackagePrice(pkg, vatRate) {
 
 // 1개 가격 대비 할인율 (%), 1개 패키지가 없으면 0
 function cncPackageDiscount(pkg, packages) {
-  var single = (packages || []).filter(function (p) { return Number(p.credits) === 1; })[0];
+  var single = (packages || []).filter(function (p) { return Number(p.credits) === 1 && cncProductOf(p.product) === cncProductOf(pkg.product); })[0];
   var base = single ? Number(single.unit_price) : 0;
   if (!base || Number(pkg.unit_price) >= base) return 0;
   return Math.round((1 - Number(pkg.unit_price) / base) * 100);
 }
 
-// 판매 중인 패키지 (작은 것부터)
+// 판매 중인 패키지 (작은 것부터, 두 종류 모두 — 종류는 p.product, 018 전이면 칸이 없어서 전부 어버트먼트)
 async function cncGetPackages() {
   var rows = cncCheck(await sb.from('credit_packages').select('*').eq('active', true).order('credits', { ascending: true })) || [];
   return rows;
+}
+
+// DB 에 상품 종류(sql/018)가 있는지 — credit_packages.product 칸을 한 번 읽어 봐요 (결과는 기억)
+var _cncHasProducts = null;
+async function cncHasProducts() {
+  if (_cncHasProducts !== null) return _cncHasProducts;
+  try {
+    var r = await sb.from('credit_packages').select('product').limit(1);
+    _cncHasProducts = !r.error;
+  } catch (e) {
+    _cncHasProducts = false;
+  }
+  return _cncHasProducts;
+}
+
+// 패키지 목록에서 한 종류만
+function cncPackagesFor(packages, product) {
+  product = cncProductOf(product);
+  return (packages || []).filter(function (p) { return cncProductOf(p.product) === product; });
 }
 
 // 결제 정보 (PromptPay ID, 계좌, VAT %)

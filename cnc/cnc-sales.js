@@ -122,7 +122,7 @@ function cncCommissionItem(i) {
   if (i.kind === 'payment' || i.kind === 'refund') {
     return {
       kind: i.kind, topupId: i.topup_id || '', customer: i.customer || '', date: i.date,
-      packageCredits: n(i.package_credits), credits: n(i.credits),
+      packageCredits: n(i.package_credits), credits: n(i.credits), product: i.product ? cncProductOf(i.product) : null,   // 상품 종류 (sql/018)
       amount: n(i.subtotal),                 // VAT 제외 (환불은 환불액의 VAT 제외 금액)
       total: n(i.kind === 'refund' ? i.amount_thb : i.total),
       rateType: i.rate_type || null, rateValue: i.rate_value == null ? null : n(i.rate_value), commission: n(i.commission)
@@ -272,6 +272,7 @@ function cncCommissionCsv(data, headers) {
         cncCsvCell(i.topupId, true),
         cncCsvCell(i.date ? String(i.date).slice(0, 10) : '', true),
         cncCsvCell(i.customer, true),
+        cncCsvCell(i.product || 'abutment', true),
         cncCsvCell(i.credits),
         cncCsvMoney(i.amount),
         cncCsvMoney(i.total),

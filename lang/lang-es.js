@@ -1451,6 +1451,28 @@ LANG.es = {
   svc_missing: 'El estado del servicio aún no está configurado. Ejecuta primero sql/017_service_mode.sql.',
   audit_service_mode: 'Estado del servicio cambiado',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'Pilar personalizado',
+  product_abutment_short: 'Pilar',
+  product_crown_set: 'Pilar + set con corona de zirconio',
+  product_crown_set_short: 'Set con corona',
+  product_abutment_only: 'Solo pilar',
+  product_label: 'Producto',
+  product_counts_label: 'Por producto',
+  crown_coming_soon: 'Próximamente',
+  crown_coming_soon_text: 'El pilar + set con corona de zirconio estará disponible pronto. Le avisaremos cuando abra.',
+  crown_credit_note: 'Los créditos de set con corona son independientes de los créditos de pilar. 1 crédito de set con corona = 1 diente (pilar + corona de zirconio).',
+  crown_set_shade_note: 'Set con corona: el tono se usa para la corona de zirconio.',
+  insufficient_credits_abutment: 'No tiene suficientes créditos de pilar. Recargue créditos de pilar.',
+  insufficient_credits_crown_set: 'No tiene suficientes créditos de set con corona. Recargue créditos de set con corona.',
+  err_invalid_product: 'Producto desconocido. Elija el producto de nuevo.',
+  topup_crown_btn: 'Recargar créditos de set con corona',
+  admin_crown_pkg_note: 'Los clientes verán estos paquetes después de fijar el precio y activar "En venta".',
+  admin_refund_single: 'Recalculado a {price} por crédito',
+  admin_free_product: 'Producto que se entrega',
+  camp_product: 'Producto que se entrega',
+  fin_by_product: 'Por producto',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

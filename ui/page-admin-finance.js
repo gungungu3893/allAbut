@@ -162,6 +162,31 @@ Object.assign(PageAdmin, {
         : small('fin_bonus', 'fin_help_bonus', escHtml(formatNumber(m.bonus.credits)), escHtml(t('credit_unit')))) +
       '</div>';
 
+    // ----- 상품 종류별 (sql/018): 입금 · 사용 · 만료 · 지금 미사용 -----
+    if (m.byProduct) {
+      html += '<section class="card fin-products"><div class="card-head"><h3 class="card-title">' + escHtml(t('fin_by_product')) + '</h3></div>' +
+        '<div class="table-wrap"><table class="table admin-table-plain fin-table fin-product-table"><thead><tr>' +
+          '<th>' + escHtml(t('product_label')) + '</th>' +
+          '<th class="num">' + escHtml(t('fin_col_count')) + '</th><th class="num">' + escHtml(t('fin_col_credits')) + '</th><th class="num">' + escHtml(t('fin_col_total')) + '</th>' +
+          '<th class="num">' + escHtml(t('fin_consumed')) + '</th><th class="num">' + escHtml(t('fin_expired')) + '</th>' +
+          (o && o.byProduct ? '<th class="num">' + escHtml(t('fin_outstanding')) + '</th>' : '') + '</tr></thead><tbody>' +
+          CNC_PRODUCTS.map(function (pr) {
+            var x = m.byProduct[pr];
+            var ob = o && o.byProduct ? o.byProduct[pr] : null;
+            return '<tr class="fin-product-' + pr + '"><td>' + uiProductBadge(pr, false) + '</td>' +
+              '<td class="num mono">' + formatNumber(x.topups.count) + '</td>' +
+              '<td class="num mono">' + formatNumber(x.topups.credits) + '</td>' +
+              '<td class="num mono">' + escHtml(formatTHB(x.topups.total)) + '</td>' +
+              '<td class="num"><span class="mono">' + formatNumber(x.consumed.credits) + '</span>' +
+                (x.consumed.free ? ' <span class="muted">(🎁 <span class="mono">' + formatNumber(x.consumed.free) + '</span>)</span>' : '') +
+                '<br><span class="muted mono">' + escHtml(formatTHB(x.consumed.value)) + '</span></td>' +
+              '<td class="num mono">' + formatNumber(x.expired.credits) + '</td>' +
+              (ob ? '<td class="num"><span class="mono">' + formatNumber(ob.paidCredits) + '</span>' +
+                (ob.freeCredits ? ' <span class="muted">+ 🎁 <span class="mono">' + formatNumber(ob.freeCredits) + '</span></span>' : '') + '</td>' : '') +
+              '</tr>';
+          }).join('') + '</tbody></table></div></section>';
+    }
+
     // ----- 패키지별 판매 -----
     html += '<section class="card"><div class="card-head"><h3 class="card-title">' + escHtml(t('fin_by_package')) + '</h3></div>' +
       (m.byPackage.length
@@ -169,7 +194,7 @@ Object.assign(PageAdmin, {
             '<th>' + escHtml(t('fin_col_package')) + '</th><th class="num">' + escHtml(t('fin_col_count')) + '</th>' +
             '<th class="num">' + escHtml(t('fin_col_credits')) + '</th><th class="num">' + escHtml(t('fin_col_total')) + '</th></tr></thead><tbody>' +
             m.byPackage.map(function (p) {
-              return '<tr><td>' + credits(p.credits) + ' <span class="muted">· ' + escHtml(formatTHB(p.unitPrice)) + '</span></td>' +
+              return '<tr><td>' + (p.product ? uiProductBadge(p.product) + ' ' : '') + credits(p.credits) + ' <span class="muted">· ' + escHtml(formatTHB(p.unitPrice)) + '</span></td>' +
                 '<td class="num mono">' + formatNumber(p.count) + '</td>' +
                 '<td class="num mono">' + formatNumber(p.totalCredits) + '</td>' +
                 '<td class="num mono">' + escHtml(formatTHB(p.total)) + '</td></tr>';
@@ -283,7 +308,7 @@ Object.assign(PageAdmin, {
       if (!rows.length) {
         uiToast(t('fin_export_empty'), 'info');
       } else {
-        var headers = ['fin_csv_id', 'fin_csv_date', 'fin_csv_email', 'fin_csv_clinic', 'fin_csv_tax', 'fin_csv_package',
+        var headers = ['fin_csv_id', 'fin_csv_date', 'fin_csv_email', 'fin_csv_clinic', 'fin_csv_tax', 'product_label', 'fin_csv_package',
           'fin_csv_credits', 'fin_csv_unit', 'fin_csv_subtotal', 'fin_csv_vat', 'fin_csv_total'].map(function (k) { return t(k); });
         cncDownloadText(cncTopupsCsv(rows, headers), cncTopupsCsvName(year, month));
         uiToast(tf('fin_export_done', { n: rows.length }), 'success');

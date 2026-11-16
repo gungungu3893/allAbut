@@ -1452,6 +1452,28 @@ LANG.ko = {
   svc_missing: '서비스 상태가 아직 준비되지 않았어요. sql/017_service_mode.sql 을 먼저 실행하세요.',
   audit_service_mode: '서비스 상태 변경',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: '커스텀 어버트먼트',
+  product_abutment_short: '어버트먼트',
+  product_crown_set: '어버트먼트 + 지르코니아 크라운 세트',
+  product_crown_set_short: '크라운 세트',
+  product_abutment_only: '어버트먼트만',
+  product_label: '제품',
+  product_counts_label: '제품별 개수',
+  crown_coming_soon: '곧 출시돼요',
+  crown_coming_soon_text: '어버트먼트 + 지르코니아 크라운 세트는 곧 출시돼요. 열리면 알려드릴게요.',
+  crown_credit_note: '크라운 세트 크레딧은 어버트먼트 크레딧과 따로예요. 크라운 세트 1크레딧 = 치아 1개 (어버트먼트 + 지르코니아 크라운).',
+  crown_set_shade_note: '크라운 세트: 쉐이드는 지르코니아 크라운 색으로 써요.',
+  insufficient_credits_abutment: '어버트먼트 크레딧이 모자라요. 어버트먼트 크레딧을 충전해 주세요.',
+  insufficient_credits_crown_set: '크라운 세트 크레딧이 모자라요. 크라운 세트 크레딧을 충전해 주세요.',
+  err_invalid_product: '알 수 없는 제품이에요. 제품을 다시 골라 주세요.',
+  topup_crown_btn: '크라운 세트 충전하기',
+  admin_crown_pkg_note: '가격을 정한 뒤 \'판매 중\'을 켜면 고객에게 보여요',
+  admin_refund_single: '1개 {price} 로 재계산',
+  admin_free_product: '지급 종류',
+  camp_product: '지급 종류',
+  fin_by_product: '종류별',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

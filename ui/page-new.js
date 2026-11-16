@@ -1,7 +1,7 @@
 // ===== 새 주문 #/new (5단계) =====
 //  1. Patient & Deadline   환자 ID(필수), 납기일(필수, 자체 달력)
 //  2. Select Teeth          FDI 32개 치아 차트
-//  3. Tooth Details         치아마다 브랜드·사이즈·쉐이드 + 메모
+//  3. Tooth Details         치아마다 제품(어버트먼트만 / 크라운 세트, sql/018) · 브랜드·사이즈·쉐이드 + 메모
 //  4. Upload Files          스캔 파일·사진·PDF (최대 10개, 파일당 50MB)
 //  5. Review & Submit       요약, 배송 정보, 크레딧, 제출
 //
@@ -303,7 +303,7 @@ var PageNew = {
   // ----------------------------------------------------------------
   freeOptionHtml: function () {
     var d = this.draft;
-    var free = APP.freeCredits || 0;
+    var free = cncProductCredits('abutment').freeCredits + cncProductCredits('crown_set').freeCredits;   // 두 종류의 등록 주소 전용 무료
     if (!free && !d.useFree) return '';
     var reg = cncRegisteredClinic(APP.profile);
     var html = '<div class="free-option' + (d.useFree ? ' on' : '') + '" id="free-option">' +
@@ -344,20 +344,35 @@ var PageNew = {
     this.updateSummary();
   },
 
-  // 차감 미리보기 (무료 n / 충전 n)
-  creditSplit: function () {
+  // 종류별 차감 미리보기 { abutment: {need, free, paid, ok, freeWouldHelp}, crown_set: {...} } (크레딧은 종류마다 따로, sql/018)
+  creditSplits: function () {
     var d = this.draft;
-    var paid = APP.paidCredits != null ? APP.paidCredits : (APP.balance || 0);
-    return cncCreditSplit(cncCreditsNeeded(d), paid, APP.freeCredits || 0, !!d.useFree);
+    var counts = cncProductCounts(d);
+    var out = {};
+    CNC_PRODUCTS.forEach(function (p) {
+      var pc = cncProductCredits(p);
+      out[p] = cncCreditSplit(counts[p], pc.paidCredits, pc.freeCredits, !!d.useFree);
+      out[p].need = counts[p];
+    });
+    return out;
+  },
+
+  // 두 종류를 합친 차감 미리보기 (무료 n / 충전 n, ok = 두 종류 다 충분)
+  creditSplit: function () {
+    var s = this.creditSplits(), a = s.abutment, c = s.crown_set;
+    return { free: a.free + c.free, paid: a.paid + c.paid, ok: a.ok && c.ok,
+             freeWouldHelp: (!a.ok && a.freeWouldHelp) || (!c.ok && c.freeWouldHelp), crownShort: !c.ok, abutmentShort: !a.ok };
   },
 
   // 주문 후 잔액 (💳 충전 / 🎁 무료) — 새 규칙 없이 지금 값에서 차감 미리보기(cncCreditSplit)를 빼요
   //   무료 몫(등록 주소 전용)은 무료에서, 나머지는 충전에서 (충전이 모자라면 제한 없는 무료에서).
   //   제한 없는 무료가 있으면 실제 차감 순서(만료 빠른 묶음부터, DB)와 몇 개 다를 수 있어요 — 주문 뒤엔 서버 값으로 다시 그려요
-  afterSplit: function () {
-    var sp = this.creditSplit();
-    var paidNow = APP.purchasedCredits != null ? APP.purchasedCredits : (APP.balance || 0);
-    var freeNow = APP.freeTotal || 0;
+  afterSplit: function (product) {
+    product = cncProductOf(product);
+    var sp = this.creditSplits()[product];
+    var pc = cncProductCredits(product);
+    var paidNow = pc.purchased;
+    var freeNow = pc.freeTotal;
     var paidUse = Math.min(paidNow, sp.paid);
     return { paid: Math.max(0, paidNow - paidUse), free: Math.max(0, freeNow - sp.free - (sp.paid - paidUse)) };
   },
@@ -503,6 +518,21 @@ var PageNew = {
         }).join('');
     }
 
+    // 크라운 세트를 고를 수 있는지: 세트 크레딧이 있거나 판매 중인 세트 패키지가 있을 때 (아니면 "곧 출시")
+    var crownOk = cncProductCredits('crown_set').balance > 0 || APP.crownSetOnSale === true;
+    function productSeg(n, current) {
+      return '<div class="seg product-seg" role="radiogroup" aria-label="' + escHtml(t('product_label')) + '">' +
+        CNC_PRODUCTS.map(function (p) {
+          var on = current === p;
+          var off = p === 'crown_set' && !crownOk && !on;
+          return '<button type="button" role="radio" class="seg-btn product-opt product-opt-' + p + (on ? ' active' : '') + '" aria-checked="' + on + '"' +
+            (n == null ? ' onclick="PageNew.applyProductAll(\'' + p + '\')"' : ' id="product-' + n + '-' + p + '" onclick="PageNew.setTooth(' + n + ', \'product\', \'' + p + '\', true)"') +
+            (off ? ' disabled' : '') + '>' +
+            escHtml(p === 'crown_set' ? uiProductName('crown_set', true) : '🔩 ' + t('product_abutment_only')) + '</button>';
+        }).join('') + '</div>' +
+        (!crownOk ? '<p class="field-help product-soon">👑 ' + escHtml(t('crown_coming_soon')) + '</p>' : '');
+    }
+
     // 위쪽: 모든 치아에 한 번에 적용
     var bulk = '<div class="bulk-box">' +
       '<p class="bulk-title">' + escHtml(t('bulk_title')) + '</p>' +
@@ -522,6 +552,10 @@ var PageNew = {
             '<button type="button" class="btn btn-outline" onclick="PageNew.applyAll(\'shade\')">' + escHtml(t('wiz_shade_apply_all')) + '</button>' +
           '</div>' +
         '</div>' +
+        '<div class="bulk-item bulk-product">' +
+          '<span class="field-label">' + escHtml(t('product_label')) + '</span>' +
+          productSeg(null, '') +
+        '</div>' +
       '</div>' +
     '</div>';
 
@@ -532,7 +566,13 @@ var PageNew = {
       var bad = er.brand || er.shade || er.size;
       return '<div class="tooth-card' + (bad ? ' invalid' : '') + '" id="tooth-card-' + n + '">' +
         '<div class="tooth-card-head"><span class="tooth-card-num mono">#' + n + '</span>' +
-          '<span class="tooth-card-name">' + escHtml(t(toothTypeKey(n))) + '</span></div>' +
+          '<span class="tooth-card-name">' + escHtml(t(toothTypeKey(n))) + '</span>' +
+          (cncProductOf(det.product) === 'crown_set' ? '<span class="tooth-card-crown">' + escHtml(uiProductName('crown_set', true)) + '</span>' : '') + '</div>' +
+        '<div class="tooth-product field">' +
+          '<span class="field-label">' + escHtml(t('product_label')) + '</span>' +
+          productSeg(n, cncProductOf(det.product)) +
+          (cncProductOf(det.product) === 'crown_set' ? '<p class="field-help">' + escHtml(t('crown_set_shade_note')) + '</p>' : '') +
+        '</div>' +
         '<div class="tooth-card-fields">' +
           '<div class="field">' +
             '<label class="field-label" for="brand-' + n + '">' + escHtml(t('brand_label')) + ' <span class="required">*</span></label>' +
@@ -583,6 +623,17 @@ var PageNew = {
     } else {
       this.updateSummary();
     }
+  },
+
+  // 모든 치아의 제품을 한 번에
+  applyProductAll: function (product) {
+    product = cncProductOf(product);
+    cncApplyToAll(this.draft, 'product', product);
+    this.save();
+    var y = window.scrollY;
+    this.drawStep();
+    window.scrollTo(0, y);
+    uiToast(tf('applied_all_fmt', { value: uiProductName(product, true), n: this.draft.teeth.length }), 'success');
   },
 
   applyAll: function (field) {
@@ -736,10 +787,11 @@ var PageNew = {
     }
 
     var teethTable = '<div class="table-wrap"><table class="table">' +
-      '<thead><tr><th>#</th><th>' + escHtml(t('brand_label')) + '</th><th>' + escHtml(t('size_label')) + '</th><th>' + escHtml(t('wiz_shade_label')) + '</th></tr></thead><tbody>' +
+      '<thead><tr><th>#</th><th>' + escHtml(t('product_label')) + '</th><th>' + escHtml(t('brand_label')) + '</th><th>' + escHtml(t('size_label')) + '</th><th>' + escHtml(t('wiz_shade_label')) + '</th></tr></thead><tbody>' +
       d.teeth.map(function (n) {
         var det = d.details[n] || {};
         return '<tr><td><span class="mono">#' + n + '</span> <span class="muted">' + escHtml(t(toothTypeKey(n))) + '</span></td>' +
+          '<td>' + uiProductBadge(det.product) + '</td>' +
           '<td>' + escHtml(det.brand === 'Other' ? t('brand_other') : (det.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(det.size || '—') + '</td>' +
           '<td>' + uiShadeChip(det.shade) + ' <span class="mono">' + escHtml(det.shade || '—') + '</span></td></tr>';
@@ -768,7 +820,7 @@ var PageNew = {
         '</div>';
     }
     var reg = cncRegisteredClinic(APP.profile);
-    var free = APP.freeCredits || 0;
+    var free = cncProductCredits('abutment').freeCredits + cncProductCredits('crown_set').freeCredits;
     if (d.useFree && reg) {
       // 무료 크레딧 주문: 등록된 치과 정보로 고정 (고칠 수 없어요)
       html += '<div class="review-group"><div class="review-head"><h3 class="review-title">' + escHtml(t('wiz_delivery_label')) + '</h3></div>' +
@@ -793,24 +845,20 @@ var PageNew = {
         '</div>';
     }
 
-    // 크레딧
-    html += '<div class="review-group credit-box' + (enough ? '' : ' short') + '">' +
-      '<div class="review-head"><h3 class="review-title">' + escHtml(t('credits_title')) + '</h3></div>' +
-      row('credits_use', formatNumber(need), true) +
-      // 이번 주문 차감: 🎁 무료 n / 💳 충전 n (기존 cncCreditSplit)
-      '<div class="review-row credit-split" id="credit-split"><span class="review-label">' + escHtml(t('free_split_label')) + '</span>' +
-        '<span class="review-value"><span class="split-free">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(split.free) + '</b></span>' +
-        ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(split.paid) + '</b></span></span></div>' +
-      row('credits_current', bal != null ? formatNumber(bal) : '—', true) +
-      '<div class="review-row review-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml({}) + '</span></div>' +
-      row('credits_after', bal != null ? formatNumber(bal - need) : '—', true) +
-      (bal != null && enough
-        ? '<div class="review-row review-split" id="after-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml(this.afterSplit()) + '</span></div>'
-        : '') +
-      (bal != null && !enough ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(split.freeWouldHelp ? t('free_err_address_only') : t('insufficient_credits_msg')) + '</p>' +
-        '<p class="topup-hint">' + escHtml(t('topup_draft_saved')) + '</p>' +
-        '<a href="#/topup" class="btn btn-gold">💳 ' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' : '') +
-      '</div>';
+    // 크레딧 — 종류마다 따로 (크라운 세트 치아가 없으면 예전 모양 그대로)
+    var splits = this.creditSplits();
+    var mixed = splits.crown_set.need > 0;
+    if (mixed) {
+      html += '<div class="review-group product-counts-box"><div class="review-row"><span class="review-label">' + escHtml(t('product_counts_label')) + '</span>' +
+        '<span class="review-value">' + uiProductCountsHtml(cncProductCounts(d), true) + '</span></div></div>';
+    }
+    var self = this;
+    CNC_PRODUCTS.forEach(function (p) {
+      var sp = splits[p];
+      if (p === 'crown_set' && !mixed) return;
+      if (p === 'abutment' && mixed && sp.need === 0) return;
+      html += self.creditBoxHtml(p, sp, mixed, bal);
+    });
 
     // 제출 진행 / 에러
     if (this.submitting && this.progress) {
@@ -826,6 +874,10 @@ var PageNew = {
         '<p><span aria-hidden="true">⚠</span> ' + escHtml(uiErrorMessage(this.submitError)) + '</p>' +
         (cncErrorCode(this.submitError) === 'UPLOAD_FAILED' || cncErrorCode(this.submitError) === 'NETWORK' || cncErrorCode(this.submitError) === 'UNKNOWN'
           ? '<button type="button" class="btn btn-primary" onclick="PageNew.submit()">' + escHtml(t('btn_retry')) + '</button>' : '') +
+        (cncErrorCode(this.submitError) === 'INSUFFICIENT_CREDITS_CROWN_SET' || cncErrorCode(this.submitError) === 'INSUFFICIENT_CREDITS_ABUTMENT'
+          ? '<div class="btn-row"><a href="#/topup" class="btn btn-gold" onclick="PageTopup.preset=\'' + (cncErrorCode(this.submitError) === 'INSUFFICIENT_CREDITS_CROWN_SET' ? 'crown_set' : 'abutment') + '\'">' +
+              escHtml(cncErrorCode(this.submitError) === 'INSUFFICIENT_CREDITS_CROWN_SET' ? '👑 ' + t('topup_crown_btn') : '💳 ' + t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a></div>'
+          : '') +
         (cncErrorCode(this.submitError) === 'bonus_address_only'
           ? '<div class="btn-row">' +
               (reg ? '<button type="button" class="btn btn-outline" onclick="PageNew.setUseFree(true)">🎁 ' + escHtml(t('free_turn_on')) + '</button>' : '') +
@@ -836,6 +888,36 @@ var PageNew = {
     }
     html += '<p class="submit-note">' + escHtml(t('custom_submit_note')) + '</p>';
     return html;
+  },
+
+  // 크레딧 상자 하나 (종류 하나): 쓸 크레딧 · 무료/충전 · 지금 잔액 · 주문 후 잔액 · 모자라면 그 종류 충전하기
+  //   어버트먼트만 있는 주문은 예전과 같은 칸 id (credit-split · after-split), 크라운 세트는 -crown
+  creditBoxHtml: function (product, sp, withTitle, balKnown) {
+    var pc = cncProductCredits(product);
+    var known = balKnown != null;
+    var sfx = product === 'crown_set' ? '-crown' : '';
+    function row(labelKey, value) {
+      return '<div class="review-row"><span class="review-label">' + escHtml(t(labelKey)) + '</span><span class="review-value mono">' + value + '</span></div>';
+    }
+    var shortKey = sp.freeWouldHelp ? 'free_err_address_only'
+      : (product === 'crown_set' ? 'insufficient_credits_crown_set' : 'insufficient_credits_msg');
+    return '<div class="review-group credit-box credit-box-' + product + (sp.ok ? '' : ' short') + '">' +
+      '<div class="review-head"><h3 class="review-title">' + escHtml(withTitle ? uiProductName(product) : t('credits_title')) + '</h3></div>' +
+      row('credits_use', formatNumber(sp.need)) +
+      '<div class="review-row credit-split" id="credit-split' + sfx + '"><span class="review-label">' + escHtml(t('free_split_label')) + '</span>' +
+        '<span class="review-value"><span class="split-free">🎁 ' + escHtml(t('free_short')) + ' <b class="mono">' + formatNumber(sp.free) + '</b></span>' +
+        ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(sp.paid) + '</b></span></span></div>' +
+      row('credits_current', known ? formatNumber(pc.balance) : '—') +
+      '<div class="review-row review-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml({ product: product }) + '</span></div>' +
+      row('credits_after', known ? formatNumber(pc.balance - sp.need) : '—') +
+      (known && sp.ok
+        ? '<div class="review-row review-split" id="after-split' + sfx + '"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml(this.afterSplit(product)) + '</span></div>'
+        : '') +
+      (known && !sp.ok ? '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t(shortKey)) + '</p>' +
+        '<p class="topup-hint">' + escHtml(t('topup_draft_saved')) + '</p>' +
+        '<a href="#/topup" class="btn btn-gold" onclick="PageTopup.preset=\'' + product + '\'">' +
+          (product === 'crown_set' ? '👑 ' + escHtml(t('topup_crown_btn')) : '💳 ' + escHtml(t('topup_btn'))) + ' <span class="arrow" aria-hidden="true">→</span></a>' : '') +
+      '</div>';
   },
 
   setDelivery: function (field, value) {
@@ -940,10 +1022,37 @@ var PageNew = {
       ? '<ul class="sum-teeth">' + d.teeth.map(function (n) {
           var det = d.details[n] || {};
           return '<li><span class="mono sum-tooth">#' + n + '</span>' +
-            '<span class="sum-brand">' + escHtml(det.brand === 'Other' ? t('brand_other') : (det.brand || '—')) + '</span>' +
+            '<span class="sum-brand">' + escHtml(det.brand === 'Other' ? t('brand_other') : (det.brand || '—')) +
+              (cncProductOf(det.product) === 'crown_set' ? ' <span class="sum-crown" title="' + escHtml(t('product_crown_set')) + '">👑</span>' : '') + '</span>' +
             '<span class="sum-shade">' + uiShadeChip(det.shade) + '<span class="mono">' + escHtml(det.shade || '—') + '</span></span></li>';
         }).join('') + '</ul>'
       : '<p class="muted">—</p>';
+
+    // 크레딧: 크라운 세트 치아가 없으면 예전 모양 그대로 (어버트먼트), 있으면 "어버트먼트 n개 · 크라운 세트 n개" + 종류마다
+    var splits = this.creditSplits();
+    var mixed = splits.crown_set.need > 0;
+    var self = this;
+    function creditBlock(p) {
+      var sp = splits[p];
+      var pc = cncProductCredits(p);
+      return '<div class="sum-credits sum-credits-' + p + (bal != null && !sp.ok ? ' short' : '') + '">' +
+        (mixed ? '<p class="sum-product">' + escHtml(uiProductName(p, true)) + '</p>' : '') +
+        '<div><span>' + escHtml(t('credits_use')) + '</span><b class="mono">' + formatNumber(sp.need) + '</b></div>' +
+        // 이번 주문 차감 (기존 cncCreditSplit): 🎁 무료 / 💳 충전
+        '<div class="sum-free"><span>🎁 ' + escHtml(t('free_short')) + ' / 💳 ' + escHtml(t('paid_short')) + '</span><b class="mono">' +
+          formatNumber(sp.free) + ' / ' + formatNumber(sp.paid) + '</b></div>' +
+        (d.useFree && p === 'abutment' ? '<p class="sum-free-note">🔒 ' + escHtml(t('free_locked_short')) + '</p>' : '') +
+        '<div><span>' + escHtml(t('credits_current')) + '</span><b class="mono">' + (bal != null ? formatNumber(pc.balance) : '—') + '</b></div>' +
+        '<div class="sum-split">' + uiCreditSplitHtml({ product: p }) + '</div>' +
+        // 주문 후 잔액: 💳 충전 n · 🎁 무료 n
+        (bal != null && sp.ok
+          ? '<div class="sum-after"' + (p === 'abutment' ? ' id="sum-after"' : ' id="sum-after-crown"') + '><span>' + escHtml(t('split_after')) + '</span></div>' +
+            '<div class="sum-split">' + uiCreditSplitHtml(self.afterSplit(p)) + '</div>'
+          : '') +
+        (bal != null && !sp.ok && p === 'crown_set'
+          ? '<a href="#/topup" class="btn btn-gold btn-sm sum-topup" onclick="PageTopup.preset=\'crown_set\'">👑 ' + escHtml(t('topup_crown_btn')) + '</a>' : '') +
+      '</div>';
+    }
 
     box.innerHTML =
       '<h2 class="sum-title">' + escHtml(t('summary_title')) + '</h2>' +
@@ -951,22 +1060,12 @@ var PageNew = {
         '<dt>' + escHtml(t('wiz_patient_label')) + '</dt><dd>' + escHtml(d.patient.trim() || '—') + '</dd>' +
         '<dt>' + escHtml(t('case_deadline_label')) + '</dt><dd class="sum-deadline-later">📅 ' + escHtml(t('deadline_at_approval_note')) + '</dd>' +
         '<dt>' + escHtml(tf('teeth_count_fmt', { n: d.teeth.length })) + '</dt><dd>' + teeth + '</dd>' +
+        (mixed ? '<dt>' + escHtml(t('product_counts_label')) + '</dt><dd class="sum-products">' + uiProductCountsHtml(cncProductCounts(d), true) + '</dd>' : '') +
         '<dt>' + escHtml(t('files_label')) + '</dt><dd class="mono">' + d.files.length + ' / ' + FILE_MAX_COUNT + '</dd>' +
       '</dl>' +
-      '<div class="sum-credits' + (bal != null && !split.ok ? ' short' : '') + '">' +
-        '<div><span>' + escHtml(t('credits_use')) + '</span><b class="mono">' + formatNumber(need) + '</b></div>' +
-        // 이번 주문 차감 (기존 cncCreditSplit): 🎁 무료 / 💳 충전
-        '<div class="sum-free"><span>🎁 ' + escHtml(t('free_short')) + ' / 💳 ' + escHtml(t('paid_short')) + '</span><b class="mono">' +
-          formatNumber(split.free) + ' / ' + formatNumber(split.paid) + '</b></div>' +
-        (d.useFree ? '<p class="sum-free-note">🔒 ' + escHtml(t('free_locked_short')) + '</p>' : '') +
-        '<div><span>' + escHtml(t('credits_current')) + '</span><b class="mono">' + (bal != null ? formatNumber(bal) : '—') + '</b></div>' +
-        '<div class="sum-split">' + uiCreditSplitHtml({}) + '</div>' +
-        // 주문 후 잔액: 💳 충전 n · 🎁 무료 n
-        (bal != null && split.ok
-          ? '<div class="sum-after" id="sum-after"><span>' + escHtml(t('split_after')) + '</span></div>' +
-            '<div class="sum-split">' + uiCreditSplitHtml(this.afterSplit()) + '</div>'
-          : '') +
-      '</div>';
+      (mixed
+        ? CNC_PRODUCTS.filter(function (p) { return splits[p].need > 0; }).map(creditBlock).join('')
+        : creditBlock('abutment'));
   },
 
   // ================================================================
@@ -987,7 +1086,8 @@ var PageNew = {
 
     var split = this.creditSplit();
     if (APP.balance == null || !split.ok) {
-      this.submitError = cncError(split.freeWouldHelp ? 'bonus_address_only' : 'INSUFFICIENT_CREDITS');
+      this.submitError = cncError(split.freeWouldHelp ? 'bonus_address_only'
+        : (split.crownShort && !split.abutmentShort ? 'INSUFFICIENT_CREDITS_CROWN_SET' : 'INSUFFICIENT_CREDITS'));
       this.drawStep();
       return;
     }
@@ -1020,7 +1120,7 @@ var PageNew = {
       this.progress = null;
       this.submitError = err;
       this.save();
-      if (cncErrorCode(err) === 'INSUFFICIENT_CREDITS' || cncErrorCode(err) === 'bonus_address_only') refreshBalance();
+      if (/^INSUFFICIENT_CREDITS/.test(cncErrorCode(err)) || cncErrorCode(err) === 'bonus_address_only') refreshBalance();
       this.drawStep();
       var box = document.querySelector('.notice-error');
       if (box) box.scrollIntoView({ block: 'center' });
@@ -1050,7 +1150,9 @@ var PageNew = {
           '<p class="success-text">' + escHtml(tf('order_success_detail', { n: s.teeth || 0, balance: formatNumber(s.balance != null ? s.balance : APP.balance) })) + '</p>' +
           // 이 주문에 쓴 크레딧 (🎁 무료 n / 💳 충전 n — bonus_used · 치아 수) + 지금 잔액 나눠 보기
           '<p class="success-split" id="success-used">' + escHtml(t('split_used_this')) + ': ' + uiOrderCreditUseHtml(s.teeth || 0, s.bonus_used || 0) + '</p>' +
+          (Number(s.crown_set || 0) > 0 ? '<p class="success-split" id="success-products">' + uiProductCountsHtml({ abutment: s.abutment, crown_set: s.crown_set }, true) + '</p>' : '') +
           '<p class="success-split" id="success-balance">' + escHtml(t('split_balance_now')) + ': ' + uiCreditSplitHtml({}) + '</p>' +
+          (cncShowCrownSet() ? uiProductCreditsHtml({ cls: 'success-products-credits' }) : '') +
           lineCtaHtml() +
           '<div class="success-actions">' +
             '<a href="#/orders" class="btn btn-primary btn-lg" onclick="PageOrders.openId=\'' + escHtml(s.id || '') + '\'">' + escHtml(t('view_my_orders')) + '</a>' +

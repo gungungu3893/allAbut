@@ -1451,6 +1451,28 @@ LANG.fa = {
   svc_missing: 'وضعیت سرویس هنوز تنظیم نشده است. ابتدا sql/017_service_mode.sql را اجرا کنید.',
   audit_service_mode: 'تغییر وضعیت سرویس',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: 'اباتمنت سفارشی',
+  product_abutment_short: 'اباتمنت',
+  product_crown_set: 'اباتمنت + ست روکش زیرکونیا',
+  product_crown_set_short: 'ست روکش',
+  product_abutment_only: 'فقط اباتمنت',
+  product_label: 'محصول',
+  product_counts_label: 'تعداد به تفکیک محصول',
+  crown_coming_soon: 'به‌زودی',
+  crown_coming_soon_text: 'اباتمنت + ست روکش زیرکونیا به‌زودی عرضه می‌شود. هنگام شروع به شما اطلاع می‌دهیم.',
+  crown_credit_note: 'اعتبار ست روکش از اعتبار اباتمنت جداست. ۱ اعتبار ست روکش = ۱ دندان (اباتمنت + روکش زیرکونیا).',
+  crown_set_shade_note: 'ست روکش: رنگ برای روکش زیرکونیا استفاده می‌شود.',
+  insufficient_credits_abutment: 'اعتبار اباتمنت کافی نیست. لطفاً اعتبار اباتمنت شارژ کنید.',
+  insufficient_credits_crown_set: 'اعتبار ست روکش کافی نیست. لطفاً اعتبار ست روکش شارژ کنید.',
+  err_invalid_product: 'محصول نامعتبر است. لطفاً دوباره محصول را انتخاب کنید.',
+  topup_crown_btn: 'شارژ اعتبار ست روکش',
+  admin_crown_pkg_note: 'مشتریان پس از تعیین قیمت و روشن کردن «در حال فروش» این بسته‌ها را می‌بینند.',
+  admin_refund_single: 'بازمحاسبه با {price} برای هر اعتبار',
+  admin_free_product: 'نوع اعطا',
+  camp_product: 'نوع اعطا',
+  fin_by_product: 'به تفکیک محصول',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

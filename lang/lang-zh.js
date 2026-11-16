@@ -1451,6 +1451,28 @@ LANG.zh = {
   svc_missing: '服务状态尚未设置。请先运行 sql/017_service_mode.sql。',
   audit_service_mode: '服务状态变更',
 
+  // ----- 상품 두 종류 · 크라운 세트 (sql/018) -----
+  product_abutment: '定制基台',
+  product_abutment_short: '基台',
+  product_crown_set: '基台 + 氧化锆牙冠套装',
+  product_crown_set_short: '牙冠套装',
+  product_abutment_only: '仅基台',
+  product_label: '产品',
+  product_counts_label: '各产品数量',
+  crown_coming_soon: '即将推出',
+  crown_coming_soon_text: '基台 + 氧化锆牙冠套装即将推出。开放后我们会通知您。',
+  crown_credit_note: '牙冠套装积分与基台积分分开。1 个牙冠套装积分 = 1 颗牙（基台 + 氧化锆牙冠）。',
+  crown_set_shade_note: '牙冠套装：色号用于氧化锆牙冠。',
+  insufficient_credits_abutment: '基台积分不足。请充值基台积分。',
+  insufficient_credits_crown_set: '牙冠套装积分不足。请充值牙冠套装积分。',
+  err_invalid_product: '未知产品。请重新选择产品。',
+  topup_crown_btn: '充值牙冠套装积分',
+  admin_crown_pkg_note: '设置价格并打开"在售"后，客户才能看到这些套餐。',
+  admin_refund_single: '按每积分 {price} 重新计算',
+  admin_free_product: '发放类型',
+  camp_product: '发放类型',
+  fin_by_product: '按产品',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
