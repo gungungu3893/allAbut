@@ -172,7 +172,6 @@ LANG.ar = {
   no_file_confirm: 'المتابعة بدون ملف مسح؟ (STL أو PLY أو OBJ أو 3MF)',
   continue_anyway: 'المتابعة بدونه',
   add_files: 'إضافة ملفات',
-  stl_viewer_hint: 'اسحب للتدوير · مرّر للتكبير',
   stl_loading: 'جارٍ التحميل…',
   stl_load_error: 'تعذّر تحميل الملف.',
   stl_parse_error: 'تعذّرت قراءة هذا الملف ثلاثي الأبعاد.',
@@ -1535,6 +1534,18 @@ LANG.ar = {
   ad_csv_to: 'إلى',
   audit_ad_banner_saved: 'تم حفظ بانر إعلاني',
   audit_ad_banner_deleted: 'تم حذف بانر إعلاني',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: 'اسحب للتدوير · اسحب بالزر الأيمن أو Shift+سحب للتحريك · مرّر للتكبير · انقر نقرًا مزدوجًا للعودة',
+  viewer_hint_touch: 'إصبع واحد للتدوير · إصبعان للتكبير والتحريك · انقر مرتين للعودة',
+  viewer_tools_aria: 'أزرار العرض ثلاثي الأبعاد',
+  viewer_view_front: 'أمامي',
+  viewer_view_side: 'جانبي',
+  viewer_view_top: 'علوي',
+  viewer_view_bottom: 'سفلي',
+  viewer_view_reset: 'العرض الأول',
+  viewer_zoom_in: '＋ تكبير',
+  viewer_zoom_out: '－ تصغير',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

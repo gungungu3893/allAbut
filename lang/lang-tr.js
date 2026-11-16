@@ -172,7 +172,6 @@ LANG.tr = {
   no_file_confirm: 'Tarama dosyası olmadan devam edilsin mi? (STL, PLY, OBJ veya 3MF)',
   continue_anyway: 'Dosyasız devam et',
   add_files: 'Dosya ekle',
-  stl_viewer_hint: 'Döndürmek için sürükleyin · yakınlaştırmak için kaydırın',
   stl_loading: 'Yükleniyor…',
   stl_load_error: 'Dosya yüklenemedi.',
   stl_parse_error: 'Bu 3D dosya okunamadı.',
@@ -1535,6 +1534,18 @@ LANG.tr = {
   ad_csv_to: 'Bitiş',
   audit_ad_banner_saved: 'Reklam bannerı kaydedildi',
   audit_ad_banner_deleted: 'Reklam bannerı silindi',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: 'Döndürmek için sürükleyin · taşımak için sağ tuşla veya Shift ile sürükleyin · yakınlaştırmak için kaydırın · sıfırlamak için çift tıklayın',
+  viewer_hint_touch: 'Tek parmak: döndür · iki parmak: yakınlaştır ve taşı · çift dokunma: sıfırla',
+  viewer_tools_aria: '3B görünüm düğmeleri',
+  viewer_view_front: 'Ön',
+  viewer_view_side: 'Yan',
+  viewer_view_top: 'Üst',
+  viewer_view_bottom: 'Alt',
+  viewer_view_reset: 'Başlangıç görünümü',
+  viewer_zoom_in: '＋ Yakınlaştır',
+  viewer_zoom_out: '－ Uzaklaştır',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

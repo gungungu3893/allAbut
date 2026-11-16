@@ -172,7 +172,6 @@ LANG.ko = {
   no_file_confirm: '스캔 파일(STL, PLY, OBJ 또는 3MF) 없이 계속할까요?',
   continue_anyway: '파일 없이 계속',
   add_files: '파일 추가',
-  stl_viewer_hint: '드래그: 회전 · 스크롤: 확대/축소',
   stl_loading: '불러오는 중…',
   stl_load_error: '파일을 불러오지 못했어요.',
   stl_parse_error: '이 3D 파일을 읽을 수 없어요.',
@@ -1536,6 +1535,18 @@ LANG.ko = {
   ad_csv_to: '끝',
   audit_ad_banner_saved: '광고 배너 저장',
   audit_ad_banner_deleted: '광고 배너 삭제',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: '드래그: 회전 · 오른쪽 버튼 또는 Shift+드래그: 이동 · 스크롤: 확대/축소 · 더블클릭: 처음 보기',
+  viewer_hint_touch: '한 손가락: 회전 · 두 손가락: 확대/축소와 이동 · 두 번 톡: 처음 보기',
+  viewer_tools_aria: '3D 보기 버튼',
+  viewer_view_front: '정면',
+  viewer_view_side: '옆',
+  viewer_view_top: '위',
+  viewer_view_bottom: '아래',
+  viewer_view_reset: '처음으로',
+  viewer_zoom_in: '＋ 확대',
+  viewer_zoom_out: '－ 축소',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

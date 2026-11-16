@@ -172,7 +172,6 @@ LANG.es = {
   no_file_confirm: '¿Continuar sin archivo de escaneo? (STL, PLY, OBJ o 3MF)',
   continue_anyway: 'Continuar sin él',
   add_files: 'Añadir archivos',
-  stl_viewer_hint: 'Arrastre para girar · desplace para hacer zoom',
   stl_loading: 'Cargando…',
   stl_load_error: 'No se pudo cargar el archivo.',
   stl_parse_error: 'No se pudo leer este archivo 3D.',
@@ -1535,6 +1534,18 @@ LANG.es = {
   ad_csv_to: 'Hasta',
   audit_ad_banner_saved: 'Banner publicitario guardado',
   audit_ad_banner_deleted: 'Banner publicitario eliminado',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: 'Arrastre para girar · arrastre con el botón derecho o Shift+arrastre para mover · desplace para hacer zoom · doble clic para restablecer',
+  viewer_hint_touch: 'Un dedo para girar · dos dedos para hacer zoom y mover · doble toque para restablecer',
+  viewer_tools_aria: 'Botones de vista 3D',
+  viewer_view_front: 'Frente',
+  viewer_view_side: 'Lado',
+  viewer_view_top: 'Arriba',
+  viewer_view_bottom: 'Abajo',
+  viewer_view_reset: 'Vista inicial',
+  viewer_zoom_in: '＋ Acercar',
+  viewer_zoom_out: '－ Alejar',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

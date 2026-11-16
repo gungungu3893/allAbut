@@ -172,7 +172,6 @@ LANG.vi = {
   no_file_confirm: 'Tiếp tục mà không có tệp quét? (STL, PLY, OBJ hoặc 3MF)',
   continue_anyway: 'Vẫn tiếp tục',
   add_files: 'Thêm tệp',
-  stl_viewer_hint: 'Kéo để xoay · cuộn để phóng to',
   stl_loading: 'Đang tải…',
   stl_load_error: 'Không thể tải tệp.',
   stl_parse_error: 'Không thể đọc tệp 3D này.',
@@ -1535,6 +1534,18 @@ LANG.vi = {
   ad_csv_to: 'Đến',
   audit_ad_banner_saved: 'Đã lưu banner quảng cáo',
   audit_ad_banner_deleted: 'Đã xóa banner quảng cáo',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: 'Kéo để xoay · kéo chuột phải hoặc Shift+kéo để di chuyển · cuộn để phóng to/thu nhỏ · nhấp đúp để về ban đầu',
+  viewer_hint_touch: 'Một ngón để xoay · hai ngón để phóng to và di chuyển · chạm hai lần để về ban đầu',
+  viewer_tools_aria: 'Nút góc nhìn 3D',
+  viewer_view_front: 'Trước',
+  viewer_view_side: 'Bên',
+  viewer_view_top: 'Trên',
+  viewer_view_bottom: 'Dưới',
+  viewer_view_reset: 'Về ban đầu',
+  viewer_zoom_in: '＋ Phóng to',
+  viewer_zoom_out: '－ Thu nhỏ',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

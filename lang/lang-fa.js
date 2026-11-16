@@ -172,7 +172,6 @@ LANG.fa = {
   no_file_confirm: 'بدون فایل اسکن ادامه می‌دهید؟ (STL، PLY، OBJ یا 3MF)',
   continue_anyway: 'ادامه بدون فایل',
   add_files: 'افزودن فایل',
-  stl_viewer_hint: 'برای چرخاندن بکشید · برای بزرگ‌نمایی اسکرول کنید',
   stl_loading: 'در حال بارگذاری…',
   stl_load_error: 'بارگذاری فایل ممکن نشد.',
   stl_parse_error: 'این فایل سه‌بعدی قابل خواندن نیست.',
@@ -1535,6 +1534,18 @@ LANG.fa = {
   ad_csv_to: 'تا',
   audit_ad_banner_saved: 'بنر تبلیغاتی ذخیره شد',
   audit_ad_banner_deleted: 'بنر تبلیغاتی حذف شد',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: 'برای چرخاندن بکشید · با کلیک راست یا Shift+کشیدن جابه‌جا کنید · برای بزرگ‌نمایی اسکرول کنید · دوبار کلیک برای نمای اول',
+  viewer_hint_touch: 'یک انگشت: چرخش · دو انگشت: بزرگ‌نمایی و جابه‌جایی · دو بار ضربه: نمای اول',
+  viewer_tools_aria: 'دکمه‌های نمای سه‌بعدی',
+  viewer_view_front: 'روبه‌رو',
+  viewer_view_side: 'کنار',
+  viewer_view_top: 'بالا',
+  viewer_view_bottom: 'پایین',
+  viewer_view_reset: 'نمای اول',
+  viewer_zoom_in: '＋ بزرگ‌نمایی',
+  viewer_zoom_out: '－ کوچک‌نمایی',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

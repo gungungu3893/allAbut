@@ -350,7 +350,7 @@
 - `app.js` — `APP { user, profile, balance }`, 화면 전환, 로그인 폼, 시작(boot)
 - `cnc/cnc-data.js` — 브랜드 11종, VITA 14색, 주문 단계, FDI 32개, `getToothName()`, 파일 규칙
 - `cnc/cnc-core.js` — 화면 코드 없는 순수 로직: draft 저장/복원, 단계별 검사, 파일 규칙, cases 만들기, 업로드, 제출(RPC), 주문 조회, 고객 액션, 크레딧, 프로필 저장
-- `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL
+- `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL. 3D 조작은 아래 "3D 파일 뷰어"
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
 - `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
 - `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about`, `#/complete`(필수 정보가 비었을 때만) (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about)
@@ -373,6 +373,23 @@
 - `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · Top-ups/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
 - `ui/page-admin-free.js` — 무료 크레딧 사용 배지, 무료 크레딧 지급·회수, 신규 가입 이벤트 설정, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008·009)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
+
+## 3D 파일 뷰어 (cnc/cnc-viewer.js — 고객 · 관리자 화면 공통 `cncOpenViewer`)
+- 쓰는 곳: 새 주문 4단계 파일 미리보기(File), 내 주문 상세 · 관리자 주문 상세의 주문 파일 · 디자인 파일(서명 URL). 전부 같은 `cncOpenViewer` → 한 곳만 고치면 같이 바뀌어요
+- **오비트 방식**: 모델은 가만히, 카메라가 모델 중심(target)을 돌아요 (예전처럼 mesh 를 Euler 로 돌리지 않음 → 방향이 안 꼬임).
+  three@0.160.0 의 OrbitControls 는 ES 모듈뿐이라 three.min.js 와 같이 쓰면 Three.js 를 두 벌 받아야 해서, **같은 동작을 파일 안에 직접 구현** (`_orbit*`, 추가 다운로드 없음)
+  - 회전: 왼쪽 드래그 / 한 손가락, 100px ≈ 20° (`VIEWER_ROTATE_PER_PX`, 예전 0.01rad/px 의 약 1/3), 위아래 ±85° (`VIEWER_MAX_ELEVATION`)
+  - 이동: 오른쪽 · 가운데 버튼 드래그, Shift+드래그 / 두 손가락. 모델이 커서를 그대로 따라와요
+  - 확대·축소: 휠 한 칸 5% (`VIEWER_WHEEL_STEP`, 마우스 위치 쪽으로) / 두 손가락 핀치(손가락 가운데 쪽으로), 거리 = 모델 크기 × 0.6 ~ 6 (`VIEWER_MIN_DIST` · `VIEWER_MAX_DIST`), 처음 × 1.8
+  - 관성 `VIEWER_DAMPING` 0.08 (손을 떼면 짧게 미끄러지다 멈춤), **prefers-reduced-motion 이면 관성 · 애니메이션 없음**
+  - 더블클릭 · 더블탭(400ms 안 · 30px 안) = 처음 보기. 캔버스 `touch-action: none` + touchstart/touchmove preventDefault → 뷰어 안 터치로 페이지가 스크롤 · 확대되지 않아요
+- 보기 버튼 줄 `.viewer-tools` (3D 일 때만, 글자 라벨, 높이 48px, 600px 미만은 4개씩 두 줄): [정면] [옆] [위] [아래] [처음으로] [＋ 확대] [－ 축소]
+  → `cncViewerSetView('front'|'side'|'top'|'bottom'|'reset')` · `cncViewerZoom(factor)` 0.4초 부드럽게 (`VIEWER_ANIM_MS`, 움직임 줄이기면 바로). 위 · 아래 = ±85°.
+  처음 보기 = 정면에서 20° 위 (`VIEWER_DEFAULT_ELEVATION`). 문구 `viewer_view_*` · `viewer_zoom_*` · `viewer_tools_aria` · `stl_viewer_hint`(마우스) · `viewer_hint_touch`(터치, `pointer: coarse`) 9개 언어
+- 방향: 치과 CAD 파일은 Z 축이 위(삽입 방향)라서 **파일의 Z 축을 화면 위로 세워** 보여줘요 (`geometry.rotateX(-π/2)`)
+- 조명: 환경광 + 카메라에 붙은 메인(위) · 테두리(뒤) · 약한 보조(아래) → 어느 방향에서 봐도 보는 쪽이 밝아요. 바닥에 옅은 그림자 원(아래에서 볼 땐 숨김)
+- **필요할 때만 그리기**: 움직이는 동안(드래그 · 관성 · 버튼 애니메이션 · 크기 변경)만 requestAnimationFrame, 멈추면 쉬어요 (`_viewerRequestRender`). 법선이 0 인 STL 은 직접 계산
+- 닫기 · 다른 파일 열기 = `_viewerCleanup()`: 그리기 멈춤, 캔버스 이벤트 전부 떼기(`_viewerOn` 으로 붙인 것), ResizeObserver 끊기, geometry · material · 그림자 텍스처 · renderer dispose, File 임시 주소 해제
 
 ## 화면 공통 부품 (디자인)
 - 단계 색은 `ui/layout.js` 의 `STAGE_COLORS` 한 곳 → `uiStageBadge(stage)` (홈·내 주문·관리자 공통), `uiStageStyle(stage)` (관리자 단계 카드 등)

@@ -172,7 +172,6 @@ LANG.zh = {
   no_file_confirm: '确定在没有扫描文件（STL、PLY、OBJ或3MF）的情况下继续吗？',
   continue_anyway: '直接继续',
   add_files: '添加文件',
-  stl_viewer_hint: '拖动旋转 · 滚轮缩放',
   stl_loading: '加载中…',
   stl_load_error: '无法加载该文件。',
   stl_parse_error: '无法读取此3D文件。',
@@ -1535,6 +1534,18 @@ LANG.zh = {
   ad_csv_to: '到',
   audit_ad_banner_saved: '保存广告横幅',
   audit_ad_banner_deleted: '删除广告横幅',
+
+  // ----- 3D 파일 뷰어: 오비트 조작 · 보기 버튼 -----
+  stl_viewer_hint: '拖动旋转 · 右键拖动或 Shift+拖动平移 · 滚轮缩放 · 双击恢复初始视图',
+  viewer_hint_touch: '单指旋转 · 双指缩放和平移 · 双击恢复初始视图',
+  viewer_tools_aria: '3D 视图按钮',
+  viewer_view_front: '正面',
+  viewer_view_side: '侧面',
+  viewer_view_top: '顶部',
+  viewer_view_bottom: '底部',
+  viewer_view_reset: '初始视图',
+  viewer_zoom_in: '＋ 放大',
+  viewer_zoom_out: '－ 缩小',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
