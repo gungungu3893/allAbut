@@ -1547,6 +1547,10 @@ LANG.vi = {
   viewer_zoom_in: '＋ Phóng to',
   viewer_zoom_out: '－ Thu nhỏ',
 
+  // ----- "맨 위로" 버튼 (ui/back-to-top.js) -----
+  back_to_top: 'Lên đầu trang',
+  back_to_top_aria: 'Cuộn lên đầu trang',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

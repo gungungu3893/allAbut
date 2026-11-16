@@ -1550,6 +1550,10 @@ LANG.en = {
   viewer_zoom_in: '＋ Zoom in',
   viewer_zoom_out: '－ Zoom out',
 
+  // ----- "맨 위로" 버튼 (ui/back-to-top.js) -----
+  back_to_top: 'Back to top',
+  back_to_top_aria: 'Scroll back to the top of the page',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -1547,6 +1547,10 @@ LANG.tr = {
   viewer_zoom_in: '＋ Yakınlaştır',
   viewer_zoom_out: '－ Uzaklaştır',
 
+  // ----- "맨 위로" 버튼 (ui/back-to-top.js) -----
+  back_to_top: 'Başa dön',
+  back_to_top_aria: 'Sayfanın en üstüne git',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

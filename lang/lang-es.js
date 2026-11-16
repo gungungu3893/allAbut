@@ -1547,6 +1547,10 @@ LANG.es = {
   viewer_zoom_in: '＋ Acercar',
   viewer_zoom_out: '－ Alejar',
 
+  // ----- "맨 위로" 버튼 (ui/back-to-top.js) -----
+  back_to_top: 'Volver arriba',
+  back_to_top_aria: 'Volver al inicio de la página',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

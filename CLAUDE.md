@@ -341,6 +341,7 @@
 - `ui/page-admin-visits.js` — 관리자 Dashboard 방문 통계 (`PageAdmin` 에 덧붙임)
 - `cnc/cnc-ads.js` — 광고 배너 읽기 · 노출/클릭 기록 · 관리자 저장/삭제/이미지 올리기 · 통계 · CSV (로직만, sql/019)
 - `ui/ad-banner.js` — 광고 배너 자리 (랜딩 · 홈 · 주문 완료, 회전 · 노출 1번)
+- `ui/back-to-top.js` — "↑ 맨 위로" 버튼 (`BackToTop`, 모든 화면 공통 하나, 아래 "화면 공통 부품")
 - `ui/page-admin-ads.js` — Settings "📢 광고 배너" 섹션 + Dashboard 광고 카드 (`PageAdmin` 에 덧붙임)
 - 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
@@ -402,6 +403,18 @@
   `tooth-btn` + `onclick="PageNew.toggleTooth(n)"` 은 그대로 (테스트·포커스 유지가 이것을 써요)
 - 새 주문 3단(PC): 단계 목록 · 입력 카드 · 요약 카드의 윗선이 같게 (`.wizard > * { margin-top: 0 }`), 요약 카드는 sticky
 - 충전 패키지 선택 버튼: 기본 흰 바탕 + 네이비 테두리, 호버·Popular·Best value 카드만 네이비 채움
+- **"↑ 맨 위로" 버튼** `ui/back-to-top.js` (`BackToTop`) + css/app.css `.back-to-top` — 한 번만 만들어 `<body>` 에 붙이고 랜딩 · 로그인 · 회사소개 · 문의 · 법적 문서 · 고객 앱 · 관리자 · 영업 화면 전부 같이 써요
+  - 모양: 알약 "↑ 맨 위로" (글자 라벨 `back_to_top`, aria-label `back_to_top_aria`, 9개 언어), 높이 3.25rem(52px, 글자 크기 A+ · A++ 따라 커짐) · 글자 1rem,
+    네이비 + 흰 글씨 + 얇은 골드 테두리 + 그림자 / 다크 화면(랜딩 · 로그인 — body 에 `in-app` 이 없을 때 `.on-dark`)은 골드 배경 + 네이비 글씨 + 흰 테두리. 호버 · 키보드 포커스(파란 3px 테두리) 분명하게
+  - 위치: 오른쪽 아래 고정(RTL 은 왼쪽 아래, `inset-inline-end`), 여백 20px + safe-area. z-index 90 (하단 탭 60 · 새 주문 버튼 줄 55 위, 모달 · 뷰어 · 토스트 300~ 아래)
+  - 피하기: `OBSTACLES`(휴대폰 하단 탭 `.app-tabbar` · 새 주문 버튼 줄 `.wiz-bottom-bar` · 랜딩 고정 푸터 `.public-footer` · 토스트) 중 버튼과 가로로 겹치고 position:fixed 인 것의 **실제 위치**를 읽어 그 위 12px 로 (`--btt-bottom`)
+  - 버튼이 보이는 동안 `<html class="btt-room">` → 앱 푸터 · 로그인 화면 푸터 아래에 버튼 높이만큼 여백(`--btt-room`) → 맨 끝까지 내려도 푸터 링크가 가려지지 않아요 (토스트 때문에 잠깐 올라간 위치는 여백 계산에 안 씀)
+  - 동작: 스크롤이 화면 높이 1배 이상이면 나타남(페이드 + 12px 올라오기), 위면 숨김(visibility hidden + tabindex -1 + aria-hidden). 스크롤이 없는 짧은 화면은 안 나타나요.
+    누르면 맨 위로 부드럽게(움직임 줄이기면 바로) → 도착하면 그 화면 맨 위 제목(h1 · h2 · `.wiz-title`, 헤더 안 제외) / 로그인 화면은 선택된 탭 / 없으면 main 에 포커스(`preventScroll`)
+  - 숨김: `BLOCKERS` (모달 · 확인창 `#modal-root .modal-overlay`, 3D · 사진 뷰어 `.viewer-overlay.open`, 세션 경고 `.session-modal.open`, 재동의 창, 날짜 달력)
+  - 가볍게: scroll · resize 는 passive 리스너 → requestAnimationFrame 으로 프레임당 1번 계산. 화면 전환 · 모달 · 토스트는 MutationObserver(class · hidden, 버튼 자신의 변화는 무시)
+  - 모든 화면은 창(window) 전체가 스크롤돼요 (안쪽 스크롤 영역 없음) → window 기준. 새 화면에 안쪽 스크롤 영역을 만들면 이 부품도 같이 고쳐요
+  - 새로 아래쪽에 고정되는 줄 · 덮는 창을 만들면 `OBSTACLES` · `BLOCKERS` 목록에도 넣어요. 인쇄할 때는 안 보여요(`@media print`)
 
 ## 사용 흐름 규칙
 - 로그인(재로그인 포함) 성공 → 항상 `#/home` (예외: 로그인 전에 LINE 알림 링크로 들어왔으면 로그인 후 그 페이지로 — 아래 LINE 링크). 이 계정 첫 로그인이면 한 번 `#/guide` (`localStorage.allabut_guide_seen_{user_id}`). 로그인 상태 새로고침은 지금 페이지 유지

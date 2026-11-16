@@ -2746,3 +2746,71 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .dash-ads-head .dash-section-title { margin: 0; }
 .ad-range .seg-btn { min-height: 40px; padding: 0 12px; font-size: 0.9375rem; }
 .shade-rule-note { margin: -4px 0 10px; }
+
+/* ================================================================
+   "↑ 맨 위로" 버튼 (ui/back-to-top.js — 모든 화면 공통)
+   - 오른쪽 아래 고정 (RTL 은 왼쪽 아래), 여백 20px + safe-area
+   - 아래 고정 줄(하단 탭 · 새 주문 버튼 줄 · 랜딩 푸터) · 토스트가 있으면 JS 가 --btt-bottom 으로 그 위에 놓아요
+   - 높이 52px 이상(rem → 글자 크기 A+ · A++ 따라 커짐), 네이비 + 흰 글씨 + 얇은 골드 테두리
+   - 다크 화면(랜딩 · 로그인)에서는 골드 배경 + 네이비 글씨 + 흰 테두리 (.on-dark)
+   - z-index 90: 하단 탭(60) · 버튼 줄(55) · 헤더(50) 위, 모달 · 뷰어 · 토스트(300~) 아래
+   ================================================================ */
+.back-to-top {
+  position: fixed;
+  z-index: 90;
+  bottom: var(--btt-bottom, calc(20px + env(safe-area-inset-bottom, 0px)));
+  inset-inline-end: calc(20px + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 3.25rem;              /* 52px (글자 크기 100% 기준) */
+  padding: 0 1.25rem;
+  border: 2px solid var(--gold);
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 1rem;                  /* 16px 이상 */
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 29, 74, 0.28), 0 2px 4px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s, background-color 0.15s, box-shadow 0.15s;
+}
+.back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s, background-color 0.15s, box-shadow 0.15s;
+}
+.back-to-top-arrow { font-size: 1.125rem; font-weight: 700; }
+.back-to-top:hover { background: #0A2E66; box-shadow: 0 8px 22px rgba(0, 29, 74, 0.38), 0 0 0 2px var(--gold); }
+.back-to-top:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; box-shadow: 0 0 0 6px #fff, 0 8px 22px rgba(0, 29, 74, 0.38); }
+.back-to-top:active { transform: translateY(1px); }
+
+/* 다크 화면 (랜딩 · 로그인): 골드 버튼 + 흰 테두리 */
+.back-to-top.on-dark { background: var(--gold); color: var(--navy); border-color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55); }
+.back-to-top.on-dark:hover { background: #E3C35A; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 2px #fff; }
+.back-to-top.on-dark:focus-visible { outline-color: #fff; box-shadow: 0 0 0 6px var(--focus), 0 8px 24px rgba(0, 0, 0, 0.6); }
+
+/* 버튼이 보이는 동안: 맨 아래 푸터에 버튼 높이만큼 여백 → 맨 끝까지 내려도 푸터 링크가 버튼에 가려지지 않아요
+   (--btt-room = 화면 아래 끝 ~ 버튼 윗선 + 12px, JS 가 실제 위치로 계산. 랜딩의 고정 푸터는 버튼이 그 위로 올라가서 제외) */
+html.btt-room .app-footer,
+html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px); }
+
+/* 맨 위로 이동한 뒤 포커스를 받는 제목: 마우스로 눌렀을 땐 테두리 없이, 키보드일 땐 그대로 */
+.btt-focus-target:focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top, .back-to-top.show { transition: none; transform: none; }
+}
+@media print {
+  .back-to-top { display: none !important; }
+}
