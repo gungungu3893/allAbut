@@ -67,7 +67,7 @@
 
 ## 확정 사항
 - 치아 32개 (FDI, 사랑니 포함)
-- 브랜드·쉐이드·사이즈는 **치아마다 따로** (브랜드·쉐이드 필수, 사이즈 선택)
+- 브랜드·사이즈·쉐이드는 **치아마다 따로** (브랜드 필수, 사이즈 선택, **쉐이드는 크라운 세트 치아만 필수** — 아래 "쉐이드 규칙")
 - 한 주문 = 환자 1명 (`cases` 배열에 1개)
 - 파일: STL / PLY / OBJ / 3MF / JPG / PNG / PDF, 파일당 50MB, 최대 10개
 - 1 치아 = 1 크레딧 (차감은 DB 함수 `create_cnc_order` 가 한 번에 처리). 크레딧은 **상품 종류마다 따로** (아래 "상품 두 종류")
@@ -83,7 +83,7 @@
 - 충전: `create_topup_request` 가 패키지 종류를 요청에 저장 → `admin_approve_topup` 이 같은 종류 묶음. 고객 충전 화면 맨 위 탭 [🔩 어버트먼트] [👑 크라운 세트] (`PageTopup.tab`, 다른 화면에서 보낼 땐 `PageTopup.preset`),
   판매 중인 세트 패키지가 없으면 세트 탭에 "곧 출시돼요" (탭은 보여요)
 - 주문: 3단계 치아 카드마다 "제품" [어버트먼트만 | 크라운 세트] (`draft.details[n].product`, 기본 abutment, 모두 적용 `applyProductAll`) → `cases[].teeth[].product`.
-  세트 크레딧이 0 이고 판매 중인 세트 패키지도 없으면 세트 버튼 비활성 + "곧 출시". 세트 치아도 쉐이드 필수(지르코니아 크라운 색)
+  세트 크레딧이 0 이고 판매 중인 세트 패키지도 없으면 세트 버튼 비활성 + "곧 출시". 쉐이드는 세트 치아만 (지르코니아 크라운 색, 아래 "쉐이드 규칙")
   - `create_cnc_order` 가 치아마다 product 를 채워 저장(없으면 abutment, 모르는 값 `INVALID_PRODUCT`) → 종류별 필요 수만큼 각 종류 묶음에서 FIFO (무료 · 등록 주소 전용 규칙은 종류별로 그대로).
     모자라면 `INSUFFICIENT_CREDITS_ABUTMENT` / `INSUFFICIENT_CREDITS_CROWN_SET` (등록 주소 무료로 채울 수 있으면 `bonus_address_only`). 취소 복구는 `credit_lot_usage` → 원래 묶음 (종류 그대로)
   - 미리보기 `PageNew.creditSplits()` (종류별) / `creditSplit()` (합친 것). 세트 치아가 없으면 요약 · 5단계는 예전 모양 그대로(칸 id `credit-split` · `after-split` · `sum-after`),
@@ -102,6 +102,38 @@
 - LINE: 크레딧 · 충전 카드에 "Product: Abutment credits / Crown set credits" 줄(product 가 있을 때), 세트가 있으면 잔액 줄 "🔩 12 · 👑 3" + 작은 줄 "Abutment 12 · Crown set 3"(9개 언어, `balanceTotals`),
   주문 카드 Teeth 줄의 세트 치아는 브랜드 옆 "👑 Set". 샘플 `13-crown-set-order-admin` · `14-crown-set-credits-customer`
 - 법적 문서 `{{PRICE_TABLE}}` 은 종류마다 표(판매 중인 패키지가 있는 종류만), `{single_price}` · 환불 예시는 어버트먼트 기준
+
+## 쉐이드 규칙 — 크라운 세트 치아만 (sql/019_shade_and_ad_banners.sql)
+- 쉐이드 = 지르코니아 크라운 색 → **크라운 세트 치아만 필수**, 어버트먼트만인 치아는 쉐이드가 없어요
+- 새 주문 3단계: 제품이 "어버트먼트만"이면 쉐이드 칸 자체가 없고 저장값도 '' / "크라운 세트"면 쉐이드 칸 + 필수.
+  세트 → 어버트먼트로 바꾸면 쉐이드를 지우고, 어버트먼트 → 세트면 빈 값(선택 안내)으로 나타나요 (`cncSetToothDetail`). "모든 치아에 적용"의 쉐이드는 세트 치아가 있을 때만 보이고 세트 치아에만 넣어요
+- 검사: `cncValidateStep(…, 3)` 과 `create_cnc_order` 둘 다 "crown_set 치아만 쉐이드 필수" (서버 에러 `SHADE_REQUIRED_CROWN_SET`), 서버는 어버트먼트 치아의 color 를 '' 로 저장
+- 표시: 요약 카드 · 5단계 확인 · 내 주문 상세 · 관리자 주문 상세 · LINE 주문 카드 Teeth 줄 = 세트 치아만 쉐이드 (`cncToothShade(tt)`, 어버트먼트 치아는 자리를 비움 — LINE 은 빈 글자 대신 `filler`).
+  예전 주문 · draft 에 남은 어버트먼트 치아의 쉐이드 값은 그대로 두고 화면에만 안 보여요
+- 문구: `wiz_step3_desc` · `wiz_shade_per_tooth` · `guide_step3_text`(이용 가이드 · 새 주문 도움말) · `shade_crown_only_note` 9개 언어
+
+## 광고 배너 — 자체 배너만 (sql/019_shade_and_ad_banners.sql)
+- **외부 광고 업체 스크립트(애드센스 등)는 넣지 않는다.** 배너 이미지 · 링크는 관리자가 직접 등록
+- 표 `ad_banners` (RLS 켜고 정책 없음 = 함수로만): name(관리용) · advertiser · slot('landing' | 'home' | 'order_done') · image_desktop_url · image_mobile_url · link_url · alt_text ·
+  starts_at · ends_at(방콕 날짜, 비우면 무기한) · active(기본 false) · sort_order · created_by · created_at · updated_at
+  - `get_active_ad_banners(p_slot)` 누구나(anon 포함): 켜짐 + 방콕 오늘이 기간 안 + PC 이미지 있음, sort_order 순 (광고주 · 이름은 안 내보내요)
+  - manager 이상: `admin_list_ad_banners()`(+ 누적 노출 · 클릭) · `admin_save_ad_banner(...)`(링크 · 이미지 주소 **https 만** `INVALID_URL`, 이름 `NAME_REQUIRED`, 자리 `INVALID_SLOT`, PC 이미지 `IMAGE_REQUIRED`, 기간 `INVALID_DATES`) ·
+    `admin_delete_ad_banner(p_id)`(노출 · 클릭 기록은 남음) · `admin_ad_stats(from, to)`(기간별 배너마다 노출 · 클릭, 지운 배너는 '#번호'). 작업 기록 'ad_banner_saved' · 'ad_banner_deleted'
+- 노출 · 클릭: `site_events` kind 'ad_view' · 'ad_click' + `ad_banner_id` (`log_site_event(…, p_banner)`). 방문 통계는 visit · pageview 만 세서 그대로, 보관 24개월도 같이.
+  같은 페이지 보기에서 같은 배너 노출은 1번만 (`AdBanner.seen`, 경로가 바뀌거나 랜딩이 다시 보이거나 주문 완료 화면이면 새 페이지 보기), 자리가 화면에 보일 때만 셈
+- Storage 공개 버킷 `ad-banners` (jpg · png · webp, 2MB, 올리기 · 바꾸기 · 지우기 · 목록 = `has_admin_role('manager')`). 019 가 만들고, 권한이 없으면 notice → 대시보드에서 직접(Public, 2MB, 형식 3개).
+  경로 `banners/{시각}_{무작위}_{안전한 파일명}`, 배너를 지우면 우리 버킷 이미지도 지움 (`cncAdBucketPath`)
+- 자리 (`ui/ad-banner.js` `AdBanner`, `<div class="ad-slot" data-ad-slot="…" hidden>`): **노출 중인 배너가 없으면 hidden 그대로 = 자리 자체가 없음** (높이 0)
+  - landing: 랜딩 슬로건 아래 (PC 728×90 비율 · 휴대폰 600px 미만 320×100 비율) — `showScreen('landing')` 이 보일 때마다 `AdBanner.mountAll`
+  - home: 고객 홈 크레딧 카드 아래 (카드 폭, `#home-ad`) / order_done: 주문 완료 화면 안내 아래 (`#done-ad`)
+  - **새 주문 작성 중 · 충전 결제 · 관리자 화면에는 절대 넣지 않는다**
+  - 작은 회색 "AD", 이미지 클릭 → 새 탭 `target="_blank" rel="noopener sponsored"`, `<picture>` 로 PC/휴대폰 이미지 자동 선택(휴대폰 이미지가 없으면 PC 이미지),
+    같은 자리 여러 개면 sort_order 순으로 7초마다 천천히(opacity 1.2초) 바뀜, prefers-reduced-motion 이면 첫 배너로 고정. 서비스 상태(test/live)와 상관없이 똑같이
+- 로직 `cnc/cnc-ads.js` (`cncLoadActiveBanners` 5분 기억 · `cncTrackAd` · 관리자 함수 · `cncAdStatus` 꺼짐/예정/노출 중/종료 · `cncAdCtr` · CSV), 화면 `ui/ad-banner.js`, 관리자 `ui/page-admin-ads.js`
+- 관리자 Settings → "📢 광고 배너" (manager 이상 — **Settings 탭이 manager 에게도 열리고, manager 는 이 섹션만** 보여요. owner 는 기존 설정 + 맨 아래 이 섹션):
+  목록(자리 · 이름 · 광고주 · 기간 · 상태 배지 · 노출 · 클릭 · 클릭률) + 추가/수정 창(이미지 2개 올리기 · 미리보기, 링크, 대체 글자, 기간 `uiDateField`, 순서, 켜기) + 삭제(확인창)
+- Dashboard 방문 통계 아래 "📢 광고" 카드 (manager 이상): 기간(오늘 · 7일 · 30일 · 이번 달 · 지난달)별 배너마다 노출 · 클릭 · 클릭률, CSV 는 owner (`allabut-ads-…csv`)
+- 개인정보처리방침: 광고 노출 · 클릭은 방문 통계와 같은 방식(같은 방문자 ID · 기기 · 언어 · 나라)으로 기록 — 방침에 "광고 노출 · 클릭" 이라는 말은 아직 없어요 (아래 법적 문서 참고)
 
 ## 크레딧 · 충전 정책 (확정)
 - 가격 (VAT 7% 별도, 개당 THB): 1개 2,200 / 10개 2,050 / 30개 1,900 / 50개 1,750 / 100개 1,500
@@ -141,6 +173,8 @@
 - **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
+  → 그 다음 **019** (전체 순서 끝 = 017 → 018 → 019). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
+  **013 을 다시 실행하면 019 도 다시** (log_site_event 가 광고 종류 · p_banner 를 모르는 모양으로 — 013 은 예전 인자 모양을 새로 만들어서 019 의 것과 둘이 생겨요)
   **`sql/launch_reset.sql` 은 일반 재실행 순서에 포함하지 않는다** (정식 오픈 날 1번만, 아래 "서비스 상태 · TEST 배지 · 정식 오픈 초기화")
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
   **005 를 다시 실행하면 015 → 016 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
@@ -244,6 +278,7 @@
 - "초안 · 법률 검토 필요" 표시는 관리자에게만
 - 개인정보처리방침에 공개한 것: 방문 통계(본 화면 · 날짜 · 기기 · 브라우저 언어 · 나라 · 들어온 곳, 24개월), 가입 IP · 기기 ID(중복 가입·부정 이용 방지, 계정이 있는 동안 + 삭제 후 법정 기간),
   로컬 저장소의 방문자 ID(`allabut_visitor_id`) · 기기 ID(`allabut_device_id`), 방문 통계는 누구도 식별 못 하는 합계로만 외부 공유. **수집 항목을 늘리면 방침도 같이 고치고 새 버전 등록**
+  (광고 배너 노출 · 클릭 기록(sql/019)은 방문 통계와 같은 칸 + 배너 번호 — 방침 문장을 고칠지는 사용자가 결정, 코드에서 바꾸지 않음)
 - 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순, 이름은 날짜 `YYYY-MM-DD`). **새 버전은 코드·SQL 로 자동 추가하지 않는다** (owner 가 관리자 Settings → 법적 버전에서). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
 - 가입: 동의 체크 필수 → `accept_legal()`. 충전 결제: Credit & Refund Policy 읽음 체크 필수
 - 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
@@ -304,6 +339,9 @@
 - `cnc/cnc-service.js` — 서비스 상태 (테스트 / 정식) 읽기 · 바꾸기 (로직만, sql/017)
 - `ui/service-badge.js` — 로고 옆 "TEST" 배지 · 슬로건 옆 "Beta test service" · 설명 팝오버
 - `ui/page-admin-visits.js` — 관리자 Dashboard 방문 통계 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-ads.js` — 광고 배너 읽기 · 노출/클릭 기록 · 관리자 저장/삭제/이미지 올리기 · 통계 · CSV (로직만, sql/019)
+- `ui/ad-banner.js` — 광고 배너 자리 (랜딩 · 홈 · 주문 완료, 회전 · 노출 1번)
+- `ui/page-admin-ads.js` — Settings "📢 광고 배너" 섹션 + Dashboard 광고 카드 (`PageAdmin` 에 덧붙임)
 - 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)

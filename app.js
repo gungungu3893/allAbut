@@ -57,6 +57,8 @@ function showScreen(name) {
           if (name === 'landing') cncTrackPage('/landing');
           else if (name === 'auth') cncTrackPage('/signin');
         }
+        // 랜딩 광고 배너 (있을 때만, 랜딩이 보일 때마다 새 페이지 보기 — ui/ad-banner.js)
+        if (name === 'landing' && window.AdBanner) { AdBanner.newPage(); AdBanner.mountAll(next); }
 
         // 랜딩이 처음 보일 때 로고 인트로 (탭당 1번). 페이드인(0.4초)이 끝난 뒤 — LogoIntro 가 글꼴 로딩 + 0.5초 더 기다려요
         if (name === 'landing' && window.LogoIntro) {

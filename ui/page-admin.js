@@ -38,7 +38,7 @@ var PageAdmin = {
     { id: 'activity', key: 'admin_tab_activity', min: 'staff' },
     { id: 'team', key: 'admin_tab_team', min: 'owner' },
     { id: 'commission', key: 'admin_tab_commission', min: 'owner' },
-    { id: 'settings', key: 'admin_tab_settings', min: 'owner' },
+    { id: 'settings', key: 'admin_tab_settings', min: 'manager' },   // manager 는 📢 광고 배너 섹션만 (나머지 설정은 owner)
     { id: 'sales', key: 'admin_tab_sales', sales: true }   // 영업 담당만 (역할과 상관없이)
   ],
 
@@ -158,7 +158,11 @@ var PageAdmin = {
     if (this.tab === 'orders') box.innerHTML = this.ordersHtml();
     else if (this.tab === 'topups') box.innerHTML = this.topupsHtml();
     else if (this.tab === 'customers') box.innerHTML = this.usersHtml();
-    else if (this.tab === 'settings') { box.innerHTML = this.settingsHtml(); this.drawLineGroups(); if (this.settingsTab.settings) this.loadSignupGrants(); }
+    else if (this.tab === 'settings') {
+      box.innerHTML = this.settingsHtml();
+      if (cncHasRole('owner')) { this.drawLineGroups(); if (this.settingsTab.settings) this.loadSignupGrants(); }
+      if (this.loadAds && document.getElementById('ads-admin')) { if (this.ads.rows === null && !this.ads.error) this.loadAds(); else this.drawAds(); }
+    }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
     else if (this.tab === 'sales') box.innerHTML = this.salesHtml();
@@ -229,6 +233,7 @@ var PageAdmin = {
     this.drawBody();
     // 방문 통계 — 따로 불러와요 (주문 통계를 막지 않게)
     if (this.loadVisitsForDash && cncHasRole('staff')) this.loadVisitsForDash();   // 펼쳤으면 통계, 접혔으면 오늘 방문 수
+    if (this.loadAdStats && cncHasRole('manager')) this.loadAdStats();   // 광고 노출 · 클릭 (sql/019)
     // 매출(Revenue) 구역 — 주문 통계와 따로 불러와요 (매출 쪽 오류가 주문 통계를 막지 않게)
     if (!cncHasRole('owner')) return;   // 매출은 owner 만
     await this.loadFinance(token);
@@ -294,6 +299,8 @@ var PageAdmin = {
     var html = (owner ? this.revenueSummaryHtml() : '') + this.actionNowHtml() + this.currentStatusHtml();
     // 방문 통계 (현재 현황 아래 · 월별 통계 위, ui/page-admin-visits.js)
     if (this.visitsHtml) html += this.visitsHtml();
+    // 광고 카드 (방문 통계 아래, ui/page-admin-ads.js)
+    if (this.adStatsHtml) html += this.adStatsHtml();
 
     html += '<div class="dash-monthly">' +
       this.monthNavHtml() +
@@ -736,7 +743,8 @@ var PageAdmin = {
           '<td>' + uiProductBadge(crown ? 'crown_set' : 'abutment') + '</td>' +
           '<td>' + escHtml(tt.brand === 'Other' ? t('brand_other') : (tt.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(tt.size || '—') + '</td>' +
-          '<td>' + uiShadeChip(tt.color) + ' <span class="mono">' + escHtml(tt.color || '—') + '</span></td></tr>';
+          // 쉐이드는 크라운 세트 치아만 (어버트먼트 치아 · 예전 주문에 남은 값은 숨겨요 — sql/019)
+          '<td>' + (cncToothShade(tt) ? uiShadeChip(cncToothShade(tt)) + ' <span class="mono">' + escHtml(cncToothShade(tt)) + '</span>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     // 고객 파일
@@ -1690,6 +1698,9 @@ var PageAdmin = {
     var sx = this.settingsTab;
     var token = ++this.loadToken;
     sx.error = false;
+    if (this.ads) this.ads.rows = null;   // 광고 배너 목록도 새로 (sql/019)
+    // manager: 📢 광고 배너 섹션만 → owner 설정은 읽지 않아요
+    if (!cncHasRole('owner')) { sx.packages = []; sx.settings = {}; sx.company = {}; sx.versions = []; this.drawBody(); return; }
     this.drawBody();
     try {
       var res = await Promise.all([cncAdminListPackages(), cncGetPaymentSettings(), cncGetCompany(true), cncListLegalVersions()]);
@@ -1708,6 +1719,8 @@ var PageAdmin = {
 
   settingsHtml: function () {
     var sx = this.settingsTab;
+    // manager 는 📢 광고 배너만 (ui/page-admin-ads.js)
+    if (!cncHasRole('owner')) return '<div class="admin-settings">' + (this.adsSectionHtml ? this.adsSectionHtml() : '') + '</div>';
     if (sx.error) return this.errorBox('PageAdmin.loadSettings()', sx.error);
     if (!sx.packages || !sx.settings) return '<div class="card">' + uiLoading() + '</div>';
     var s = sx.settings;
@@ -1778,7 +1791,7 @@ var PageAdmin = {
           '</section>';
 
     return '<div class="admin-settings">' + this.serviceModeHtml(s) + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
-      this.signupEventHtml(s) + packages + '</div>';
+      this.signupEventHtml(s) + packages + (this.adsSectionHtml ? this.adsSectionHtml() : '') + '</div>';
   },
 
   // ----- 서비스 상태 (테스트 / 정식) — owner, sql/017 -----

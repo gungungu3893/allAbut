@@ -81,15 +81,18 @@ function cncNormPath(hash) {
   return h.slice(0, 100);
 }
 
-function cncSendEvent(kind, path) {
+// banner: 광고 노출 · 클릭('ad_view' · 'ad_click', sql/019)일 때만 배너 번호 — 방문 · 페이지뷰는 예전과 같은 인자 (019 전 DB 도 그대로 동작)
+function cncSendEvent(kind, path, banner) {
   try {
     if (!window.sb || !sb.rpc) return Promise.resolve(false);
-    return Promise.resolve(sb.rpc('log_site_event', {
+    var args = {
       p_kind: kind, p_visitor: cncVisitorId(), p_session: cncSessionId(), p_path: String(path || '').slice(0, 100),
       p_referrer_host: cncReferrerHost(), p_device: cncDeviceType(),
       p_lang: (typeof currentLang === 'string' ? currentLang : String(navigator.language || '')).slice(0, 10),
       p_is_bot: cncIsBot()
-    })).then(function (r) { return !(r && r.error); }, function () { return false; });
+    };
+    if (banner != null) args.p_banner = Number(banner);
+    return Promise.resolve(sb.rpc('log_site_event', args)).then(function (r) { return !(r && r.error); }, function () { return false; });
   } catch (e) {
     return Promise.resolve(false);
   }

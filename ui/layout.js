@@ -775,6 +775,7 @@ function uiErrorMessage(err) {
     INSUFFICIENT_CREDITS_ABUTMENT: 'insufficient_credits_abutment',
     INSUFFICIENT_CREDITS_CROWN_SET: 'insufficient_credits_crown_set',
     INVALID_PRODUCT: 'err_invalid_product',
+    SHADE_REQUIRED_CROWN_SET: 'err_shade_required_crown_set',
     NO_TEETH: 'err_no_teeth',
     DELIVERY_REQUIRED: 'err_delivery_required',
     NOT_LOGGED_IN: 'err_not_logged_in',

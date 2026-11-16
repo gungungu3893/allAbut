@@ -39,6 +39,8 @@ CNC_ERROR_CODES = ['DEADLINE_REQUIRED', 'DEADLINE_TOO_EARLY', 'STAGE_CHANGED'].c
 CNC_ERROR_CODES = ['PHONE_TAKEN', 'PHONE_INVALID', 'TAX_ID_TAKEN', 'TAX_ID_INVALID', 'EMAIL_DISPOSABLE', 'PROFILE_INCOMPLETE'].concat(CNC_ERROR_CODES);
 // sql/018: 상품 두 종류 — 종류별로 모자람 (INSUFFICIENT_CREDITS 보다 먼저 찾아야 해서 맨 앞에)
 CNC_ERROR_CODES = ['INSUFFICIENT_CREDITS_CROWN_SET', 'INSUFFICIENT_CREDITS_ABUTMENT', 'INVALID_PRODUCT'].concat(CNC_ERROR_CODES);
+// sql/019: 쉐이드는 크라운 세트 치아만 필수
+CNC_ERROR_CODES = ['SHADE_REQUIRED_CROWN_SET'].concat(CNC_ERROR_CODES);
 
 // ----------------------------------------------------------------
 // 상품 종류 (sql/018): 'abutment' = 🔩 커스텀 어버트먼트 / 'crown_set' = 👑 어버트먼트 + 지르코니아 크라운 세트
@@ -264,14 +266,38 @@ function cncClearTeeth(draft) {
 }
 
 // 치아 하나의 값 바꾸기 (field: 'brand' / 'size' / 'shade')
+//   제품을 어버트먼트로 바꾸면 쉐이드를 지워요 (쉐이드는 크라운 세트 치아만 — sql/019). 세트로 바꾸면 쉐이드는 빈 값(선택 안내)
+//   어버트먼트 치아에는 쉐이드를 넣지 않아요
 function cncSetToothDetail(draft, num, field, value) {
   if (!draft.details[num]) draft.details[num] = { brand: '', size: '', shade: '', product: 'abutment' };
-  draft.details[num][field] = field === 'product' ? cncProductOf(value) : String(value || '');
+  var det = draft.details[num];
+  if (field === 'product') {
+    var next = cncProductOf(value);
+    if (next !== cncProductOf(det.product)) det.shade = '';
+    det.product = next;
+    return;
+  }
+  if (field === 'shade' && cncProductOf(det.product) !== 'crown_set') { det.shade = ''; return; }
+  det[field] = String(value || '');
 }
 
-// 모든 치아에 같은 값 넣기
+// 모든 치아에 같은 값 넣기 (쉐이드는 크라운 세트 치아에만)
 function cncApplyToAll(draft, field, value) {
-  draft.teeth.forEach(function (n) { cncSetToothDetail(draft, n, field, value); });
+  draft.teeth.forEach(function (n) {
+    if (field === 'shade' && !cncToothNeedsShade(draft, n)) return;
+    cncSetToothDetail(draft, n, field, value);
+  });
+}
+
+// 이 치아에 쉐이드가 필요한지 = 크라운 세트 치아만 (sql/019)
+function cncToothNeedsShade(draft, num) {
+  return cncProductOf(((draft.details || {})[num] || {}).product) === 'crown_set';
+}
+
+// 저장된 주문의 치아 한 칸에서 보여줄 쉐이드: 크라운 세트 치아만, 어버트먼트 치아는 '' (예전 주문에 남은 값도 숨겨요)
+function cncToothShade(tt) {
+  if (!tt || typeof tt !== 'object' || tt.product !== 'crown_set') return '';
+  return String(tt.color || tt.shade || '');
 }
 
 // 쓰는 크레딧 = 치아 수 (치아 1개 = 1크레딧, 종류 상관없이 합계)
@@ -438,7 +464,7 @@ function cncValidateStep(draft, step) {
       var d = draft.details[n] || {};
       var e = {};
       if (!d.brand) e.brand = 'wiz_no_brand_tooth_err';
-      if (!d.shade) e.shade = 'wiz_no_shade_err';
+      if (cncProductOf(d.product) === 'crown_set' && !d.shade) e.shade = 'wiz_no_shade_err';   // 쉐이드는 크라운 세트 치아만 필수 (sql/019)
       if (d.size && d.size.length > 40) e.size = 'err_size_long';
       if (e.brand || e.shade || e.size) teethErrors[n] = e;
     });
@@ -535,7 +561,7 @@ function cncBuildCases(draft) {
       toothName: getToothNameEn(n),
       brand: d.brand || '',
       size: (d.size || '').trim(),
-      color: d.shade || '',
+      color: cncProductOf(d.product) === 'crown_set' ? (d.shade || '') : '',   // 어버트먼트 치아는 쉐이드 없음
       product: cncProductOf(d.product)
     };
   });

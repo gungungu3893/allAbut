@@ -134,7 +134,7 @@
             },
             {
               "type": "text",
-              "text": "16 NOV 2026 · 01:05 PM",
+              "text": "16 NOV 2026 · 06:31 PM",
               "size": "xs",
               "color": "#6B7280",
               "flex": 0
@@ -306,12 +306,7 @@
                   "flex": 6
                 },
                 {
-                  "type": "text",
-                  "text": "A2",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#111827",
-                  "align": "end",
+                  "type": "filler",
                   "flex": 2
                 }
               ],
@@ -340,12 +335,7 @@
                   "flex": 6
                 },
                 {
-                  "type": "text",
-                  "text": "A2",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#111827",
-                  "align": "end",
+                  "type": "filler",
                   "flex": 2
                 }
               ],
@@ -374,12 +364,7 @@
                   "flex": 6
                 },
                 {
-                  "type": "text",
-                  "text": "A3",
-                  "wrap": true,
-                  "size": "sm",
-                  "color": "#111827",
-                  "align": "end",
+                  "type": "filler",
                   "flex": 2
                 }
               ],

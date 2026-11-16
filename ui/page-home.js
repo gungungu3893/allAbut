@@ -113,6 +113,8 @@ var PageHome = {
           this.expiringHtml() +
         '</a>' +
         '<a href="#/topup" class="btn btn-gold btn-sm home-topup-btn">' + escHtml(t('topup_btn')) + ' <span class="arrow" aria-hidden="true">→</span></a>' +
+        // 광고 배너 (크레딧 카드 아래 · 카드 폭, 노출 중인 배너가 있을 때만 — ui/ad-banner.js)
+        '<div class="ad-slot ad-slot-home" data-ad-slot="home" id="home-ad" hidden></div>' +
       '</div>' +
       '<a href="#/orders" class="home-card">' +
         '<span class="home-card-label">' + escHtml(t('home_in_progress')) + '</span>' +
@@ -147,6 +149,7 @@ var PageHome = {
     }
     html += '</section></div>';
     this.main.innerHTML = html;
+    if (window.AdBanner) AdBanner.mount(document.getElementById('home-ad'), 'home');   // 광고 배너 (있을 때만)
   },
 
   // ----- 확인이 필요해요 -----

@@ -556,7 +556,8 @@ function orderTeeth(o: any): { tooth: string; brand: string; shade: string; set?
   return list.map((t: any) => ({
     tooth: str(t?.tooth ?? t?.number, 4),
     brand: str(t?.brand, 40),
-    shade: str(t?.color ?? t?.shade, 12),
+    // 쉐이드는 크라운 세트 치아만 (sql/019) — 어버트먼트 치아는 예전 주문에 값이 남아 있어도 안 보여요
+    shade: t?.product === 'crown_set' ? str(t?.color ?? t?.shade, 12) : '',
     set: t?.product === 'crown_set',   // 👑 어버트먼트 + 지르코니아 크라운 세트 (sql/018)
   })).filter((t: any) => t.tooth);
 }
@@ -666,7 +667,8 @@ function sectionBox(s: Section): any | null {
         contents: [
           textNode('#' + t.tooth, { size: 'sm', weight: 'bold', color: INK, flex: 2 }),
           textNode((t.brand || '—') + (t.set ? ' · 👑 Set' : ''), { size: 'sm', color: GRAY, flex: 6 }),
-          textNode(t.shade || '—', { size: 'sm', color: INK, align: 'end', flex: 2 }),
+          // 쉐이드가 없으면(어버트먼트 치아) 빈 자리만 — Flex 는 빈 글자를 못 받고, "–" 같은 글자도 넣지 않아요
+          t.shade ? textNode(t.shade, { size: 'sm', color: INK, align: 'end', flex: 2 }) : { type: 'filler', flex: 2 },
         ],
       }, 'md');
     }

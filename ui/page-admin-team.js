@@ -359,6 +359,8 @@ Object.assign(PageAdmin, {
         return cncRateText({ type: d.type, value: d.value }) + ' · ' + tf('rate_from_fmt', { date: d.effective_from ? formatDate(d.effective_from) : '—' });
       case 'commission_paid': case 'commission_unpaid':
         return (d.year || '') + '-' + String(d.month || '').padStart(2, '0') + ' · ' + formatTHB(d.total || 0) + (d.reason ? ' · ' + d.reason : (d.note ? ' · ' + d.note : ''));
+      case 'ad_banner_saved': case 'ad_banner_deleted':   // 광고 배너 (sql/019)
+        return (d.name || '') + (d.slot ? ' · ' + t('ad_slot_' + d.slot) : '') + (r.action === 'ad_banner_saved' ? ' · ' + t(d.active ? 'ad_on' : 'ad_status_off') : '');
       case 'service_mode':   // 서비스 상태 테스트 ↔ 정식 (sql/017)
         return t(d.from === 'live' ? 'svc_mode_live' : 'svc_mode_test') + ' → ' + t(d.to === 'live' ? 'svc_mode_live' : 'svc_mode_test');
       case 'settings_changed':

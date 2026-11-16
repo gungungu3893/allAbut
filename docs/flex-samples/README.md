@@ -50,7 +50,7 @@
 | 섹션 | 상자마다 `margin xxl`, 제목 `md` bold `#111827`, 첫 내용 `margin md` |
 | Clinic | 이름 `sm` bold `#111827` + 회색 `sm` 최대 2줄 (주소 / "전화 · 이메일"), LINE 미연결 = "● " + `sm` `#B91C1C` (`margin md`) |
 | 항목 줄 | 라벨 `sm` regular `#6B7280` flex 4 / 값 `sm` regular `#111827` 오른쪽 flex 6 wrap, 줄 사이 `md`, 들여쓰기 없음. 날짜 값은 `20 Nov 2026` |
-| 치아 줄 | 번호 `sm` bold `#111827` flex 2 / 브랜드 `sm` `#6B7280` flex 6 / 쉐이드 `sm` `#111827` 오른쪽 flex 2 |
+| 치아 줄 | 번호 `sm` bold `#111827` flex 2 / 브랜드 `sm` `#6B7280` flex 6 (크라운 세트면 " · 👑 Set") / 쉐이드 `sm` `#111827` 오른쪽 flex 2 — **크라운 세트 치아만**, 어버트먼트 치아는 빈 `filler` (sql/019) |
 | 합계 | separator (`margin xxl`) → 상자 (`margin xl`): 작은 줄 = 항목 줄 / 큰 줄 라벨 `md` bold · 값 `xxl` bold 오른쪽 flex 0 (`margin lg`) / "Paid n · Free n" `xs` `#6B7280` 오른쪽 |
 | 하단 | 버튼 `#001D4A` 모서리 8px · 글씨 `sm` bold `#FFFFFF` / 안내 `xxs` `#9CA3AF` (`margin lg` · `xs`) |
 

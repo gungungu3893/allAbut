@@ -278,7 +278,8 @@ var PageOrders = {
           '<td>' + uiProductBadge(tt && typeof tt === 'object' ? tt.product : '') + '</td>' +
           '<td>' + escHtml(tt.brand === 'Other' ? t('brand_other') : (tt.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(tt.size || '—') + '</td>' +
-          '<td>' + uiShadeChip(tt.color) + ' <span class="mono">' + escHtml(tt.color || '—') + '</span></td></tr>';
+          // 쉐이드는 크라운 세트 치아만 (어버트먼트 치아 · 예전 주문에 남은 값은 숨겨요 — sql/019)
+          '<td>' + (cncToothShade(tt) ? uiShadeChip(cncToothShade(tt)) + ' <span class="mono">' + escHtml(cncToothShade(tt)) + '</span>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     // 메모

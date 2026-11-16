@@ -1,7 +1,7 @@
 // ===== 새 주문 #/new (5단계) =====
 //  1. Patient & Deadline   환자 ID(필수), 납기일(필수, 자체 달력)
 //  2. Select Teeth          FDI 32개 치아 차트
-//  3. Tooth Details         치아마다 제품(어버트먼트만 / 크라운 세트, sql/018) · 브랜드·사이즈·쉐이드 + 메모
+//  3. Tooth Details         치아마다 제품(어버트먼트만 / 크라운 세트, sql/018) · 브랜드·사이즈 + 쉐이드(크라운 세트 치아만, sql/019) + 메모
 //  4. Upload Files          스캔 파일·사진·PDF (최대 10개, 파일당 50MB)
 //  5. Review & Submit       요약, 배송 정보, 크레딧, 제출
 //
@@ -518,6 +518,7 @@ var PageNew = {
         }).join('');
     }
 
+    var anyCrown = d.teeth.some(function (n) { return cncToothNeedsShade(d, n); });
     // 크라운 세트를 고를 수 있는지: 세트 크레딧이 있거나 판매 중인 세트 패키지가 있을 때 (아니면 "곧 출시")
     var crownOk = cncProductCredits('crown_set').balance > 0 || APP.crownSetOnSale === true;
     function productSeg(n, current) {
@@ -544,14 +545,15 @@ var PageNew = {
             '<button type="button" class="btn btn-outline" onclick="PageNew.applyAll(\'brand\')">' + escHtml(t('wiz_brand_apply_all')) + '</button>' +
           '</div>' +
         '</div>' +
-        '<div class="bulk-item">' +
+        // 쉐이드 일괄 적용은 크라운 세트 치아가 있을 때만 (쉐이드는 세트 치아만 — sql/019)
+        (!anyCrown ? '' : '<div class="bulk-item bulk-shade">' +
           '<span class="field-label">' + escHtml(t('wiz_shade_label')) + '</span>' +
           '<div class="bulk-row">' +
             '<button type="button" class="input shade-btn" onclick="PageNew.openShadePicker(null)">' +
               uiShadeChip(this.bulkShade) + '<span>' + escHtml(this.bulkShade || t('choose_shade')) + '</span></button>' +
             '<button type="button" class="btn btn-outline" onclick="PageNew.applyAll(\'shade\')">' + escHtml(t('wiz_shade_apply_all')) + '</button>' +
           '</div>' +
-        '</div>' +
+        '</div>') +
         '<div class="bulk-item bulk-product">' +
           '<span class="field-label">' + escHtml(t('product_label')) + '</span>' +
           productSeg(null, '') +
@@ -585,18 +587,21 @@ var PageNew = {
               'oninput="PageNew.setTooth(' + n + ', \'size\', this.value, false)">' +
             uiFieldError(er.size) +
           '</div>' +
+          // 쉐이드: 크라운 세트 치아만 (어버트먼트만이면 칸 자체가 없어요 — sql/019)
+          (cncProductOf(det.product) !== 'crown_set' ? '' :
           '<div class="field">' +
             '<span class="field-label">' + escHtml(t('wiz_shade_label')) + ' <span class="required">*</span></span>' +
             '<button type="button" class="input shade-btn' + (er.shade ? ' invalid' : '') + '" id="shade-' + n + '" onclick="PageNew.openShadePicker(' + n + ')">' +
               uiShadeChip(det.shade) + '<span>' + escHtml(det.shade || t('choose_shade')) + '</span></button>' +
             uiFieldError(er.shade) +
-          '</div>' +
+          '</div>') +
         '</div>' +
       '</div>';
     }).join('');
 
     return bulk +
       '<p class="section-label">' + escHtml(t('wiz_shade_per_tooth')) + '</p>' +
+      '<p class="field-help shade-rule-note">' + escHtml(t('shade_crown_only_note')) + '</p>' +
       '<div class="tooth-cards">' + cards + '</div>' +
       '<div class="field">' +
         '<label class="field-label" for="f-memo">' + escHtml(t('memo_label')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
@@ -611,6 +616,7 @@ var PageNew = {
     cncSetToothDetail(this.draft, num, field, value);
     if (this.check && this.check.teeth[num]) {
       delete this.check.teeth[num][field];
+      if (field === 'product') delete this.check.teeth[num].shade;   // 제품을 바꾸면 쉐이드 에러도 다시 (쉐이드는 세트 치아만)
       if (!Object.keys(this.check.teeth[num]).length) delete this.check.teeth[num];
     }
     this.save();
@@ -794,7 +800,8 @@ var PageNew = {
           '<td>' + uiProductBadge(det.product) + '</td>' +
           '<td>' + escHtml(det.brand === 'Other' ? t('brand_other') : (det.brand || '—')) + '</td>' +
           '<td class="mono">' + escHtml(det.size || '—') + '</td>' +
-          '<td>' + uiShadeChip(det.shade) + ' <span class="mono">' + escHtml(det.shade || '—') + '</span></td></tr>';
+          // 쉐이드는 크라운 세트 치아만 (어버트먼트 치아는 비워요)
+          '<td>' + (cncProductOf(det.product) === 'crown_set' ? uiShadeChip(det.shade) + ' <span class="mono">' + escHtml(det.shade || '—') + '</span>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
 
     var html = '';
@@ -1024,7 +1031,7 @@ var PageNew = {
           return '<li><span class="mono sum-tooth">#' + n + '</span>' +
             '<span class="sum-brand">' + escHtml(det.brand === 'Other' ? t('brand_other') : (det.brand || '—')) +
               (cncProductOf(det.product) === 'crown_set' ? ' <span class="sum-crown" title="' + escHtml(t('product_crown_set')) + '">👑</span>' : '') + '</span>' +
-            '<span class="sum-shade">' + uiShadeChip(det.shade) + '<span class="mono">' + escHtml(det.shade || '—') + '</span></span></li>';
+            '<span class="sum-shade">' + (cncProductOf(det.product) === 'crown_set' ? uiShadeChip(det.shade) + '<span class="mono">' + escHtml(det.shade || '—') + '</span>' : '') + '</span></li>';
         }).join('') + '</ul>'
       : '<p class="muted">—</p>';
 
@@ -1153,6 +1160,8 @@ var PageNew = {
           (Number(s.crown_set || 0) > 0 ? '<p class="success-split" id="success-products">' + uiProductCountsHtml({ abutment: s.abutment, crown_set: s.crown_set }, true) + '</p>' : '') +
           '<p class="success-split" id="success-balance">' + escHtml(t('split_balance_now')) + ': ' + uiCreditSplitHtml({}) + '</p>' +
           (cncShowCrownSet() ? uiProductCreditsHtml({ cls: 'success-products-credits' }) : '') +
+          // 광고 배너 (주문 완료 안내 아래, 노출 중인 배너가 있을 때만 — ui/ad-banner.js)
+          '<div class="ad-slot ad-slot-order_done" data-ad-slot="order_done" id="done-ad" hidden></div>' +
           lineCtaHtml() +
           '<div class="success-actions">' +
             '<a href="#/orders" class="btn btn-primary btn-lg" onclick="PageOrders.openId=\'' + escHtml(s.id || '') + '\'">' + escHtml(t('view_my_orders')) + '</a>' +
@@ -1160,6 +1169,8 @@ var PageNew = {
           '</div>' +
         '</div>' +
       '</div>';
+    // 주문 완료는 같은 주소(#/new)라서 새 페이지 보기로 쳐요
+    if (window.AdBanner) { AdBanner.newPage(); AdBanner.mount(document.getElementById('done-ad'), 'order_done'); }
   },
 
   startNew: function () {

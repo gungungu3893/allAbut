@@ -63,6 +63,9 @@
         <span class="beta-note" id="beta-note" hidden></span>
       </div>
 
+      <!-- 광고 배너 (노출 중인 배너가 있을 때만 보여요 — ui/ad-banner.js, sql/019) -->
+      <div class="ad-slot ad-slot-landing" data-ad-slot="landing" hidden></div>
+
       <!-- 🎁 신규 가입 무료 크레딧 이벤트 (진행 중일 때만, app.js 의 renderCampaignBanners) -->
       <p class="campaign-banner" hidden></p>
 
@@ -303,6 +306,7 @@
   <script src="cnc/cnc-analytics.js"></script>
   <script src="cnc/cnc-sales.js"></script>
   <script src="cnc/cnc-service.js"></script>
+  <script src="cnc/cnc-ads.js"></script>
 
   <!-- 화면 -->
   <script src="ui/layout.js"></script>
@@ -310,6 +314,7 @@
   <script src="ui/logo-intro.js"></script>
   <script src="ui/visit-counter.js"></script>
   <script src="ui/service-badge.js"></script>
+  <script src="ui/ad-banner.js"></script>
   <script src="ui/line-connect.js"></script>
   <script src="ui/datepicker.js"></script>
   <script src="ui/page-home.js"></script>
@@ -327,6 +332,7 @@
   <script src="ui/page-admin-team.js"></script>
   <script src="ui/page-admin-free.js"></script>
   <script src="ui/page-admin-visits.js"></script>
+  <script src="ui/page-admin-ads.js"></script>
   <script src="ui/page-admin-sales.js"></script>
   <script src="ui/router.js"></script>
 

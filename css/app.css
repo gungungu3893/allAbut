@@ -2674,3 +2674,48 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .bulk-product .product-seg { display: inline-flex; flex-wrap: wrap; }
 .page-head:has(.topup-products) { align-items: flex-start; }
 .page-head .topup-products { flex: 0 1 380px; margin: 0; }
+
+/* ================================================================
+   광고 배너 (sql/019, ui/ad-banner.js) — 배너가 없으면 .ad-slot[hidden] 이라 자리 자체가 없어요
+   ================================================================ */
+.ad-slot[hidden] { display: none !important; }
+.ad-slot { width: 100%; }
+.ad-banner { position: relative; width: 100%; max-width: 728px; margin: 0 auto; }
+.ad-label {
+  position: absolute; top: 4px; inset-inline-start: 4px; z-index: 2;
+  padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; line-height: 1.4;
+  background: rgba(107, 114, 128, 0.85); color: #fff; pointer-events: none; direction: ltr;
+}
+.ad-frame { position: relative; width: 100%; aspect-ratio: 728 / 90; overflow: hidden; border-radius: 8px; background: #F3F4F6; }
+.ad-item { position: absolute; inset: 0; display: block; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+.ad-item.active { opacity: 1; pointer-events: auto; }
+.ad-item picture, .ad-item img { display: block; width: 100%; height: 100%; }
+.ad-item img { object-fit: cover; }
+.ad-item:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 599px) {
+  .ad-banner { max-width: 320px; }
+  .ad-frame { aspect-ratio: 320 / 100; }
+}
+@media (prefers-reduced-motion: reduce) { .ad-item { transition: none; } }
+/* 자리별 여백 */
+.ad-slot-landing { position: relative; z-index: 1; margin-top: 20px; padding: 0 16px; }
+.ad-slot-landing .ad-frame { background: rgba(255, 255, 255, 0.06); }
+.ad-slot-home { margin: 0; padding: 0 22px 20px; box-sizing: border-box; }
+.ad-slot-home .ad-banner { max-width: 100%; }
+.ad-slot-order_done { margin: 16px 0 4px; }
+
+/* 관리자: 광고 배너 */
+.ads-table td { vertical-align: middle; }
+.ad-status { font-weight: 600; }
+.ad-status-off { background: #F3F4F6; color: #4B5563; }
+.ad-status-scheduled { background: #EFF6FF; color: #1D4ED8; }
+.ad-status-live { background: var(--success-bg); color: var(--success); }
+.ad-status-ended { background: #FEF2F2; color: #B91C1C; }
+.ad-preview { margin: 6px 0; max-width: 100%; }
+.ad-preview-img { display: block; max-width: 100%; max-height: 120px; border: 1px solid var(--border); border-radius: 6px; }
+.ad-preview-empty { margin: 0; }
+.dash-ads { margin-top: 24px; }
+.dash-ads-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 8px; }
+.dash-ads-head .dash-section-title { margin: 0; }
+.ad-range .seg-btn { min-height: 40px; padding: 0 12px; font-size: 0.9375rem; }
+.shade-rule-note { margin: -4px 0 10px; }
