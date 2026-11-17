@@ -176,9 +176,15 @@
             <input type="password" id="signup-password2" autocomplete="new-password">
             <p class="auth-field-err" data-su-err="password2" role="alert"></p>
           </div>
+          <!-- 치과 소재 국가 (태국 맨 위, 이름은 지금 언어 — app.js fillSignupCountries) → 전화 · Tax ID 규칙과 세금계산서/영수증이 달라져요 (sql/021) -->
+          <div class="auth-field">
+            <label for="signup-country"><span data-i18n="country_label">Clinic country</span> <span class="required">*</span></label>
+            <select id="signup-country" onchange="onSignupCountryChange()"></select>
+          </div>
           <div class="auth-field">
             <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="required">*</span></label>
             <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30" inputmode="tel">
+            <p class="auth-hint" id="signup-phone-hint" hidden></p>
             <p class="auth-field-err" data-su-err="phone" role="alert"></p>
           </div>
           <div class="auth-field">
@@ -187,7 +193,7 @@
             <p class="auth-field-err" data-su-err="clinic_name" role="alert"></p>
           </div>
           <div class="auth-field">
-            <label for="signup-tax_id"><span data-i18n="clinic_tax_id_label">Clinic Tax ID (13 digits)</span> <span class="required">*</span></label>
+            <label for="signup-tax_id"><span id="signup-tax-label" data-i18n="clinic_tax_id_label">Clinic Tax ID (13 digits)</span> <span class="required" id="signup-tax-req">*</span></label>
             <input type="text" id="signup-tax_id" maxlength="20" inputmode="numeric" autocomplete="off">
             <p class="auth-field-err" data-su-err="tax_id" role="alert"></p>
           </div>
@@ -308,6 +314,7 @@
   <script src="cnc/cnc-service.js"></script>
   <script src="cnc/cnc-ads.js"></script>
   <script src="cnc/cnc-retention.js"></script>
+  <script src="cnc/cnc-tax.js"></script>
 
   <!-- 화면 -->
   <script src="ui/layout.js"></script>
@@ -318,6 +325,8 @@
   <script src="ui/ad-banner.js"></script>
   <script src="ui/back-to-top.js"></script>
   <script src="ui/line-connect.js"></script>
+  <script src="ui/tax-doc.js"></script>
+  <script src="ui/profile-docs.js"></script>
   <script src="ui/datepicker.js"></script>
   <script src="ui/page-home.js"></script>
   <script src="ui/page-guide.js"></script>
@@ -336,6 +345,7 @@
   <script src="ui/page-admin-visits.js"></script>
   <script src="ui/page-admin-ads.js"></script>
   <script src="ui/page-admin-retention.js"></script>
+  <script src="ui/page-admin-tax.js"></script>
   <script src="ui/page-admin-sales.js"></script>
   <script src="ui/router.js"></script>
 

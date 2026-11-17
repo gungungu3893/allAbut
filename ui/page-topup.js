@@ -60,8 +60,13 @@ var PageTopup = {
       if (token !== this.loadToken) return;
       this.packages = res[0];
       this.settings = res[1];
+      // sql/021: 해외 고객은 VAT 가 다를 수 있어요 (결제 설정 '해외 VAT') → 내 요율로 바꿔서 화면 · QR 금액에 써요
+      var myVat = await cncGetMyVatRate();
+      if (token !== this.loadToken) return;
+      if (myVat !== null) this.settings = Object.assign({}, this.settings, { vat_rate: myVat });
       this.history = res[2];
       this.historyError = false;
+      this.loadDocs();
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -79,6 +84,25 @@ var PageTopup = {
       this.historyError = true;
     }
     this.drawHistory();
+    this.loadDocs();
+  },
+
+  // 승인된 충전의 세금계산서 / 영수증 (sql/021) → 충전 내역 줄에 [세금계산서] / [영수증] 버튼
+  docs: {},
+  loadDocs: async function () {
+    var ids = (this.history || []).filter(function (r) { return r.status === 'approved'; }).map(function (r) { return r.id; });
+    if (!ids.length) return;
+    try {
+      this.docs = await cncTaxDocsForTopups(ids);
+    } catch (err) {
+      this.docs = {};
+    }
+    this.drawHistory();
+  },
+
+  openDoc: function (topupId) {
+    var d = this.docs[topupId];
+    if (d) TaxDoc.open([d], { mode: 'reference' });   // 세금계산서는 확인용 (정식 원본은 우편), 영수증은 정식 사본
   },
 
   clearSlip: function () {
@@ -379,6 +403,7 @@ var PageTopup = {
   drawHistory: function () {
     var box = document.getElementById('topup-history');
     if (!box) return;
+    var self = this;
     var html = '<h2 class="card-title">' + escHtml(t('topup_history')) + '</h2>';
     if (this.historyError) {
       html += '<p class="error-text">' + escHtml(t('load_error')) + '</p>';
@@ -391,6 +416,10 @@ var PageTopup = {
         '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('col_date')) + '</th><th>' + escHtml(t('product_label')) + '</th><th>' + escHtml(t('topup_package')) + '</th>' +
         '<th>' + escHtml(t('topup_total')) + '</th><th>' + escHtml(t('col_status')) + '</th><th></th></tr></thead><tbody>' +
         this.history.map(function (r) {
+          var doc = self.docs[r.id];
+          var docBtn = r.status === 'approved' && doc
+            ? '<button type="button" class="btn btn-outline btn-sm" onclick="PageTopup.openDoc(\'' + escHtml(r.id) + '\')">🧾 ' +
+              escHtml(t(doc.doc_type === 'invoice' ? 'tax_btn_invoice' : 'tax_btn_receipt')) + '</button>' : '';
           return '<tr><td class="mono nowrap">' + escHtml(r.id) + '</td>' +
             '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +
             '<td>' + uiProductBadge(r.product) + '</td>' +
@@ -399,7 +428,7 @@ var PageTopup = {
             '<td>' + uiTopupBadge(r.status) +
               (r.status === 'rejected' && r.reject_reason ? '<p class="topup-reason">' + escHtml(r.reject_reason) + '</p>' : '') + '</td>' +
             '<td>' + (r.status === 'pending'
-              ? '<button type="button" class="btn btn-outline btn-sm btn-danger-text" onclick="PageTopup.cancel(\'' + escHtml(r.id) + '\')">' + escHtml(t('btn_cancel')) + '</button>' : '') + '</td></tr>';
+              ? '<button type="button" class="btn btn-outline btn-sm btn-danger-text" onclick="PageTopup.cancel(\'' + escHtml(r.id) + '\')">' + escHtml(t('btn_cancel')) + '</button>' : docBtn) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
     box.innerHTML = html;

@@ -2,7 +2,7 @@
 // {{PRICE_TABLE}} = 판매 중인 패키지 가격표 (상품 종류마다 표 하나), {{REFUND_EXAMPLE}} = 환불 계산 예시 (어버트먼트 패키지 기준, credit_packages 에서 자동)
 // {single_price} = 어버트먼트 1개 패키지 단가, {vat} = VAT %, {email} = 문의 이메일
 // 내용은 지금 사이트 기능에 맞춰 써요: 상품 두 종류(크레딧 따로) · 12개월 · 먼저 만료되는 것부터 · 무료 크레딧(등록 주소 전용 · 현금 환불 불가 · 회수) ·
-// 14일 현금 환불(1개 가격 = 같은 종류의 1크레딧 가격) · 세금계산서는 자동 발행 기능 없음(문의).
+// 14일 현금 환불(1개 가격 = 같은 종류의 1크레딧 가격) · 세금계산서(태국, 원본 우편) / 영수증(해외) 자동 발행 · 환불 시 크레딧 노트 (sql/021).
 window.LEGAL_DOCS = window.LEGAL_DOCS || {};
 LEGAL_DOCS['credit.en'] = {
   title: 'Credit & Refund Policy',
@@ -91,10 +91,21 @@ LEGAL_DOCS['credit.en'] = {
       body: [
         [
           'Refunds are paid by bank transfer to an account in the name of the clinic or person who made the payment, within 14 business days after we approve the refund.',
-          'Refund amounts are calculated on the amount paid including VAT.',
-          'Tax invoices are not issued automatically on the Service. If you need a tax invoice for a top-up, please contact us. If we issued a tax invoice for a top-up, we will issue a credit note when we refund it.'
+          'Refund amounts are calculated on the amount paid including VAT (the VAT rate of that top-up).'
         ],
         'To request a refund, contact us at {email}.'
+      ]
+    },
+    {
+      title: 'Tax invoices and receipts',
+      body: [
+        [
+          'Clinics in Thailand: when we approve a top-up, a Thai tax invoice (ใบกำกับภาษี) is issued automatically in the clinic\'s name. The official original is sent to the clinic by post. You can preview it at any time in Profile → Tax invoices · receipts; a printout made there is for checking only.',
+          'Clinics outside Thailand: when we approve a top-up, a receipt is issued automatically. A receipt is not a Thai tax invoice. You can view and print it in Profile → Receipts; that printout is your official copy.',
+          'Which document you receive depends on the clinic country in your registered clinic information at the time of approval. The VAT rate for clinics outside Thailand may differ; the amount you pay is always shown before you pay.',
+          'When we refund a top-up in cash, we issue a credit note (ใบลดหนี้) if a tax invoice was issued, or a refund receipt if a receipt was issued.',
+          'Free credits are not invoiced. Issued documents cannot be changed; corrections are made only with a credit note or refund receipt. The name, address and branch printed on new documents can be checked in Profile.'
+        ]
       ]
     },
     {

@@ -4,6 +4,9 @@
 // - 크레딧 잔액 (전체 + 💳 충전 n · 🎁 무료 n, 공통 부품 uiCreditSplitHtml) + 묶음 목록 · 크레딧 이력 (줄마다 종류 배지 uiCreditKindBadge)
 // - 등록된 치과 정보 (무료 크레딧 주문의 배송지, 잠김) + 변경 요청 (관리자 승인 후 바뀜) — sql/008_free_credits.sql
 // - LINE 알림 연결 (공통 부품 ui/line-connect.js 의 LineConnect.mountSection 을 그대로 써요)
+// - 치과 소재 국가 (sql/021): 등록 정보와 함께 잠겨요 → 바꾸려면 등록 정보 변경 요청 (관리자 승인)
+// - 세금계산서 · 영수증 (sql/021): ui/profile-docs.js 의 ProfileDocs.mount — 문서에 들어갈 이름 · 주소 · 지점 + 월별 목록 · 출력
+//   주소 #/profile?docs 로 들어오면 (LINE 충전 승인 카드의 버튼) 이 섹션으로 바로 내려가요
 
 var PageProfile = {
   main: null,
@@ -14,6 +17,7 @@ var PageProfile = {
   saving: false,
   loadToken: 0,
   scrollToLine: false,   // 헤더의 "LINE 연결됨" 체크를 누르고 들어오면 LINE 섹션으로 내려가요
+  scrollToDocs: false,   // #/profile?docs (LINE 카드 · 충전 내역 버튼) → 세금계산서 · 영수증 섹션으로 내려가요
 
   render: function (main) {
     this.main = main;
@@ -28,6 +32,11 @@ var PageProfile = {
       this.scrollToLine = false;
       var box = document.getElementById('profile-line');
       if (box) setTimeout(function () { box.scrollIntoView({ block: 'start' }); }, 50);
+    }
+    if (this.scrollToDocs || /[?&]docs\b/.test(location.hash)) {
+      this.scrollToDocs = false;
+      var docs = document.getElementById('profile-docs');
+      if (docs) setTimeout(function () { docs.scrollIntoView({ block: 'start' }); }, 300);
     }
     this.onBalance = this.drawCredits.bind(this);
     window.addEventListener('balancechange', this.onBalance);
@@ -91,8 +100,25 @@ var PageProfile = {
     var nameHtml = !ident ? readOnly('nickname_label', p.nickname)
       : cncIdentityLocked(p, 'full_name') ? lockedValue('full_name_label', p.full_name)
       : input('full_name', 'full_name_label', p.full_name, { required: true });
-    var taxHtml = ident && cncIdentityLocked(p, 'tax_id') ? lockedValue('clinic_tax_id_label', cncFormatTaxId(p.tax_id))
-      : input('tax_id', ident ? 'clinic_tax_id_label' : 'tax_id_label', p.tax_id, { required: ident, help: ident ? 'tax_id_help' : '' });
+    // sql/021: 치과 소재 국가 — 태국이 아니면 Tax ID 는 선택 ("Tax / VAT ID (optional)")
+    var hasCountry = cncHasCountryColumns(p);
+    var country = cncProfileCountry(p);
+    var thai = cncIsThai(country);
+    var countryHtml = '';
+    if (hasCountry) {
+      if (cncIdentityLocked(p, 'country')) {
+        countryHtml = lockedValue('country_label', cncCountryName(country, currentLang));
+      } else {
+        countryHtml = '<div class="field"><label class="field-label" for="p-country">' + escHtml(t('country_label')) + '</label>' +
+          '<select class="input" id="p-country" onchange="PageProfile.onCountry()">' +
+          cncCountryOptions(country, currentLang).map(function (c) {
+            return '<option value="' + c.code + '"' + (c.code === country ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+          }).join('') + '</select></div>';
+      }
+    }
+    var taxLabel = !ident ? 'tax_id_label' : thai ? 'clinic_tax_id_label' : 'tax_vat_optional_label';
+    var taxHtml = ident && cncIdentityLocked(p, 'tax_id') ? lockedValue(taxLabel, cncFormatTaxId(p.tax_id))
+      : input('tax_id', taxLabel, p.tax_id, { required: ident && thai, help: ident ? (thai ? 'tax_id_help' : 'tax_vat_optional_help') : '' });
 
     this.main.innerHTML =
       '<div class="page page-profile">' +
@@ -106,7 +132,8 @@ var PageProfile = {
               readOnly('email_label', APP.user && APP.user.email) +
               input('clinic_name', 'clinic_name', p.clinic_name, { span: true, required: ident }) +
               input('address', 'address_label', p.address, { span: true, required: ident }) +
-              input('phone', 'phone_label', p.phone, { type: 'tel', required: ident }) +
+              countryHtml +
+              input('phone', 'phone_label', p.phone, { type: 'tel', required: ident, help: hasCountry && !thai ? 'phone_intl_hint' : '' }) +
               taxHtml +
               '<div class="field">' +
                 '<label class="field-label" for="p-lang">' + escHtml(t('language')) + '</label>' +
@@ -123,13 +150,25 @@ var PageProfile = {
           '<section class="card" id="profile-credits"></section>' +
         '</div>' +
         '<section class="card reg-card" id="profile-reg"></section>' +
+        '<section class="card docs-card" id="profile-docs" hidden></section>' +
         '<section class="card line-card" id="profile-line"></section>' +
         '<section class="card delete-card" id="profile-delete"></section>' +
       '</div>';
     this.drawCredits();
     this.drawReg();
+    if (typeof ProfileDocs !== 'undefined') ProfileDocs.mount(document.getElementById('profile-docs'));
     LineConnect.mountSection(document.getElementById('profile-line'));
     this.drawDelete();
+  },
+
+  // 국가를 바꾸면 (아직 잠기지 않았을 때만) 입력하던 값을 남긴 채 라벨 · 규칙만 다시 그려요
+  onCountry: function () {
+    var v = function (id) { var el = document.getElementById('p-' + id); return el ? el.value.trim() : undefined; };
+    var keep = { clinic_name: v('clinic_name'), address: v('address'), phone: v('phone'), country: v('country') };
+    if (v('tax_id') !== undefined) keep.tax_id = v('tax_id');
+    if (v('full_name') !== undefined) keep.full_name = v('full_name');
+    this.errors = {};
+    this.keepValues(keep);
   },
 
   // ================================================================
@@ -162,13 +201,15 @@ var PageProfile = {
       html += '<div class="reg-box"><p class="reg-box-name">' + escHtml(reg.clinic) + '</p>' +
         '<p class="reg-box-line pre">' + escHtml(reg.addr) + '</p>' +
         '<p class="reg-box-line">' + escHtml(reg.phone) + '</p>' +
+        (p.reg_country ? '<p class="reg-box-line">' + escHtml(cncCountryName(p.reg_country, currentLang)) + '</p>' : '') +
         '<p class="field-help">' + escHtml(tf('reg_since', { date: formatDate(p.clinic_locked_at) })) + '</p></div>';
       var c = this.clinicChange;
       if (c && c.status === 'pending') {
         html += '<div class="notice notice-info reg-pending" role="status"><p><span aria-hidden="true">⏳</span> ' +
           escHtml(tf('reg_change_pending', { date: formatDate(c.created_at) })) + '</p>' +
           '<p class="reg-box-line">' + (c.full_name ? escHtml(c.full_name) + ' · ' : '') + escHtml(c.clinic) + ' · ' + escHtml(c.addr) + ' · ' + escHtml(c.phone) +
-            (c.tax_id ? ' · ' + escHtml(cncFormatTaxId(c.tax_id)) : '') + '</p>' +
+            (c.tax_id ? ' · ' + escHtml(cncFormatTaxId(c.tax_id)) : '') +
+            (c.country ? ' · ' + escHtml(cncCountryName(c.country, currentLang)) : '') + '</p>' +
           '<button type="button" class="btn btn-outline btn-sm" onclick="PageProfile.cancelClinicChange()">' + escHtml(t('reg_change_cancel')) + '</button></div>';
       } else {
         if (c && c.status === 'rejected') {
@@ -186,17 +227,28 @@ var PageProfile = {
     var p = APP.profile || {};
     var reg = cncRegisteredClinic(p) || {};
     var ident = cncHasIdentityColumns(p);   // sql/010 실행 후엔 본명 · Tax ID 도 같이 요청
-    function field(id, labelKey, value, type) {
-      return '<div class="field"><label class="field-label" for="rc-' + id + '">' + escHtml(t(labelKey)) + ' <span class="required">*</span></label>' +
+    var hasCountry = cncHasCountryColumns(p);   // sql/021 실행 후엔 치과 소재 국가도 같이 요청
+    var curCountry = cncProfileCountry(p);
+    function field(id, labelKey, value, type, optional) {
+      return '<div class="field"><label class="field-label" for="rc-' + id + '"><span id="rc-' + id + '-label">' + escHtml(t(labelKey)) + '</span>' +
+        ' <span class="required" id="rc-' + id + '-req"' + (optional ? ' hidden' : '') + '>*</span></label>' +
         '<input class="input" id="rc-' + id + '" type="' + (type || 'text') + '" maxlength="300" value="' + escHtml(value || '') + '">' +
         '<div class="err-slot" data-rc-err="' + id + '"></div></div>';
     }
+    var countryField = !hasCountry ? '' :
+      '<div class="field"><label class="field-label" for="rc-country">' + escHtml(t('country_label')) + ' <span class="required">*</span></label>' +
+      '<select class="input" id="rc-country">' + cncCountryOptions(curCountry, currentLang).map(function (c) {
+        return '<option value="' + c.code + '"' + (c.code === curCountry ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+      }).join('') + '</select>' +
+      '<p class="field-help">' + escHtml(t('country_change_help')) + '</p><div class="err-slot" data-rc-err="country"></div></div>';
+    var thaiNow = cncIsThai(curCountry);
     var modal = uiModal({
       title: t('reg_change_btn'),
       body: '<p class="modal-text">' + escHtml(t('reg_change_text')) + '</p>' +
         (ident ? field('full_name', 'full_name_label', p.full_name) : '') +
+        countryField +
         field('clinic', 'clinic_name', reg.clinic) + field('addr', 'address_label', reg.addr) + field('phone', 'phone_label', reg.phone, 'tel') +
-        (ident ? field('tax_id', 'clinic_tax_id_label', p.tax_id) : '') +
+        (ident ? field('tax_id', thaiNow ? 'clinic_tax_id_label' : 'tax_vat_optional_label', p.tax_id, 'text', !thaiNow) : '') +
         '<div class="field"><label class="field-label" for="rc-reason">' + escHtml(t('reg_change_reason')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
         '<textarea class="input textarea" id="rc-reason" rows="2" maxlength="500"></textarea></div>',
       actions: [
@@ -205,10 +257,14 @@ var PageProfile = {
           var v = function (id) { return modal.el.querySelector('#rc-' + id).value.trim(); };
           var vals = { clinic: v('clinic'), addr: v('addr'), phone: v('phone') };
           if (ident) { vals.full_name = v('full_name'); vals.tax_id = v('tax_id'); }
+          var country = hasCountry ? cncNormCountry(v('country')) : 'TH';
+          var thai = cncIsThai(country);
           var errs = {};
-          Object.keys(vals).forEach(function (k) { if (!vals[k]) errs[k] = 'err_required'; });
-          if (vals.phone && !cncValidPhone(vals.phone)) errs.phone = 'err_phone';
-          if (ident && vals.tax_id && !cncValidTaxId(vals.tax_id)) errs.tax_id = 'err_tax_id_checksum';
+          Object.keys(vals).forEach(function (k) {
+            if (!vals[k] && !(k === 'tax_id' && !thai)) errs[k] = 'err_required';   // 태국이 아니면 Tax ID 는 선택
+          });
+          if (vals.phone && !cncValidPhone(vals.phone, country)) errs.phone = thai ? 'err_phone' : 'err_phone_intl';
+          if (ident && vals.tax_id && !cncValidTaxId(vals.tax_id, country)) errs.tax_id = thai ? 'err_tax_id_checksum' : 'err_tax_id_intl';
           Object.keys(vals).forEach(function (k) {
             modal.el.querySelector('[data-rc-err="' + k + '"]').innerHTML = uiFieldError(errs[k]);
           });
@@ -216,17 +272,31 @@ var PageProfile = {
           btn.disabled = true;
           try {
             await cncRequestClinicChange(vals.clinic, vals.addr, vals.phone, v('reason'),
-              ident ? vals.full_name : undefined, ident ? vals.tax_id : undefined);
+              ident ? vals.full_name : undefined, ident ? vals.tax_id : undefined, hasCountry ? country : undefined);
             close();
             uiToast(t('reg_change_sent'), 'success');
             self.loadClinicChange();
           } catch (err) {
             console.error(err);
             btn.disabled = false;
-            uiToast(uiErrorMessage(err), 'error');
+            var code = cncErrorCode(err);
+            if (code === 'TAX_ID_REQUIRED' || code === 'TAX_ID_INVALID') {
+              modal.el.querySelector('[data-rc-err="tax_id"]').innerHTML = uiFieldError(thai ? 'err_tax_id_checksum' : 'err_tax_id_intl');
+            } else {
+              uiToast(uiErrorMessage(err), 'error');
+            }
           }
         } }
       ]
+    });
+    // 국가를 바꾸면 Tax ID 라벨 · 필수 표시가 바뀌어요
+    var sel = modal.el.querySelector('#rc-country');
+    if (sel && ident) sel.addEventListener('change', function () {
+      var th = cncIsThai(sel.value);
+      var lab = modal.el.querySelector('#rc-tax_id-label');
+      if (lab) lab.textContent = t(th ? 'clinic_tax_id_label' : 'tax_vat_optional_label');
+      var req = modal.el.querySelector('#rc-tax_id-req');
+      if (req) req.hidden = !th;
     });
   },
 
@@ -383,8 +453,12 @@ var PageProfile = {
       phone: v('phone'),
       lang: document.getElementById('p-lang').value
     };
+    // 국가: 아직 잠기지 않았을 때만 입력칸이 있어요 (sql/021)
+    var country = cncProfileCountry(p);
+    if (v('country') !== null) { country = cncNormCountry(v('country')); fields.country = country; }
+    var thai = cncIsThai(country);
     // 잠긴 칸(본명 · Tax ID)은 화면에 입력칸이 없어서 보내지 않아요
-    if (v('tax_id') !== null) fields.tax_id = ident ? cncNormTaxId(v('tax_id')) : v('tax_id');
+    if (v('tax_id') !== null) fields.tax_id = ident ? cncNormTaxId(v('tax_id'), country) : v('tax_id');
     if (ident && v('full_name') !== null) fields.full_name = cncNormName(v('full_name'));
     this.errors = {};
     if (ident) {
@@ -392,7 +466,8 @@ var PageProfile = {
       var check = cncValidateIdentity({
         full_name: fields.full_name !== undefined ? fields.full_name : p.full_name,
         phone: fields.phone, clinic_name: fields.clinic_name, address: fields.address,
-        tax_id: fields.tax_id !== undefined ? fields.tax_id : p.tax_id
+        tax_id: fields.tax_id !== undefined ? fields.tax_id : p.tax_id,
+        country: country
       });
       var self = this;
       Object.keys(check).forEach(function (k) { if (document.getElementById('p-' + k)) self.errors[k] = check[k]; });
@@ -425,7 +500,7 @@ var PageProfile = {
       this.saving = false;
       var code = cncErrorCode(err);
       var fieldOf = { PHONE_TAKEN: 'phone', PHONE_INVALID: 'phone', TAX_ID_TAKEN: 'tax_id', TAX_ID_INVALID: 'tax_id' };
-      if (fieldOf[code]) this.errors[fieldOf[code]] = uiErrorMessageKey(code);   // 칸 아래 빨간 글씨 (ui/page-complete.js)
+      if (fieldOf[code]) this.errors[fieldOf[code]] = uiErrorMessageKey(code, country);   // 칸 아래 빨간 글씨 (ui/page-complete.js)
       this.keepValues(fields);
       if (!fieldOf[code]) uiToast(uiErrorMessage(err), 'error');
     }

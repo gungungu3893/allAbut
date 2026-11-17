@@ -26,7 +26,7 @@ var PageGuide = {
   ],
 
   // 자주 묻는 질문 번호 (8 = 테스트 서비스 안내는 test 일 때만)
-  FAQ_ALWAYS: [1, 2, 3, 6, 7, 4, 5],
+  FAQ_ALWAYS: [1, 2, 3, 9, 6, 7, 4, 5],   // 9 = 세금계산서(영수증)는 어디서 받나요? (sql/021)
   FAQ_TEST: 8,
 
   render: function (main) {

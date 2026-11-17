@@ -4,6 +4,9 @@
 //   - 이미 채워진 본명 · 올바른 Tax ID 는 잠겨 있어서 읽기 전용 (바꾸려면 Profile → 등록 정보 변경 요청)
 //   - 저장은 cncSaveProfile → 서버 트리거가 정규화 · 형식 · 중복을 다시 검사 (PHONE_TAKEN 등은 칸 아래 빨간 글씨)
 //   - 다 채우면 APP.needsInfo = false → 홈으로
+// sql/021: "치과 소재 국가" 선택 (기본 Thailand, 태국 맨 위)
+//   - 태국: Tax ID 13자리 필수 · 태국 전화
+//   - 그 밖: Tax / VAT ID 선택 · 국가번호(+) 포함 전화 → 충전 승인 때 세금계산서 대신 영수증(Receipt)
 
 var PageComplete = {
   main: null,
@@ -23,29 +26,69 @@ var PageComplete = {
     this.draw();
   },
 
+  // 지금 고른 국가 (잠겨 있으면 프로필 값)
+  currentCountry: function () {
+    var p = APP.profile || {};
+    if (cncIdentityLocked(p, 'country')) return cncProfileCountry(p);
+    if (this.values && this.values.country) return cncNormCountry(this.values.country);
+    return cncNormCountry(p.country || 'TH');
+  },
+
+  // 국가를 바꾸면 입력하던 값을 남긴 채 라벨 · 규칙만 다시 그려요
+  onCountry: function () {
+    this.values = this.collect();
+    this.errors = {};
+    this.draw();
+  },
+
+  collect: function () {
+    var p = APP.profile || {};
+    var main = this.main;
+    var vals = {};
+    ['full_name', 'phone', 'clinic_name', 'tax_id', 'address', 'country'].forEach(function (k) {
+      var el = main.querySelector('#pc-' + k);
+      // 잠긴 칸(읽기 전용)은 지금 프로필 값 그대로
+      vals[k] = (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) ? el.value.trim() : String(p[k] || '');
+    });
+    if (cncIdentityLocked(p, 'country')) vals.country = cncProfileCountry(p);
+    vals.country = cncNormCountry(vals.country || 'TH');
+    return vals;
+  },
+
   draw: function () {
     if (!this.main) return;
     var p = APP.profile || {};
+    var country = this.currentCountry();
+    var thai = cncIsThai(country);
     var vals = this.values || {
       full_name: p.full_name || '', phone: p.phone || '', clinic_name: p.clinic_name || '',
-      tax_id: p.tax_id || '', address: p.address || ''
+      tax_id: p.tax_id || '', address: p.address || '', country: country
     };
     var e = this.errors;
-    var missing = cncMissingProfileFields(p);
+    var missing = cncMissingProfileFields(Object.assign({}, p, { country: country }));
 
     function field(id, labelKey, opts) {
       opts = opts || {};
       var locked = cncIdentityLocked(p, id);
+      var required = opts.optional ? '' : ' <span class="required" aria-hidden="true">*</span>';
       var html = '<div class="field' + (opts.span ? ' span-2' : '') + (missing.indexOf(id) !== -1 ? ' field-missing' : '') + '">' +
-        '<label class="field-label" for="pc-' + id + '">' + escHtml(t(labelKey)) + ' <span class="required" aria-hidden="true">*</span></label>';
+        '<label class="field-label" for="pc-' + id + '">' + escHtml(t(labelKey)) + required + '</label>';
       if (locked) {
-        html += '<p class="readonly-value" id="pc-' + id + '">' + escHtml(id === 'tax_id' ? cncFormatTaxId(p[id]) : p[id]) + '</p>' +
+        var shown = id === 'tax_id' ? cncFormatTaxId(p[id]) : (id === 'country' ? cncCountryName(cncProfileCountry(p), currentLang) : p[id]);
+        html += '<p class="readonly-value" id="pc-' + id + '">' + escHtml(shown) + '</p>' +
           '<p class="field-help"><span aria-hidden="true">🔒</span> ' + escHtml(t('identity_locked_note')) + '</p>';
+      } else if (opts.select) {
+        html += '<select class="input' + (e[id] ? ' invalid' : '') + '" id="pc-' + id + '" onchange="PageComplete.onCountry()">' +
+          cncCountryOptions(vals[id] || 'TH', currentLang).map(function (c) {
+            return '<option value="' + c.code + '"' + (c.code === (vals[id] || 'TH') ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+          }).join('') + '</select>';
       } else if (opts.textarea) {
         html += '<textarea class="input textarea' + (e[id] ? ' invalid' : '') + '" id="pc-' + id + '" rows="3" maxlength="300">' + escHtml(vals[id]) + '</textarea>';
       } else {
         html += '<input class="input' + (e[id] ? ' invalid' : '') + '" id="pc-' + id + '" type="' + (opts.type || 'text') + '"' +
-          (opts.inputmode ? ' inputmode="' + opts.inputmode + '"' : '') + ' maxlength="' + (opts.max || 200) + '" value="' + escHtml(vals[id]) + '">';
+          (opts.inputmode ? ' inputmode="' + opts.inputmode + '"' : '') +
+          (opts.placeholder ? ' placeholder="' + escHtml(opts.placeholder) + '"' : '') +
+          ' maxlength="' + (opts.max || 200) + '" value="' + escHtml(vals[id]) + '">';
       }
       if (!locked && opts.help) html += '<p class="field-help">' + escHtml(t(opts.help)) + '</p>';
       html += uiFieldError(e[id]) + '</div>';
@@ -59,8 +102,12 @@ var PageComplete = {
           '<p class="complete-desc"><span aria-hidden="true">ℹ</span> ' + escHtml(t('complete_desc')) + '</p>' +
           '<form class="form-grid two" onsubmit="PageComplete.save(event)" novalidate>' +
             field('full_name', 'full_name_label', { span: true, help: 'full_name_help' }) +
-            field('phone', 'phone_label', { type: 'tel', inputmode: 'tel', max: 30 }) +
-            field('tax_id', 'clinic_tax_id_label', { inputmode: 'numeric', max: 20, help: 'tax_id_help' }) +
+            (cncHasCountryColumns(p) ? field('country', 'country_label', { span: true, select: true, help: 'country_help' }) : '') +
+            field('phone', 'phone_label', thai ? { type: 'tel', inputmode: 'tel', max: 30 }
+              : { type: 'tel', inputmode: 'tel', max: 30, help: 'phone_intl_hint', placeholder: '+82 10 1234 5678' }) +
+            (thai
+              ? field('tax_id', 'clinic_tax_id_label', { inputmode: 'numeric', max: 20, help: 'tax_id_help' })
+              : field('tax_id', 'tax_vat_optional_label', { max: 30, optional: true, help: 'tax_vat_optional_help' })) +
             field('clinic_name', 'clinic_name', { span: true }) +
             field('address', 'clinic_address_label', { span: true, textarea: true }) +
             '<div class="span-2 form-actions">' +
@@ -80,13 +127,7 @@ var PageComplete = {
     event.preventDefault();
     if (this.saving) return;
     var p = APP.profile || {};
-    var main = this.main;
-    var vals = {};
-    ['full_name', 'phone', 'clinic_name', 'tax_id', 'address'].forEach(function (k) {
-      var el = main.querySelector('#pc-' + k);
-      // 잠긴 칸(읽기 전용)은 지금 프로필 값 그대로
-      vals[k] = (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) ? el.value.trim() : String(p[k] || '');
-    });
+    var vals = this.collect();
     this.values = vals;
     this.errors = cncValidateIdentity(vals);
     if (Object.keys(this.errors).length) { this.draw(); return; }
@@ -94,7 +135,8 @@ var PageComplete = {
     // 잠긴 칸은 보내지 않아요 (서버도 바꾸지 못하게 막아요)
     var fields = { phone: vals.phone, clinic_name: cncNormName(vals.clinic_name), address: vals.address };
     if (!cncIdentityLocked(p, 'full_name')) fields.full_name = cncNormName(vals.full_name);
-    if (!cncIdentityLocked(p, 'tax_id')) fields.tax_id = cncNormTaxId(vals.tax_id);
+    if (!cncIdentityLocked(p, 'tax_id')) fields.tax_id = cncNormTaxId(vals.tax_id, vals.country);
+    if (!cncIdentityLocked(p, 'country') && cncHasCountryColumns(p)) fields.country = vals.country;
 
     this.saving = true;
     this.draw();
@@ -114,7 +156,7 @@ var PageComplete = {
       var fieldOf = { PHONE_TAKEN: 'phone', PHONE_INVALID: 'phone', TAX_ID_TAKEN: 'tax_id', TAX_ID_INVALID: 'tax_id' };
       if (fieldOf[code]) {
         this.errors = {};
-        this.errors[fieldOf[code]] = uiErrorMessageKey(code);
+        this.errors[fieldOf[code]] = uiErrorMessageKey(code, vals.country);
         this.draw();
       } else {
         this.draw();
@@ -124,10 +166,11 @@ var PageComplete = {
   }
 };
 
-// 에러 코드 → 번역 키 (칸 아래 글씨용)
-function uiErrorMessageKey(code) {
+// 에러 코드 → 번역 키 (칸 아래 글씨용). 태국이 아니면 형식 안내가 달라요 (sql/021)
+function uiErrorMessageKey(code, country) {
+  var thai = cncIsThai(country || 'TH');
   return {
-    PHONE_TAKEN: 'err_phone_taken', PHONE_INVALID: 'err_phone',
-    TAX_ID_TAKEN: 'err_tax_id_taken', TAX_ID_INVALID: 'err_tax_id_checksum'
+    PHONE_TAKEN: 'err_phone_taken', PHONE_INVALID: thai ? 'err_phone' : 'err_phone_intl',
+    TAX_ID_TAKEN: 'err_tax_id_taken', TAX_ID_INVALID: thai ? 'err_tax_id_checksum' : 'err_tax_id_intl'
   }[code] || 'err_unknown';
 }

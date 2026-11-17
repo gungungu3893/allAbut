@@ -75,6 +75,7 @@ const SITE_ADMIN_TOPUPS_URL = siteLink('/admin/topups');
 const SITE_ADMIN_CUSTOMERS_URL = siteLink('/admin/customers');
 const SITE_TOPUP_URL = siteLink('/topup');
 const SITE_PROFILE_URL = siteLink('/profile');
+const SITE_PROFILE_DOCS_URL = siteLink('/profile?docs');   // 내 정보 → 세금계산서 · 영수증 섹션 (sql/021)
 // 카드 맨 위 로고 (사이트에 올라가 있는 공개 이미지, 192×192 PNG — assets/brand/line-icon.png)
 const LOGO_URL = SITE_URL + '/assets/brand/line-icon.png';
 
@@ -117,6 +118,7 @@ const ADMIN_NOTICE_STYLES = {
   marked_done:      { color: '#0E7490', icon: '📦', label: 'MARKED DELIVERED', title: 'Marked as delivered' },
   free_approval:    { color: '#B8860B', icon: '🎁', label: 'FREE CREDITS',     title: '🎁 Free credits — approval needed' },
   deadline_changed: { color: '#0E7490', icon: '📅', label: 'DEADLINE CHANGED', title: 'Delivery date changed' },
+  refund_cash:      { color: '#7C3AED', icon: '💸', label: 'CASH REFUND',      title: 'Cash refund' },
 };
 type NoticeType = keyof typeof ADMIN_NOTICE_STYLES;
 
@@ -1073,6 +1075,7 @@ async function creditReceipt(L: Lang, opt: {
   title: string; color: string; message?: string; docNo?: string; userId: string; p: Profile | null; order?: any | null;
   details?: Row[]; amounts: Row[]; balance: number | null; copy?: CopyInfo; button: { label: string; url: string }; when?: unknown;
   product?: string;   // 'abutment' | 'crown_set' | 'mixed' (sql/018) → 상세 맨 위 "Product" 줄 + 종류별 잔액
+  extra?: Section[];  // 상세 아래에 덧붙일 섹션 (예: 세금계산서 · 영수증 번호, sql/021)
 }) {
   const o = opt.order;
   const sections: Section[] = [
@@ -1085,6 +1088,7 @@ async function creditReceipt(L: Lang, opt: {
   }
   const detailRows: Row[] = [...(opt.product ? [[L.r.product, productName(L, opt.product)] as Row] : []), ...(opt.details || [])];
   if (rowsOf(detailRows).length) sections.push({ title: L.r.sec_details, rows: detailRows });
+  if (opt.extra) sections.push(...opt.extra);
   return buildReceiptCard({
     title: opt.title, color: opt.color, subtitle: 'allAbut · ' + L.r.notice_credit,
     copyLabel: opt.copy ? 'COPY OF CUSTOMER NOTICE' : undefined, altPrefix: opt.copy ? 'COPY · ' : '',
@@ -1284,6 +1288,91 @@ const CREDIT_TYPES: Record<string, NoticeType> = {
 };
 
 // ----------------------------------------------------------------
+// 세금계산서 · 영수증 (sql/021) — 충전 승인 카드 · 현금 환불 카드에 들어가는 줄
+//   태국 고객 = Tax invoice (정식 원본은 우편) / 해외 고객 = Receipt (내 정보에서 확인 · 출력)
+//   문서가 없으면 (설정이 꺼져 있었거나 021 실행 전) 이 섹션을 빼요. 우편 발송 표시는 LINE 을 보내지 않아요.
+// ----------------------------------------------------------------
+type TaxTexts = {
+  invoice: string; receipt: string; credit_note: string; refund_receipt: string; no: string;
+  invoice_note: string; receipt_note: string; view_docs: string;
+  refund_cash_title: string; refund_cash_body: string; amount: string;
+};
+const TAX_T: Record<string, TaxTexts> = {
+  en: { invoice: 'Tax invoice', receipt: 'Receipt', credit_note: 'Credit note', refund_receipt: 'Refund receipt', no: 'No.',
+    invoice_note: 'The original will be sent to you by post. You can preview it in Profile → Tax invoices · receipts.',
+    receipt_note: 'You can view and print it in Profile → Receipts.', view_docs: 'View documents',
+    refund_cash_title: '💸 Cash refund', refund_cash_body: '{n} credits were refunded in cash.', amount: 'Refund amount' },
+  ko: { invoice: '세금계산서', receipt: '영수증', credit_note: '크레딧 노트', refund_receipt: '환불 영수증', no: '번호',
+    invoice_note: '정식 원본은 우편으로 보내 드려요. 내 정보 → 세금계산서에서 미리 확인할 수 있어요.',
+    receipt_note: '내 정보 → 영수증에서 확인 · 출력할 수 있어요.', view_docs: '문서 보기',
+    refund_cash_title: '💸 현금 환불', refund_cash_body: '크레딧 {n}개를 현금으로 환불했어요.', amount: '환불 금액' },
+  th: { invoice: 'ใบกำกับภาษี', receipt: 'ใบเสร็จรับเงิน', credit_note: 'ใบลดหนี้', refund_receipt: 'ใบเสร็จการคืนเงิน', no: 'เลขที่',
+    invoice_note: 'ต้นฉบับจะส่งให้ทางไปรษณีย์ ดูตัวอย่างได้ที่ โปรไฟล์ → ใบกำกับภาษี · ใบเสร็จ',
+    receipt_note: 'ดูและพิมพ์ได้ที่ โปรไฟล์ → ใบเสร็จรับเงิน', view_docs: 'ดูเอกสาร',
+    refund_cash_title: '💸 คืนเงินสด', refund_cash_body: 'คืนเครดิต {n} เครดิตเป็นเงินสดแล้ว', amount: 'จำนวนเงินที่คืน' },
+  zh: { invoice: '税务发票', receipt: '收据', credit_note: '贷记单', refund_receipt: '退款收据', no: '编号',
+    invoice_note: '正式原件将邮寄给您。您可以在 个人资料 → 税务发票 · 收据 中预览。',
+    receipt_note: '您可以在 个人资料 → 收据 中查看和打印。', view_docs: '查看文件',
+    refund_cash_title: '💸 现金退款', refund_cash_body: '已将 {n} 个点数以现金退款。', amount: '退款金额' },
+  vi: { invoice: 'Hóa đơn thuế', receipt: 'Biên nhận', credit_note: 'Giấy báo có', refund_receipt: 'Biên nhận hoàn tiền', no: 'Số',
+    invoice_note: 'Bản gốc sẽ được gửi qua bưu điện. Bạn có thể xem trước tại Hồ sơ → Hóa đơn thuế · Biên nhận.',
+    receipt_note: 'Bạn có thể xem và in tại Hồ sơ → Biên nhận.', view_docs: 'Xem tài liệu',
+    refund_cash_title: '💸 Hoàn tiền mặt', refund_cash_body: 'Đã hoàn {n} tín dụng bằng tiền mặt.', amount: 'Số tiền hoàn' },
+  es: { invoice: 'Factura fiscal', receipt: 'Recibo', credit_note: 'Nota de crédito', refund_receipt: 'Recibo de reembolso', no: 'N.º',
+    invoice_note: 'El original se le enviará por correo postal. Puede verlo antes en Perfil → Facturas fiscales · recibos.',
+    receipt_note: 'Puede verlo e imprimirlo en Perfil → Recibos.', view_docs: 'Ver documentos',
+    refund_cash_title: '💸 Reembolso en efectivo', refund_cash_body: 'Se reembolsaron {n} créditos en efectivo.', amount: 'Importe reembolsado' },
+  tr: { invoice: 'Vergi faturası', receipt: 'Makbuz', credit_note: 'Alacak dekontu', refund_receipt: 'İade makbuzu', no: 'No.',
+    invoice_note: 'Asıl belge size posta ile gönderilecek. Profil → Vergi faturaları · makbuzlar bölümünden önizleyebilirsiniz.',
+    receipt_note: 'Profil → Makbuzlar bölümünden görüntüleyip yazdırabilirsiniz.', view_docs: 'Belgeleri gör',
+    refund_cash_title: '💸 Nakit iade', refund_cash_body: '{n} kredi nakit olarak iade edildi.', amount: 'İade tutarı' },
+  ar: { invoice: 'فاتورة ضريبية', receipt: 'إيصال', credit_note: 'إشعار دائن', refund_receipt: 'إيصال استرداد', no: 'رقم',
+    invoice_note: 'سيُرسَل الأصل إليك بالبريد. يمكنك معاينته في الملف الشخصي ← الفواتير الضريبية · الإيصالات.',
+    receipt_note: 'يمكنك عرضه وطباعته في الملف الشخصي ← الإيصالات.', view_docs: 'عرض المستندات',
+    refund_cash_title: '💸 استرداد نقدي', refund_cash_body: 'تم استرداد {n} رصيد نقدًا.', amount: 'مبلغ الاسترداد' },
+  fa: { invoice: 'فاکتور مالیاتی', receipt: 'رسید', credit_note: 'یادداشت بستانکاری', refund_receipt: 'رسید بازپرداخت', no: 'شماره',
+    invoice_note: 'نسخه اصلی با پست برای شما ارسال می‌شود. می‌توانید آن را در نمایه ← فاکتورهای مالیاتی · رسیدها پیش‌نمایش کنید.',
+    receipt_note: 'می‌توانید آن را در نمایه ← رسیدها ببینید و چاپ کنید.', view_docs: 'دیدن اسناد',
+    refund_cash_title: '💸 بازپرداخت نقدی', refund_cash_body: '{n} اعتبار به صورت نقدی بازپرداخت شد.', amount: 'مبلغ بازپرداخت' },
+};
+function taxText(lang: unknown): TaxTexts {
+  return (typeof lang === 'string' && TAX_T[lang]) ? TAX_T[lang] : TAX_T.en;
+}
+
+// 충전 요청의 세금계산서 / 영수증 (없으면 null — 021 실행 전이면 표가 없어서 null)
+async function topupTaxDoc(topupId: unknown): Promise<any | null> {
+  if (!topupId) return null;
+  try {
+    const { data, error } = await db.from('tax_invoices').select('id, doc_type, number, issue_date')
+      .eq('topup_id', String(topupId)).in('doc_type', ['invoice', 'receipt']).maybeSingle();
+    if (error) return null;
+    return data ?? null;
+  } catch (_) { return null; }
+}
+
+// 현금 환불 이력의 크레딧 노트 / 환불 영수증 (여러 충전에서 나눠 환불하면 여러 장)
+async function refundTaxDocs(historyId: unknown): Promise<any[]> {
+  if (!historyId) return [];
+  try {
+    const { data, error } = await db.from('tax_invoices').select('id, doc_type, number')
+      .eq('history_id', String(historyId)).order('id', { ascending: true });
+    if (error || !Array.isArray(data)) return [];
+    return data;
+  } catch (_) { return []; }
+}
+
+// 충전 승인 카드의 문서 섹션 (고객 언어 / 사본은 영어)
+function taxDocSection(lang: unknown, doc: any): Section {
+  const X = taxText(lang);
+  const inv = doc.doc_type === 'invoice';
+  return { title: inv ? X.invoice : X.receipt, rows: [[X.no, str(doc.number, 40)]], text: inv ? X.invoice_note : X.receipt_note };
+}
+
+function taxDocTypeName(X: TaxTexts, type: string): string {
+  return type === 'credit_note' ? X.credit_note : type === 'receipt_refund' ? X.refund_receipt : type === 'invoice' ? X.invoice : X.receipt;
+}
+
+// ----------------------------------------------------------------
 // 무료 크레딧 (sql/009) — 판단은 설명 글자가 아니라 묶음 정보로
 //   무료 묶음 = credit_lots.source 'free' 또는 'bonus' (예전 관리자 지급·예전 신규 가입 지급)
 //   묶음을 못 읽으면 예전 설명("Signup bonus" · "Welcome gift" · "Free credits: …")으로도 알아봐요
@@ -1351,6 +1440,7 @@ async function notifyFreeCredits(h: any, lot: any | null): Promise<void> {
 async function notifyCredit(h: any): Promise<void> {
   const type = String(h.type || '');
   const amount = Number(h.amount || 0);
+  if (type === 'refund_cash') { await notifyRefundCash(h); return; }   // 현금 환불 (sql/021 — 크레딧 노트 / 환불 영수증 번호)
   if (!CREDIT_TYPES[type]) return;
   if (type === 'expire' && amount >= 0) return;
   if (type === 'charge' && amount <= 0) return;
@@ -1370,6 +1460,8 @@ async function notifyCredit(h: any): Promise<void> {
   const order = (type === 'use' || type === 'refund') && h.order_id ? await getOrder(h.order_id) : null;
   const topup = type === 'charge' ? await lotTopup(h.lot_id) : null;
   const docNo = str(h.order_id) || (topup ? str(topup.id) : '');
+  // 충전 승인으로 생긴 충전이면 그 충전의 세금계산서 / 영수증 (sql/021, 없으면 섹션을 빼요)
+  const taxDoc = topup ? await topupTaxDoc(topup.id) : null;
 
   // 금액 줄 (언어별 라벨)
   const amounts = (L: Lang): Row[] => {
@@ -1403,7 +1495,11 @@ async function notifyCredit(h: any): Promise<void> {
     await push(p.line_user_id as string, await creditReceipt(L, {
       title: plainTitle(t[type][0]), color: NAVY, message: t[type][1], docNo, userId: h.user_id, p, order,
       details: details(L, false), amounts: amounts(L), balance, when: h.created_at, product: h.product || undefined,
-      button: h.order_id ? { label: L.r.view_order, url: orderLink(h.order_id) } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
+      extra: taxDoc ? [taxDocSection(p.lang, taxDoc)] : undefined,
+      // 버튼은 하나: 문서가 있으면 내 정보 → 세금계산서 · 영수증 섹션으로 바로
+      button: h.order_id ? { label: L.r.view_order, url: orderLink(h.order_id) }
+        : taxDoc ? { label: taxText(p.lang).view_docs, url: SITE_PROFILE_DOCS_URL }
+        : { label: L.r.view_credits, url: SITE_PROFILE_URL },
     }));
   }
 
@@ -1416,7 +1512,35 @@ async function notifyCredit(h: any): Promise<void> {
   await sendCustomerCopy(h.user_id, p, actor, async (copy) => creditReceipt(EN, {
     title: st.title, color: st.color, docNo, userId: h.user_id, p, order,
     details: withActor(details(EN, true), copy.actor), amounts: amounts(EN), balance, copy, when: h.created_at, product: h.product || undefined,
+    extra: taxDoc ? [taxDocSection('en', taxDoc)] : undefined,
     button: { label: 'Open admin', url },
+  }));
+}
+
+// 현금 환불 (credit_history 'refund_cash') → 고객 + 사본. 크레딧 노트 / 환불 영수증 번호 한 줄 (sql/021)
+async function notifyRefundCash(h: any): Promise<void> {
+  const p = await getProfile(h.user_id);
+  const balance = await getBalance(h.user_id);
+  const abs = Math.abs(Number(h.amount || 0));
+  const docs = await refundTaxDocs(h.id);
+  const docRow = (X: TaxTexts): Row[] => docs.length
+    ? [[taxDocTypeName(X, String(docs[0].doc_type)), docs.map((d) => str(d.number, 40)).join(', ')]] : [];
+  const amounts = (X: TaxTexts, L: Lang): Row[] => [[L.r.adjusted, '-' + abs], ...(h.amount_thb != null ? [[X.amount, baht(h.amount_thb)] as Row] : [])];
+  if (isLinkedProfile(p) && p) {
+    const L = langOf(p.lang);
+    const X = taxText(p.lang);
+    await push(p.line_user_id as string, await creditReceipt(L, {
+      title: plainTitle(X.refund_cash_title), color: NAVY, message: X.refund_cash_body.replace('{n}', String(abs)),
+      userId: h.user_id, p, details: docRow(X), amounts: amounts(X, L), balance, when: h.created_at, product: h.product || undefined,
+      button: docs.length ? { label: X.view_docs, url: SITE_PROFILE_DOCS_URL } : { label: L.r.view_credits, url: SITE_PROFILE_URL },
+    }));
+  }
+  const st = ADMIN_NOTICE_STYLES.refund_cash;
+  await sendCustomerCopy(h.user_id, p, await memberName(h.created_by), async (copy) => creditReceipt(EN, {
+    title: st.title, color: st.color, userId: h.user_id, p,
+    details: withActor([...docRow(TAX_T.en), ...(str(h.description) ? [['Note', str(h.description)] as Row] : [])], copy.actor),
+    amounts: amounts(TAX_T.en, EN), balance, copy, when: h.created_at, product: h.product || undefined,
+    button: { label: 'Open admin', url: SITE_ADMIN_CUSTOMERS_URL },
   }));
 }
 

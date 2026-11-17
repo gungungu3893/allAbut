@@ -2870,3 +2870,26 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
 /* 이용 가이드: 크레딧 충전 순서 (번호 목록) */
 .guide-topup-steps { margin: 6px 0 14px; padding-inline-start: 1.6em; display: grid; gap: 6px; font-size: 1.0625rem; line-height: 1.6; }
 .guide-topup-steps li::marker { color: var(--gold-dark, #B8860B); font-weight: 700; }
+
+/* ===== 세금계산서 · 영수증 (sql/021, ui/profile-docs.js · ui/page-admin-tax.js) ===== */
+.docs-card .docs-info { margin-bottom: 18px; }
+.docs-card .kv-list p { margin: 4px 0; }
+.docs-card .kv-list .muted { display: inline-block; min-width: 9em; }
+.docs-month { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+.docs-month-label { font-size: 1.0625rem; min-width: 10em; text-align: center; }
+.docs-table td.num, .docs-table th.num { text-align: end; }
+.docs-table tr.doc-refund td, li.doc-refund { color: var(--danger); }
+.docs-table tr.docs-total td { background: #F8F9FB; border-top: 2px solid var(--border-strong); }
+.doc-mail { margin: 4px 0 0; font-size: .875rem; color: var(--muted); }
+.doc-mail.sent { color: var(--navy); }
+.check-line { display: flex; align-items: center; gap: 8px; margin: 6px 0; cursor: pointer; }
+.country-tag { display: inline-block; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: .8125rem; }
+.badge-ok { background: #E7F6EC; color: #1B6B3A; }
+.badge-warn { background: var(--warn-bg); color: #8A5300; }
+.tax-views { flex-wrap: wrap; margin-bottom: 14px; }
+.tax-mail-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.tax-mail-group { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 10px; }
+.tax-mail-docs { list-style: none; margin: 4px 0 0; padding-inline-start: 26px; }
+.topup-docs { margin-top: 18px; }
+.topup-doc-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.small { font-size: .8125rem; }

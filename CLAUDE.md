@@ -170,7 +170,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -180,6 +180,8 @@
   **005 를 다시 실행하면 015 → 016 도 다시** (is_admin · admin_me · admin_add_member · admin_set_role 이 sales 를 모르는 예전 모양으로 돌아가서 → is_admin 이 sales 에게 열려요)
   **002 · 004 를 다시 실행하면 005 → 016 도 다시** (admin_refund_cash 가 묶음별 환불 기록이 없는 예전 모양으로 돌아가서 → 환불 마이너스 커미션이 "확인 필요"로만 남아요)
   **015 를 다시 실행하면 016 도 다시** (주문 기준 함수 · 칸 · 트리거가 다시 생겨서)
+  **021 (세금계산서) — 010 을 다시 실행하면 021 도 다시** (identity 트리거 · `_profile_complete` · `check_signup_available` · `request_clinic_change` · `admin_review_clinic_change` 가 국가를 모르는 모양으로),
+  **018 을 다시 실행하면 021 도 다시** (`create_topup_request` · `_credit_refund_quote` 가 해외 VAT · 충전별 VAT 를 모르는 모양으로). 그래서 018 을 다시 했으면 019 → 020 → 021 순서로
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
 - `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
@@ -298,10 +300,10 @@
   - 이용약관: 상품 두 종류(크라운은 협력 기공소(partner dental laboratory)가 제작할 수 있음, 기공소 이름은 안 씀) · 테스트 서비스 기간 기록 초기화 · 가입 필수 5개 · 등록 정보 잠금 + 변경 요청 승인 ·
     전화 · Tax ID 당 계정 1개(당사가 달리 동의한 경우 제외 — `tax_id_policy` 'allow' 대비) · 부정 가입 시 무료 크레딧 회수 · 납품일은 디자인 승인 때 · 가공 후 취소 불가(고객 · 당사 모두) ·
     하자 통지 "지체 없이, 늦어도 수령 후 14일" + 법이 허용하지 않는 권리 제한 없음 · 책임 한도 예외(사망 · 신체 상해, 고의 · 중과실, 제조물책임법 B.E. 2551) · 환자 데이터 위탁 조항(지시 · 보안 · 재수탁자 · 유출 통지 · 2년 삭제 · 종료 시 삭제/반환)
-  - 개인정보처리방침: 본명 · Tax ID(개인 사업자면 개인 식별번호일 수 있음) · 가입 IP/기기 ID/브라우저 정보(user agent) · 방문 통계 + 배너 노출 · 클릭 / "allAbut 안에서 볼 수 있는 사람"(역할별 · **직원용 LINE 단체방 알림 사본 = 고객 LINE 연결과 상관없이** · 영업 담당은 담당 고객 치과명 + 승인된 입금 금액 · 크레딧 · 날짜) /
+  - 개인정보처리방침: 본명 · Tax ID(개인 사업자면 개인 식별번호일 수 있음) · 치과 소재 국가 · 문서용 이름/주소/지점(우편 · 택배 업체에 제공, 세법상 5년 보관 — sql/021) · 가입 IP/기기 ID/브라우저 정보(user agent) · 방문 통계 + 배너 노출 · 클릭 / "allAbut 안에서 볼 수 있는 사람"(역할별 · **직원용 LINE 단체방 알림 사본 = 고객 LINE 연결과 상관없이** · 영업 담당은 담당 고객 치과명 + 승인된 입금 금액 · 크레딧 · 날짜) /
     제공 업체(Supabase · Cloudflare(호스팅 · Turnstile · 국가) · Google Fonts · jsDelivr · cdnjs · 인증 이메일 서비스 · LY Corporation(LINE) · 협력 기공소 · 은행 · 운송사) / 국외 이전(싱가포르 · 일본 · 미국 등, PDPA 28 · 29조 계약상 보호 조치) /
     배너(자체 배너 · 외부 광고 네트워크 없음 · 맞춤형 광고 없음) / 권리 행사 30일 + 1회 30일 연장(사유 안내) / 보관 기간 = 아래 "주문 파일 보관 기간" 과 정확히 같게
-  - 크레딧 및 환불 정책: 상품 두 종류 · 종류별 가격표 · 환불 "1개 가격" = 같은 종류의 1크레딧 가격(`{single_price}` · 예시는 어버트먼트) · 무료 크레딧 조항 · 테스트 기간 · 세금계산서는 자동 발행 없음(문의, 발행했으면 환불 때 크레딧 노트)
+  - 크레딧 및 환불 정책: 상품 두 종류 · 종류별 가격표 · 환불 "1개 가격" = 같은 종류의 1크레딧 가격(`{single_price}` · 예시는 어버트먼트) · 무료 크레딧 조항 · 테스트 기간 · 세금계산서(태국 · 원본 우편) / 영수증(해외 · 태국 세금계산서 아님) 자동 발행 · 환불 때 크레딧 노트 / 환불 영수증 (sql/021)
   - 로컬 저장소의 방문자 ID(`allabut_visitor_id`) · 기기 ID(`allabut_device_id`), 방문 통계는 누구도 식별 못 하는 합계로만 외부 공유. **수집 항목을 늘리면 방침도 같이 고치고 새 버전 등록**
   - 영문본이 기준, th · ko 는 같은 뜻으로 번역 — **세 언어의 섹션 순서 · 개수 · 목록 모양을 같게** (페이지가 섹션 번호 · 목차를 자동으로 붙이고, 맨 끝에 연락처 섹션을 하나 더 붙여요)
 - 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순, 이름은 날짜 `YYYY-MM-DD`). **새 버전은 코드·SQL 로 자동 추가하지 않는다** (owner 가 관리자 Settings → 법적 버전에서). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
@@ -342,8 +344,34 @@
 - 002 를 다시 실행하면 004 도 다시 실행 (admin_refund_cash 가 예전 모양으로 돌아가서) → 그 다음 005 → 016 도 (권한 · 묶음별 환불 기록)
 - CSV: UTF-8 BOM, 금액은 쉼표 없는 숫자, Tax ID 는 `="..."`, 수식 주입 방지(' 붙임), 파일명 `allabut-topups-YYYY-MM.csv`
 
+## 세금계산서 · 영수증 · 치과 소재 국가 (sql/021_tax_invoices.sql, 설정 안내: TAX_SETUP.md)
+- **국가**: `profiles.country`(ISO 2글자, 기본 'TH') + `reg_country`(등록 정보가 잠길 때 같이 정해지고 잠김, 트리거 `trg_profile_country`). 바꾸려면 등록 정보 변경 요청(`clinic_change_requests.country`) → 관리자 승인.
+  예전 계정 = 'TH'. 가입 · `#/complete` 에 "치과 소재 국가" 선택 (태국 맨 위, 이름은 `Intl.DisplayNames` 로 지금 언어 — `cncCountryOptions`)
+  - 태국 아님: Tax ID 선택("Tax / VAT ID (optional)", 영문 · 숫자 · 하이픈 5~30, 있을 때만 중복 검사), 전화는 국제 형식(+ 로 시작 · 8~15자리, 00 → +), 필수 정보에서 Tax ID 빠짐
+  - 태국: 지금 규칙 그대로 (13자리 체크섬 · +66 → 0). **SQL `_norm_phone(p, country)` · `_norm_tax_id(p, country)` 와 JS `cncNormPhone(v, country)` · `cncNormTaxId(v, country)` 는 같은 규칙** (하나를 고치면 둘 다)
+  - 관리자 Customers: 국가 칸 + 전체 / 태국 / 해외 필터 (의심 배지 규칙은 그대로)
+- **문서 종류는 승인 시점의 `reg_country` 로만**: TH → 세금계산서(`invoice`, IV) / 그 밖 → 영수증(`receipt`, RC). 현금 환불 → 크레딧 노트(`credit_note`, CN) / 환불 영수증(`receipt_refund`, RF)
+- 표 `tax_invoices` (번호 = 접두어 + YYMM + "-" + 4자리, 달마다 0001 부터, 빈 번호 없음 — `tax_doc_counters` 줄 잠금) · 판매자 · 구매자 정보는 **발행 때 그대로 복사(스냅샷)**.
+  **발행된 문서는 못 바꿔요** (트리거 `trg_tax_invoice_lock` → `DOC_IMMUTABLE`, 우편 칸만 `admin_mark_invoices_mailed` 가). 정정은 크레딧 노트 / 환불 영수증으로만. 예전 `invoices` 표는 안 씀 (고객 insert 정책만 지움)
+- 자동 발행: 충전 승인 (`topup_requests` status → approved 트리거 `trg_topup_issue_doc`) / 현금 환불 (`refund_cash_lots` insert 트리거 `trg_refund_issue_doc`). **기존 승인 · 환불 함수는 다시 정의하지 않음**,
+  발행 오류가 승인 · 환불을 막지 않음 (warning 만). 무료 크레딧은 문서 없음. 설정이 꺼져 있었으면 관리자 [발행] (`admin_issue_tax_doc` — 발행일 = 그날, 원래 승인일도 문서에)
+- 판매자 설정 (`company_settings`, owner): `vat_registered` · `seller_name_th/en` · `seller_address_th/en` · `tax_id` · `seller_branch`('' = สำนักงานใหญ่ / 5자리) · `mail_cycle`(안내 글만).
+  세금계산서는 VAT 등록 + 태국어 이름 · 주소 + 올바른 Tax ID 가 있어야 (`_tax_invoice_ready`), 영수증은 영어 이름 · 주소(없으면 회사 이름 · 주소)
+- 해외 VAT: `payment_settings.overseas_vat_mode` 'charge'(기본, 같은 VAT %) | 'zero' → `create_topup_request` 가 고객 등록 국가로 정해 `topup_requests.vat_rate` 저장. 충전 화면 · QR 금액 = `get_my_vat_rate()`,
+  환불 계산 = 충전마다 `vat_rate`. 화면 안내 "해외 고객의 VAT 는 회계사와 확인한 뒤 정하세요"
+- 고객 문서 정보 (`profiles.doc_name` · `doc_address` · `doc_branch`, 내 정보에서 고객이 수정 — 이미 발행된 문서는 안 바뀜). 비어 있으면 등록 치과명 · 주소로
+- 화면: 고객 내 정보 "🧾 세금계산서 · 영수증"(해외 = "영수증", `ui/profile-docs.js`, 월별 ◀ ▶ · 합계 · 이 달 전체 출력 · 우편 상태 · 환불 문서 빨강, `#/profile?docs` 로 바로) ·
+  충전 내역의 [세금계산서] / [영수증] 버튼. **고객이 출력한 세금계산서 = 확인용 워터마크 "สำเนาเพื่อตรวจสอบ / For reference"** (정식 원본은 우편), 고객이 출력한 영수증 = 정식 사본
+- A4 출력 (`ui/tax-doc.js` `TaxDoc.open(docs, { mode })`): 세금계산서 = 태국어 먼저 + 작은 영어 (86/4 필수 내용 · 바트 글씨 `cncBahtText` · ต้นฉบับ / สำเนา · เอกสารออกเป็นชุด · 서명 · 도장 자리),
+  영수증 = 영어만 ("tax invoice" 라는 말 금지, 맨 아래 "This receipt is not a Thai tax invoice.", VAT 0% 면 "VAT 0%"). 주소 라벨 = A4 라벨지 8칸 / 창봉투
+- 관리자 "세금계산서" 탭 (`ui/page-admin-tax.js`, manager 이상 · 보고서와 설정은 owner): 문서 목록(달 · 검색 · 종류 · 우편 필터, [원본] [사본] [둘 다] / 영수증 [출력]) · 우편 발송(고객 + 달 묶음 · 원본 한꺼번에 · 라벨 · 발송 완료 표시) ·
+  미발행 충전 [발행] · 매출 세금 보고서 + 해외 매출 (출력 · CSV BOM · Tax ID `="…"`) · 설정. 대시보드 "지금 처리할 일"에 우편 발송 대기 수. 충전 상세에서 문서 바로 열기
+- LINE: 충전 승인 카드(고객 · 사본)에 "Tax invoice / Receipt + 번호 + 안내"(9개 언어) · 버튼은 하나(문서가 있으면 `#/profile?docs`). 현금 환불 카드(`refund_cash`, 새로 생김)에 문서 번호 한 줄. **우편 발송 표시는 LINE 안 보냄**
+- 작업 기록: 'tax_doc_issued' · 'invoices_mailed'. RLS: 고객 = 자기 문서 읽기, manager 이상 = 전부 읽기, 쓰기는 함수만. `launch_reset.sql` 지울 표에 `tax_invoices` · `tax_doc_counters` (번호 1부터 다시)
+- **문서가 있는 고객은 프로필 삭제가 막혀요** (충전 FK restrict → 세법상 5년 보관, 개인정보처리방침에도 씀)
+
 ## 제외 (나중에)
-- 세금계산서·영수증, 카드·온라인 자동 결제
+- 카드·온라인 자동 결제
 
 ## 스택
 - Vanilla JS, HTML / CSS (Tailwind 는 쓰지 않음 — 직접 만든 CSS)
@@ -371,6 +399,11 @@
 - `cnc/cnc-retention.js` — 주문 파일 보관 기간: 지운 주문 판단(`cncOrderFilesPurged`) · 환자 표시(`cncPatientLabel`) · 관리자 설정 · 지금 실행 (로직만, sql/020)
 - `ui/page-admin-retention.js` — Settings "🗂 주문 파일 보관 기간" 카드 (owner, `PageAdmin` 에 덧붙임)
 - `supabase/functions/data-retention/index.ts` — 매일 새벽 주문 파일 삭제 Edge Function (서비스 키 · `x-notify-secret`, 설정 안내 `RETENTION_SETUP.md`)
+- `cnc/cnc-tax.js` — 세금계산서 · 영수증 로직: 태국어 금액 글씨(`cncBahtText`) · 달 이동 · 합계 · 내 문서 · 관리자 목록/발행/우편/보고서 · CSV · 판매자 설정 (로직만, sql/021)
+- `ui/tax-doc.js` — A4 출력 (`TaxDoc.open` 원본/사본/둘 다/확인용 · `TaxDoc.labels` 주소 라벨)
+- `ui/profile-docs.js` — 내 정보 "🧾 세금계산서 · 영수증" 섹션 (`ProfileDocs.mount`)
+- `ui/page-admin-tax.js` — 관리자 "세금계산서" 탭 + 충전 상세의 문서 줄 (`PageAdmin` 에 덧붙임)
+- 국가 공통 (sql/021, cnc/cnc-identity.js): `COUNTRY_CODES` · `cncNormCountry` · `cncIsThai` · `cncCountryName` · `cncCountryOptions` · `cncProfileCountry` · `cncNormBranch` · `cncValidBranch`
 - 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)

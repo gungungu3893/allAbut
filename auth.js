@@ -8,7 +8,7 @@ window.__passwordRecovery = /[#&?]type=recovery\b/.test(String(location.hash || 
 window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 회원가입
-//   info: { email, password, fullName, phone, clinicName, taxId, address, legal: { terms, privacy }, captchaToken }
+//   info: { email, password, fullName, phone, clinicName, taxId, address, country, legal: { terms, privacy }, captchaToken }
 //   - 필수 정보를 유저 정보(metadata)에도 같이 저장해 둬요.
 //     (이메일 인증이 켜져 있으면 가입 직후엔 로그인 상태가 아니라서 profiles 저장이 안 될 수 있어요.
 //      그럴 땐 처음 로그인할 때 getProfile() 이 이 정보로 profiles 행을 만들어 줘요.)
@@ -22,7 +22,7 @@ async function signUp(info) {
     emailRedirectTo: SITE_URL + '/',
     data: {
       nickname: fullName, full_name: fullName, clinic_name: info.clinicName || '', phone: info.phone || '',
-      address: info.address || '', tax_id: cncNormTaxId(info.taxId),
+      address: info.address || '', tax_id: cncNormTaxId(info.taxId, info.country), country: cncNormCountry(info.country || 'TH'),
       accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
     }
   };
@@ -40,7 +40,8 @@ async function signUp(info) {
   // 바로 로그인 상태가 됐다면 (이메일 인증이 꺼져 있는 경우) profiles 에 바로 저장
   if (result.data.session) {
     await createProfile(user.id, fullName, {
-      full_name: fullName, clinic_name: info.clinicName, phone: info.phone, address: info.address, tax_id: cncNormTaxId(info.taxId)
+      full_name: fullName, clinic_name: info.clinicName, phone: info.phone, address: info.address,
+      tax_id: cncNormTaxId(info.taxId, info.country), country: cncNormCountry(info.country || 'TH')
     });
   }
 
@@ -58,8 +59,13 @@ async function createProfile(userId, nickname, extra) {
   if (extra.phone) row.phone = extra.phone;
   if (extra.address) row.address = extra.address;   // 치과 이름·주소·전화가 모두 있으면 DB 가 "등록된 치과 정보"로 잠가요 (sql/008)
   if (extra.tax_id) row.tax_id = extra.tax_id;
+  if (extra.country) row.country = cncNormCountry(extra.country);   // 치과 소재 국가 (sql/021 — 등록 정보와 함께 잠겨요)
 
   var result = await sb.from('profiles').insert(row).select().single();
+  if (result.error && row.country && /country|column/i.test(String(result.error.message || ''))) {
+    delete row.country;   // 021 실행 전
+    result = await sb.from('profiles').insert(row).select().single();
+  }
   if (result.error && row.full_name && /full_name|column/i.test(String(result.error.message || ''))) {
     delete row.full_name;
     result = await sb.from('profiles').insert(row).select().single();
@@ -116,6 +122,7 @@ async function getProfile() {
   var meta = user.user_metadata || {};
   var nickname = meta.full_name || meta.nickname || user.email.split('@')[0];
   return await createProfile(user.id, nickname, {
-    full_name: meta.full_name, clinic_name: meta.clinic_name, phone: meta.phone, address: meta.address, tax_id: meta.tax_id
+    full_name: meta.full_name, clinic_name: meta.clinic_name, phone: meta.phone, address: meta.address, tax_id: meta.tax_id,
+    country: meta.country
   });
 }

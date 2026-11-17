@@ -33,8 +33,8 @@ LEGAL_DOCS['terms.en'] = {
     {
       title: 'Your account',
       body: [
-        'To create an account you must give your full name, phone number, clinic name, the clinic\'s 13-digit Tax ID and the clinic address, and confirm your email address. The information must be true and kept up to date.',
-        'When your clinic name, address and phone number are first complete, they become your registered clinic information, and your full name and Tax ID are locked. You cannot edit registered information yourself: to change it, send a change request from Profile, which takes effect when we approve it. Free credits that are limited to the registered clinic address are always shipped to the registered address.',
+        'To create an account you must give your full name, the country where your clinic is located, phone number, clinic name, the clinic\'s Tax ID (the 13-digit Tax ID is required for clinics in Thailand; for other countries a tax or VAT number is optional) and the clinic address, and confirm your email address. The information must be true and kept up to date.',
+        'When your clinic name, address and phone number are first complete, they become your registered clinic information (together with the clinic country), and your full name and Tax ID are locked. You cannot edit registered information yourself: to change it, send a change request from Profile, which takes effect when we approve it. Free credits that are limited to the registered clinic address are always shipped to the registered address.',
         'Each phone number and Tax ID can be used for only one account, unless we agree otherwise. Do not create additional accounts, for example to receive free credits again.',
         'You are responsible for keeping your login details confidential and for all activity under your account. Tell us immediately if you suspect unauthorised use. For security, a login session ends automatically after 1 hour; you can extend it while you are using the Service.',
         'You may allow your staff to use your account, but you remain responsible for their use.'
@@ -60,7 +60,8 @@ LEGAL_DOCS['terms.en'] = {
       title: 'Credits and payment',
       body: [
         'Orders are paid with credits: 1 tooth = 1 credit of the product kind chosen for that tooth. Custom abutment credits and crown set credits are separate: they cannot be used for the other product, converted into each other, or transferred to another account.',
-        'Credits are purchased in advance. Prices are shown in Thai Baht (THB) and exclude VAT unless stated otherwise. Prices, validity, free credits, cancellations and refunds are described in our Credit & Refund Policy, which forms part of these Terms.'
+        'Credits are purchased in advance. Prices are shown in Thai Baht (THB) and exclude VAT unless stated otherwise. Prices, validity, free credits, cancellations and refunds are described in our Credit & Refund Policy, which forms part of these Terms.',
+        'The documents you receive for payments, and their tax treatment, may differ by the country of your clinic: clinics in Thailand receive a Thai tax invoice (the original is sent by post), and clinics in other countries receive a receipt, which is not a Thai tax invoice. The VAT rate for clinics outside Thailand may differ. Details are in the Credit & Refund Policy. You are responsible for any taxes or duties in your own country.'
       ]
     },
     {

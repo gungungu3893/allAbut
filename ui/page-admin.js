@@ -7,6 +7,7 @@
 // (권한 없는 탭 주소로 들어오면 Orders 로 — 실제 보호는 DB 규칙)
 // Team·Activity·LINE 그룹 화면은 ui/page-admin-team.js 에 있어요.
 // 데이터 처리는 cnc/cnc-admin.js 가 하고, 이 파일은 화면만 그려요.
+// 세금계산서 탭(#/admin/tax, manager 이상 · 보고서와 설정은 owner)은 ui/page-admin-tax.js (sql/021)
 
 var PageAdmin = {
   main: null,
@@ -20,7 +21,7 @@ var PageAdmin = {
   // Dashboard 탭 상태 (now: 지금 기준, month: 선택한 달, trend: 최근 12개월)
   dash: { year: null, month: null, now: null, monthData: null, trend: null, error: false },
   // Customers 탭 상태
-  users: { rows: null, search: '', error: false, lineFilter: 'all' },   // lineFilter: 'all' | 'unlinked'
+  users: { rows: null, search: '', error: false, lineFilter: 'all', countryFilter: 'all' },   // lineFilter: 'all' | 'unlinked' · countryFilter: 'all' | 'th' | 'overseas' (sql/021)
 
   // 열려 있는 주문 상세
   detail: null,     // { modal, id, order, profile, busy, progress, error }
@@ -34,6 +35,7 @@ var PageAdmin = {
     { id: 'orders', key: 'admin_tab_orders', min: 'staff' },
     { id: 'topups', key: 'admin_tab_topups', min: 'manager' },
     { id: 'customers', key: 'admin_tab_customers', min: 'manager' },
+    { id: 'tax', key: 'admin_tab_tax', min: 'manager' },   // 세금계산서 · 영수증 (sql/021, ui/page-admin-tax.js)
     { id: 'dashboard', key: 'admin_tab_dashboard', min: 'manager' },
     { id: 'activity', key: 'admin_tab_activity', min: 'staff' },
     { id: 'team', key: 'admin_tab_team', min: 'owner' },
@@ -149,6 +151,7 @@ var PageAdmin = {
     if (this.tab === 'team') return this.loadTeam();
     if (this.tab === 'sales') return this.loadSales();
     if (this.tab === 'commission') return this.loadCommission();
+    if (this.tab === 'tax') return this.loadTax();
     return this.loadDash();
   },
 
@@ -169,6 +172,7 @@ var PageAdmin = {
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
     else if (this.tab === 'sales') box.innerHTML = this.salesHtml();
     else if (this.tab === 'commission') box.innerHTML = this.commissionHtml();
+    else if (this.tab === 'tax') box.innerHTML = this.taxHtml();
     else box.innerHTML = this.dashHtml();
   },
 
@@ -220,13 +224,15 @@ var PageAdmin = {
         cncAdminDashboardNow(),
         cncAdminPendingTopupCount().catch(function () { return null; }),
         cncAdminMonthStats(d.year, d.month),
-        cncAdminTrend(d.year, d.month)
+        cncAdminTrend(d.year, d.month),
+        cncHasRole('manager') ? cncAdminPendingMailCount().catch(function () { return null; }) : Promise.resolve(null)   // 우편 발송 대기 (sql/021)
       ]);
       if (token !== this.loadToken) return;
       d.now = res[0];
       d.pendingTopups = res[1];
       d.monthData = res[2];
       d.trend = res[3];
+      d.pendingMail = res[4];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -377,6 +383,8 @@ var PageAdmin = {
     }
     var items = '';
     if (cncHasRole('manager') && d.pendingTopups != null) items += card(d.pendingTopups, 'admin_pending_topups', "PageAdmin.setTab('topups')", 'dash-action-topups');
+    // 세금계산서 원본 우편 발송 대기 (sql/021) → 세금계산서 탭의 우편 발송 화면
+    if (cncHasRole('manager') && d.pendingMail != null) items += card(d.pendingMail, 'tax_dash_pending_mail', 'PageAdmin.openMailQueue()', 'dash-action-mail');
     items += card(d.now.counts.submitted, 'dash_waiting_orders', "PageAdmin.filterStage('submitted')", 'dash-action-submitted');
     items += card(d.now.due.length, 'dash_due_soon', 'PageAdmin.filterDue()', 'dash-action-due');
     return '<section class="dash-section">' +
@@ -1156,6 +1164,13 @@ var PageAdmin = {
             '<option value="all"' + (this.users.lineFilter === 'all' ? ' selected' : '') + '>' + escHtml(t('admin_line_all')) + '</option>' +
             '<option value="unlinked"' + (this.users.lineFilter === 'unlinked' ? ' selected' : '') + '>' + escHtml(t('admin_line_unlinked_only')) + '</option>' +
           '</select></div>' +
+        // 국가 필터: 전체 / 태국 / 해외 (sql/021)
+        '<div class="field admin-line-filter"><label class="field-label" for="admin-country-filter">' + escHtml(t('country_label')) + '</label>' +
+          '<select class="input" id="admin-country-filter" onchange="PageAdmin.setCountryFilter(this.value)">' +
+            ['all', 'th', 'overseas'].map(function (v) {
+              return '<option value="' + v + '"' + (PageAdmin.users.countryFilter === v ? ' selected' : '') + '>' + escHtml(t('country_filter_' + v)) + '</option>';
+            }).join('') +
+          '</select></div>' +
       '</div>' +
       '<div id="admin-users-list"></div>';
   },
@@ -1170,6 +1185,17 @@ var PageAdmin = {
     this.drawUsersList();
   },
 
+  setCountryFilter: function (value) {
+    this.users.countryFilter = value;
+    this.drawUsersList();
+  },
+
+  // 국가 표시 (예: 🇹🇭 TH) — 021 실행 전이면 빈칸
+  countryHtml: function (u) {
+    if (!u.country) return '';
+    return '<span class="country-tag mono" title="' + escHtml(cncCountryName(u.country, currentLang)) + '">' + escHtml(u.country) + '</span>';
+  },
+
   // LINE 연결 표시 (✅ 연결됨 / ❌ 미연결 + 글자)
   lineStatusHtml: function (u) {
     return u.line_linked
@@ -1181,6 +1207,8 @@ var PageAdmin = {
     var q = this.users.search.trim().toLowerCase();
     var rows = this.users.rows || [];
     if (this.users.lineFilter === 'unlinked') rows = rows.filter(function (u) { return !u.line_linked; });
+    if (this.users.countryFilter === 'th') rows = rows.filter(function (u) { return !u.country || u.country === 'TH'; });
+    if (this.users.countryFilter === 'overseas') rows = rows.filter(function (u) { return u.country && u.country !== 'TH'; });
     if (!q) return rows;
     return rows.filter(function (u) {
       return [u.email, u.nickname, u.clinic_name, u.phone].some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
@@ -1198,11 +1226,11 @@ var PageAdmin = {
 
     var table = '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('email_label')) + '</th><th>' + escHtml(t('nickname_label')) + '</th><th>' + escHtml(t('clinic_name')) + '</th>' +
-      '<th>' + escHtml(t('phone_label')) + '</th><th>LINE</th><th class="nowrap">💳 ' + escHtml(t('paid_short')) + '</th><th class="nowrap">🎁 ' + escHtml(t('free_short')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('phone_label')) + '</th><th>' + escHtml(t('country_short')) + '</th><th>LINE</th><th class="nowrap">💳 ' + escHtml(t('paid_short')) + '</th><th class="nowrap">🎁 ' + escHtml(t('free_short')) + '</th><th>' + escHtml(t('admin_joined')) + '</th></tr></thead><tbody>' +
       rows.map(function (u) {
         return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openCustomer(\'' + escHtml(u.id) + '\')">' +
           '<td>' + escHtml(u.email) + '</td><td>' + escHtml(u.nickname) + '</td><td>' + escHtml(u.clinic_name) + '</td>' +
-          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td>' +
+          '<td class="mono nowrap">' + escHtml(u.phone) + '</td><td class="nowrap">' + self.countryHtml(u) + '</td><td class="nowrap">' + self.lineStatusHtml(u) + '</td>' +
           '<td class="mono col-paid"><b>' + formatNumber(u.paid != null ? u.paid : u.balance) + '</b></td><td class="mono col-free"><b>' + formatNumber(u.free || 0) + '</b>' +
             (u.crown ? ' <span class="crown-mark" title="' + escHtml(t('product_crown_set')) + '">👑 ' + formatNumber(u.crown) + '</span>' : '') + '</td>' +
           '<td class="nowrap">' + escHtml(formatDate(u.created_at)) + '</td></tr>';
@@ -1214,7 +1242,7 @@ var PageAdmin = {
         '<span class="credit-badge-sm">💳 <span class="mono">' + formatNumber(u.paid != null ? u.paid : u.balance) + '</span> · 🎁 <span class="mono">' + formatNumber(u.free || 0) + '</span>' +
           (u.crown ? ' · 👑 <span class="mono">' + formatNumber(u.crown) + '</span>' : '') + '</span></span>' +
         '<span class="order-meta"><span>' + escHtml(u.email) + '</span><span>' + escHtml(u.nickname) + '</span>' +
-        '<span class="mono">' + escHtml(u.phone) + '</span>' + self.lineStatusHtml(u) + '</span></button></li>';
+        '<span class="mono">' + escHtml(u.phone) + '</span>' + self.countryHtml(u) + self.lineStatusHtml(u) + '</span></button></li>';
     }).join('') + '</ul>';
 
     box.innerHTML = '<p class="muted admin-count">' + escHtml(tf('admin_users_count', { n: rows.length })) + '</p>' + table + cards;
@@ -1324,7 +1352,9 @@ var PageAdmin = {
         (st.profile && cncHasIdentityColumns(st.profile) ? row('full_name_label', st.profile.full_name) : row('nickname_label', u.nickname)) +
         row('clinic_name', u.clinic_name) +
         row('phone_label', u.phone, true) +
-        (st.profile && st.profile.tax_id ? row('clinic_tax_id_label', cncFormatTaxId(st.profile.tax_id), true) : '') +
+        (st.profile && st.profile.tax_id ? row(cncIsThai(cncProfileCountry(st.profile)) ? 'clinic_tax_id_label' : 'tax_vat_optional_label', cncFormatTaxId(st.profile.tax_id), true) : '') +
+        (st.profile && cncHasCountryColumns(st.profile) ? row('country_label', cncCountryName(cncProfileCountry(st.profile), currentLang) + ' (' + cncProfileCountry(st.profile) + ')' +
+          (st.profile.reg_country ? ' 🔒' : '')) : '') +
         row('admin_joined', formatDate(u.created_at)) +
         (st.profile && cncHasIdentityColumns(st.profile)
           ? '<div class="review-row"><span class="review-label">' + escHtml(t('flag_title')) + '</span><span class="review-value grant-flags" id="cust-flags">' + this.flagBadgesHtml(st.flags) + '</span></div>'
@@ -1557,7 +1587,7 @@ var PageAdmin = {
     var row = this.topups.rows.filter(function (r) { return r.id === id; })[0];
     if (!row) return;
     var self = this;
-    var st = { row: row, busy: false, slipUrl: null, slipError: false, modal: null };
+    var st = { row: row, busy: false, slipUrl: null, slipError: false, modal: null, docs: null };
     this.topupDetail = st;
     st.modal = uiModal({
       title: t('admin_topup_detail') + ' · ' + row.id,
@@ -1566,6 +1596,7 @@ var PageAdmin = {
       onClose: function () { if (self.topupDetail === st) self.topupDetail = null; }
     });
     this.drawTopupDetail();
+    if (row.status === 'approved' && this.loadTopupDocs) this.loadTopupDocs(st);   // 세금계산서 · 영수증 (ui/page-admin-tax.js)
     cncAdminSlipUrl(row.slip_path).then(function (url) {
       st.slipUrl = url;
       self.drawTopupDetail();
@@ -1627,7 +1658,9 @@ var PageAdmin = {
             (cncHasRole('manager') ? ' <button type="button" class="btn btn-outline btn-sm" id="btn-set-topup-rep" onclick="PageAdmin.openSetTopupRep()">' + escHtml(t('rep_change')) + '</button>' : '')) : '') +
         '</section>' +
         '<section><h3 class="detail-title">' + escHtml(t('admin_slip')) + '</h3>' + slip + '</section>' +
-      '</div></div>';
+      '</div>' +
+      (r.status === 'approved' && this.topupDocsHtml ? this.topupDocsHtml(st) : '') +
+      '</div>';
   },
 
   approveTopup: async function () {
@@ -1686,6 +1719,7 @@ var PageAdmin = {
         if (fresh) Object.assign(st.row, fresh, { customer: st.row.customer });
       } catch (e2) { console.warn('topup reload', e2); }
       uiToast(t(successKey), 'success');
+      if (newStatus === 'approved' && this.loadTopupDocs) this.loadTopupDocs(st);   // 승인하면 서버가 세금계산서 / 영수증을 자동 발행 (sql/021)
     } catch (err) {
       console.error(err);
       uiToast(uiErrorMessage(err), 'error');

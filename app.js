@@ -265,6 +265,38 @@ function clearAuthMessages() {
 }
 
 // 가입 폼 칸 아래 빨간 글씨 (errors: { field: '번역 키' })
+// ===== 회원가입: 치과 소재 국가 (sql/021) =====
+// 태국 = Tax ID 13자리 필수 · 태국 전화 / 그 밖 = "Tax / VAT ID (optional)" · 국가번호(+) 포함 전화
+function signupCountry() {
+  var el = document.getElementById('signup-country');
+  return cncNormCountry(el && el.value ? el.value : 'TH');
+}
+function fillSignupCountries() {
+  var el = document.getElementById('signup-country');
+  if (!el) return;
+  var cur = el.value || 'TH';
+  el.innerHTML = cncCountryOptions(cur, currentLang).map(function (c) {
+    return '<option value="' + c.code + '"' + (c.code === cur ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+  }).join('');
+  onSignupCountryChange();
+}
+function onSignupCountryChange() {
+  var th = cncIsThai(signupCountry());
+  var label = document.getElementById('signup-tax-label');
+  if (label) label.textContent = t(th ? 'clinic_tax_id_label' : 'tax_vat_optional_label');
+  var req = document.getElementById('signup-tax-req');
+  if (req) req.hidden = !th;
+  var tax = document.getElementById('signup-tax_id');
+  if (tax) { tax.setAttribute('inputmode', th ? 'numeric' : 'text'); tax.maxLength = th ? 20 : 30; }
+  var hint = document.getElementById('signup-phone-hint');
+  if (hint) { hint.hidden = th; hint.textContent = th ? '' : t('phone_intl_hint'); }
+  var phone = document.getElementById('signup-phone');
+  if (phone) phone.placeholder = th ? '' : '+82 10 1234 5678';
+}
+window.addEventListener('langchange', fillSignupCountries);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillSignupCountries);
+else setTimeout(fillSignupCountries, 0);
+
 function setSignupFieldErrors(errors) {
   var slots = document.querySelectorAll('[data-su-err]');
   for (var i = 0; i < slots.length; i++) {
@@ -355,7 +387,7 @@ async function handleSignUp(event) {
   var password2 = document.getElementById('signup-password2').value;
   var fields = {
     full_name: v('signup-full_name'), phone: v('signup-phone'), clinic_name: v('signup-clinic'),
-    tax_id: v('signup-tax_id'), address: v('signup-address')
+    tax_id: v('signup-tax_id'), address: v('signup-address'), country: signupCountry()
   };
   var button = document.getElementById('signup-btn');
 
@@ -372,7 +404,7 @@ async function handleSignUp(event) {
   setLoading(button, true, 'btn_create_account');
   try {
     // 가입 전에 전화 · Tax ID 가 이미 쓰였는지 (서버는 겹침 여부만 알려줘요)
-    var avail = await cncCheckSignupAvailable(fields.phone, fields.tax_id, email);
+    var avail = await cncCheckSignupAvailable(fields.phone, fields.tax_id, email, fields.country);
     var taken = {};
     if (avail.phone_taken) taken.phone = 'err_phone_taken';
     if (avail.tax_id_taken) taken.tax_id = 'err_tax_id_taken';
@@ -388,7 +420,7 @@ async function handleSignUp(event) {
     var legal = versions && versions.terms && versions.privacy ? { terms: versions.terms.version, privacy: versions.privacy.version } : null;
     var data = await signUp({
       email: email, password: password, fullName: fields.full_name, phone: fields.phone, clinicName: fields.clinic_name,
-      taxId: fields.tax_id, address: fields.address, legal: legal, captchaToken: tsToken('signup')
+      taxId: fields.tax_id, address: fields.address, country: fields.country, legal: legal, captchaToken: tsToken('signup')
     });
 
     if (data.session) {

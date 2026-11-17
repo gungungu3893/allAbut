@@ -416,14 +416,15 @@ async function cncGetCreditSummary() {
   };
 }
 
-// 등록 정보 변경 요청 (관리자 승인 후 바뀌어요)
 // 등록 정보 변경 요청 (관리자 승인 후 바뀜). fullName · taxId 는 sql/010 실행 후에만 보내요 (없으면 예전 모양 그대로)
-function cncRequestClinicChange(clinic, addr, phone, reason, fullName, taxId) {
+// country 는 sql/021 실행 후에만 보내요 (치과 소재 국가 — 승인되면 세금계산서/영수증 종류도 바뀌어요)
+function cncRequestClinicChange(clinic, addr, phone, reason, fullName, taxId, country) {
   var args = {
     p_clinic: String(clinic || '').trim(), p_addr: String(addr || '').trim(), p_phone: String(phone || '').trim(), p_reason: String(reason || '').trim()
   };
   if (fullName !== undefined) args.p_full_name = cncNormName(fullName);
-  if (taxId !== undefined) args.p_tax_id = cncNormTaxId(taxId);
+  if (country) args.p_country = cncNormCountry(country);
+  if (taxId !== undefined) args.p_tax_id = cncNormTaxId(taxId, country || 'TH');
   return cncRpc('request_clinic_change', args);
 }
 

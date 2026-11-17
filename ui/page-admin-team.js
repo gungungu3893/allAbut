@@ -315,7 +315,7 @@ Object.assign(PageAdmin, {
     if (r.target_type === 'order') {
       return '<button type="button" class="link-btn mono" onclick="PageAdmin.openOrder(\'' + escHtml(r.target_id) + '\')">' + escHtml(r.target_id) + '</button>';
     }
-    if (r.target_type === 'topup' || r.target_type === 'line_group') return '<span class="mono">' + escHtml(r.target_id) + '</span>';
+    if (r.target_type === 'topup' || r.target_type === 'line_group' || r.target_type === 'tax_invoice') return '<span class="mono">' + escHtml(r.target_id) + '</span>';
     if (r.target_type === 'member' || r.target_type === 'customer') {
       var d = r.detail || {};
       return '<span>' + escHtml(d.name || d.email || '') + '</span>';
@@ -368,6 +368,12 @@ Object.assign(PageAdmin, {
         var rm = function (x) { return (x.months != null ? x.months + ' ' + t('ret_months_unit') : '—') + ' · ' + t(x.mode === 'delete' ? 'ret_mode_delete' : 'ret_mode_preview'); };
         return rm(rf) + ' → ' + rm(rt);
       }
+      case 'tax_doc_issued': {   // 세금계산서 · 영수증 발행 (sql/021) — target_id 는 문서 id
+        return t(cncTaxDocTypeKey(d.type)) + (d.number ? ' · ' + d.number : '') + (d.topup ? ' · ' + d.topup : '') +
+          (d.total != null ? ' · ' + formatTHB(d.total) : '') + (d.ref ? ' · ' + d.ref : '');
+      }
+      case 'invoices_mailed':   // 우편 발송 표시 (sql/021)
+        return tf('tax_doc_count', { n: d.count || 0 }) + (d.date ? ' · ' + formatDate(d.date) : '') + (d.tracking ? ' · ' + d.tracking : '');
       case 'retention_run':
         return t(d.started ? 'ret_run_started_short' : 'ret_run_no_secret_short');
       case 'settings_changed':

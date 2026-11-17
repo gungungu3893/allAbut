@@ -19,7 +19,7 @@ LEGAL_DOCS['privacy.en'] = {
       body: [
         [
           'Account: email address, full name and password (the password is stored only in encrypted form by our authentication provider).',
-          'Clinic information: clinic name, address, phone number, Tax ID and preferred language, your registered clinic information and any change requests. If your clinic is run by an individual, the Tax ID may be that person\'s personal identification number.',
+          'Clinic information: clinic name, the country where the clinic is located, address, phone number, Tax ID (or tax / VAT number) and preferred language, your registered clinic information and any change requests, and the name, address and branch you choose to print on tax invoices and receipts. If your clinic is run by an individual, the Tax ID may be that person\'s personal identification number.',
           'Order data: patient ID (a chart number or code — not a name), tooth positions, the product, implant brand, size and shade for each tooth, notes and change requests, scan files (STL, PLY, OBJ, 3MF), photos and PDF documents, design files, delivery details (clinic name, address, phone, LINE ID if you enter one) and delivery dates.',
           'Payment and credit data: top-up requests, payment slips, credit balances and history, free credit grants and refund records.',
           'LINE: if you connect LINE notifications, your LINE user identifier.',
@@ -75,6 +75,7 @@ LEGAL_DOCS['privacy.en'] = {
           'our partner dental laboratory — for crown set orders: scan files, the pseudonymous patient ID and tooth information;',
           'banks and the PromptPay system — when you make payments or receive refunds;',
           'shipping carriers — your clinic name, address and phone number for delivery;',
+          'postal and courier services — the name, address and phone number on your tax invoices, to post the original documents;',
           'professional advisers and authorities — where required by law.'
         ],
         'Our service providers process data on our instructions and under appropriate protections.'
@@ -101,6 +102,7 @@ LEGAL_DOCS['privacy.en'] = {
           'Scan files, photos and design files: deleted automatically 2 years after the order is completed or cancelled. At the same time, we remove the patient ID, notes and file names from the order.',
           'Order records (order number, dates, status, products, teeth, credits used, clinic and delivery details): kept for the period required by Thai tax and accounting law (generally 5 years).',
           'Payment slips, top-up, credit and refund records: for the period required by Thai tax and accounting law (generally 5 years).',
+          'Tax invoices, credit notes and receipts (including the buyer name, address, Tax ID, branch and clinic country printed on them) and their posting records: for the period required by Thai tax law (generally 5 years). Issued documents cannot be changed, so an account that has documents is kept for that period even if you ask us to delete it.',
           'Visit statistics and banner view and click records: up to 24 months, then deleted automatically.',
           'Sign-up IP address, device identifier and browser information: while your account exists and, after your account is deleted, only for as long as required by law, then deleted.',
           'Security logs and records of staff actions: for a limited period needed to investigate incidents and keep our team accountable.',

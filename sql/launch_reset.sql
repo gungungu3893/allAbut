@@ -30,6 +30,7 @@
 --   commission_payouts · signup_bonus_grants · clinic_change_requests · account_deletion_requests ·
 --   admin_audit_log · site_events · admin_group_link_codes(그룹 연결용 임시 코드)
 --   retention_runs · retention_log (주문 파일 자동 삭제 기록, sql/020)
+--   tax_invoices · tax_doc_counters (세금계산서 · 영수증 · 크레딧 노트와 번호, sql/021 — 문서 번호도 0001 부터 다시)
 --   + credit_wallets 는 모든 계정 잔액 0 (018 이후면 크라운 세트 잔액 balance_crown_set 도 0)
 --   + 번호 다시 처음부터: 주문번호(cnc_order_seq) · 충전 요청번호(topup_seq) · 각 표의 자동 번호(RESTART IDENTITY)
 -- 남기는 것:
@@ -54,7 +55,8 @@ declare
     'invoices', 'credit_lot_usage', 'refund_cash_lots', 'commission_payouts', 'signup_bonus_grants',
     'clinic_change_requests', 'account_deletion_requests', 'credit_history', 'credit_lots',
     'topup_requests', 'cnc_orders', 'admin_audit_log', 'site_events', 'admin_group_link_codes',
-    'retention_runs', 'retention_log'   -- 주문 파일 자동 삭제 기록 (sql/020) — 보관 설정(data_retention_settings)은 남겨요
+    'retention_runs', 'retention_log',  -- 주문 파일 자동 삭제 기록 (sql/020) — 보관 설정(data_retention_settings)은 남겨요
+    'tax_invoices', 'tax_doc_counters'  -- 세금계산서 · 영수증 · 크레딧 노트 + 번호 카운터 (sql/021) → 문서 번호도 IV/CN/RC/RF…-0001 부터 다시
   ];
   v_existing text[] := '{}';
   v_t text;
