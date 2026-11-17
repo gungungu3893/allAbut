@@ -124,7 +124,7 @@ function pageTitle(name) {
   if (name === 'complete') return t('complete_title') + ' · allAbut';
   if (name === 'join') return t('join_title') + ' · allAbut';
   if (name === 'staffgate') return t('staff_account') + ' · allAbut';
-  if (name === 'admin' && typeof cncIsStaffAccount === 'function' && cncIsStaffAccount() && window.APP && APP.adminRole) return t('role_' + APP.adminRole) + ' · allAbut';
+  if (name === 'admin' && typeof cncIsStaffAccount === 'function' && cncIsStaffAccount() && window.APP && APP.adminRole) return t('badge_role_' + APP.adminRole) + ' · allAbut';
   return (doc ? t(doc.titleKey) : t('nav_' + name)) + ' · allAbut';
 }
 

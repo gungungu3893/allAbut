@@ -1806,8 +1806,6 @@ LANG.tr = {
   snav_ads: 'Reklam bannerları',
   // 처음 화면 도움말
   staff_help_title: 'Bu ekranda neler yapabilirsiniz',
-  staff_help_sales: 'Yalnızca size atanan klinikleri görürsünüz.\nMüşterilerim: iletişim bilgileri, son sipariş, son ödeme ve bu ayın tutarı.\nMüşteri siparişleri: sipariş durumu (hasta bilgisi veya dosya yok).\nMüşteri ödemeleri ve Komisyonum: ödemeler ve kazandığınız komisyon.\nAylık satışlarım: son 12 ay grafik olarak.',
-  staff_help_staff: 'Siparişler: siparişi açın, dosyaları indirin ve sonraki adıma geçirin.\nEtkinlik: kimin neyi değiştirdiğini görün.',
   staff_help_manager: 'Pano: şu an yapılması gerekenler.\nSiparişler, Bakiye yüklemeleri, Müşteriler ve Faturalar: günlük işleri yönetin.\nEtkinlik ve Reklam bannerları: değişiklikleri kontrol edin ve bannerları yönetin.',
   // 영업 화면
   sales_home_month: 'Bu ay ({month})',
@@ -1921,6 +1919,60 @@ LANG.tr = {
   err_has_active_orders: 'Bu hesapta devam eden sipariş veya yükleme olduğu için dönüştürülemez.',
   err_not_customer: 'Satış temsilcileri yalnızca müşteri hesaplarına atanabilir.',
   err_invalid_hours: 'Lütfen 1 ile 168 saat arasında seçin.',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: 'Performansım',
+  snav_mywork: 'İşlerim',
+  staff_more_menu: 'Diğer menüler',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: 'Satış',
+  badge_role_staff: 'Üretim',
+  badge_role_manager: 'Müdür',
+  badge_role_owner: 'Sahip',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: 'Yeni siparişleri kontrol edin ve her siparişi bir sonraki adıma taşıyın.',
+  sintro_topups: 'Ödeme dekontlarını kontrol edin, bakiye yükleme taleplerini onaylayın veya reddedin.',
+  sintro_customers: 'Müşterileri, kredilerini ve taleplerini görüntüleyin.',
+  sintro_tax: 'Fatura ve makbuzları düzenleyin, yazdırın ve gönderin.',
+  sintro_dashboard: 'Şimdi yapılması gerekenleri ve bu ayın durumunu görün.',
+  sintro_activity: 'Kimin neyi ne zaman yaptığını görün.',
+  sintro_mywork: 'Yaptığınız sipariş işleri, en yeniden eskiye.',
+  sintro_sales: 'Bu ayki komisyonunuz, müşterilerinizin ödemeleri ve siparişleri.',
+  sintro_sclients: 'Size atanan klinikler.',
+  sintro_settings: 'Fiyatları, ödeme, şirket ve diğer ayarları değiştirin.',
+  sintro_ads: 'Sitede gösterilen bannerları ekleyin ve yönetin.',
+  sintro_profile: 'Adınız, telefonunuz, diliniz ve şifreniz.',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: 'Performansım: ◀ ▶ ile bir ay seçerek alacağınız komisyonu, müşterilerinizin ödemelerini ve verdikleri siparişleri görün.\nNasıl hesaplandığını görmek için bir komisyon tutarına dokunun.\nMüşterilerim: size atanan klinikler; telefon numaraları, son sipariş ve ödeme tarihleriyle.\nYalnızca kendi müşterilerinizi görürsünüz. Hasta bilgileri ve dosyaları asla gösterilmez.',
+  staff_help_staff: 'Siparişler: bir siparişi açın, dosyaları indirin ve bir sonraki adıma taşıyın.\nİşlerim: bugün, bu hafta ve bu ay yaptığınız sipariş işleri. Açmak için bir sipariş numarasına dokunun.',
+  // 내 실적
+  sperf_comm_now: 'Bu ay alacağınız komisyon',
+  sperf_comm_month: '{month} komisyonu',
+  sperf_pay_total: 'Ödemeler (KDV hariç)',
+  sperf_count: 'Adet',
+  sperf_empty: 'Bu ay için henüz bir şey yok.',
+  sperf_payments_title: 'Müşterilerimin ödemeleri',
+  sperf_payments_help: 'Bu ay onaylanan ödemeler. Tutarlar KDV hariçtir. Nasıl hesaplandığını görmek için bir komisyon tutarına dokunun.',
+  sperf_orders_title: 'Müşterilerimin siparişleri',
+  sperf_product: 'Ürün',
+  sperf_credits: 'Kredi',
+  sperf_amount: 'Tutar',
+  sperf_my_comm: 'Komisyonum',
+  sperf_basis_show: 'Nasıl?',
+  sperf_total: 'Toplam',
+  sperf_received: 'Alındı',
+  sperf_order_no: 'Sipariş no.',
+  sperf_teeth: 'Dişler',
+  sperf_stage: 'Şu anki durum',
+  sperf_deadline: 'Teslim tarihi',
+  sperf_history: 'Son 12 ayı gör',
+  sperf_history_help: 'Yukarıda görmek için bir aya dokunun.',
+  // 내 작업
+  mywork_empty: 'Bu ay henüz sipariş işi yok.',
+  mywork_today: 'Bugün',
+  mywork_week: 'Bu hafta',
+  mywork_month: 'Bu ay',
+  mywork_older: 'Daha önce',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

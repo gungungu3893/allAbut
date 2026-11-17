@@ -2,7 +2,7 @@
 // allAbut — 관리자 화면: 영업 · 담당자 지정 · 커미션 (sql/015 역할 · 담당 · 요율 · 정산 + sql/016 수금 기준)
 // ================================================================
 // page-admin.js 의 PageAdmin 에 함수를 덧붙여요 (page-admin-team.js 다음에 불러와요). 로직은 cnc/cnc-sales.js
-//   내 커미션   (#/admin/scomm, 영업 담당만 — sql/023 부터 영업 홈 · 거래처 · 주문 · 입금 · 매출은 ui/page-sales.js) : 내 월별 커미션 (건별 상세)
+//   영업 화면   (#/admin/sales): sql/023 부터는 ui/page-sales.js 의 "내 실적" 한 화면 — 여기 salesHtml 은 sql/023 실행 전에만 쓰는 예전 화면 (내 커미션 + 내 담당 입금)
 //   커미션 탭   (#/admin/commission, owner) : ◀ 월 ▶ + 이번 달 · 직원별 카드(제목 옆 지급 상태 배지, 입금 건수 · 입금액 · 환불 차감 · 커미션) ·
 //                                            건별 상세(계산 근거 칸) · 지급 완료로 표시하기/지급 취소 · CSV · "담당 미지정 입금 n건 → 지정하기" · 추적 안 되는 환불 "확인 필요"
 //   영업 · 커미션 탭은 들어올 때마다 항상 "이번 달"(방콕)로 열려요 (resetMonthTab — 보던 달을 기억하지 않아요)
@@ -18,7 +18,10 @@ Object.assign(PageAdmin, {
   // 탭에 들어올 때 (클릭 · 주소): 영업 · 커미션 탭은 보던 달을 잊고 이번 달로 (page-admin.js 의 render · setTab 이 불러요)
   resetMonthTab: function (id) {
     if (id === 'commission') { this.commission.year = null; this.commission.month = null; }
-    if (id === 'sales' || id === 'scomm') { this.sales.year = null; this.sales.month = null; this.sales.payments = null; }
+    if (id === 'sales') {
+      this.sales.year = null; this.sales.month = null; this.sales.payments = null;   // 예전 영업 화면 (sql/023 전)
+      if (this.resetPerfMonth) this.resetPerfMonth();                               // 내 실적 (ui/page-sales.js)
+    }
   },
 
   // ================================================================
@@ -383,7 +386,7 @@ Object.assign(PageAdmin, {
     var n = Number(v) || 0;
     var s;
     try { s = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch (e) { s = n.toFixed(2); }
-    return '<span class="mono">' + escHtml(s) + '</span> THB';
+    return '<span class="thb"><span class="mono">' + escHtml(s) + '</span> THB</span>';   // 한 덩어리 (휴대폰 카드 표에서 숫자와 THB 가 떨어지지 않게)
   },
 
   // 계산 근거: "57,000.00 THB × 5%" / "30 크레딧 × 100.00 THB" (환불 줄은 "− 환불 …"), 요율이 없던 건은 이유까지
@@ -537,8 +540,7 @@ Object.assign(PageAdmin, {
     }
     html += '<p class="field-help">' + escHtml(t('comm_rule_help')) + '</p></section>';
 
-    // 내 담당 고객 입금 내역 (환자 · 주문 정보 없음) — "내 커미션" 화면(scomm, sql/023)에서는 "거래처 입금" 화면에 따로 있어서 빼요
-    if (this.tab === 'scomm') return html + '</div>';
+    // 내 담당 고객 입금 내역 (환자 · 주문 정보 없음) — sql/023 전에만 보이는 예전 영업 화면
     html += '<section class="card"><h2 class="card-title">💳 ' + escHtml(t('sales_my_payments')) + '</h2>' +
       '<p class="field-help">' + escHtml(t('sales_my_payments_help')) + '</p>';
     if (!st.payments) html += uiLoading();

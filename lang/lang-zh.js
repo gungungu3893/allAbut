@@ -1806,8 +1806,6 @@ LANG.zh = {
   snav_ads: '广告横幅',
   // 처음 화면 도움말
   staff_help_title: '在此页面可以做什么',
-  staff_help_sales: '只显示分配给您的诊所。\n我的客户：联系方式、最近订单、最近付款和本月金额。\n客户订单：订单进度（不显示患者信息或文件）。\n客户付款和我的佣金：付款记录和您获得的佣金。\n我的月销售额：以图表显示最近 12 个月。',
-  staff_help_staff: '订单：打开订单，下载文件，并推进到下一步。\n操作记录：查看谁修改了什么。',
   staff_help_manager: '仪表板：当前待办事项。\n订单、充值、客户和税务发票：处理日常工作。\n操作记录和广告横幅：查看修改记录并管理横幅。',
   // 영업 화면
   sales_home_month: '本月（{month}）',
@@ -1921,6 +1919,60 @@ LANG.zh = {
   err_has_active_orders: '此账号有进行中的订单或充值，无法转换。',
   err_not_customer: '销售负责人只能分配给客户账号。',
   err_invalid_hours: '请选择 1 到 168 小时之间。',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: '我的业绩',
+  snav_mywork: '我的工作',
+  staff_more_menu: '更多菜单',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: '销售',
+  badge_role_staff: '生产',
+  badge_role_manager: '经理',
+  badge_role_owner: '老板',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: '查看新订单，并把每个订单推进到下一步。',
+  sintro_topups: '查看付款凭证，批准或拒绝充值申请。',
+  sintro_customers: '查找客户及其积分和申请。',
+  sintro_tax: '开具、打印并寄送税务发票和收据。',
+  sintro_dashboard: '查看现在要做的事和本月情况。',
+  sintro_activity: '查看谁在什么时候做了什么。',
+  sintro_mywork: '你做过的订单工作，最新的在前。',
+  sintro_sales: '本月你的佣金，以及你的客户的付款和订单。',
+  sintro_sclients: '分配给你的诊所。',
+  sintro_settings: '修改价格、付款、公司等设置。',
+  sintro_ads: '添加和管理网站上显示的横幅。',
+  sintro_profile: '你的姓名、电话、语言和密码。',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: '我的业绩：用 ◀ ▶ 选择月份，查看你将获得的佣金、客户的付款和他们下的订单。\n点击佣金金额可查看计算方法。\n我的客户：分配给你的诊所，含电话号码以及最近的下单和付款日期。\n你只能看到自己的客户。患者资料和文件绝不会显示。',
+  staff_help_staff: '订单：打开订单，下载文件，然后推进到下一步。\n我的工作：你今天、本周和本月做过的订单工作。点击订单号即可打开。',
+  // 내 실적
+  sperf_comm_now: '本月将获得的佣金',
+  sperf_comm_month: '{month} 佣金',
+  sperf_pay_total: '付款（不含增值税）',
+  sperf_count: '笔数',
+  sperf_empty: '本月还没有记录。',
+  sperf_payments_title: '我的客户付款',
+  sperf_payments_help: '本月已批准的付款。金额不含增值税。点击佣金金额可查看计算方法。',
+  sperf_orders_title: '我的客户订单',
+  sperf_product: '产品',
+  sperf_credits: '积分',
+  sperf_amount: '金额',
+  sperf_my_comm: '我的佣金',
+  sperf_basis_show: '怎么算？',
+  sperf_total: '合计',
+  sperf_received: '收款日期',
+  sperf_order_no: '订单号',
+  sperf_teeth: '牙位',
+  sperf_stage: '当前状态',
+  sperf_deadline: '交付日期',
+  sperf_history: '查看最近 12 个月',
+  sperf_history_help: '点击月份即可在上方查看。',
+  // 내 작업
+  mywork_empty: '本月还没有订单工作。',
+  mywork_today: '今天',
+  mywork_week: '本周',
+  mywork_month: '本月',
+  mywork_older: '更早',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

@@ -109,6 +109,60 @@ var AUDIT_ACTION_GROUPS = {
   settings: ['settings_changed', 'service_mode', 'ad_banner_saved', 'ad_banner_deleted', 'retention_settings', 'retention_run']
 };
 
+// 역할마다 고를 수 있는 "작업" 묶음 (sql/024 — DB 가 역할별로 걸러서, 볼 수 없는 묶음은 처음부터 안 보여줘요)
+//   manager = 주문 · 충전 · 크레딧 · 설정(광고 배너 · 등록 치과 정보 변경 요청) / owner = 전부
+function cncAuditGroupsForRole() {
+  if (cncHasRole('owner')) return ['orders', 'topups', 'credits', 'team', 'sales', 'settings'];
+  if (cncHasRole('manager')) return ['orders', 'topups', 'credits', 'settings'];
+  return ['orders'];
+}
+
+// 제작 직원 "내 작업" (sql/024): 내가 처리한 주문 작업만 (단계 · 디자인 · 배송 · 납기), p_from(ISO) 이후 최신순
+var MY_WORK_ACTIONS = ['order_stage', 'order_design', 'order_shipping', 'order_deadline'];
+async function cncMyWork(fromIso) {
+  var me = APP.user && APP.user.id;
+  if (!me) return [];
+  var q = sb.from('admin_audit_log').select('*').eq('actor_id', me).in('action', MY_WORK_ACTIONS)
+    .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(500);
+  if (fromIso) q = q.gte('created_at', fromIso);
+  return cncCheck(await q) || [];
+}
+
+// 방콕 날짜 'YYYY-MM-DD' (시각 → 방콕)
+function cncBkkDay(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return new Date(d.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+}
+// "내 작업" 묶음: 오늘 / 이번 주(월요일부터, 오늘 빼고) / 이번 달(이번 주 빼고) / 그 전 — 방콕 기준
+//   now: 테스트용 (없으면 지금). 돌려주는 값 { today: [], week: [], month: [], older: [] }
+function cncGroupMyWork(rows, now) {
+  var today = cncBkkDay((now || new Date()).toISOString());
+  var t0 = new Date(today + 'T00:00:00Z');
+  var dow = (t0.getUTCDay() + 6) % 7;   // 월요일 = 0
+  var weekStart = new Date(t0.getTime() - dow * 864e5).toISOString().slice(0, 10);
+  var monthStart = today.slice(0, 8) + '01';
+  var out = { today: [], week: [], month: [], older: [] };
+  (rows || []).forEach(function (r) {
+    var d = cncBkkDay(r.created_at);
+    if (d === today) out.today.push(r);
+    else if (d >= weekStart) out.week.push(r);
+    else if (d >= monthStart) out.month.push(r);
+    else out.older.push(r);
+  });
+  return out;
+}
+// "내 작업" 을 어디부터 불러올지: 이번 주 시작과 이번 달 1일 중 빠른 날 (방콕 0시 → ISO)
+function cncMyWorkFrom(now) {
+  var today = cncBkkDay((now || new Date()).toISOString());
+  var t0 = new Date(today + 'T00:00:00Z');
+  var dow = (t0.getUTCDay() + 6) % 7;
+  var weekStart = new Date(t0.getTime() - dow * 864e5).toISOString().slice(0, 10);
+  var monthStart = today.slice(0, 8) + '01';
+  var from = weekStart < monthStart ? weekStart : monthStart;
+  return new Date(new Date(from + 'T00:00:00Z').getTime() - 7 * 3600000).toISOString();   // 방콕 0시
+}
+
 // filters: { actor: user id, group: 'orders'|..., target: 글자, before: 시각(더 보기) }
 async function cncAdminListAudit(filters) {
   var f = filters || {};

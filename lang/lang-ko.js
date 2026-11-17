@@ -1807,8 +1807,6 @@ LANG.ko = {
   snav_ads: '광고 배너',
   // 처음 화면 도움말
   staff_help_title: '이 화면에서 할 수 있는 일',
-  staff_help_sales: '나에게 배정된 치과만 보여요.\n내 거래처: 연락처, 최근 주문, 최근 결제, 이번 달 금액.\n거래처 주문: 주문 진행 상황 (환자 정보와 파일은 안 보여요).\n거래처 결제 · 내 수수료: 결제 내역과 받을 수수료.\n내 월별 매출: 최근 12개월을 차트로 보여요.',
-  staff_help_staff: '주문: 주문을 열고 파일을 내려받아 다음 단계로 넘겨요.\n작업 기록: 누가 무엇을 바꿨는지 봐요.',
   staff_help_manager: '대시보드: 지금 처리할 일.\n주문 · 충전 · 고객 · 세금계산서: 매일 하는 일을 처리해요.\n작업 기록 · 광고 배너: 변경 내역을 보고 배너를 관리해요.',
   // 영업 화면
   sales_home_month: '이번 달 ({month})',
@@ -1922,6 +1920,60 @@ LANG.ko = {
   err_has_active_orders: '진행 중인 주문이나 충전이 있어서 바꿀 수 없어요.',
   err_not_customer: '영업 담당은 고객 계정에만 배정할 수 있어요.',
   err_invalid_hours: '1~168시간 사이로 골라 주세요.',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: '내 실적',
+  snav_mywork: '내 작업',
+  staff_more_menu: '메뉴 더 보기',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: '영업',
+  badge_role_staff: '제작',
+  badge_role_manager: '매니저',
+  badge_role_owner: '대표',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: '새 주문을 확인하고 각 주문을 다음 단계로 넘겨요.',
+  sintro_topups: '입금 영수증을 확인하고 충전 요청을 승인하거나 거절해요.',
+  sintro_customers: '고객과 고객의 크레딧, 요청을 찾아봐요.',
+  sintro_tax: '세금계산서와 영수증을 발행하고, 인쇄하고, 보내요.',
+  sintro_dashboard: '지금 할 일과 이번 달 상황을 한눈에 봐요.',
+  sintro_activity: '누가 언제 무엇을 했는지 봐요.',
+  sintro_mywork: '내가 한 주문 작업이에요. 최신 순으로 보여요.',
+  sintro_sales: '이번 달 내 커미션과 내 고객의 결제, 주문이에요.',
+  sintro_sclients: '나에게 배정된 치과예요.',
+  sintro_settings: '가격, 결제, 회사 정보 등 설정을 바꿔요.',
+  sintro_ads: '사이트에 보이는 배너를 추가하고 관리해요.',
+  sintro_profile: '이름, 전화번호, 언어, 비밀번호예요.',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: '내 실적: ◀ ▶로 달을 골라 받을 커미션, 내 고객의 결제, 고객이 낸 주문을 볼 수 있어요.\n커미션 금액을 누르면 어떻게 계산됐는지 보여요.\n내 고객: 나에게 배정된 치과예요. 전화번호와 마지막 주문일, 결제일이 보여요.\n내 고객만 볼 수 있어요. 환자 정보와 파일은 절대 보이지 않아요.',
+  staff_help_staff: '주문: 주문을 열고 파일을 내려받은 뒤 다음 단계로 넘겨요.\n내 작업: 오늘, 이번 주, 이번 달에 내가 한 주문 작업이에요. 주문 번호를 누르면 열려요.',
+  // 내 실적
+  sperf_comm_now: '이번 달 받을 커미션',
+  sperf_comm_month: '{month} 커미션',
+  sperf_pay_total: '결제 금액 (VAT 제외)',
+  sperf_count: '건수',
+  sperf_empty: '이 달에는 아직 없어요',
+  sperf_payments_title: '내 고객 결제',
+  sperf_payments_help: '이 달에 승인된 결제예요. 금액은 VAT 제외예요. 커미션 금액을 누르면 어떻게 계산됐는지 보여요.',
+  sperf_orders_title: '내 고객 주문',
+  sperf_product: '제품',
+  sperf_credits: '크레딧',
+  sperf_amount: '금액',
+  sperf_my_comm: '내 커미션',
+  sperf_basis_show: '계산 방법',
+  sperf_total: '합계',
+  sperf_received: '받은 날',
+  sperf_order_no: '주문 번호',
+  sperf_teeth: '치아',
+  sperf_stage: '지금 상태',
+  sperf_deadline: '납품일',
+  sperf_history: '지난 12개월 보기',
+  sperf_history_help: '달을 누르면 위에 보여요.',
+  // 내 작업
+  mywork_empty: '이번 달에는 아직 주문 작업이 없어요.',
+  mywork_today: '오늘',
+  mywork_week: '이번 주',
+  mywork_month: '이번 달',
+  mywork_older: '그 전',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

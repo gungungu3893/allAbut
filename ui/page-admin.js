@@ -37,22 +37,25 @@ var PageAdmin = {
     { id: 'customers', key: 'admin_tab_customers', min: 'manager' },
     { id: 'tax', key: 'admin_tab_tax', min: 'manager' },   // 세금계산서 · 영수증 (sql/021, ui/page-admin-tax.js)
     { id: 'dashboard', key: 'admin_tab_dashboard', min: 'manager' },
-    { id: 'activity', key: 'admin_tab_activity', min: 'staff' },
+    { id: 'activity', key: 'admin_tab_activity', min: 'manager' },   // 누가 · 무엇을 · 주문번호 (sql/024 — DB 가 역할별로 걸러요)
+    { id: 'mywork', key: 'snav_mywork', min: 'staff', onlyRole: 'staff' },   // 제작 직원 "내 작업" (내가 처리한 주문 작업만)
     { id: 'team', key: 'admin_tab_team', min: 'owner' },
     { id: 'commission', key: 'admin_tab_commission', min: 'owner' },
     { id: 'settings', key: 'admin_tab_settings', min: 'manager' },   // manager 는 📢 광고 배너 섹션만 (나머지 설정은 owner)
-    { id: 'sales', key: 'admin_tab_sales', sales: true },   // 영업 담당만 (역할과 상관없이) — 영업 홈 (ui/page-sales.js)
-    // 영업 안쪽 화면 (sql/023): 탭 줄에는 안 나오고 "영업" 탭 안 작은 메뉴 · 직원 계정은 위쪽 메뉴 줄에
-    { id: 'sclients', key: 'snav_clients', sales: true, sub: true },
-    { id: 'sorders', key: 'snav_orders', sales: true, sub: true },
-    { id: 'spay', key: 'snav_payments', sales: true, sub: true },
-    { id: 'scomm', key: 'snav_commission', sales: true, sub: true },
-    { id: 'srev', key: 'snav_revenue', sales: true, sub: true }
+    { id: 'sales', key: 'admin_tab_sales', sales: true },   // 영업 담당만 (역할과 상관없이) — 내 실적 (ui/page-sales.js)
+    // 영업 안쪽 화면: 탭 줄에는 안 나오고 "영업" 탭 안 작은 메뉴 · 직원 계정은 위쪽 메뉴 줄에
+    { id: 'sclients', key: 'snav_clients', sales: true, sub: true }
   ],
+  // 예전 영업 화면 주소 (sql/023 때 5개 메뉴) → 지금은 "내 실적" 한 화면
+  SALES_OLD_TABS: ['sorders', 'spay', 'scomm', 'srev'],
 
-  // 지금 역할로 볼 수 있는 탭
+  // 지금 역할로 볼 수 있는 탭 (onlyRole = 그 역할일 때만, 예: 내 작업은 제작 직원만)
   allowedTabs: function () {
-    return this.TABS.filter(function (x) { return x.sales ? !!APP.isSalesRep : cncHasRole(x.min); });
+    return this.TABS.filter(function (x) {
+      if (x.sales) return !!APP.isSalesRep;
+      if (x.onlyRole && APP.adminRole !== x.onlyRole) return false;
+      return cncHasRole(x.min);
+    });
   },
 
   // 처음 열 탭 (관리 팀 = Orders, 영업만 = 영업 · 직원 계정 매니저 = 대시보드)
@@ -81,7 +84,9 @@ var PageAdmin = {
   render: function (main) {
     this.main = main;
     var m = /^#\/admin\/([a-z]+)/.exec(location.hash || '');
-    this.tab = (m && this.canSeeTab(m[1])) ? m[1] : this.defaultTab();
+    var asked = m ? m[1] : null;
+    if (asked && this.SALES_OLD_TABS.indexOf(asked) !== -1 && this.canSeeTab('sales')) asked = 'sales';   // 예전 영업 주소 → 내 실적
+    this.tab = (asked && this.canSeeTab(asked)) ? asked : this.defaultTab();
     if (this.resetMonthTab) this.resetMonthTab(this.tab);   // 영업 · 커미션 탭은 항상 이번 달로 (ui/page-admin-sales.js)
     // 권한 없는 탭 주소로 들어왔으면 주소도 처음 탭으로
     if (!m || m[1] !== this.tab) history.replaceState(null, '', '#/admin/' + this.tab);
@@ -118,9 +123,17 @@ var PageAdmin = {
     // 직원 계정 (sql/023): 탭 줄 대신 위쪽 메뉴 줄 (ui/layout.js staffNavItems) → 여기서는 제목만 + 메뉴 강조
     if (cncIsStaffAccount()) {
       var view = this.TABS.filter(function (x) { return x.id === self.tab; })[0];
+      // 휴대폰(아래 탭)에서 아래 탭에 못 들어간 메뉴 (매니저의 세금계산서 · 활동 기록 · 광고 배너) — ☰ 메뉴는 내 정보 · 언어 · 글자 크기 · 로그아웃만이라서 여기에
+      var more = (typeof staffNavItems === 'function' ? staffNavItems() : []).filter(function (n) { return n.more && n.route === 'admin'; });
       this.main.innerHTML = '<div class="page page-admin staff-admin">' +
+        (more.length ? '<nav class="staff-more-row" aria-label="' + escHtml(t('staff_more_menu')) + '">' + more.map(function (n) {
+          var on = n.nav === 'admin:' + self.tab;
+          return '<a href="#/' + navHref(n) + '" class="btn btn-outline btn-sm' + (on ? ' active' : '') + '"' + (on ? ' aria-current="page"' : '') + '><span aria-hidden="true">' + n.icon + '</span> ' + escHtml(t(n.key)) + '</a>';
+        }).join('') + '</nav>' : '') +
         '<div class="page-head"><h1 class="page-title">' + escHtml(t(this.staffTabKey(this.tab, view))) + '</h1>' +
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button></div>' +
+        // 화면마다 맨 위 한 줄 안내 (무엇을 하는 화면인지)
+        '<p class="staff-intro">' + escHtml(t(this.staffIntroKey(this.tab))) + '</p>' +
         '<div id="admin-body"></div></div>';
       setActiveNav('admin:' + this.tab);
       return;
@@ -141,10 +154,17 @@ var PageAdmin = {
       '</div>';
   },
 
+  // 직원 계정 화면 맨 위 한 줄 안내 키 (sintro_탭 — 매니저의 Settings 는 광고 배너)
+  staffIntroKey: function (id) {
+    if (id === 'settings' && !cncHasRole('owner')) return 'sintro_ads';
+    var known = ['orders', 'topups', 'customers', 'tax', 'dashboard', 'activity', 'mywork', 'sales', 'sclients', 'settings'];
+    return known.indexOf(id) !== -1 ? 'sintro_' + id : 'sintro_orders';
+  },
+
   // 직원 계정 화면 제목 (매니저의 Settings = 광고 배너)
   staffTabKey: function (id, view) {
     if (id === 'settings' && !cncHasRole('owner')) return 'snav_ads';
-    if (id === 'sales') return 'snav_home';
+    if (id === 'sales') return 'snav_perf';
     return view ? view.key : 'nav_admin';
   },
 
@@ -173,15 +193,12 @@ var PageAdmin = {
     if (this.tab === 'settings') return this.loadSettings();
     if (this.tab === 'activity') return this.loadActivity();
     if (this.tab === 'team') return this.loadTeam();
-    if (this.tab === 'sales') return this.loadSalesHome();
+    if (this.tab === 'sales') return this.loadSalesPerf();
+    if (this.tab === 'mywork') return this.loadMyWork();
     if (this.tab === 'commission') return this.loadCommission();
     if (this.tab === 'tax') return this.loadTax();
-    // 영업 (sql/023, ui/page-sales.js) — 'sales' = 영업 홈, 'scomm' = 내 커미션 (page-admin-sales.js)
+    // 영업 (ui/page-sales.js) — 'sales' = 내 실적, 'sclients' = 내 거래처
     if (this.tab === 'sclients') return this.loadSalesClients();
-    if (this.tab === 'sorders') return this.loadSalesOrders();
-    if (this.tab === 'spay') return this.loadSalesPayments();
-    if (this.tab === 'srev') return this.loadSalesRevenue();
-    if (this.tab === 'scomm') return this.loadSales();
     return this.loadDash();
   },
 
@@ -202,12 +219,9 @@ var PageAdmin = {
     }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
-    else if (this.tab === 'sales') box.innerHTML = this.salesHomeHtml();
-    else if (this.tab === 'scomm') box.innerHTML = this.salesSubNavHtml() + this.salesHtml();
+    else if (this.tab === 'sales') box.innerHTML = this.salesPerfHtml();
     else if (this.tab === 'sclients') box.innerHTML = this.salesClientsHtml();
-    else if (this.tab === 'sorders') box.innerHTML = this.salesOrdersHtml();
-    else if (this.tab === 'spay') box.innerHTML = this.salesPaymentsHtml();
-    else if (this.tab === 'srev') box.innerHTML = this.salesRevenueHtml();
+    else if (this.tab === 'mywork') box.innerHTML = this.myWorkHtml();
     else if (this.tab === 'commission') box.innerHTML = this.commissionHtml();
     else if (this.tab === 'tax') box.innerHTML = this.taxHtml();
     else box.innerHTML = help + this.dashHtml();

@@ -83,20 +83,18 @@ var SALES_NAV_ITEM = { route: 'admin', href: 'admin/sales', icon: '💼', key: '
 
 // ----------------------------------------------------------------
 // 직원 계정(sql/023)의 메뉴 — "Admin" 대신 역할에 맞는 메뉴가 위쪽 메뉴 줄(휴대폰은 하단 탭 + ☰)에 바로
-//   nav = data-nav 값 ('admin:탭' — PageAdmin 이 지금 탭을 강조), more = 휴대폰 하단 탭에는 없고 ☰ 메뉴에
+//   nav = data-nav 값 ('admin:탭' — PageAdmin 이 지금 탭을 강조),
+//   more = 휴대폰 하단 탭에는 없고 관리 화면 맨 위 작은 줄에 (PageAdmin.drawFrame — ☰ 메뉴는 내 정보 · 언어 · 글자 크기 · 로그아웃만)
+//   영업 = [내 실적] [내 거래처] [내 정보] / 제작 직원 = [주문] [내 작업] [내 정보] (sql/024 — 활동 기록은 owner · manager 만)
 // ----------------------------------------------------------------
 var STAFF_NAV = {
   sales: [
-    { tab: 'sales', icon: '🏠', key: 'snav_home' },
-    { tab: 'sclients', icon: '🏥', key: 'snav_clients' },
-    { tab: 'sorders', icon: '📋', key: 'snav_orders' },
-    { tab: 'spay', icon: '💳', key: 'snav_payments' },
-    { tab: 'scomm', icon: '💰', key: 'snav_commission', more: true },
-    { tab: 'srev', icon: '📈', key: 'snav_revenue', more: true }
+    { tab: 'sales', icon: '📊', key: 'snav_perf' },
+    { tab: 'sclients', icon: '🏥', key: 'snav_clients' }
   ],
   staff: [
     { tab: 'orders', icon: '📋', key: 'admin_tab_orders' },
-    { tab: 'activity', icon: '📝', key: 'admin_tab_activity' }
+    { tab: 'mywork', icon: '✅', key: 'snav_mywork' }
   ],
   manager: [
     { tab: 'orders', icon: '📋', key: 'admin_tab_orders' },
@@ -123,11 +121,11 @@ function staffNavItems() {
   return items;
 }
 
-// 직원 계정의 역할 배지 (로고 옆) — 예: "영업" / "매니저 · 확인 대기"
+// 직원 계정의 역할 배지 (로고 옆) — 역할 이름 그대로: "영업" / "제작" / "매니저" / "대표" (+ " · 확인 대기")
 function staffRoleBadgeHtml() {
   var A = window.APP || {};
   if (!cncIsStaffAccount()) return '';
-  var text = A.adminRole ? t('role_' + A.adminRole) : t('staff_account');
+  var text = A.adminRole ? t('badge_role_' + A.adminRole) : t('staff_account');
   if (A.adminStatus && A.adminStatus !== 'active') text += ' · ' + t(cncMemberStatusKey(A.adminStatus));
   return '<span class="staff-role-badge">' + escHtml(text) + '</span>';
 }
@@ -261,16 +259,16 @@ function renderLayout() {
     '<div class="hdr-menu" id="hdr-menu" hidden>' +
       // 회사소개: 메뉴 맨 위 첫 번째 (위쪽 메뉴 줄이 보이는 PC 에서는 CSS 로 숨겨요 — 거기엔 이미 있어서)
       (staffAcc
-        // 직원: 하단 탭에 못 들어간 역할 메뉴를 ☰ 메뉴 맨 위에
-        ? navItems().filter(function (n) { return n.more; }).map(function (n) {
-            return '<a href="#/' + navHref(n) + '" class="btn btn-outline btn-block hdr-menu-staff" data-nav="' + navKey(n) + '"><span aria-hidden="true">' + n.icon + '</span> ' + escHtml(t(n.key)) + '</a>';
-          }).join('')
+        // 직원: ☰ 메뉴는 [내 정보] [언어] [글자 크기] [로그아웃] 만 (역할 메뉴는 위쪽 메뉴 줄 · 아래 탭 · 관리 화면 맨 위 작은 줄에)
+        ? '<a href="#/profile" class="btn btn-outline btn-block hdr-menu-staff" data-nav="profile"><span aria-hidden="true">👤</span> ' + escHtml(t('nav_profile')) + '</a>' +
+          '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
+          '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>'
         : '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about" data-nav="about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
-          '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>') +
-      '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
-      '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
-      '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
-      '<a href="#/contact" class="btn btn-outline btn-block hdr-menu-contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>' +
+          '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>' +
+          '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
+          '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
+          '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
+          '<a href="#/contact" class="btn btn-outline btn-block hdr-menu-contact"><span aria-hidden="true">💁</span> ' + escHtml(t('contact_title')) + '</a>') +
       '<button type="button" class="btn btn-outline btn-block" onclick="handleSignOut()">' + escHtml(t('sign_out')) + '</button>' +
     '</div>';
 

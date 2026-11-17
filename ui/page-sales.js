@@ -1,29 +1,34 @@
 // ================================================================
-// allAbut — 영업 화면 (sql/023): 영업 홈 · 내 거래처 · 거래처 주문 · 거래처 입금 · 내 월별 매출 (+ 내 커미션은 page-admin-sales.js)
+// allAbut — 영업 화면 (sql/023 · 024): "내 실적" 한 화면 + "내 거래처"
 // ================================================================
-// page-admin.js 의 PageAdmin 에 덧붙여요 (page-admin-sales.js 다음에 불러와요). 데이터는 cnc/cnc-staff.js (서버 함수가 "내 담당 거래처"만 돌려줘요)
-//   탭: sales (영업 홈) · sclients (내 거래처) · sorders (거래처 주문) · spay (거래처 입금) · scomm (내 커미션) · srev (내 월별 매출)
-//   직원 계정이면 위쪽 메뉴 줄(휴대폰 하단 탭 + ☰)에 바로, 고객 계정 팀원(owner 등)이 영업 담당을 겸하면 "영업" 탭 하나 + 안쪽 작은 메뉴
-//   영업은 보기만 해요 (주문 · 충전을 대신 넣거나 단계를 바꿀 수 없어요). 환자 ID · 메모 · 파일 · 디자인 · 배송지 · Tax ID · 이메일은 안 보여요
+// page-admin.js 의 PageAdmin 에 덧붙여요 (page-admin-sales.js 다음에 불러와요). 데이터는 전부 "내 담당"만 돌려주는 서버 함수.
+//   탭: sales   = 내 실적 (#/admin/sales — 로그인하면 바로 여기, 들어올 때마다 이번 달)
+//       sclients = 내 거래처 (치과명 · 담당자 · 전화 · 최근 주문일 · 최근 입금일 + 검색 한 칸)
+//   예전 주소(#/admin/sorders · spay · scomm · srev)는 내 실적으로 (page-admin.js SALES_OLD_TABS)
+// "내 실적" 화면 — 맨 위 ◀ 월 ▶ 하나로 전체가 같이 바뀌어요:
+//   1) 큰 카드: 이 달 받을 커미션 (크게) + 작은 글씨로 입금 합계(VAT 제외) · 건수 · 환불 차감 · 지급 상태     ← my_commission_month
+//   2) 내 고객 결제: 그 달에 승인된 입금 표 (날짜 · 치과명 · 상품 · 크레딧 · 금액 · 내 커미션 — 계산 근거는 눌렀을 때만) + 합계 줄
+//   3) 내 고객 주문: 그 달에 접수된 주문 표 (접수일 · 치과명 · 주문번호 · 치아 수 · 지금 단계 · 납품일) + 합계 줄  ← sales_my_client_orders
+//   4) 맨 아래 접이식 "지난 12개월 보기" (열 때 불러와요 — 막대 그래프 + 달별 표, 달을 누르면 그 달로)        ← sales_my_revenue
+//   필터 · 검색 · 그래프(맨 위)는 없어요. 휴대폰에서는 표가 카드 목록으로 (.rtable, 가로 스크롤 없음)
+//   환자 ID · 메모 · 파일 · 디자인 · 배송지 · 다른 영업의 데이터는 서버가 처음부터 안 줘요
+// sql/023 을 아직 실행하지 않았으면 예전 영업 화면(page-admin-sales.js salesHtml) 그대로
 
 Object.assign(PageAdmin, {
   SALES_VIEWS: [
-    { tab: 'sales', key: 'snav_home' }, { tab: 'sclients', key: 'snav_clients' }, { tab: 'sorders', key: 'snav_orders' },
-    { tab: 'spay', key: 'snav_payments' }, { tab: 'scomm', key: 'snav_commission' }, { tab: 'srev', key: 'snav_revenue' }
+    { tab: 'sales', key: 'snav_perf' }, { tab: 'sclients', key: 'snav_clients' }
   ],
-  shome: { data: null, error: null, missing: false },   // missing = sql/023 실행 전
-  sclients: { rows: null, error: null, q: '', sort: 'name' },
-  sorders: { rows: null, error: null, stage: 'active', client: '', open: null },
-  spay: { rows: null, pending: null, error: null, client: '', from: '', to: '' },
-  srev: { months: null, error: null, sel: null, comm: null, commError: null },
+  sperf: { year: null, month: null, comm: null, orders: null, firstRates: {}, error: null, missing: false, rev: null, revError: null, revOpen: false },
+  sclients: { rows: null, error: null, q: '' },
 
   isSalesTab: function (id) {
-    return ['sales', 'sclients', 'sorders', 'spay', 'scomm', 'srev'].indexOf(id || this.tab) !== -1;
+    return ['sales', 'sclients'].indexOf(id || this.tab) !== -1;
   },
 
-  // 고객 계정 팀원(탭 줄이 있을 때)용 영업 안쪽 메뉴 — 직원 계정은 위쪽 메뉴 줄에 이미 있어요
+  // 고객 계정 팀원(owner 등이 영업 담당을 겸할 때 — 탭 줄이 있을 때)용 안쪽 메뉴 [내 실적] [내 거래처]
+  //   직원 계정은 위쪽 메뉴 줄에 이미 있고, sql/023 전이면 새 화면이 없어서 안 보여요
   salesSubNavHtml: function () {
-    if (cncIsStaffAccount() || this.shome.missing) return '';   // sql/023 전이면 새 영업 화면이 없어요
+    if (cncIsStaffAccount() || this.sperf.missing) return '';
     var self = this;
     return '<div class="seg sales-subnav" role="tablist">' + this.SALES_VIEWS.map(function (v) {
       var on = self.tab === v.tab;
@@ -31,7 +36,7 @@ Object.assign(PageAdmin, {
     }).join('') + '</div>';
   },
 
-  // 역할 첫 화면의 접는 도움말 "이 화면에서 할 수 있는 일" (직원 계정)
+  // 역할 첫 화면의 접는 도움말 "이 화면에서 할 수 있는 일" (직원 계정 — 기본은 접혀 있어요)
   staffHelpHtml: function (role) {
     if (!cncIsStaffAccount()) return '';
     return '<details class="card staff-help"><summary><span aria-hidden="true">💡</span> ' + escHtml(t('staff_help_title')) + '</summary>' +
@@ -39,17 +44,41 @@ Object.assign(PageAdmin, {
   },
 
   // ================================================================
-  // 영업 홈
+  // 내 실적
   // ================================================================
-  loadSalesHome: async function () {
-    var st = this.shome;
+  // 그 달의 방콕 날짜 범위 'YYYY-MM-DD'
+  perfMonthRange: function (y, m) {
+    var next = cncShiftMonth(y, m, 1);
+    var last = new Date(Date.UTC(next.year, next.month - 1, 1) - 864e5).toISOString().slice(0, 10);
+    return { from: y + '-' + String(m).padStart(2, '0') + '-01', to: last };
+  },
+
+  // 탭에 들어올 때마다 이번 달로 (page-admin.js 의 render · setTab → resetMonthTab)
+  resetPerfMonth: function () {
+    var st = this.sperf;
+    st.year = null; st.month = null; st.comm = null; st.orders = null;
+    st.revOpen = false;   // "지난 12개월 보기" 는 들어올 때마다 접힌 채로
+  },
+
+  loadSalesPerf: async function () {
+    var st = this.sperf;
+    if (st.year == null) { var now = cncBkkYearMonth(); st.year = now.year; st.month = now.month; }
     var token = ++this.loadToken;
     st.error = null;
+    st.comm = null;
+    st.orders = null;
     this.drawBody();
+    var range = this.perfMonthRange(st.year, st.month);
     try {
-      var d = await cncSalesSummary();
+      var res = await Promise.all([
+        cncMyCommissionMonth(st.year, st.month),
+        cncSalesClientOrders(range.from, range.to, null),
+        cncRepFirstRateDates().catch(function () { return {}; })
+      ]);
       if (token !== this.loadToken) return;
-      st.data = d;
+      st.comm = res[0];
+      st.orders = res[1];
+      st.firstRates = res[2] || {};
     } catch (err) {
       if (token !== this.loadToken) return;
       // sql/023 을 아직 실행하지 않았으면 → 예전 영업 화면(내 커미션 + 내 담당 입금) 그대로
@@ -60,44 +89,211 @@ Object.assign(PageAdmin, {
     this.drawBody();
   },
 
-  salesHomeHtml: function () {
-    var st = this.shome;
-    if (st.missing) return this.salesHtml();   // sql/023 전: 예전 영업 화면
-    var html = this.salesSubNavHtml() + this.staffHelpHtml('sales');
-    if (st.error) return html + this.errorBox('PageAdmin.loadSalesHome()', st.error);
-    if (!st.data) return html + '<div class="card">' + uiLoading() + '</div>';
-    var d = st.data;
-    function card(label, valueHtml, tab) {
-      return '<button type="button" class="card sales-stat" onclick="PageAdmin.setTab(\'' + tab + '\')">' +
-        '<span class="sales-stat-label">' + escHtml(label) + '</span><span class="sales-stat-value">' + valueHtml + '</span></button>';
-    }
-    html += '<h2 class="dash-section-title">' + escHtml(tf('sales_home_month', { month: this.monthLabel(d.year, d.month - 1) })) + '</h2>' +
-      '<div class="sales-stats">' +
-        card(t('sales_month_amount'), this.thbHtml(d.amount), 'srev') +
-        card(t('sales_month_commission'), this.thbHtml(d.commission), 'scomm') +
-        card(t('sales_clients_n'), '<span class="mono">' + formatNumber(d.clients) + '</span>', 'sclients') +
-        card(t('sales_active_orders'), '<span class="mono">' + formatNumber(d.activeOrders) + '</span>', 'sorders') +
+  shiftPerfMonth: function (delta) {
+    var st = this.sperf;
+    var n = cncShiftMonth(st.year, st.month, delta);
+    var now = cncBkkYearMonth();
+    if (n.year * 12 + n.month > now.year * 12 + now.month) return;   // 미래 달로는 못 가요
+    st.year = n.year;
+    st.month = n.month;
+    this.loadSalesPerf();
+  },
+
+  perfJump: function (year, month) {
+    var st = this.sperf;
+    if (year == null) { var now = cncBkkYearMonth(); year = now.year; month = now.month; }
+    st.year = year;
+    st.month = month;
+    this.loadSalesPerf();
+    var top = document.getElementById('admin-body');
+    if (top && top.scrollIntoView) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  perfIsNow: function () {
+    var now = cncBkkYearMonth();
+    return this.sperf.year === now.year && this.sperf.month === now.month;
+  },
+
+  perfMonthNavHtml: function () {
+    var st = this.sperf;
+    var isNow = this.perfIsNow();
+    return '<div class="month-nav perf-month-nav">' +
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftPerfMonth(-1)" aria-label="' + escHtml(t('date_prev_month')) + '"><span class="arrow" aria-hidden="true">◀</span> ' + escHtml(t('admin_prev')) + '</button>' +
+      '<div class="month-title-box"><h2 class="month-title">' + escHtml(this.monthLabel(st.year, st.month - 1)) + '</h2>' +
+        (isNow ? '' : '<button type="button" class="btn btn-outline btn-sm month-now-btn" onclick="PageAdmin.perfJump()">' + escHtml(t('comm_this_month')) + '</button>') +
       '</div>' +
-      (d.pendingTopups ? '<p class="notice notice-info"><span aria-hidden="true">⏳</span> ' + escHtml(tf('sales_pending_topups_n', { n: d.pendingTopups })) +
-        ' <button type="button" class="link-btn" onclick="PageAdmin.setTab(\'spay\')">' + escHtml(t('snav_payments')) + ' →</button></p>' : '');
-    html += '<section class="card"><h2 class="card-title">' + escHtml(t('sales_recent')) + '</h2>';
-    if (!d.recent.length) html += '<p class="muted">' + escHtml(t('sales_recent_empty')) + '</p>';
-    else {
-      html += '<ul class="sales-recent">' + d.recent.slice(0, 15).map(function (r) {
-        var isOrder = r.kind === 'order';
-        return '<li><span class="sales-recent-icon" aria-hidden="true">' + (isOrder ? '📋' : '💳') + '</span>' +
-          '<span class="sales-recent-main"><b>' + escHtml(r.customer || '') + '</b> · ' +
-            escHtml(isOrder ? tf('sales_recent_order', { n: r.teeth || 0 }) : t('sales_recent_payment')) +
-            (isOrder ? ' <span class="mono">' + escHtml(r.id) + '</span>' : ' <span class="mono">' + escHtml(formatTHB(r.amount)) + '</span>') + '</span>' +
-          '<span class="muted nowrap">' + escHtml(formatDateTime(r.at)) + '</span></li>';
-      }).join('') + '</ul>';
-    }
-    html += '</section>';
-    return html;
+      '<button type="button" class="btn btn-outline" onclick="PageAdmin.shiftPerfMonth(1)"' + (isNow ? ' disabled' : '') + ' aria-label="' + escHtml(t('date_next_month')) + '">' + escHtml(t('admin_next')) + ' <span class="arrow" aria-hidden="true">▶</span></button>' +
+      '</div>';
+  },
+
+  salesPerfHtml: function () {
+    var st = this.sperf;
+    if (st.missing) return this.salesHtml();   // sql/023 전: 예전 영업 화면
+    var html = this.salesSubNavHtml() + (cncIsStaffAccount() ? this.staffHelpHtml('sales') : '') + this.perfMonthNavHtml();
+    if (st.error) return html + this.errorBox('PageAdmin.loadSalesPerf()', st.error);
+    if (!st.comm || !st.orders) return html + '<div class="card">' + uiLoading() + '</div>';
+    var r = st.comm.reps[0] || { payments: 0, amount: 0, refunds: 0, refundDeduction: 0, commission: 0, credits: 0, paid: null, items: [], repId: '' };
+    html += this.perfCardHtml(r) + this.perfPaymentsHtml(r) + this.perfOrdersHtml(st.orders) + this.perfHistoryHtml();
+    return '<div class="sales-perf">' + html + '</div>';
+  },
+
+  // 1) 큰 카드: 이 달 받을 커미션
+  perfCardHtml: function (r) {
+    var st = this.sperf;
+    var title = this.perfIsNow() ? t('sperf_comm_now') : tf('sperf_comm_month', { month: this.monthLabel(st.year, st.month - 1) });
+    var status = r.paid
+      ? '<span class="badge badge-green">✓ ' + escHtml(t('comm_paid')) + ' · ' + escHtml(formatDate(r.paid.paidAt)) + '</span>'
+      : '<span class="badge comm-unpaid">' + escHtml(t('comm_unpaid')) + '</span>';
+    return '<section class="card perf-card">' +
+      '<p class="perf-card-label">' + escHtml(title) + '</p>' +
+      '<p class="perf-card-value">' + this.thbHtml(r.commission) + '</p>' +
+      '<p class="perf-card-sub">' +
+        '<span>' + escHtml(t('sperf_pay_total')) + ' ' + this.thbHtml(r.amount) + '</span>' +
+        '<span>' + escHtml(t('sperf_count')) + ' <span class="mono">' + escHtml(formatNumber(r.payments)) + '</span></span>' +
+        '<span>' + escHtml(t('comm_refund_deduction')) + ' ' + (r.refundDeduction > 0 ? '<span class="minus">−' + this.thbHtml(r.refundDeduction) + '</span>' : this.thbHtml(0)) + '</span>' +
+        '<span>' + status + '</span>' +
+      '</p></section>';
+  },
+
+  // 비어 있는 표 대신 한 줄
+  perfEmptyHtml: function () {
+    return '<p class="muted perf-empty">' + escHtml(t('sperf_empty')) + '</p>';
+  },
+
+  // 2) 내 고객 결제 (입금 + 그 달 환불 차감 줄)
+  perfPaymentsHtml: function (r) {
+    var self = this;
+    var items = (r.items || []).filter(function (i) { return i.kind === 'payment' || i.kind === 'refund'; });
+    var html = '<section class="card"><h2 class="card-title">💳 ' + escHtml(t('sperf_payments_title')) + '</h2>';
+    if (!items.length) return html + this.perfEmptyHtml() + '</section>';
+    var firstRate = this.sperf.firstRates[r.repId];
+    var sumCredits = 0, sumAmount = 0, sumComm = 0;
+    var rows = items.map(function (i) {
+      var refund = i.kind === 'refund';
+      sumCredits += refund ? -i.credits : i.credits;
+      sumAmount += refund ? -i.amount : i.amount;
+      sumComm += i.commission;
+      return '<tr class="' + (refund ? 'comm-refund-row' : '') + '">' +
+        '<td data-label="' + escHtml(t('comm_date')) + '" class="nowrap">' + escHtml(formatDate(i.date)) +
+          (refund ? ' <span class="badge comm-refund-badge">' + escHtml(t('comm_refund')) + '</span>' : '') + '</td>' +
+        '<td data-label="' + escHtml(t('clinic_name')) + '"><b>' + escHtml(i.customer || '') + '</b></td>' +
+        '<td data-label="' + escHtml(t('sperf_product')) + '">' + escHtml(uiProductName(i.product || 'abutment', true)) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_credits')) + '" class="nowrap"><span class="mono">' + escHtml(formatNumber(refund ? -i.credits : i.credits)) + '</span></td>' +
+        '<td data-label="' + escHtml(t('sperf_amount')) + '" class="nowrap">' + (refund ? '<span class="minus">−' + self.thbHtml(i.amount) + '</span>' : self.thbHtml(i.amount)) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_my_comm')) + '" class="nowrap">' +
+          '<details class="perf-basis"><summary><b>' + self.thbHtml(i.commission) + '</b> <span class="perf-basis-hint">' + escHtml(t('sperf_basis_show')) + '</span></summary>' +
+          '<span class="perf-basis-text">' + self.basisHtml(i, firstRate) + '</span></details></td></tr>';
+    }).join('');
+    return html + '<div class="table-wrap rtable-wrap"><table class="table rtable perf-pay-table"><thead><tr>' +
+      '<th>' + escHtml(t('comm_date')) + '</th><th>' + escHtml(t('clinic_name')) + '</th><th>' + escHtml(t('sperf_product')) + '</th>' +
+      '<th>' + escHtml(t('sperf_credits')) + '</th><th>' + escHtml(t('sperf_amount')) + '</th><th>' + escHtml(t('sperf_my_comm')) + '</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '<tfoot><tr class="rtable-total">' +
+        '<td data-label="">' + escHtml(t('sperf_total')) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_count')) + '"><span class="mono">' + escHtml(formatNumber(items.length)) + '</span></td>' +
+        '<td class="rtable-skip"></td>' +
+        '<td data-label="' + escHtml(t('sperf_credits')) + '" class="nowrap"><span class="mono">' + escHtml(formatNumber(sumCredits)) + '</span></td>' +
+        '<td data-label="' + escHtml(t('sperf_amount')) + '" class="nowrap">' + (sumAmount < 0 ? '<span class="minus">−' + this.thbHtml(-sumAmount) + '</span>' : this.thbHtml(sumAmount)) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_my_comm')) + '" class="nowrap"><b>' + this.thbHtml(Math.round(sumComm * 100) / 100) + '</b></td>' +
+      '</tr></tfoot></table></div>' +
+      '<p class="field-help">' + escHtml(t('sperf_payments_help')) + '</p></section>';
+  },
+
+  // 3) 내 고객 주문 (그 달에 접수된 주문)
+  perfOrdersHtml: function (orders) {
+    var html = '<section class="card"><h2 class="card-title">📋 ' + escHtml(t('sperf_orders_title')) + '</h2>';
+    if (!orders.length) return html + this.perfEmptyHtml() + '</section>';
+    var teeth = 0;
+    var rows = orders.map(function (o) {
+      teeth += Number(o.teeth) || 0;
+      return '<tr>' +
+        '<td data-label="' + escHtml(t('sperf_received')) + '" class="nowrap">' + escHtml(formatDate(o.created_at)) + '</td>' +
+        '<td data-label="' + escHtml(t('clinic_name')) + '"><b>' + escHtml(o.customer || '') + '</b></td>' +
+        '<td data-label="' + escHtml(t('sperf_order_no')) + '" class="nowrap"><span class="mono">' + escHtml(o.id) + '</span></td>' +
+        '<td data-label="' + escHtml(t('sperf_teeth')) + '" class="nowrap"><span class="mono">' + escHtml(formatNumber(o.teeth)) + '</span>' +
+          (Number(o.crown_set) ? ' <span class="muted">(' + escHtml(uiProductName('crown_set', true)) + ' <span class="mono">' + escHtml(formatNumber(o.crown_set)) + '</span>)</span>' : '') + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_stage')) + '">' + uiStageBadge(o.stage) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_deadline')) + '" class="nowrap">' + (o.deadline ? escHtml(formatDate(o.deadline)) : '<span class="muted">' + escHtml(t('deadline_tbd')) + '</span>') + '</td></tr>';
+    }).join('');
+    return html + '<div class="table-wrap rtable-wrap"><table class="table rtable perf-order-table"><thead><tr>' +
+      '<th>' + escHtml(t('sperf_received')) + '</th><th>' + escHtml(t('clinic_name')) + '</th><th>' + escHtml(t('sperf_order_no')) + '</th>' +
+      '<th>' + escHtml(t('sperf_teeth')) + '</th><th>' + escHtml(t('sperf_stage')) + '</th><th>' + escHtml(t('sperf_deadline')) + '</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '<tfoot><tr class="rtable-total">' +
+        '<td data-label="">' + escHtml(t('sperf_total')) + '</td>' +
+        '<td data-label="' + escHtml(t('sperf_count')) + '"><span class="mono">' + escHtml(formatNumber(orders.length)) + '</span></td>' +
+        '<td class="rtable-skip"></td>' +
+        '<td data-label="' + escHtml(t('sperf_teeth')) + '"><span class="mono">' + escHtml(formatNumber(teeth)) + '</span></td>' +
+        '<td class="rtable-skip"></td><td class="rtable-skip"></td>' +
+      '</tr></tfoot></table></div>' +
+      '<p class="field-help">' + escHtml(t('sales_orders_help')) + '</p></section>';
+  },
+
+  // 4) 지난 12개월 보기 (접혀 있다가 열 때 불러와요)
+  perfHistoryHtml: function () {
+    var st = this.sperf;
+    var body;
+    if (!st.revOpen) body = '';
+    else if (st.revError) body = this.errorBox('PageAdmin.loadPerfHistory()', st.revError);
+    else if (!st.rev) body = uiLoading();
+    else body = this.perfHistoryBodyHtml(st.rev);
+    return '<details class="card perf-history"' + (st.revOpen ? ' open' : '') + ' ontoggle="PageAdmin.togglePerfHistory(this.open)">' +
+      '<summary><span aria-hidden="true">📈</span> ' + escHtml(t('sperf_history')) + '</summary>' +
+      '<div id="perf-history-body">' + body + '</div></details>';
+  },
+
+  togglePerfHistory: function (open) {
+    var st = this.sperf;
+    if (st.revOpen === open) return;
+    st.revOpen = open;
+    if (!open) return;
+    if (!st.rev) { this.loadPerfHistory(); return; }
+    var box = document.getElementById('perf-history-body');   // 이미 불러온 적이 있으면 바로 그려요
+    if (box) box.innerHTML = this.perfHistoryBodyHtml(st.rev);
+  },
+
+  loadPerfHistory: async function () {
+    var st = this.sperf;
+    st.revError = null;
+    var box = document.getElementById('perf-history-body');
+    if (box) box.innerHTML = uiLoading();
+    try { st.rev = await cncSalesRevenue(12); }
+    catch (err) { console.error(err); st.revError = err; }
+    box = document.getElementById('perf-history-body');
+    if (box) box.innerHTML = st.revError ? this.errorBox('PageAdmin.loadPerfHistory()', st.revError) : this.perfHistoryBodyHtml(st.rev);
+  },
+
+  perfHistoryBodyHtml: function (months) {
+    var self = this;
+    var st = this.sperf;
+    var max = Math.max.apply(null, months.map(function (m) { return m.amount; }).concat([1]));
+    // 막대 그래프 (CSS 막대 — 화면 폭에 맞게 줄어들어요). 막대를 누르면 그 달로
+    var bars = '<div class="perf-bars" role="list">' + months.map(function (m) {
+      var on = m.year === st.year && m.month === st.month;
+      var h = m.amount > 0 ? Math.max(4, Math.round(m.amount / max * 100)) : 0;
+      var label = self.monthLabel(m.year, m.month - 1) + ' · ' + t('sales_rev_amount') + ' ' + formatTHB(m.amount) + ' · ' + t('sales_month_commission') + ' ' + formatTHB(m.commission);
+      return '<button type="button" role="listitem" class="perf-bar' + (on ? ' selected' : '') + '" title="' + escHtml(label) + '" aria-label="' + escHtml(label) + '" onclick="PageAdmin.perfJump(' + m.year + ', ' + m.month + ')">' +
+        '<span class="perf-bar-fill" style="height:' + h + '%"></span>' +
+        '<span class="perf-bar-label">' + escHtml(self.monthLabel(m.year, m.month - 1, true)) + '</span></button>';
+    }).join('') + '</div>';
+    var table = '<div class="table-wrap rtable-wrap"><table class="table rtable perf-hist-table"><thead><tr>' +
+      '<th>' + escHtml(t('sales_month')) + '</th><th>' + escHtml(t('sales_rev_amount')) + '</th><th>' + escHtml(t('sales_rev_count')) + '</th>' +
+      '<th>' + escHtml(t('comm_refund_deduction')) + '</th><th>' + escHtml(t('sales_month_commission')) + '</th></tr></thead><tbody>' +
+      months.slice().reverse().map(function (m) {
+        var on = m.year === st.year && m.month === st.month;
+        return '<tr class="clickable' + (on ? ' selected' : '') + '" tabindex="0" onclick="PageAdmin.perfJump(' + m.year + ', ' + m.month + ')" ' +
+          'onkeydown="if(event.key===\'Enter\'){PageAdmin.perfJump(' + m.year + ', ' + m.month + ')}">' +
+          '<td data-label="' + escHtml(t('sales_month')) + '" class="nowrap"><b>' + escHtml(self.monthLabel(m.year, m.month - 1)) + '</b></td>' +
+          '<td data-label="' + escHtml(t('sales_rev_amount')) + '" class="nowrap">' + self.thbHtml(m.amount) + '</td>' +
+          '<td data-label="' + escHtml(t('sales_rev_count')) + '"><span class="mono">' + escHtml(formatNumber(m.payments)) + '</span></td>' +
+          '<td data-label="' + escHtml(t('comm_refund_deduction')) + '" class="nowrap">' + (m.refundDeduction ? '<span class="minus">−' + self.thbHtml(m.refundDeduction) + '</span>' : '<span class="muted">—</span>') + '</td>' +
+          '<td data-label="' + escHtml(t('sales_month_commission')) + '" class="nowrap"><b>' + self.thbHtml(m.commission) + '</b></td></tr>';
+      }).join('') + '</tbody></table></div>';
+    return '<p class="field-help">' + escHtml(t('sperf_history_help')) + '</p>' + bars + table;
   },
 
   // ================================================================
-  // 내 거래처
+  // 내 거래처 (치과명 · 담당자 · 전화 · 최근 주문일 · 최근 입금일 + 검색 한 칸)
   // ================================================================
   loadSalesClients: async function () {
     var st = this.sclients;
@@ -121,16 +317,9 @@ Object.assign(PageAdmin, {
     var html = this.salesSubNavHtml();
     if (st.error) return html + this.errorBox('PageAdmin.loadSalesClients()', st.error);
     html += '<section class="card"><h2 class="card-title">🏥 ' + escHtml(t('snav_clients')) + '</h2>' +
-      '<p class="field-help">' + escHtml(t('sales_clients_help')) + '</p>' +
-      '<div class="orders-tools">' +
-        '<div class="search-box"><label class="sr-only" for="sc-search">' + escHtml(t('sales_search')) + '</label><span class="search-icon" aria-hidden="true">🔍</span>' +
-          '<input class="input" id="sc-search" type="search" maxlength="60" value="' + escHtml(st.q) + '" placeholder="' + escHtml(t('sales_search')) + '" oninput="PageAdmin.setSalesClientQ(this.value)"></div>' +
-        '<div class="field"><label class="field-label" for="sc-sort">' + escHtml(t('sales_sort')) + '</label>' +
-          '<select class="input" id="sc-sort" onchange="PageAdmin.setSalesClientSort(this.value)">' +
-          ['name', 'recent_order', 'recent_payment', 'month_amount', 'joined'].map(function (k) {
-            return '<option value="' + k + '"' + (st.sort === k ? ' selected' : '') + '>' + escHtml(t('sales_sort_' + k)) + '</option>';
-          }).join('') + '</select></div>' +
-      '</div><div id="sc-list">' + this.salesClientsListHtml() + '</div></section>';
+      '<div class="search-box sales-client-search"><label class="sr-only" for="sc-search">' + escHtml(t('sales_search')) + '</label><span class="search-icon" aria-hidden="true">🔍</span>' +
+        '<input class="input" id="sc-search" type="search" maxlength="60" value="' + escHtml(st.q) + '" placeholder="' + escHtml(t('sales_search')) + '" oninput="PageAdmin.setSalesClientQ(this.value)"></div>' +
+      '<div id="sc-list">' + this.salesClientsListHtml() + '</div></section>';
     return html;
   },
 
@@ -139,28 +328,20 @@ Object.assign(PageAdmin, {
     if (!st.rows) return uiLoading();
     var q = st.q.trim().toLowerCase();
     var rows = st.rows.filter(function (c) {
-      return !q || [c.clinic, c.name, c.phone, c.region].some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
-    });
-    var key = { recent_order: 'last_order_at', recent_payment: 'last_payment_at', joined: 'created_at' }[st.sort];
-    rows.sort(function (a, b) {
-      if (st.sort === 'month_amount') return (Number(b.month_amount) || 0) - (Number(a.month_amount) || 0);
-      if (key) return String(b[key] || '').localeCompare(String(a[key] || ''));
-      return String(a.clinic || '').localeCompare(String(b.clinic || ''));
-    });
+      return !q || [c.clinic, c.name, c.phone].some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
+    }).sort(function (a, b) { return String(a.clinic || '').localeCompare(String(b.clinic || '')); });
     if (!rows.length) return '<p class="muted">' + escHtml(t(st.rows.length ? 'sales_no_match' : 'sales_no_clients')) + '</p>';
     var d = function (v) { return v ? escHtml(formatDate(v)) : '<span class="muted">—</span>'; };
     return '<p class="muted admin-count">' + escHtml(tf('sales_clients_count', { n: rows.length })) + '</p>' +
-      '<div class="table-wrap"><table class="table sales-clients-table"><thead><tr>' +
+      '<div class="table-wrap rtable-wrap"><table class="table rtable sales-clients-table"><thead><tr>' +
       '<th>' + escHtml(t('clinic_name')) + '</th><th>' + escHtml(t('sales_contact')) + '</th><th>' + escHtml(t('phone_label')) + '</th>' +
-      '<th>' + escHtml(t('sales_region')) + '</th><th>' + escHtml(t('admin_joined')) + '</th><th>' + escHtml(t('sales_last_order')) + '</th>' +
-      '<th>' + escHtml(t('sales_last_payment')) + '</th><th>' + escHtml(t('sales_month_amount')) + '</th><th>' + escHtml(t('credit_balance')) + '</th></tr></thead><tbody>' +
+      '<th>' + escHtml(t('sales_last_order')) + '</th><th>' + escHtml(t('sales_last_payment')) + '</th></tr></thead><tbody>' +
       rows.map(function (c) {
-        return '<tr><td><b>' + escHtml(c.clinic || '') + '</b>' + (Number(c.active_orders) ? ' <span class="badge">' + escHtml(tf('sales_active_n', { n: c.active_orders })) + '</span>' : '') + '</td>' +
-          '<td>' + escHtml(c.name || '') + '</td><td class="mono nowrap">' + escHtml(c.phone || '') + '</td><td>' + escHtml(c.region || '') + '</td>' +
-          '<td class="nowrap">' + d(c.created_at) + '</td><td class="nowrap">' + d(c.last_order_at) + '</td><td class="nowrap">' + d(c.last_payment_at) + '</td>' +
-          '<td class="mono nowrap">' + escHtml(formatTHB(c.month_amount)) + '</td>' +
-          '<td class="nowrap">🔩 <span class="mono">' + formatNumber(c.balance || 0) + '</span>' +
-            (Number(c.balance_crown_set) ? ' · 👑 <span class="mono">' + formatNumber(c.balance_crown_set) + '</span>' : '') + '</td></tr>';
+        return '<tr><td data-label="' + escHtml(t('clinic_name')) + '"><b>' + escHtml(c.clinic || '') + '</b></td>' +
+          '<td data-label="' + escHtml(t('sales_contact')) + '">' + escHtml(c.name || '') + '</td>' +
+          '<td data-label="' + escHtml(t('phone_label')) + '" class="nowrap"><span class="mono">' + escHtml(c.phone || '') + '</span></td>' +
+          '<td data-label="' + escHtml(t('sales_last_order')) + '" class="nowrap">' + d(c.last_order_at) + '</td>' +
+          '<td data-label="' + escHtml(t('sales_last_payment')) + '" class="nowrap">' + d(c.last_payment_at) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   },
 
@@ -168,279 +349,5 @@ Object.assign(PageAdmin, {
     this.sclients.q = v;
     var box = document.getElementById('sc-list');
     if (box) box.innerHTML = this.salesClientsListHtml();
-  },
-  setSalesClientSort: function (v) {
-    this.sclients.sort = v;
-    var box = document.getElementById('sc-list');
-    if (box) box.innerHTML = this.salesClientsListHtml();
-  },
-
-  // ================================================================
-  // 거래처 주문 (읽기 전용)
-  // ================================================================
-  loadSalesOrders: async function () {
-    var st = this.sorders;
-    var token = ++this.loadToken;
-    st.error = null;
-    st.rows = null;
-    this.drawBody();
-    try {
-      var res = await Promise.all([cncSalesClientOrders(null, null, st.stage), this.sclients.rows ? Promise.resolve(this.sclients.rows) : cncSalesClients().catch(function () { return []; })]);
-      if (token !== this.loadToken) return;
-      st.rows = res[0];
-      this.sclients.rows = res[1];
-    } catch (err) {
-      console.error(err);
-      if (token !== this.loadToken) return;
-      st.error = err;
-    }
-    this.drawBody();
-  },
-
-  clientFilterHtml: function (id, current, fn) {
-    var clients = this.sclients.rows || [];
-    return '<div class="field"><label class="field-label" for="' + id + '">' + escHtml(t('sales_client_filter')) + '</label>' +
-      '<select class="input" id="' + id + '" onchange="PageAdmin.' + fn + '(this.value)"><option value="">' + escHtml(t('sales_all_clients')) + '</option>' +
-      clients.map(function (c) { return '<option value="' + escHtml(c.user_id) + '"' + (current === c.user_id ? ' selected' : '') + '>' + escHtml(c.clinic || c.name || '') + '</option>'; }).join('') +
-      '</select></div>';
-  },
-
-  salesOrdersHtml: function () {
-    var st = this.sorders;
-    var self = this;
-    var html = this.salesSubNavHtml();
-    if (st.error) return html + this.errorBox('PageAdmin.loadSalesOrders()', st.error);
-    html += '<section class="card"><h2 class="card-title">📋 ' + escHtml(t('snav_orders')) + '</h2>' +
-      '<p class="field-help">' + escHtml(t('sales_orders_help')) + '</p>' +
-      '<div class="seg" role="tablist">' + ['active', 'done'].map(function (k) {
-        var on = st.stage === k;
-        return '<button type="button" role="tab" class="seg-btn' + (on ? ' active' : '') + '" aria-selected="' + on + '" onclick="PageAdmin.setSalesOrderStage(\'' + k + '\')">' + escHtml(t(k === 'active' ? 'orders_tab_active' : 'orders_tab_done')) + '</button>';
-      }).join('') + '</div>' +
-      '<div class="orders-tools">' + this.clientFilterHtml('so-client', st.client, 'setSalesOrderClient') + '</div>';
-    if (!st.rows) return html + uiLoading() + '</section>';
-    var rows = st.rows.filter(function (o) { return !st.client || o.client_id === st.client; });
-    if (!rows.length) return html + '<p class="muted">' + escHtml(t('sales_no_orders')) + '</p></section>';
-    html += '<ul class="sales-orders">' + rows.map(function (o) {
-      var open = st.open === o.id;
-      return '<li class="card sales-order' + (open ? ' open' : '') + '">' +
-        '<button type="button" class="sales-order-head" aria-expanded="' + open + '" onclick="PageAdmin.toggleSalesOrder(\'' + escHtml(o.id) + '\')">' +
-          '<span class="mono">' + escHtml(o.id) + '</span> ' + uiStageBadge(o.stage) +
-          '<span class="sales-order-meta"><b>' + escHtml(o.customer || '') + '</b> · ' + escHtml(formatDate(o.created_at)) + ' · ' +
-            '<span class="mono">' + formatNumber(o.teeth) + '</span> ' + escHtml(t('teeth_unit')) +
-            (o.crown_set ? ' (🔩 <span class="mono">' + formatNumber(o.abutment) + '</span> · 👑 <span class="mono">' + formatNumber(o.crown_set) + '</span>)' : '') +
-            ' · ' + (o.deadline ? escHtml(t('deadline_label')) + ' ' + escHtml(formatDate(o.deadline)) : escHtml(t('deadline_tbd'))) + '</span></button>' +
-        (open ? self.salesTimelineHtml(o) : '') + '</li>';
-    }).join('') + '</ul></section>';
-    return html;
-  },
-
-  // 단계 타임라인 (종류 · 날짜만 — 메모 · 처리자 이름은 서버가 안 보내요)
-  salesTimelineHtml: function (o) {
-    var items = [{ action: 'submitted', date: o.created_at }].concat(o.timeline || []);
-    return '<ol class="sales-timeline">' + items.map(function (e) {
-      var k = 'history_' + e.action;
-      var label = t(k) === k ? (t('stage_' + e.action) === 'stage_' + e.action ? e.action : t('stage_' + e.action)) : t(k);
-      return '<li><span class="nowrap">' + escHtml(formatDate(e.date)) + '</span> · ' + escHtml(label) + '</li>';
-    }).join('') + '</ol>';
-  },
-
-  setSalesOrderStage: function (k) { this.sorders.stage = k; this.sorders.open = null; this.loadSalesOrders(); },
-  setSalesOrderClient: function (v) { this.sorders.client = v; this.drawBody(); },
-  toggleSalesOrder: function (id) { this.sorders.open = this.sorders.open === id ? null : id; this.drawBody(); },
-
-  // ================================================================
-  // 거래처 입금 (+ 대기 중인 충전 요청 — 금액 · 날짜만)
-  // ================================================================
-  loadSalesPayments: async function () {
-    var st = this.spay;
-    var token = ++this.loadToken;
-    st.error = null;
-    this.drawBody();
-    try {
-      var res = await Promise.all([cncSalesMyPayments(), cncSalesPendingTopups(),
-        this.sclients.rows ? Promise.resolve(this.sclients.rows) : cncSalesClients().catch(function () { return []; })]);
-      if (token !== this.loadToken) return;
-      st.rows = res[0];
-      st.pending = res[1];
-      this.sclients.rows = res[2];
-    } catch (err) {
-      console.error(err);
-      if (token !== this.loadToken) return;
-      st.error = err;
-    }
-    this.drawBody();
-  },
-
-  salesPaymentsHtml: function () {
-    var st = this.spay;
-    var html = this.salesSubNavHtml();
-    if (st.error) return html + this.errorBox('PageAdmin.loadSalesPayments()', st.error);
-    if (!st.rows) return html + '<div class="card">' + uiLoading() + '</div>';
-    // 대기 중인 충전 요청
-    if (st.pending && st.pending.length) {
-      html += '<section class="card"><h2 class="card-title">⏳ ' + escHtml(tf('sales_pending_topups_n', { n: st.pending.length })) + '</h2><ul class="sales-recent">' +
-        st.pending.map(function (p) {
-          return '<li><span class="sales-recent-main"><b>' + escHtml(p.customer || '') + '</b> · <span class="mono">' + escHtml(formatTHB(p.total)) + '</span></span>' +
-            '<span class="muted nowrap">' + escHtml(formatDateTime(p.created_at)) + '</span></li>';
-        }).join('') + '</ul></section>';
-    }
-    var rows = st.rows.filter(function (p) {
-      return (!st.client || p.client_id === st.client) && cncInDateRange(p.approved_at, st.from, st.to);
-    });
-    var sum = rows.reduce(function (a, p) { return a + (Number(p.subtotal) || 0); }, 0);
-    html += '<section class="card"><h2 class="card-title">💳 ' + escHtml(t('snav_payments')) + '</h2>' +
-      '<p class="field-help">' + escHtml(t('sales_my_payments_help')) + '</p>' +
-      '<div class="orders-tools">' + this.clientFilterHtml('sp-client', st.client, 'setSalesPayClient') +
-        '<div class="field"><span class="field-label">' + escHtml(t('sales_from')) + '</span>' + uiDateField({ id: 'sp-from', value: st.from, onChange: 'PageAdmin.setSalesPayRange' }) + '</div>' +
-        '<div class="field"><span class="field-label">' + escHtml(t('sales_to')) + '</span>' + uiDateField({ id: 'sp-to', value: st.to, onChange: 'PageAdmin.setSalesPayRange' }) + '</div>' +
-        (st.from || st.to || st.client ? '<button type="button" class="btn btn-outline btn-sm" onclick="PageAdmin.clearSalesPayFilter()">' + escHtml(t('sales_clear_filter')) + '</button>' : '') +
-      '</div>' +
-      '<p class="muted">' + escHtml(tf('sales_pay_total', { n: rows.length })) + ' <span class="mono">' + escHtml(formatTHB(sum)) + '</span></p>';
-    if (!rows.length) html += '<p class="muted">' + escHtml(t('comm_no_payments')) + '</p>';
-    else {
-      html += '<div class="table-wrap"><table class="table sales-payments-table"><thead><tr>' +
-        '<th>' + escHtml(t('comm_approved_date')) + '</th><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('topup_request_no')) + '</th>' +
-        '<th>' + escHtml(t('topup_package')) + '</th><th>' + escHtml(t('comm_amount')) + '</th></tr></thead><tbody>' +
-        rows.map(function (p) {
-          return '<tr><td class="nowrap">' + escHtml(formatDate(p.approved_at)) + '</td><td>' + escHtml(p.customer || '') + '</td>' +
-            '<td class="mono nowrap">' + escHtml(p.id) + '</td>' +
-            '<td class="nowrap"><span class="mono">' + escHtml(formatNumber(p.credits)) + '</span> ' + escHtml(t('credit_unit')) +
-              (p.product === 'crown_set' ? ' ' + uiProductBadge('crown_set') : '') + '</td>' +
-            '<td class="mono nowrap">' + escHtml(formatTHB(p.subtotal)) + '</td></tr>';
-        }).join('') + '</tbody></table></div>';
-    }
-    return html + '</section>';
-  },
-
-  setSalesPayClient: function (v) { this.spay.client = v; this.drawBody(); },
-  setSalesPayRange: function () {
-    this.spay.from = uiDateValue('sp-from') || '';
-    this.spay.to = uiDateValue('sp-to') || '';
-    this.drawBody();
-  },
-  clearSalesPayFilter: function () { this.spay.client = ''; this.spay.from = ''; this.spay.to = ''; this.drawBody(); },
-
-  // ================================================================
-  // 내 월별 매출 (최근 12달 막대 + 선택한 달의 거래처별 표)
-  // ================================================================
-  loadSalesRevenue: async function () {
-    var st = this.srev;
-    var token = ++this.loadToken;
-    st.error = null;
-    this.drawBody();
-    try {
-      var months = await cncSalesRevenue(12);
-      if (token !== this.loadToken) return;
-      st.months = months;
-      if (!st.sel && months.length) st.sel = { year: months[months.length - 1].year, month: months[months.length - 1].month };
-    } catch (err) {
-      console.error(err);
-      if (token !== this.loadToken) return;
-      st.error = err;
-    }
-    this.drawBody();
-    this.loadRevenueMonth();
-  },
-
-  loadRevenueMonth: async function () {
-    var st = this.srev;
-    if (!st.sel) return;
-    st.comm = null;
-    st.commError = null;
-    var sel = st.sel;
-    try {
-      var c = await cncMyCommissionMonth(sel.year, sel.month);
-      if (st.sel !== sel) return;
-      st.comm = c;
-    } catch (err) {
-      st.commError = err;
-    }
-    if (this.tab === 'srev') this.drawBody();
-  },
-
-  selectRevenueMonth: function (y, m) {
-    this.srev.sel = { year: y, month: m };
-    this.drawBody();
-    this.loadRevenueMonth();
-  },
-
-  revenueChartHtml: function (months) {
-    var self = this;
-    var sel = this.srev.sel || {};
-    var box = document.getElementById('admin-body');
-    var W = Math.max(300, Math.min(1400, (box ? box.clientWidth : 720) - 40));
-    var H = 240, padL = 8, padR = 8, padT = 28, padB = 46;
-    var n = months.length || 1;
-    var slot = (W - padL - padR) / n;
-    var barW = Math.max(10, Math.min(56, slot * 0.56));
-    var max = Math.max.apply(null, months.map(function (x) { return Math.max(x.amount, x.commission); }).concat([1]));
-    var plotH = H - padT - padB;
-    function y(v) { return padT + plotH - (Math.max(0, v) / max) * plotH; }
-    var rtl = document.documentElement.dir === 'rtl';
-    function cx(i) { var k = rtl ? n - 1 - i : i; return padL + slot * k + slot / 2; }
-    var bars = '', labels = '', pts = [], dots = '';
-    months.forEach(function (x, i) {
-      var on = x.year === sel.year && x.month === sel.month;
-      var by = y(x.amount);
-      var bh = Math.max(x.amount ? 3 : 0, padT + plotH - by);
-      var label = self.monthLabel(x.year, x.month - 1) + ' · ' + t('sales_rev_amount') + ' ' + formatTHB(x.amount) + ' · ' + t('sales_month_commission') + ' ' + formatTHB(x.commission);
-      bars += '<g class="fin-bar-g' + (on ? ' selected' : '') + '" role="button" tabindex="0" aria-label="' + escHtml(label) + '" ' +
-        'onclick="PageAdmin.selectRevenueMonth(' + x.year + ', ' + x.month + ')" ' +
-        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();PageAdmin.selectRevenueMonth(' + x.year + ', ' + x.month + ')}">' +
-        '<title>' + escHtml(label) + '</title>' +
-        '<rect class="fin-hit" x="' + (cx(i) - slot / 2).toFixed(1) + '" y="' + padT + '" width="' + slot.toFixed(1) + '" height="' + (plotH + padB) + '"></rect>' +
-        '<rect class="fin-bar" x="' + (cx(i) - barW / 2).toFixed(1) + '" y="' + (padT + plotH - bh).toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3"></rect></g>';
-      labels += '<text class="fin-axis' + (on ? ' selected' : '') + '" x="' + cx(i).toFixed(1) + '" y="' + (H - padB + 20) + '" text-anchor="middle">' + escHtml(self.monthLabel(x.year, x.month - 1, true)) + '</text>';
-      if (x.amount && slot >= 44) labels += '<text class="fin-val" x="' + cx(i).toFixed(1) + '" y="' + (padT + plotH - bh - 6).toFixed(1) + '" text-anchor="middle">' + escHtml(self.shortTHB(x.amount)) + '</text>';
-      pts.push(cx(i).toFixed(1) + ',' + y(x.commission).toFixed(1));
-      dots += '<circle class="fin-dot" cx="' + cx(i).toFixed(1) + '" cy="' + y(x.commission).toFixed(1) + '" r="4"></circle>';
-    });
-    return '<svg class="fin-chart" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="' + escHtml(t('snav_revenue')) + '">' +
-      '<line class="fin-base" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + (padT + plotH) + '" y2="' + (padT + plotH) + '"></line>' +
-      bars + '<polyline class="fin-line" points="' + pts.join(' ') + '"></polyline>' + dots + labels + '</svg>';
-  },
-
-  salesRevenueHtml: function () {
-    var st = this.srev;
-    var self = this;
-    var html = this.salesSubNavHtml();
-    if (st.error) return html + this.errorBox('PageAdmin.loadSalesRevenue()', st.error);
-    if (!st.months) return html + '<div class="card">' + uiLoading() + '</div>';
-    html += '<section class="card"><div class="card-head"><h2 class="card-title">📈 ' + escHtml(t('snav_revenue')) + '</h2>' +
-      '<span class="legend"><span class="legend-dot fin-legend-bar"></span>' + escHtml(t('sales_rev_amount')) +
-      ' <span class="legend-line"></span>' + escHtml(t('sales_month_commission')) + '</span></div>' +
-      '<p class="muted fin-chart-hint">' + escHtml(t('sales_rev_hint')) + '</p>' +
-      '<div class="fin-chart-wrap">' + this.revenueChartHtml(st.months) + '</div>' +
-      '<div class="table-wrap"><table class="table sales-rev-table"><thead><tr><th>' + escHtml(t('sales_month')) + '</th><th>' + escHtml(t('sales_rev_amount')) + '</th>' +
-        '<th>' + escHtml(t('sales_rev_count')) + '</th><th>' + escHtml(t('comm_refund_deduction')) + '</th><th>' + escHtml(t('sales_month_commission')) + '</th></tr></thead><tbody>' +
-        st.months.slice().reverse().map(function (m) {
-          var on = st.sel && st.sel.year === m.year && st.sel.month === m.month;
-          return '<tr class="clickable' + (on ? ' selected' : '') + '" tabindex="0" onclick="PageAdmin.selectRevenueMonth(' + m.year + ', ' + m.month + ')">' +
-            '<td class="nowrap">' + escHtml(self.monthLabel(m.year, m.month - 1)) + '</td><td class="mono nowrap">' + escHtml(formatTHB(m.amount)) + '</td>' +
-            '<td class="mono">' + formatNumber(m.payments) + '</td>' +
-            '<td class="mono nowrap">' + (m.refundDeduction ? '<span class="minus">−' + escHtml(formatTHB(m.refundDeduction)) + '</span>' : '—') + '</td>' +
-            '<td class="mono nowrap"><b>' + escHtml(formatTHB(m.commission)) + '</b></td></tr>';
-        }).join('') + '</tbody></table></div></section>';
-    // 선택한 달의 거래처별
-    if (st.sel) {
-      html += '<section class="card"><h2 class="card-title">' + escHtml(tf('sales_rev_by_client', { month: this.monthLabel(st.sel.year, st.sel.month - 1) })) + '</h2>';
-      if (st.commError) html += '<p class="error-text">' + escHtml(uiErrorMessage(st.commError)) + '</p>';
-      else if (!st.comm) html += uiLoading();
-      else {
-        var r = st.comm.reps[0];
-        var byClient = cncRevenueByClient(r ? r.items : []);
-        if (!byClient.length) html += '<p class="muted">' + escHtml(t('comm_no_payments')) + '</p>';
-        else {
-          html += '<div class="table-wrap"><table class="table"><thead><tr><th>' + escHtml(t('admin_customer')) + '</th><th>' + escHtml(t('sales_rev_count')) + '</th>' +
-            '<th>' + escHtml(t('sales_rev_amount')) + '</th><th>' + escHtml(t('sales_month_commission')) + '</th></tr></thead><tbody>' +
-            byClient.map(function (c) {
-              return '<tr><td>' + escHtml(c.customer) + '</td><td class="mono">' + formatNumber(c.payments) + (c.refunds ? ' <span class="muted">(−' + formatNumber(c.refunds) + ')</span>' : '') + '</td>' +
-                '<td class="mono nowrap">' + escHtml(formatTHB(c.amount)) + '</td><td class="mono nowrap">' + escHtml(formatTHB(c.commission)) + '</td></tr>';
-            }).join('') + '</tbody></table></div>';
-        }
-      }
-      html += '</section>';
-    }
-    return html;
   }
 });

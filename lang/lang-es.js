@@ -1806,8 +1806,6 @@ LANG.es = {
   snav_ads: 'Banners de anuncios',
   // 처음 화면 도움말
   staff_help_title: 'Qué puedes hacer en esta pantalla',
-  staff_help_sales: 'Solo ves las clínicas asignadas a ti.\nMis clientes: contacto, último pedido, último pago e importe de este mes.\nPedidos de clientes: progreso de los pedidos (sin datos de pacientes ni archivos).\nPagos de clientes y Mi comisión: pagos y la comisión que ganas.\nMis ventas mensuales: los últimos 12 meses en un gráfico.',
-  staff_help_staff: 'Pedidos: abre un pedido, descarga los archivos y pásalo al siguiente paso.\nActividad: mira quién cambió qué.',
   staff_help_manager: 'Panel: lo que hay que hacer ahora.\nPedidos, Recargas, Clientes y Facturas: gestiona el trabajo diario.\nActividad y Banners de anuncios: revisa cambios y gestiona los banners.',
   // 영업 화면
   sales_home_month: 'Este mes ({month})',
@@ -1921,6 +1919,60 @@ LANG.es = {
   err_has_active_orders: 'Esta cuenta tiene pedidos o recargas en curso, así que no se puede convertir.',
   err_not_customer: 'Los comerciales solo se pueden asignar a cuentas de cliente.',
   err_invalid_hours: 'Elige entre 1 y 168 horas.',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: 'Mis resultados',
+  snav_mywork: 'Mi trabajo',
+  staff_more_menu: 'Más menús',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: 'Ventas',
+  badge_role_staff: 'Producción',
+  badge_role_manager: 'Gerente',
+  badge_role_owner: 'Dueño',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: 'Revisa los pedidos nuevos y pasa cada pedido al siguiente paso.',
+  sintro_topups: 'Revisa los comprobantes de pago y aprueba o rechaza las recargas.',
+  sintro_customers: 'Busca clientes, sus créditos y sus solicitudes.',
+  sintro_tax: 'Emite, imprime y envía facturas fiscales y recibos.',
+  sintro_dashboard: 'Mira qué hay que hacer ahora y cómo va este mes.',
+  sintro_activity: 'Mira quién hizo qué y cuándo.',
+  sintro_mywork: 'El trabajo de pedidos que hiciste, lo más reciente primero.',
+  sintro_sales: 'Tu comisión y los pagos y pedidos de tus clientes del mes.',
+  sintro_sclients: 'Las clínicas asignadas a ti.',
+  sintro_settings: 'Cambia precios, pagos, datos de la empresa y otros ajustes.',
+  sintro_ads: 'Añade y gestiona los banners que se muestran en el sitio.',
+  sintro_profile: 'Tu nombre, teléfono, idioma y contraseña.',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: 'Mis resultados: elige un mes con ◀ ▶ para ver la comisión que recibirás, los pagos de tus clientes y los pedidos que hicieron.\nToca un importe de comisión para ver cómo se calculó.\nMis clientes: las clínicas asignadas a ti, con teléfono y fechas del último pedido y pago.\nSolo ves a tus propios clientes. Nunca se muestran datos ni archivos de pacientes.',
+  staff_help_staff: 'Pedidos: abre un pedido, descarga los archivos y pásalo al siguiente paso.\nMi trabajo: el trabajo de pedidos que hiciste hoy, esta semana y este mes. Toca un número de pedido para abrirlo.',
+  // 내 실적
+  sperf_comm_now: 'Comisión que recibirás este mes',
+  sperf_comm_month: 'Comisión de {month}',
+  sperf_pay_total: 'Pagos (sin IVA)',
+  sperf_count: 'Cantidad',
+  sperf_empty: 'Aún no hay nada este mes.',
+  sperf_payments_title: 'Pagos de mis clientes',
+  sperf_payments_help: 'Pagos aprobados en este mes. Los importes no incluyen IVA. Toca un importe de comisión para ver cómo se calculó.',
+  sperf_orders_title: 'Pedidos de mis clientes',
+  sperf_product: 'Producto',
+  sperf_credits: 'Créditos',
+  sperf_amount: 'Importe',
+  sperf_my_comm: 'Mi comisión',
+  sperf_basis_show: '¿Cómo?',
+  sperf_total: 'Total',
+  sperf_received: 'Recibido',
+  sperf_order_no: 'N.º de pedido',
+  sperf_teeth: 'Dientes',
+  sperf_stage: 'Estado actual',
+  sperf_deadline: 'Fecha de entrega',
+  sperf_history: 'Ver los últimos 12 meses',
+  sperf_history_help: 'Toca un mes para verlo arriba.',
+  // 내 작업
+  mywork_empty: 'Aún no hay trabajo de pedidos este mes.',
+  mywork_today: 'Hoy',
+  mywork_week: 'Esta semana',
+  mywork_month: 'Este mes',
+  mywork_older: 'Antes',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

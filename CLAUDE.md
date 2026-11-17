@@ -170,7 +170,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023 → 024.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -187,6 +187,7 @@
   **010 · 013 · 016 을 다시 실행하면 023 도 다시** (`_suspicion_flags` · `admin_visit_stats` · `admin_set_customer_rep` 가 직원 계정을 다시 셈),
   **019 · 021 을 다시 실행하면 023 도 다시** (`create_cnc_order`(019 정의) · `create_topup_request`(021 정의) 맨 앞의 STAFF_ACCOUNT 검사가 빠짐 — 표 트리거 `trg_order_0_block_staff` · `trg_topup_0_block_staff` 가 남아서 막히긴 해요).
   그래서 018 을 다시 했으면 019 → 020 → 021 → 022 → 023 순서로
+  **024 (작업 기록 역할별 읽기) — 005 를 다시 실행하면 024 도 다시** (005 가 "audit: team read" 규칙을 다시 만들어서 제작 직원이 다시 전부 봐요). 024 는 다른 파일의 함수를 다시 정의하지 않아요
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
 - `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
@@ -395,7 +396,7 @@
 - `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
 - `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`
 - `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
-- `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시
+- `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시 (`formatDate` · `formatDateTime` · `formatTime` 시각만)
 - `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
 - `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`
 - `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
@@ -445,14 +446,14 @@
 - `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/activity`, `#/admin/team`, `#/admin/commission`, `#/admin/settings`, `#/admin/sales` (역할에 따라 보이는 탭이 달라요)
 - `cnc/cnc-finance.js` — 매출 집계 RPC 호출, CSV 만들기·내려받기 (로직만)
 - `ui/page-admin-finance.js` — Dashboard 의 Revenue 구역 (`PageAdmin` 에 함수 덧붙임: 카드, ? 설명, 패키지 표, 상위 고객, SVG 그래프, CSV 버튼)
-- `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회, 관리자 LINE 그룹·그룹 코드 (로직만)
-- `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-team.js` — 역할(`cncHasRole`, `cncLoadAdminMe`), 팀 관리, 작업 기록 조회(역할별 묶음 `cncAuditGroupsForRole`), 제작 직원 "내 작업"(`cncMyWork` · `cncMyWorkFrom` · `cncGroupMyWork`), 관리자 LINE 그룹·그룹 코드 (로직만)
+- `ui/page-admin-team.js` — Team 탭, Activity 탭(owner · manager), 내 작업 탭(제작 직원), Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
 - `cnc/cnc-sales.js` — 영업 담당 목록 · 요율 · 입금/고객 담당자 지정 · 수금 기준 커미션 결과 · 정산 · CSV (로직만, sql/015 · 016)
 - `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · Top-ups/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
 - `cnc/cnc-staff.js` — 직원 계정 로직 (sql/023): 직원 판별(`cncIsStaffAccount`) · 상태(`cncStaffStatus` · `cncStaffBlocked`) · 역할 첫 화면(`cncStaffStartRoute`) · 고객 전용 주소(`cncIsCustomerOnlyRoute`) ·
   초대 링크(`cncInviteLink` · `cncCheckStaffInvite` · `cncStaffSignUp` · `cncValidateStaffJoin`) · 대표 직원 메뉴 함수 · 영업 화면 데이터(`cncSalesSummary` · `cncSalesClients` · `cncSalesClientOrders` · `cncSalesPendingTopups` · `cncSalesRevenue`). cnc-sales.js 다음에 불러와요
 - `ui/page-join.js` — 초대 링크 가입 `#/join?t=…` (`PageJoin`, 로그인 없이) + 직원 대기 · 정지 안내 (`PageStaffGate`, `#/staffgate`)
-- `ui/page-sales.js` — 영업 화면 확장 (`PageAdmin` 에 덧붙임): 영업 홈 · 내 거래처 · 거래처 주문 · 거래처 입금 · 내 월별 매출 + 역할별 "이 화면에서 할 수 있는 일" 도움말 (`staffHelpHtml`)
+- `ui/page-sales.js` — 영업 화면 (`PageAdmin` 에 덧붙임, sql/024): **"내 실적" 한 화면**(`#/admin/sales` — 큰 커미션 카드 · 내 고객 결제 · 내 고객 주문 · 접이식 지난 12개월) + 내 거래처 + 역할별 접는 도움말 (`staffHelpHtml`)
 - `ui/page-admin-staff.js` — 대표 "직원" 메뉴 (Team 탭을 바꿔 끼움, 023 전이면 예전 Team 화면): 직원 목록 · 초대 링크 · 정지/다시 켜기 · 거래처 옮기기 · 직원 계정 전환
 - `ui/page-admin-free.js` — 무료 크레딧 사용 배지, 무료 크레딧 지급·회수, 신규 가입 이벤트 설정, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008·009)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
@@ -500,7 +501,8 @@
 
 ## 사용 흐름 규칙
 - 로그인(재로그인 포함) 성공 → 항상 `#/home` (예외: 로그인 전에 LINE 알림 링크로 들어왔으면 로그인 후 그 페이지로 — 아래 LINE 링크). 이 계정 첫 로그인이면 한 번 `#/guide` (`localStorage.allabut_guide_seen_{user_id}`). 로그인 상태 새로고침은 지금 페이지 유지
-- **직원 계정(account_type 'staff', sql/023)** 은 로그인하면 역할 첫 화면: sales → `#/admin/sales`(영업 홈) / staff → `#/admin/orders` / manager → `#/admin/dashboard` (owner 는 customer 계정이라 지금처럼 `#/home` + Admin).
+- **직원 계정(account_type 'staff', sql/023)** 은 로그인하면 역할 첫 화면: sales → `#/admin/sales`(**내 실적** — 영업 홈은 따로 없어요) / staff → `#/admin/orders` / manager → `#/admin/dashboard` (owner 는 customer 계정이라 지금처럼 `#/home` + Admin).
+  예전 영업 주소 `#/admin/sorders` · `spay` · `scomm` · `srev` 는 내 실적으로 (`PageAdmin.SALES_OLD_TABS`)
   가이드 자동 열기 · 가입 이벤트 · 필수 정보(#/complete) 없음. 고객 주소(`#/home` · `#/new` · `#/orders` · `#/topup` · `#/guide` · `#/complete`)나 권한 없는 관리 탭으로 오면 첫 화면으로 (`CUSTOMER_ONLY_ROUTES`, router.js).
   확인 대기(매니저 초대) · 정지 · 팀에서 빠진 직원은 `PageStaffGate` 안내만 ("대표의 확인을 기다리고 있어요" / "계정이 정지됐어요. 대표에게 문의해 주세요" + [다시 확인] · [로그아웃])
 - Sign Out → 앱 확인 모달 (작성 중 주문이 있으면 "저장되어 있어요" 안내). 세션 만료 자동 로그아웃은 확인 없음
@@ -526,13 +528,15 @@
   → fit-8 (아주 좁을 때 — 360px · 아랍어/페르시아어 · 글자 130%, 잔액 4자리 등) 헤더 양옆 여백 10px · 간격 좁게, 로고 22px, LINE 버튼은 초록 버튼에 글자 "LINE" 만(로고 아이콘 숨김), ☰ 메뉴 버튼은 글자만("메뉴"), 크레딧 아이콘 작게
   → fit-9 (그래도 넘치면) 크레딧 숫자 · 버튼 글자 조금 작게, 로고 20px. **글자 라벨은 끝까지 남겨요** (아이콘만 있는 버튼 금지). 아래 탭 전환은 계속 fit-7 기준 (`HEADER_TABBAR_LEVEL`).
   헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인 (9개 언어 × 글자 100/115/130% × 고객 · 관리자 · 영업 · 직원 계정 · 크라운 세트 잔액 두 줄)
-- 직원 계정 헤더: 크레딧 · LINE 고객 버튼 · Top up 없음, 로고 옆 역할 배지(`staffRoleBadgeHtml`), 역할 메뉴가 위쪽 메뉴에 바로 (`STAFF_NAV` · `staffNavItems()`, 모바일은 아래 탭 + ☰ 의 `more` 항목). Admin 메뉴 · 탭 줄은 안 보여요
+- 직원 계정 헤더: 크레딧 · LINE 고객 버튼 · Top up 없음, 로고 옆 역할 배지(`staffRoleBadgeHtml` — 역할 이름 그대로 `badge_role_*`: 영업 / 제작 / 매니저 / 대표), 역할 메뉴가 위쪽 메뉴에 바로 (`STAFF_NAV` · `staffNavItems()`). Admin 메뉴 · 탭 줄은 안 보여요.
+  **직원의 ☰ 메뉴는 [내 정보] [언어] [글자 크기] [로그아웃] 만**. 휴대폰 아래 탭에 못 들어간 메뉴(`more` — 매니저의 세금계산서 · 활동 기록 · 광고 배너)는 관리 화면 맨 위 작은 줄 `.staff-more-row` (PC 위쪽 메뉴 줄이 보이면 숨김).
+  직원 화면마다 제목 아래 한 줄 안내 `.staff-intro` (`sintro_탭`, 내 정보 `sintro_profile`), 긴 도움말은 역할 첫 화면에만 접힌 채로 (`staffHelpHtml`)
 - 좁은 화면 넘침 주의: 안내 상자(`.notice`, `.notice-box`)는 `overflow-wrap: anywhere` — 긴 파일 이름(예: `sql/019_…sql`)이 큰 글씨 · 360px 에서 카드 밖으로 나가 화면 전체가 옆으로 밀리지 않게
 
 ## 팀 권한 · 작업 기록 (sql/005_team.sql, 설정 안내: TEAM_SETUP.md)
 - 역할: owner ⊃ manager ⊃ staff (`admins.role`) + 별개 역할 **sales(영업)** (sql/015). DB: `admin_role()`, `has_admin_role(p_min)`,
   `is_admin()` = **owner · manager · staff 만 true** (015 부터 — sales 는 false. RLS 의 "관리자 읽기"가 전부 is_admin/has_admin_role 이라 sales 에게 안 열려요)
-  - staff: 주문 조회·단계 변경·디자인 업로드·배송 (cnc_orders, cnc-files·cnc-designs), Activity
+  - staff: 주문 조회·단계 변경·디자인 업로드·배송 (cnc_orders, cnc-files·cnc-designs), **내 작업**(Activity 탭은 없음)
   - manager: + 충전 승인/거절, 크레딧 지급/차감, 주문 관리자 취소, 고객 목록·프로필·돈 정보, 계정 삭제 요청, Dashboard 주문 통계
   - owner: + 현금 환불, 가격·결제·회사 정보·법적 버전 수정, 매출(admin_finance_*), Team, LINE 그룹
 - 005 는 기존 관리자 함수 정의 안의 `is_admin()` 만 `has_admin_role('…')` 로 바꿔 끼워요 → **002·003·004 를 다시 실행하면 005 도 다시**
@@ -579,11 +583,16 @@
     **[지급 완료로 표시하기]** 는 달이 끝났고 미지급일 때만 (달이 안 끝났으면 버튼 대신 "11월이 끝난 뒤(12월 1일부터) 지급 완료로 표시할 수 있어요") / 지급됐으면 [지급 취소](사유) ·
     CSV(`allabut-commission-YYYY-MM.csv`, 기존 CSV 규칙, 종류 payment/refund) · "담당 미지정 입금 n건 → 지정하기"(Top-ups 탭: 승인됨 + 담당 없음 + 그 달 승인 칩) · "확인 필요" 환불 목록.
     **담당 입금이 없는 달**은 카드 대신 "이 달에 승인된 담당 입금이 없어요" + 담당 미지정 입금 수(+ 지정하기) + [지난달] [이번 달]
-  - 영업 탭: 내 월별 커미션 카드 + 건별 상세(계산 근거 포함), 내 담당 고객 입금 내역 표 (고객 이름 · 날짜 · 금액만), 빈 달은 같은 안내
+  - 영업 탭: sql/024 부터 아래 "직원 계정" 의 **내 실적** 한 화면 (예전 "내 월별 커미션 + 입금 내역" 화면 `salesHtml` 은 sql/023 실행 전에만)
   - 커미션 · 영업 화면에는 예전 주문 기준 문구(주문 · 치아 · 배송일 · 유료 치아)를 쓰지 않아요. 015 때 정산(basis 'order')은 "예전 방식"으로만 표시
   - 015 실행 전이면 담당 칸 · 필터 · 영업 역할이 안 보이고, 커미션 탭은 "DB 업데이트(sql/015 · sql/016)" 안내만
 - 팀 함수(owner): `admin_list_team`, `admin_add_member(email, role, name)`(가입한 이메일만, USER_NOT_FOUND), `admin_set_role`, `admin_set_member_name`, `admin_remove_member` (자기 자신·마지막 owner 불가: CANNOT_REMOVE_SELF / LAST_OWNER)
-- 작업 기록 `admin_audit_log`: staff 이상 읽기, 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경)
+- 작업 기록 `admin_audit_log`: 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경).
+  **읽기는 역할별 (sql/024, RLS "audit: read by role" = `can_read_audit(action, target_type)` → `_audit_min_role`)**:
+  staff = 주문 작업만 (order_stage · order_design · order_shipping · order_deadline) / manager = + 충전 승인·거절 · 크레딧 지급·차감 · 주문 관리자 취소 · 세금계산서 발행·우편 · 광고 배너 · 고객 일(settings_changed 중 target_type 'clinic_change' · 'customer') /
+  owner = 전부 (영업 · 커미션 · 담당 지정 · 팀 · 직원 · 설정 · 서비스 상태 · 파일 보관 · 현금 환불 · LINE 그룹) / sales = 못 봄. **목록에 없는 새 기록 종류는 자동으로 owner 만** — 새 action 을 만들면 누가 봐야 하는지 `_audit_min_role` 에 넣는다(새 SQL 파일에서 다시 정의)
+  - 화면: Activity 탭(누가 · 무엇을 · 주문번호 필터)은 **owner · manager 만** (`TABS` min 'manager'), "무엇을" 묶음도 역할별 (`cncAuditGroupsForRole`: manager = 주문 · 충전 · 크레딧 · 설정)
+  - 제작 직원 **"내 작업"** 탭 (`#/admin/mywork`, `onlyRole: 'staff'`): 필터 없이 내가 처리한 주문 작업만 (actor_id = 나), 오늘 / 이번 주(월요일부터) / 이번 달 / 그 전 묶음(방콕 날짜), 줄마다 주문번호(누르면 그 주문 상세) · 한 일 · 시각
 - `review_history` 의 관리자 기록은 `by: 'admin'` 그대로 + DB 트리거가 `by_name`·`by_id`(실제 처리자)를 붙임. 관리자 화면 타임라인만 이름 표시 (`uiHistoryList(history, true)`), 고객 화면은 "관리자"
 
 ## 직원 계정 · 초대 링크 · 역할별 화면 (sql/023_staff_accounts.sql)
@@ -598,9 +607,16 @@
     account_type 'staff' + admins 역할(매니저는 pending_confirm) + 영업이면 sales_reps + 초대 사용 처리 + 작업 기록 'staff_joined'. **역할은 초대 기록에서만** (브라우저 값 안 믿음)
   - 만료는 **auth.users.created_at(가입 시각) 기준** — 이메일 인증을 나중에 해도 가입할 때 유효했으면 통과. 틀림 · 만료 · 사용됨 · 취소 → `INVITE_INVALID` (프로필 안 만듦 = 고객 계정이 생기지 않음) → 화면 "이 초대 링크는 더 이상 쓸 수 없어요. 대표에게 새 링크를 요청해 주세요"
   - 일반 회원가입 화면에는 직원 선택지가 없어요
-- **역할별 메뉴** (`STAFF_NAV`, ui/layout.js): 영업 = 영업 홈 · 내 거래처 · 거래처 주문 · 거래처 입금 · 내 커미션 · 내 월별 매출 / 제작 직원 = 주문 · 작업 기록 / 매니저 = 주문 · 충전 · 고객 · 세금계산서 · 대시보드 · 작업 기록 · 광고 배너(설정 탭) / owner = 지금처럼 전부 + 직원.
+- **역할별 메뉴** (`STAFF_NAV`, ui/layout.js — sql/024 때 단순하게): 영업 = **[내 실적] [내 거래처] [내 정보]** / 제작 직원 = **[주문] [내 작업] [내 정보]** / 매니저 = 주문 · 충전 · 고객 · 대시보드 · 세금계산서 · 활동 기록 · 광고 배너(설정 탭) · 내 정보 / owner = 지금처럼 전부 + 직원.
   각 역할 첫 화면 위에 접는 도움말 "이 화면에서 할 수 있는 일" (`staff_help_sales` · `staff_help_staff` · `staff_help_manager`). 내 정보(직원) = 이름 · 이메일(읽기 전용) · 전화 · 언어 · 비밀번호 변경만
-- **영업 화면** (전부 `my_sales_rep_id()` 의 담당 거래처만, 정지 · 대기면 `NOT_SALES`): `sales_my_summary()`(이번 달 입금 · 커미션 · 거래처 수 · 진행 중 주문 · 대기 충전 · 최근 활동) /
+- **"내 실적" 한 화면** (`#/admin/sales`, ui/page-sales.js, 들어올 때마다 이번 달 · 맨 위 ◀ 월 ▶ 하나로 전체가 같이 바뀜):
+  1) 큰 카드 "이번 달 받을 커미션"(지난달이면 "11월 커미션") 크게 + 작은 글씨 입금 합계(VAT 제외) · 건수 · 환불 차감 · 지급 상태(미지급 / 지급 완료 날짜) ← `my_commission_month`
+  2) "내 고객 결제": 그 달 승인 입금(+ 그 달 환불 차감 줄) — 날짜 · 치과명 · 상품 · 크레딧 · 금액(VAT 제외) · 내 커미션(**계산 근거는 금액을 눌렀을 때만** `details.perf-basis`) + 합계 줄
+  3) "내 고객 주문": 그 달 접수 주문 — 접수일 · 치과명 · 주문번호 · 치아 수 · 지금 단계 · 납품일 + 합계 줄 ← `sales_my_client_orders(그 달 1일, 말일)`
+  4) 맨 아래 접이식 "지난 12개월 보기"(들어올 때마다 접힘, 열 때 `sales_my_revenue(12)` — 막대 · 달별 표, 누르면 그 달로)
+  표가 비면 "이 달에는 아직 없어요" 한 줄. 필터 · 검색 · 맨 위 그래프 없음. **휴대폰(720px 이하)은 표가 카드 목록** (`.rtable` + 칸마다 `data-label`, 가로 스크롤 없음). 금액은 `thbHtml`(숫자만 .mono, "THB" 와 한 덩어리 `.thb`)
+  "내 거래처" = 치과명 · 담당자 · 전화 · 최근 주문일 · 최근 입금일 + 검색 한 칸 (정렬 · 지역 · 잔액 칸은 없앰)
+- **영업 서버 함수** (전부 `my_sales_rep_id()` 의 담당 거래처만, 정지 · 대기면 `NOT_SALES`): `sales_my_summary()`(지금 화면에서는 안 씀)(이번 달 입금 · 커미션 · 거래처 수 · 진행 중 주문 · 대기 충전 · 최근 활동) /
   `sales_my_clients()`(치과명 · 담당자 · 전화 · 지역(주소 앞 24자) · 가입일 · 최근 주문일 · 최근 입금일 · 이번 달 입금액 · 진행 중 주문 · 잔액 숫자만, 화면에서 검색 · 정렬) /
   `sales_my_client_orders(from, to, stage 'active' | 'done')`(주문번호 · 치과명 · 접수일 · 단계 · 납품일 · 치아 수 + 타임라인(종류 · 날짜만) — **환자 · 메모 · 파일 · 디자인 · 주소 없음**, 읽기 전용) /
   `sales_my_pending_topups()`(금액 · 날짜) / `sales_my_revenue(months 1~24)`(달별 입금 · 건수 · 환불 · 커미션 — 막대 그래프, 달을 누르면 `my_commission_month` 건별로 거래처 표) / `sales_my_payments` 에 client_id (거래처 · 기간 필터).

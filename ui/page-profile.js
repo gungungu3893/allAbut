@@ -57,9 +57,10 @@ var PageProfile = {
     if (!this.main) return;
     var p = APP.profile || {};
     var e = this.errors;
-    var role = APP.adminRole ? t('role_' + APP.adminRole) + (APP.adminStatus && APP.adminStatus !== 'active' ? ' · ' + t(cncMemberStatusKey(APP.adminStatus)) : '') : t('staff_account');
+    var role = APP.adminRole ? t('badge_role_' + APP.adminRole) + (APP.adminStatus && APP.adminStatus !== 'active' ? ' · ' + t(cncMemberStatusKey(APP.adminStatus)) : '') : t('staff_account');
     this.main.innerHTML = '<div class="page page-profile staff-profile">' +
       '<h1 class="page-title">' + escHtml(t('nav_profile')) + '</h1>' +
+      '<p class="staff-intro">' + escHtml(t('sintro_profile')) + '</p>' +   // 직원 화면 맨 위 한 줄 안내
       '<section class="card"><h2 class="card-title">' + escHtml(t('staff_profile_title')) + '</h2>' +
         '<form class="form-grid two" onsubmit="PageProfile.saveStaff(event)" novalidate>' +
           '<div class="field"><span class="field-label">' + escHtml(t('full_name_label')) + '</span><p class="readonly-value">' + escHtml(p.full_name || p.nickname || '—') + '</p>' +

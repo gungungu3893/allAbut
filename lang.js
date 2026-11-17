@@ -136,6 +136,18 @@ function formatDateTime(value) {
   }
 }
 
+// 시각만: "09:15 AM" / "09:15" (언어에 따라) — 오늘 묶음처럼 날짜가 이미 보일 때
+function formatTime(value) {
+  if (!value) return '—';
+  var d = new Date(value);
+  if (isNaN(d.getTime())) return '—';
+  try {
+    return d.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return d.toISOString().slice(11, 16);
+  }
+}
+
 function formatNumber(n) {
   try { return Number(n || 0).toLocaleString(localeTag()); } catch (e) { return String(n || 0); }
 }

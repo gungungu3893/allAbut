@@ -1806,8 +1806,6 @@ LANG.vi = {
   snav_ads: 'Banner quảng cáo',
   // 처음 화면 도움말
   staff_help_title: 'Bạn có thể làm gì trên màn hình này',
-  staff_help_sales: 'Chỉ xem các phòng khám được giao cho bạn.\nKhách hàng của tôi: liên hệ, đơn gần nhất, thanh toán gần nhất và số tiền tháng này.\nĐơn hàng của khách: tiến độ đơn hàng (không có dữ liệu bệnh nhân hay tệp).\nThanh toán của khách và Hoa hồng của tôi: các khoản thanh toán và hoa hồng bạn nhận được.\nDoanh số tháng của tôi: biểu đồ 12 tháng gần nhất.',
-  staff_help_staff: 'Đơn hàng: mở đơn, tải tệp và chuyển sang bước tiếp theo.\nNhật ký: xem ai đã thay đổi gì.',
   staff_help_manager: 'Bảng điều khiển: việc cần làm ngay.\nĐơn hàng, Nạp tiền, Khách hàng và Hóa đơn thuế: xử lý công việc hằng ngày.\nNhật ký và Banner quảng cáo: kiểm tra thay đổi và quản lý banner.',
   // 영업 화면
   sales_home_month: 'Tháng này ({month})',
@@ -1921,6 +1919,60 @@ LANG.vi = {
   err_has_active_orders: 'Tài khoản này có đơn hàng hoặc nạp tiền đang xử lý nên không thể chuyển.',
   err_not_customer: 'Chỉ có thể giao nhân viên bán hàng cho tài khoản khách hàng.',
   err_invalid_hours: 'Vui lòng chọn từ 1 đến 168 giờ.',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: 'Kết quả của tôi',
+  snav_mywork: 'Công việc của tôi',
+  staff_more_menu: 'Thêm menu',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: 'Bán hàng',
+  badge_role_staff: 'Sản xuất',
+  badge_role_manager: 'Quản lý',
+  badge_role_owner: 'Chủ',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: 'Xem đơn hàng mới và chuyển từng đơn sang bước tiếp theo.',
+  sintro_topups: 'Kiểm tra biên lai thanh toán và duyệt hoặc từ chối yêu cầu nạp tiền.',
+  sintro_customers: 'Tra cứu khách hàng, tín dụng và yêu cầu của họ.',
+  sintro_tax: 'Xuất, in và gửi hóa đơn thuế và biên lai.',
+  sintro_dashboard: 'Xem việc cần làm ngay và tình hình tháng này.',
+  sintro_activity: 'Xem ai đã làm gì và khi nào.',
+  sintro_mywork: 'Công việc đơn hàng bạn đã làm, mới nhất trước.',
+  sintro_sales: 'Hoa hồng của bạn, thanh toán và đơn hàng của khách hàng bạn trong tháng.',
+  sintro_sclients: 'Các phòng khám được giao cho bạn.',
+  sintro_settings: 'Thay đổi giá, thanh toán, thông tin công ty và các cài đặt khác.',
+  sintro_ads: 'Thêm và quản lý các banner hiển thị trên trang web.',
+  sintro_profile: 'Tên, số điện thoại, ngôn ngữ và mật khẩu của bạn.',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: 'Kết quả của tôi: chọn tháng bằng ◀ ▶ để xem hoa hồng bạn sẽ nhận, các khoản thanh toán từ khách hàng của bạn và đơn hàng họ đã đặt.\nChạm vào số tiền hoa hồng để xem cách tính.\nKhách hàng của tôi: các phòng khám được giao cho bạn, kèm số điện thoại và ngày đặt hàng, thanh toán gần nhất.\nBạn chỉ thấy khách hàng của mình. Dữ liệu và tệp của bệnh nhân không bao giờ được hiển thị.',
+  staff_help_staff: 'Đơn hàng: mở đơn, tải tệp xuống và chuyển sang bước tiếp theo.\nCông việc của tôi: công việc đơn hàng bạn đã làm hôm nay, tuần này và tháng này. Chạm vào số đơn để mở.',
+  // 내 실적
+  sperf_comm_now: 'Hoa hồng bạn sẽ nhận tháng này',
+  sperf_comm_month: 'Hoa hồng tháng {month}',
+  sperf_pay_total: 'Thanh toán (chưa gồm VAT)',
+  sperf_count: 'Số lượng',
+  sperf_empty: 'Tháng này chưa có gì.',
+  sperf_payments_title: 'Thanh toán của khách hàng tôi',
+  sperf_payments_help: 'Các khoản thanh toán đã duyệt trong tháng này. Số tiền chưa gồm VAT. Chạm vào số tiền hoa hồng để xem cách tính.',
+  sperf_orders_title: 'Đơn hàng của khách hàng tôi',
+  sperf_product: 'Sản phẩm',
+  sperf_credits: 'Tín dụng',
+  sperf_amount: 'Số tiền',
+  sperf_my_comm: 'Hoa hồng của tôi',
+  sperf_basis_show: 'Cách tính?',
+  sperf_total: 'Tổng',
+  sperf_received: 'Ngày nhận',
+  sperf_order_no: 'Số đơn',
+  sperf_teeth: 'Răng',
+  sperf_stage: 'Trạng thái hiện tại',
+  sperf_deadline: 'Ngày giao',
+  sperf_history: 'Xem 12 tháng gần nhất',
+  sperf_history_help: 'Chạm vào một tháng để xem ở trên.',
+  // 내 작업
+  mywork_empty: 'Tháng này chưa có công việc đơn hàng nào.',
+  mywork_today: 'Hôm nay',
+  mywork_week: 'Tuần này',
+  mywork_month: 'Tháng này',
+  mywork_older: 'Trước đó',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

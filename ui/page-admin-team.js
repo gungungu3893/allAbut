@@ -5,13 +5,15 @@
 // 로직(DB 호출)은 cnc/cnc-team.js 에 있어요.
 //   Team      (owner)    : 멤버 목록 · 추가(가입한 이메일만) · 역할 변경(영업 포함) · 이름 변경 · 제거
 //                          + 팀원마다 "영업 담당" 스위치 · 커미션 설정 (칸 내용은 ui/page-admin-sales.js, sql/015)
-//   Activity  (staff 이상): admin_audit_log 최신순, 처리자·작업·대상 필터
+//   Activity  (manager 이상): admin_audit_log 최신순, 처리자·작업·대상 필터 (sql/024 — DB 가 역할별로 걸러요: manager 는 주문 · 충전 · 크레딧 · 고객 · 세금계산서 · 광고, owner 는 전부)
+//   내 작업   (제작 직원): 내가 처리한 주문 작업만 (단계 · 디자인 · 배송 · 납기), 오늘 / 이번 주 / 이번 달 묶음, 주문번호를 누르면 주문 상세
 //   LINE groups (owner)  : 연결된 그룹(카테고리·켜기/끄기·삭제) + 그룹 연결 코드(30분, 5초마다 연결 확인)
 
 Object.assign(PageAdmin, {
 
   team: { rows: null, reps: null, error: false, adding: false, errors: {} },
   activity: { rows: [], hasMore: false, loading: false, error: false, actor: '', group: '', target: '', actors: {} },
+  mywork: { rows: null, error: null },   // 제작 직원 "내 작업" (sql/024)
   lineGroups: { targets: null, error: false, code: null, expiresAt: null, linked: false, expired: false },
   lineGroupTimers: { poll: null, tick: null },
 
@@ -262,7 +264,7 @@ Object.assign(PageAdmin, {
     var st = this.activity;
     var actors = Object.keys(st.actors).map(function (id) { return { id: id, name: st.actors[id] }; })
       .sort(function (a, b) { return a.name.localeCompare(b.name); });
-    var groups = ['orders', 'topups', 'credits', 'team', 'sales', 'settings'];
+    var groups = cncAuditGroupsForRole();   // 역할마다 볼 수 있는 묶음만 (sql/024)
     var tools = '<div class="activity-tools card">' +
       '<div class="field"><label class="field-label" for="act-actor">' + escHtml(t('audit_filter_actor')) + '</label>' +
         '<select class="input" id="act-actor" onchange="PageAdmin.setActivityFilter(\'actor\', this.value)">' +
@@ -279,6 +281,55 @@ Object.assign(PageAdmin, {
           'oninput="PageAdmin.onActivitySearch(this.value)"></div>' +
       '</div>';
     return '<div class="admin-activity">' + tools + '<section class="card" id="activity-list"></section></div>';
+  },
+
+  // ================================================================
+  // 내 작업 (제작 직원, sql/024) — 필터 없이 내가 처리한 주문 작업만 · 오늘 / 이번 주 / 이번 달 묶음
+  // ================================================================
+  loadMyWork: async function () {
+    var st = this.mywork;
+    var token = ++this.loadToken;
+    st.error = null;
+    st.rows = null;
+    this.drawBody();
+    try {
+      var rows = await cncMyWork(cncMyWorkFrom());
+      if (token !== this.loadToken) return;
+      st.rows = rows;
+    } catch (err) {
+      console.error(err);
+      if (token !== this.loadToken) return;
+      st.error = err;
+    }
+    this.drawBody();
+  },
+
+  // 한 일 (짧게): "단계 변경 · 접수 → 확인" / "디자인 업로드 · v2" / "배송 정보 · DHL 123" / "납기 변경 · …"
+  myWorkWhat: function (r) {
+    var d = this.auditDetail(r);
+    return this.auditLabel(r.action) + (d ? ' · ' + d : '');
+  },
+
+  myWorkHtml: function () {
+    var self = this;
+    var st = this.mywork;
+    if (st.error) return this.errorBox('PageAdmin.loadMyWork()', st.error);
+    if (!st.rows) return '<div class="card">' + uiLoading() + '</div>';
+    if (!st.rows.length) return '<div class="card"><p class="empty-text">' + escHtml(t('mywork_empty')) + '</p></div>';
+    var g = cncGroupMyWork(st.rows);
+    function group(key, rows, withDate) {
+      if (!rows.length) return '';
+      return '<section class="card mywork-group"><h2 class="card-title">' + escHtml(t('mywork_' + key)) +
+        ' <span class="muted mywork-count">(<span class="mono">' + escHtml(formatNumber(rows.length)) + '</span>)</span></h2>' +
+        '<ol class="mywork-list">' + rows.map(function (r) {
+          var time = withDate ? formatDateTime(r.created_at) : formatTime(r.created_at);
+          return '<li class="mywork-item">' +
+            '<button type="button" class="link-btn mono mywork-order" onclick="PageAdmin.openOrder(\'' + escHtml(r.target_id) + '\')">' + escHtml(r.target_id) + '</button>' +
+            '<span class="mywork-what">' + escHtml(self.myWorkWhat(r)) + '</span>' +
+            '<span class="mywork-time">' + escHtml(time) + '</span></li>';
+        }).join('') + '</ol></section>';
+    }
+    return '<div class="mywork">' + group('today', g.today, false) + group('week', g.week, true) + group('month', g.month, true) + group('older', g.older, true) + '</div>';
   },
 
   // activityHtml 을 그린 뒤 목록 채우기 (drawBody 가 innerHTML 로 넣기 때문에 여기서 따로)

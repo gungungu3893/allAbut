@@ -1809,8 +1809,6 @@ LANG.en = {
   snav_ads: 'Ad banners',
   // 처음 화면 도움말
   staff_help_title: 'What you can do on this screen',
-  staff_help_sales: 'See only the clinics assigned to you.\nMy clients: contact details, last order, last payment and this month\'s amount.\nClient orders: order progress (no patient data or files).\nClient payments and My commission: payments and the commission you earn.\nMy monthly sales: the last 12 months as a chart.',
-  staff_help_staff: 'Orders: open an order, download the files and move it to the next step.\nActivity: see who changed what.',
   staff_help_manager: 'Dashboard: what needs doing now.\nOrders, Top-ups, Customers and Tax invoices: handle daily work.\nActivity and Ad banners: check changes and manage banners.',
   // 영업 화면
   sales_home_month: 'This month ({month})',
@@ -1924,6 +1922,60 @@ LANG.en = {
   err_has_active_orders: 'This account has orders or top-ups in progress, so it cannot be converted.',
   err_not_customer: 'Sales reps can be assigned only to customer accounts.',
   err_invalid_hours: 'Please choose between 1 and 168 hours.',
+
+  // ----- 직원 화면 단순하게 (sql/024) -----
+  snav_perf: 'My performance',
+  snav_mywork: 'My work',
+  staff_more_menu: 'More menus',
+  // 로고 옆 역할 배지 (역할 이름 그대로)
+  badge_role_sales: 'Sales',
+  badge_role_staff: 'Production',
+  badge_role_manager: 'Manager',
+  badge_role_owner: 'Owner',
+  // 화면 맨 위 한 줄 안내
+  sintro_orders: 'Check new orders and move each order to the next step.',
+  sintro_topups: 'Check payment slips and approve or reject top-up requests.',
+  sintro_customers: 'Look up customers, their credits and their requests.',
+  sintro_tax: 'Issue, print and post tax invoices and receipts.',
+  sintro_dashboard: 'See what needs doing now and how this month is going.',
+  sintro_activity: 'See who did what, and when.',
+  sintro_mywork: 'The order work you did, newest first.',
+  sintro_sales: 'Your commission, your clients\' payments and orders for the month.',
+  sintro_sclients: 'The clinics assigned to you.',
+  sintro_settings: 'Change prices, payment, company and other settings.',
+  sintro_ads: 'Add and manage the banners shown on the site.',
+  sintro_profile: 'Your name, phone, language and password.',
+  // 처음 화면 도움말 (접혀 있어요)
+  staff_help_sales: 'My performance: choose a month with ◀ ▶ to see the commission you will receive, the payments from your clients and the orders they placed.\nTap a commission amount to see how it was calculated.\nMy clients: the clinics assigned to you, with phone numbers and last order and payment dates.\nYou only see your own clients. Patient data and files are never shown.',
+  staff_help_staff: 'Orders: open an order, download the files and move it to the next step.\nMy work: the order work you did today, this week and this month. Tap an order number to open it.',
+  // 내 실적
+  sperf_comm_now: 'Commission you will receive this month',
+  sperf_comm_month: 'Commission for {month}',
+  sperf_pay_total: 'Payments (excl. VAT)',
+  sperf_count: 'Count',
+  sperf_empty: 'Nothing yet for this month.',
+  sperf_payments_title: 'My clients\' payments',
+  sperf_payments_help: 'Approved payments in this month. Amounts exclude VAT. Tap a commission amount to see how it was calculated.',
+  sperf_orders_title: 'My clients\' orders',
+  sperf_product: 'Product',
+  sperf_credits: 'Credits',
+  sperf_amount: 'Amount',
+  sperf_my_comm: 'My commission',
+  sperf_basis_show: 'How?',
+  sperf_total: 'Total',
+  sperf_received: 'Received',
+  sperf_order_no: 'Order no.',
+  sperf_teeth: 'Teeth',
+  sperf_stage: 'Status now',
+  sperf_deadline: 'Delivery date',
+  sperf_history: 'See the last 12 months',
+  sperf_history_help: 'Tap a month to see it above.',
+  // 내 작업
+  mywork_empty: 'No order work yet this month.',
+  mywork_today: 'Today',
+  mywork_week: 'This week',
+  mywork_month: 'This month',
+  mywork_older: 'Earlier',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

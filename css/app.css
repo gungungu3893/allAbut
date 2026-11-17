@@ -3008,3 +3008,74 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
 @media (max-width: 420px) {
   .sales-stats { grid-template-columns: 1fr; }
 }
+
+/* ===== 직원 화면 단순하게 (sql/024): 한 줄 안내 · 휴대폰 메뉴 줄 · 내 실적 · 내 작업 · 표 → 휴대폰 카드 ===== */
+.staff-intro { margin: -6px 0 16px; color: var(--muted); font-size: 1rem; }
+/* 아래 탭에 못 들어간 메뉴 (매니저) — PC 위쪽 메뉴 줄이 보일 때는 숨겨요 */
+.staff-more-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.staff-more-row .btn { min-height: 44px; }
+.staff-more-row .btn.active { border-color: var(--gold); font-weight: 700; background: #FFFBEB; }
+@media (min-width: 1024px) {
+  body:not(.hdr-tabbar) .staff-more-row { display: none; }
+}
+
+/* 내 실적 */
+.sales-perf { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.sales-perf > * { min-width: 0; margin: 0; }
+.perf-month-nav { margin: 0; }
+.perf-card { border-inline-start: 6px solid var(--gold); padding: 20px; }
+.perf-card-label { margin: 0 0 4px; font-weight: 700; color: var(--navy); font-size: 1.0625rem; }
+.perf-card-value { margin: 0 0 12px; font-size: 2.25rem; font-weight: 700; color: var(--navy); line-height: 1.2; overflow-wrap: anywhere; }
+.perf-card-value .mono { white-space: nowrap; }
+.perf-card-sub { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: .9375rem; align-items: center; }
+.perf-card-sub .mono { white-space: nowrap; }
+.perf-empty { margin: 4px 0; }
+.perf-basis summary { cursor: pointer; list-style: none; display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.perf-basis summary::-webkit-details-marker { display: none; }
+.perf-basis-hint { font-size: .8125rem; color: #1D4ED8; text-decoration: underline; }
+.perf-basis[open] .perf-basis-hint { display: none; }
+.perf-basis-text { display: block; margin-top: 4px; font-size: .875rem; color: var(--muted); white-space: normal; }
+.perf-history summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; gap: 6px; }
+.perf-bars { display: flex; align-items: flex-end; gap: 4px; height: 160px; margin: 12px 0 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.perf-bar { flex: 1 1 0; min-width: 0; height: 100%; position: relative; background: none; border: 0; padding: 0; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; font: inherit; }
+.perf-bar-fill { display: block; width: 70%; max-width: 40px; background: #93A4BF; border-radius: 3px 3px 0 0; }
+.perf-bar:hover .perf-bar-fill, .perf-bar.selected .perf-bar-fill { background: var(--navy); }
+.perf-bar:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.perf-bar-label { position: absolute; bottom: -22px; left: 0; right: 0; text-align: center; font-size: .75rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.perf-bar.selected .perf-bar-label { color: var(--navy); font-weight: 700; }
+.rtable tr.clickable { cursor: pointer; }
+.rtable tr.selected td { background: #FFFBEB; }
+.rtable-total td { font-weight: 700; border-top: 2px solid var(--border-strong); background: #F9FAFB; }
+.sales-client-search { margin-bottom: 12px; max-width: 420px; }
+
+/* 표 → 휴대폰에서는 카드 목록 (가로 스크롤 없이). 칸 이름은 data-label */
+@media (max-width: 720px) {
+  .rtable-wrap { overflow: visible; }
+  .rtable, .rtable tbody, .rtable tfoot, .rtable tr, .rtable td { display: block; width: 100%; }
+  .rtable thead { display: none; }
+  .rtable tr { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 10px; background: #fff; }
+  .rtable td { border: 0; padding: 4px 0; display: flex; justify-content: space-between; gap: 12px; text-align: end; white-space: normal; }
+  .rtable td::before { content: attr(data-label); color: var(--muted); font-weight: 600; text-align: start; flex: 0 0 auto; max-width: 45%; }
+  .rtable td[data-label=""]::before { content: none; }
+  .rtable td[data-label=""] { justify-content: flex-start; font-weight: 700; }
+  .rtable td.rtable-skip { display: none; }
+  .rtable td.nowrap { white-space: normal; }
+  .rtable tr.rtable-total { background: #F9FAFB; border-width: 2px; }
+  .rtable-total td { border-top: 0; background: none; }
+  .rtable .perf-basis summary { justify-content: flex-end; }
+}
+
+/* 내 작업 (제작 직원) */
+.mywork { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.mywork > * { min-width: 0; margin: 0; }
+.mywork-count { font-weight: 400; font-size: .9375rem; }
+.mywork-list { list-style: none; margin: 0; padding: 0; }
+.mywork-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.mywork-item:last-child { border-bottom: 0; }
+.mywork-order { font-weight: 600; min-height: 32px; }
+.mywork-what { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.mywork-time { color: var(--muted); font-size: .9375rem; white-space: nowrap; }
+.thb { white-space: nowrap; }
+@media (max-width: 720px) {
+  .rtable-wrap { border: 0; background: none; box-shadow: none; }
+}
