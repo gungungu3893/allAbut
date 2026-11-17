@@ -1752,6 +1752,19 @@ LANG.en = {
   guide_faq9_q: 'Where do I get my tax invoice (receipt)?',
   guide_faq9_a: 'A document is issued automatically when your top-up is approved. Clinics in Thailand get a tax invoice: the official original is sent by post, and you can preview it in Profile → Tax invoices · receipts. Clinics in other countries get a receipt, which you can view and print in Profile → Receipts. You can also open it with the button in your top-up history. If a top-up is refunded in cash, a credit note (or refund receipt) is issued.',
 
+  // ----- 세금계산서 에러 안내 (sql/021 에러 코드) -----
+  err_tax_settings_missing: 'Please enter the VAT registration details first (VAT registered, Thai name and address, Tax ID).',
+  err_receipt_settings_missing: 'Please enter the company name and address in English first.',
+  tax_issue_need_settings: 'You can issue this after the settings are complete.',
+  tax_go_settings: 'Go to settings',
+  tax_settings_ask_owner: 'Only the owner can change these settings. Please ask the owner.',
+  err_not_approved: 'Documents can be issued only for approved top-ups.',
+  err_doc_immutable: 'An issued document cannot be changed. Corrections are made only with a credit note or refund receipt.',
+  err_tax_id_required_th: 'Clinics in Thailand need a valid 13-digit Tax ID.',
+  err_no_docs: 'Please select at least one document.',
+  err_invalid_month: 'Please choose a valid month.',
+  err_credit_split_mismatch: 'The credit balance could not be calculated correctly. Please refresh and try again. If it keeps happening, contact us.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

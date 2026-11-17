@@ -489,6 +489,9 @@
 ## 규칙
 - 사용자가 입력한 값은 HTML 에 넣을 때 **항상 `escHtml()`** (XSS 방지)
 - 화면 글자는 전부 번역 키로 (`t()` / `tf()`), 새 키는 9개 언어 파일에 모두 추가
+- **새 SQL 에러 코드(`raise exception 'CODE'`)를 만들면 화면 코드도 같이**: `cnc/cnc-core.js` 의 `CNC_ERROR_CODES` 에 추가 + `ui/layout.js` `uiErrorMessage` 표에 번역 키 + 9개 언어 문구.
+  안 하면 `cncErrorCode` 가 'UNKNOWN' → "문제가 발생했어요" 만 나와요. 메시지 안 코드 찾기는 **긴 코드부터** (`cncErrorCodesLongestFirst` — 'INVALID_MONTHS' / 'INVALID_MONTH', 'SLIP_NOT_FOUND' / 'NOT_FOUND')
+- 미리 알 수 있는 실패는 버튼을 막고 이유를 보여 줘요 (예: 세금계산서 판매자 설정이 없으면 [발행] 비활성 + "설정을 마치면 발행할 수 있어요", 그래도 서버가 TAX_SETTINGS_MISSING / RECEIPT_SETTINGS_MISSING 이면 안내 창 + owner 는 [설정으로])
 - 크레딧·주문 쓰기는 브라우저에서 테이블에 직접 하지 않고 **DB 함수(RPC)** 로만
   (`create_cnc_order`, `update_my_cnc_order`, `cancel_my_cnc_order`, `customer_cnc_action`)
 - 파일은 비공개 버킷 `cnc-files` 의 `{user_id}/{uploadId}/{번호}_{안전한파일명}` 에 올리고,

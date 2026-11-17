@@ -831,7 +831,31 @@ function uiErrorMessage(err) {
     NOT_PAID: 'comm_err_not_paid',
     NOT_SALES: 'admin_err_not_admin',
     INVALID_RATE_VALUE: 'rate_err_value',
-    INVALID_RATE_TYPE: 'rate_err_type'
+    INVALID_RATE_TYPE: 'rate_err_type',
+    INVALID_MONTH: 'err_invalid_month',
+    // 크레딧 나누기 검사 (sql/018 · 019)
+    CREDIT_SPLIT_MISMATCH: 'err_credit_split_mismatch',
+    // 광고 배너 · 방문 기록 (sql/019)
+    INVALID_KIND: 'err_invalid_action',
+    INVALID_URL: 'ad_err_link',
+    NAME_REQUIRED: 'err_required',
+    INVALID_SLOT: 'ad_err_slot',
+    IMAGE_REQUIRED: 'ad_err_image_required',
+    INVALID_DATES: 'ad_err_dates',
+    // 주문 파일 보관 기간 (sql/020)
+    RUN_NOT_FOUND: 'err_not_found',
+    INVALID_MONTHS: 'ret_err_months',
+    INVALID_MODE: 'err_invalid_action',
+    // 세금계산서 · 영수증 · 치과 소재 국가 (sql/021)
+    TAX_SETTINGS_MISSING: 'err_tax_settings_missing',
+    RECEIPT_SETTINGS_MISSING: 'err_receipt_settings_missing',
+    ALREADY_ISSUED: 'tax_already_issued',
+    NOT_APPROVED: 'err_not_approved',
+    DOC_IMMUTABLE: 'err_doc_immutable',
+    BRANCH_INVALID: 'tax_branch_invalid',
+    TAX_ID_REQUIRED: 'err_tax_id_required_th',   // 국가를 태국으로 바꾸는 변경 요청에 올바른 Tax ID 가 없을 때
+    NO_DOCS: 'err_no_docs',
+    INVALID_DATE: 'tax_err_future_date'
   };
   if (code === 'UPLOAD_FAILED' && err && err.fileName) return tf('err_upload_failed_file', { name: err.fileName });
   if (code === 'FILE_TOO_LARGE' && err && err.fileName) return tf('file_reject_size', { name: err.fileName, size: 50 });

@@ -2893,3 +2893,4 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
 .topup-docs { margin-top: 18px; }
 .topup-doc-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .small { font-size: .8125rem; }
+.tax-issue-help { margin: 4px 0 0; font-size: .8125rem; max-width: 16em; }

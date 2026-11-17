@@ -1749,6 +1749,19 @@ LANG.tr = {
   guide_faq9_q: 'Vergi faturamı (makbuzumu) nereden alırım?',
   guide_faq9_a: 'Bakiye yüklemeniz onaylandığında belge otomatik olarak düzenlenir. Tayland\'daki klinikler vergi faturası alır: resmî asıl nüsha posta ile gönderilir, önizlemesini Profil → Vergi faturaları · makbuzlar bölümünde görebilirsiniz. Diğer ülkelerdeki klinikler makbuz alır; makbuzu Profil → Makbuzlar bölümünde görüntüleyip yazdırabilirsiniz. Yükleme geçmişinizdeki düğmeyle de açabilirsiniz. Bir yükleme nakit olarak iade edilirse alacak dekontu (veya iade makbuzu) düzenlenir.',
 
+  // ----- 세금계산서 에러 안내 (sql/021 에러 코드) -----
+  err_tax_settings_missing: 'Lütfen önce VAT kayıt bilgilerini girin (VAT kaydı · Tayca ad ve adres · Tax ID).',
+  err_receipt_settings_missing: 'Lütfen önce şirketin İngilizce adını ve adresini girin.',
+  tax_issue_need_settings: 'Ayarlar tamamlandıktan sonra düzenleyebilirsiniz.',
+  tax_go_settings: 'Ayarlara git',
+  tax_settings_ask_owner: 'Bu ayarları yalnızca owner değiştirebilir. Lütfen owner\'dan isteyin.',
+  err_not_approved: 'Belgeler yalnızca onaylanmış yüklemeler için düzenlenebilir.',
+  err_doc_immutable: 'Düzenlenmiş bir belge değiştirilemez. Düzeltmeler yalnızca alacak dekontu veya iade makbuzu ile yapılır.',
+  err_tax_id_required_th: 'Tayland\'daki klinikler için geçerli 13 haneli bir Tax ID gerekir.',
+  err_no_docs: 'Lütfen en az bir belge seçin.',
+  err_invalid_month: 'Lütfen geçerli bir ay seçin.',
+  err_credit_split_mismatch: 'Kredi bakiyesi doğru hesaplanamadı. Lütfen sayfayı yenileyip tekrar deneyin. Devam ederse bize ulaşın.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

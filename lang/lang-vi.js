@@ -1749,6 +1749,19 @@ LANG.vi = {
   guide_faq9_q: 'Tôi nhận hóa đơn thuế (biên nhận) ở đâu?',
   guide_faq9_a: 'Chứng từ được xuất tự động khi yêu cầu nạp tiền được duyệt. Phòng khám ở Thái Lan nhận hóa đơn thuế: bản gốc chính thức được gửi qua bưu điện, và bạn có thể xem trước trong Hồ sơ → Hóa đơn thuế · biên nhận. Phòng khám ở các nước khác nhận biên nhận, có thể xem và in trong Hồ sơ → Biên nhận. Bạn cũng có thể mở bằng nút trong lịch sử nạp tiền. Nếu khoản nạp được hoàn lại bằng tiền mặt, giấy báo có (hoặc biên nhận hoàn tiền) sẽ được xuất.',
 
+  // ----- 세금계산서 에러 안내 (sql/021 에러 코드) -----
+  err_tax_settings_missing: 'Vui lòng nhập thông tin đăng ký VAT trước (đăng ký VAT · tên và địa chỉ tiếng Thái · Tax ID).',
+  err_receipt_settings_missing: 'Vui lòng nhập tên và địa chỉ công ty bằng tiếng Anh trước.',
+  tax_issue_need_settings: 'Bạn có thể phát hành sau khi hoàn tất cài đặt.',
+  tax_go_settings: 'Đến cài đặt',
+  tax_settings_ask_owner: 'Chỉ owner mới có thể thay đổi cài đặt này. Vui lòng nhờ owner.',
+  err_not_approved: 'Chỉ có thể phát hành tài liệu cho các lần nạp đã được duyệt.',
+  err_doc_immutable: 'Tài liệu đã phát hành không thể thay đổi. Chỉ có thể sửa bằng giấy báo có hoặc biên nhận hoàn tiền.',
+  err_tax_id_required_th: 'Phòng khám tại Thái Lan cần Tax ID 13 chữ số hợp lệ.',
+  err_no_docs: 'Vui lòng chọn ít nhất một tài liệu.',
+  err_invalid_month: 'Vui lòng chọn một tháng hợp lệ.',
+  err_credit_split_mismatch: 'Không thể tính đúng số dư tín dụng. Vui lòng tải lại trang và thử lại. Nếu vẫn tiếp diễn, hãy liên hệ chúng tôi.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

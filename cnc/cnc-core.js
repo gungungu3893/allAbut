@@ -41,6 +41,15 @@ CNC_ERROR_CODES = ['PHONE_TAKEN', 'PHONE_INVALID', 'TAX_ID_TAKEN', 'TAX_ID_INVAL
 CNC_ERROR_CODES = ['INSUFFICIENT_CREDITS_CROWN_SET', 'INSUFFICIENT_CREDITS_ABUTMENT', 'INVALID_PRODUCT'].concat(CNC_ERROR_CODES);
 // sql/019: 쉐이드는 크라운 세트 치아만 필수
 CNC_ERROR_CODES = ['SHADE_REQUIRED_CROWN_SET'].concat(CNC_ERROR_CODES);
+// sql/018 · 019: 크레딧 나누기 검사 (일어나면 안 되는 오류) · 영업 담당 전용 함수
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['CREDIT_SPLIT_MISMATCH', 'NOT_SALES']);
+// sql/019: 광고 배너 · 방문 기록
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['INVALID_KIND', 'INVALID_URL', 'NAME_REQUIRED', 'INVALID_SLOT', 'IMAGE_REQUIRED', 'INVALID_DATES']);
+// sql/020: 주문 파일 보관 기간
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['RUN_NOT_FOUND', 'INVALID_MONTHS', 'INVALID_MODE']);
+// sql/021: 세금계산서 · 영수증 · 치과 소재 국가
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['TAX_SETTINGS_MISSING', 'RECEIPT_SETTINGS_MISSING', 'ALREADY_ISSUED', 'NOT_APPROVED', 'DOC_IMMUTABLE',
+  'BRANCH_INVALID', 'TAX_ID_REQUIRED', 'NO_DOCS', 'INVALID_DATE', 'INVALID_MONTH']);
 
 // ----------------------------------------------------------------
 // 상품 종류 (sql/018): 'abutment' = 🔩 커스텀 어버트먼트 / 'crown_set' = 👑 어버트먼트 + 지르코니아 크라운 세트
@@ -89,12 +98,23 @@ function cncErrorCode(err) {
     return err.code;
   }
   var msg = String(err.message || err.error_description || err || '');
-  for (var i = 0; i < CNC_ERROR_CODES.length; i++) {
-    if (msg.indexOf(CNC_ERROR_CODES[i]) !== -1) return CNC_ERROR_CODES[i];
+  // 서버 메시지 안에서 코드 찾기 — 긴 코드부터 (예: 'INVALID_MONTHS' 를 'INVALID_MONTH' 로, 'SLIP_NOT_FOUND' 를 'NOT_FOUND' 로 잘못 읽지 않게)
+  var codes = cncErrorCodesLongestFirst();
+  for (var i = 0; i < codes.length; i++) {
+    if (msg.indexOf(codes[i]) !== -1) return codes[i];
   }
   if (/Failed to fetch|NetworkError|network|Load failed/i.test(msg)) return 'NETWORK';
   if (/JWT|not authenticated|permission denied for function/i.test(msg)) return 'NOT_LOGGED_IN';
   return 'UNKNOWN';
+}
+
+// CNC_ERROR_CODES 를 긴 것부터 (다른 파일이 목록을 늘릴 수 있어서 길이가 바뀌면 다시 정렬)
+var _cncCodesSorted = null, _cncCodesLen = -1;
+function cncErrorCodesLongestFirst() {
+  if (_cncCodesSorted && _cncCodesLen === CNC_ERROR_CODES.length) return _cncCodesSorted;
+  _cncCodesSorted = CNC_ERROR_CODES.slice().sort(function (a, b) { return b.length - a.length; });
+  _cncCodesLen = CNC_ERROR_CODES.length;
+  return _cncCodesSorted;
 }
 
 // 코드를 가진 에러 만들기

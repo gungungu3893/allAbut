@@ -6,6 +6,8 @@
 //   2) 우편 발송   — 아직 안 보낸 세금계산서 · 크레딧 노트 (모든 달). 같은 고객 + 같은 달은 한 봉투로 묶여요
 //                   여러 개 선택 → [원본 한꺼번에 출력] [주소 라벨 (A4 라벨지)] [주소 (창봉투)] [발송 완료로 표시 (날짜 · 등기번호)]
 //   3) 미발행 충전 — 승인됐는데 문서가 없는 충전 (설정이 꺼져 있었을 때) → [발행] (발행일 = 오늘, 원래 승인일도 문서에 나와요)
+//                   판매자 설정이 안 됐으면 [발행] 비활성 + "설정을 마치면 발행할 수 있어요" (canIssueFor). 그래도 서버가 TAX_SETTINGS_MISSING /
+//                   RECEIPT_SETTINGS_MISSING 을 돌려주면 무엇을 입력할지 안내 창 + [설정으로] (owner)
 //   4) 보고서      — 월별 매출 세금 보고서 (세금계산서 + 크레딧 노트 마이너스) · 해외 매출 (영수증 + 환불 영수증) → 출력 · CSV  (owner)
 //   5) 설정        — VAT 등록 · 판매자 태국어/영어 이름 · 주소 · Tax ID · 본사/지점 · 우편 주기 · 해외 고객 VAT  (owner)
 // 실제 권한 · 검사는 DB (RLS + 함수). 발행된 문서는 서버가 못 바꾸게 막아요 (정정은 크레딧 노트 / 환불 영수증으로만).
@@ -175,7 +177,8 @@ Object.assign(PageAdmin, {
         (cncHasRole('owner') ? ' <button type="button" class="link-btn" onclick="PageAdmin.setTaxView(\'settings\')">' + escHtml(t('tax_view_settings')) + ' →</button>' : '') + '</p></div>';
     }
     if (!cncReceiptReady(c)) {
-      out += '<div class="notice notice-warn" role="status"><p><span aria-hidden="true">⚠</span> ' + escHtml(t('tax_receipt_not_ready')) + '</p></div>';
+      out += '<div class="notice notice-warn" role="status"><p><span aria-hidden="true">⚠</span> ' + escHtml(t('tax_receipt_not_ready')) +
+        (cncHasRole('owner') ? ' <button type="button" class="link-btn" onclick="PageAdmin.setTaxView(\'settings\')">' + escHtml(t('tax_view_settings')) + ' →</button>' : '') + '</p></div>';
     }
     return out;
   },
@@ -400,22 +403,65 @@ Object.assign(PageAdmin, {
     if (st.missingError) return html + this.errorBox('PageAdmin.loadTaxMissing()', st.missingError) + '</section>';
     if (!st.missing) return html + uiLoading() + '</section>';
     if (!st.missing.length) return html + '<p class="empty-text">' + escHtml(t('tax_missing_none')) + '</p></section>';
+    var self = this;
     html += '<div class="table-wrap admin-table-wrap"><table class="table admin-table"><thead><tr>' +
       '<th>' + escHtml(t('topup_request_no')) + '</th><th>' + escHtml(t('tax_col_approved')) + '</th><th>' + escHtml(t('admin_customer')) + '</th>' +
       '<th>' + escHtml(t('country_short')) + '</th><th>' + escHtml(t('col_type')) + '</th><th class="num">' + escHtml(t('tax_col_total')) + '</th><th></th></tr></thead><tbody>' +
       st.missing.map(function (r) {
         var thai = cncIsThai(r.country || 'TH');
         var busy = st.issuing === r.id;
+        var ready = self.canIssueFor(r.country || 'TH');   // 판매자 설정이 안 됐으면 버튼을 막고 작은 안내
         return '<tr><td class="mono nowrap">' + escHtml(r.id) + '</td>' +
           '<td class="mono nowrap">' + escHtml(formatDate(r.approved_at)) + '</td>' +
           '<td>' + escHtml(r.clinic || '') + '</td>' +
           '<td><span class="country-tag mono">' + escHtml(r.country || 'TH') + '</span></td>' +
           '<td>' + escHtml(t(thai ? 'tax_type_invoice' : 'tax_type_receipt')) + '</td>' +
           '<td class="mono nowrap num">' + formatTHB(r.total) + '</td>' +
-          '<td><button type="button" class="btn btn-primary btn-sm" onclick="PageAdmin.issueTaxDoc(\'' + escHtml(r.id) + '\')"' + (busy ? ' disabled' : '') + '>' +
-            escHtml(busy ? t('admin_processing') : t('tax_issue')) + '</button></td></tr>';
+          '<td>' + self.issueButtonHtml(r.id, ready, busy, false) + '</td></tr>';
       }).join('') + '</tbody></table></div></section>';
     return html;
+  },
+
+  // 그 나라 고객의 문서를 지금 발행할 수 있는지 (판매자 설정 — 서버 _tax_invoice_ready / _receipt_ready 와 같은 규칙)
+  //   설정을 아직 못 읽었으면 막지 않아요 (서버가 다시 검사)
+  canIssueFor: function (country) {
+    var c = this.tax.company;
+    if (!c) return true;
+    return cncIsThai(country || 'TH') ? cncTaxInvoiceReady(c) : cncReceiptReady(c);
+  },
+
+  // [발행] 버튼 — 설정이 안 됐으면 비활성 + 버튼 아래 "설정을 마치면 발행할 수 있어요"
+  issueButtonHtml: function (topupId, ready, busy, fromDetail) {
+    var html = '<button type="button" class="btn btn-primary btn-sm" onclick="PageAdmin.issueTaxDoc(\'' + escHtml(topupId) + '\'' + (fromDetail ? ', true' : '') + ')"' +
+      (busy || !ready ? ' disabled' : '') + '>' + escHtml(busy ? t('admin_processing') : t('tax_issue')) + '</button>';
+    if (!ready) html += '<p class="field-help tax-issue-help">' + escHtml(t('tax_issue_need_settings')) + '</p>';
+    return html;
+  },
+
+  // 설정이 빠져서 발행할 수 없을 때 안내 창: 무엇을 입력해야 하는지 + [설정으로] (owner) / owner 에게 요청 (manager)
+  showTaxSettingsNeeded: function (code) {
+    var self = this;
+    var owner = cncHasRole('owner');
+    var actions = [{ label: t('btn_close'), kind: 'outline' }];
+    if (owner) actions.push({ label: t('tax_go_settings'), kind: 'primary', onClick: function (close) { close(); self.goTaxSettings(); } });
+    uiModal({
+      title: t('tax_issue'),
+      body: '<p class="modal-text">' + escHtml(t(code === 'RECEIPT_SETTINGS_MISSING' ? 'err_receipt_settings_missing' : 'err_tax_settings_missing')) + '</p>' +
+        (owner ? '' : '<p class="field-help">' + escHtml(t('tax_settings_ask_owner')) + '</p>'),
+      actions: actions
+    });
+  },
+
+  // 세금계산서 탭 → 설정 (충전 상세 창에서 눌러도 그 창을 닫고 이동)
+  goTaxSettings: function () {
+    if (this.topupDetail && this.topupDetail.modal) this.topupDetail.modal.close();
+    this.tax.view = 'settings';
+    if (this.tab !== 'tax') {
+      this.tab = 'tax';
+      history.replaceState(null, '', '#/admin/tax');
+      this.drawFrame();
+    }
+    this.loadTax();
   },
 
   issueTaxDoc: async function (topupId, fromDetail) {
@@ -428,10 +474,14 @@ Object.assign(PageAdmin, {
       await cncAdminIssueTaxDoc(topupId);
       uiToast(t('tax_issued'), 'success');
     } catch (err) {
-      console.error(err);
       var code = cncErrorCode(err);
-      var key = { TAX_SETTINGS_MISSING: 'tax_not_ready', RECEIPT_SETTINGS_MISSING: 'tax_receipt_not_ready', ALREADY_ISSUED: 'tax_already_issued' }[code];
-      uiToast(key ? t(key) : uiErrorMessage(err), 'error');
+      if (code === 'TAX_SETTINGS_MISSING' || code === 'RECEIPT_SETTINGS_MISSING') {
+        this.showTaxSettingsNeeded(code);   // 예상한 경우 — 콘솔 오류로 남기지 않아요
+      } else {
+        console.error(err);
+        uiToast(uiErrorMessage(err), 'error');
+      }   // ALREADY_ISSUED · NOT_APPROVED 등은 공통 안내 (ui/layout.js uiErrorMessage)
+      this.loadTaxCompany();   // 그 사이 설정이 바뀌었을 수 있어서 버튼 상태를 다시
     }
     st.issuing = null;
     if (fromDetail && this.topupDetail) this.loadTopupDocs(this.topupDetail);
@@ -600,6 +650,17 @@ Object.assign(PageAdmin, {
     } catch (err) {
       st.docs = [];
     }
+    // 문서가 없으면 [발행] 버튼 상태를 위해 판매자 설정 · 고객 등록 국가도 읽어요
+    if (st.docs && !st.docs.length) {
+      try {
+        if (!this.tax.company) {
+          var c = await sb.from('company_settings').select('*').eq('id', 1).maybeSingle();
+          if (!c.error) this.tax.company = c.data || {};
+        }
+        var p = await sb.from('profiles').select('*').eq('id', st.row.user_id).maybeSingle();
+        st.country = p.data ? cncProfileCountry(p.data) : 'TH';
+      } catch (e) { st.country = 'TH'; }
+    }
     if (this.topupDetail === st) this.drawTopupDetail();
   },
 
@@ -609,7 +670,7 @@ Object.assign(PageAdmin, {
     var html = '<section class="topup-docs"><h3 class="detail-title">🧾 ' + escHtml(t('tax_docs_title')) + '</h3>';
     if (!st.docs.length) {
       return html + '<p class="muted">' + escHtml(t('tax_topup_no_doc')) + '</p>' +
-        (cncHasRole('manager') ? '<button type="button" class="btn btn-primary btn-sm" onclick="PageAdmin.issueTaxDoc(\'' + escHtml(st.row.id) + '\', true)">' + escHtml(t('tax_issue')) + '</button>' : '') +
+        (cncHasRole('manager') ? this.issueButtonHtml(st.row.id, this.canIssueFor(st.country || 'TH'), false, true) : '') +
         '</section>';
     }
     return html + '<ul class="topup-doc-list">' + st.docs.map(function (d) {

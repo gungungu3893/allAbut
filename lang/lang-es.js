@@ -1749,6 +1749,19 @@ LANG.es = {
   guide_faq9_q: '¿Dónde consigo mi factura fiscal (recibo)?',
   guide_faq9_a: 'El documento se emite automáticamente cuando se aprueba tu recarga. Las clínicas de Tailandia reciben una factura fiscal: el original oficial se envía por correo postal y puedes verla en Perfil → Facturas fiscales · recibos. Las clínicas de otros países reciben un recibo, que puedes ver e imprimir en Perfil → Recibos. También puedes abrirlo con el botón de tu historial de recargas. Si una recarga se reembolsa en efectivo, se emite una nota de crédito (o un recibo de reembolso).',
 
+  // ----- 세금계산서 에러 안내 (sql/021 에러 코드) -----
+  err_tax_settings_missing: 'Primero introduzca los datos del registro de VAT (registro de VAT, nombre y dirección en tailandés, Tax ID).',
+  err_receipt_settings_missing: 'Primero introduzca el nombre y la dirección de la empresa en inglés.',
+  tax_issue_need_settings: 'Podrá emitirlo cuando termine la configuración.',
+  tax_go_settings: 'Ir a la configuración',
+  tax_settings_ask_owner: 'Solo el owner puede cambiar esta configuración. Pídaselo al owner.',
+  err_not_approved: 'Solo se pueden emitir documentos para recargas aprobadas.',
+  err_doc_immutable: 'Un documento emitido no se puede cambiar. Las correcciones solo se hacen con una nota de crédito o un recibo de reembolso.',
+  err_tax_id_required_th: 'Las clínicas de Tailandia necesitan un Tax ID válido de 13 dígitos.',
+  err_no_docs: 'Seleccione al menos un documento.',
+  err_invalid_month: 'Elija un mes válido.',
+  err_credit_split_mismatch: 'No se pudo calcular correctamente el saldo de créditos. Actualice la página e inténtelo de nuevo. Si sigue ocurriendo, contáctenos.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
