@@ -1,0 +1,5 @@
+# allAbut — 검색 로봇 안내 (아래 주소 자리는 build.sh 가 config.js 의 SITE_URL 로 채워요)
+User-agent: *
+Allow: /
+
+Sitemap: __SITE_URL__/sitemap.xml

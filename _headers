@@ -51,3 +51,23 @@
 
 /ui/*
   Cache-Control: public, max-age=31536000, immutable
+
+# ----------------------------------------------------------------
+# 파비콘 · 공유 이미지 · 검색 파일: 주소가 바뀌지 않아요 (?v= 없음 — 구글 파비콘 요건)
+#   → immutable 로 오래 묶지 않고 하루만 캐시 (아이콘을 새로 만들면 하루 안에 바뀌어요)
+# ----------------------------------------------------------------
+/favicon.ico
+  Cache-Control: public, max-age=86400
+
+/assets/brand/*
+  Cache-Control: public, max-age=86400
+
+/site.webmanifest
+  Cache-Control: public, max-age=86400
+  Content-Type: application/manifest+json
+
+/robots.txt
+  Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600

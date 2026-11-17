@@ -5,7 +5,7 @@
 // 값이 비어 있는 줄·카드·섹션은 숨겨요.
 //
 // 순서: Hero(다크) → 01 About → 02 Why allAbut(강점 5개) → 03 Products → 04 How to order → 05 Delivery & guarantee → 06 Contact
-// SEO: 이 페이지가 열려 있는 동안 title · description · og 태그(언어별) + 회사 정보 JSON-LD(Organization)를 넣고, 나가면 원래대로.
+// SEO: 이 페이지가 열려 있는 동안 title · description · og 태그(언어별) + 회사 정보 JSON-LD(Organization, index.html 기본값과 같은 @id)를 넣고, 나가면 원래대로.
 
 // 제품 카드 — 나중에 사진을 넣으려면 img 에 경로를 쓰고(예: 'img/abutment.jpg'), 그 폴더를 build.sh 목록에도 추가하세요.
 // img 가 비어 있으면 사진 자리는 아예 그리지 않아요.
@@ -320,18 +320,22 @@ var PageAbout = {
     tags.forEach(function (tg) { self.metaEl(tg[0], tg[1]).setAttribute('content', tg[2]); });
 
     // 회사 정보 JSON-LD (값은 textContent 로 넣어서 HTML 로 해석되지 않아요)
+    // index.html 의 기본 Organization 과 같은 @id → 검색엔진이 한 회사로 합쳐서 봐요 (로고 = 전체 워드마크 favicon-512.png)
+    var site = (typeof SITE_URL === 'string' ? SITE_URL.replace(/\/$/, '') : '');
     var org = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
+      '@id': site + '/#organization',
       name: c.company || 'allAbut',
-      alternateName: 'allAbut',
-      url: (typeof SITE_URL === 'string' ? SITE_URL : ''),
+      alternateName: 'allAbut 5μm',
+      url: site + '/',
+      logo: site + '/assets/brand/favicon-512.png',
       description: desc,
       foundingDate: String(p.foundedYear),
       foundingLocation: 'Bangkok, Thailand',
       areaServed: 'TH',
       knowsLanguage: (typeof LANGUAGES !== 'undefined' ? LANGUAGES.map(function (l) { return l.code; }) : undefined),
-      sameAs: [c.lineUrl]
+      sameAs: c.lineUrl ? [c.lineUrl] : undefined   // 값이 있을 때만
     };
     if (c.address) org.address = { '@type': 'PostalAddress', streetAddress: c.address.replace(/\n/g, ', '), addressCountry: 'TH' };
     if (c.email) org.email = c.email;

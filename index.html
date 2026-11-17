@@ -3,13 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>allAbut 5μm</title>
-  <meta name="description" content="allAbut — Precision CNC custom abutment ordering">
-  <!-- 공유 미리보기 기본값 (회사소개 #/about 을 열면 ui/page-about.js 가 언어별로 바꿔요) -->
-  <meta property="og:title" content="allAbut 5μm — Precision custom abutments">
-  <meta property="og:description" content="Custom abutments machined on implant-fixture-grade CNC in Bangkok. 5μm precision, Grade 23 titanium, ISO 13485.">
+  <title>allAbut 5μm — CNC Custom Abutments</title>
+  <meta name="description" content="Order CNC custom abutments and abutment + zirconia crown sets online: choose the teeth, upload your scans, approve the design and track delivery. Based in Bangkok, Thailand.">
+  <!--
+    검색 · 링크 공유 (SEO). 절대 주소 자리(SITE_URL 표시)는 build.sh 가 config.js 의 SITE_URL 로 채워요 (하드코딩 금지).
+    파비콘 주소에는 ?v= 를 붙이지 않아요 (구글: 파비콘 주소가 바뀌지 않아야 해요 — build.sh 는 .js · .css 에만 ?v= 를 붙여요)
+    공유 미리보기 기본값 (회사소개 #/about 을 열면 ui/page-about.js 가 언어별로 바꾸고, 떠나면 이 값으로 돌려놔요)
+  -->
+  <link rel="canonical" href="__SITE_URL__/">
+  <meta name="theme-color" content="#001D4A">
+  <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/brand/favicon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="assets/brand/favicon-96.png" type="image/png" sizes="96x96">
+  <link rel="icon" href="assets/brand/favicon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="site.webmanifest">
+  <meta property="og:title" content="allAbut 5μm — CNC Custom Abutments">
+  <meta property="og:description" content="Order CNC custom abutments and abutment + zirconia crown sets online: choose the teeth, upload your scans, approve the design and track delivery.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="allAbut">
+  <meta property="og:url" content="__SITE_URL__/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="th_TH">
+  <meta property="og:locale:alternate" content="ko_KR">
+  <meta property="og:image" content="__SITE_URL__/assets/brand/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="allAbut 5μm — Precision Custom Abutment">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="allAbut 5μm — CNC Custom Abutments">
+  <meta name="twitter:image" content="__SITE_URL__/assets/brand/og-image.png">
+  <!-- 회사 정보 · 사이트 이름 (검색엔진용, 바뀌지 않는 것만 — 회사소개를 열면 page-about.js 가 같은 @id 로 자세한 정보를 더해요) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "__SITE_URL__/#organization",
+        "name": "allAbut",
+        "alternateName": "allAbut 5μm",
+        "url": "__SITE_URL__/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "__SITE_URL__/assets/brand/favicon-512.png",
+          "width": 512,
+          "height": 512
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "__SITE_URL__/#website",
+        "name": "allAbut",
+        "alternateName": "allAbut 5μm",
+        "url": "__SITE_URL__/",
+        "publisher": { "@id": "__SITE_URL__/#organization" }
+      }
+    ]
+  }
+  </script>
   <!-- 배포 버전: build.sh 가 커밋 해시로 바꿔요 (js · css 주소 뒤 ?v=… 와 같은 값 → 배포하면 새 파일을 받아요). 로컬에서는 dev -->
   <meta name="asset-version" content="dev">
 
@@ -27,6 +79,23 @@
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+  <!-- 스크립트를 못 읽는 검색 로봇 · 브라우저용 짧은 소개 (화면에는 안 보여요) -->
+  <noscript>
+    <div style="max-width:720px;margin:24px auto;padding:0 16px;font-family:sans-serif;line-height:1.6">
+      <h1>allAbut 5μm — CNC Custom Abutments</h1>
+      <p>allAbut is an online ordering service for CNC custom abutments and abutment + zirconia crown sets for dental clinics.
+        Clinics choose the teeth, upload intraoral scans, approve the design and track each order until delivery.
+        allAbut is based in Bangkok, Thailand.</p>
+      <p>Please turn on JavaScript to use the site.</p>
+      <ul>
+        <li><a href="#/about">About allAbut</a></li>
+        <li><a href="#/contact">Contact</a></li>
+        <li><a href="#/terms">Terms of Service</a></li>
+        <li><a href="#/privacy">Privacy Policy</a></li>
+        <li><a href="#/credit-policy">Credit &amp; Refund Policy</a></li>
+      </ul>
+    </div>
+  </noscript>
   <div id="app">
 
     <!-- ========== 1. 랜딩 화면 (다크 + 골드 로고) ========== -->

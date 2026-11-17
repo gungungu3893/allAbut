@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- allAbut 사이트맵: 화면은 전부 # 주소(#/about 등)라 검색엔진이 따로 색인하지 않아요 → 사이트 맨 위 주소 하나만.
+     주소 자리는 build.sh 가 config.js 의 SITE_URL 로 채워요 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>__SITE_URL__/</loc>
+  </url>
+</urlset>

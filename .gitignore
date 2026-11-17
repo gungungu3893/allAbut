@@ -1,1 +1,4 @@
 dist/
+# 아이콘 만들기 (tools/brand) — 받은 글꼴 · 중간 파일은 올리지 않아요
+tools/brand/.fonts/
+tools/brand/.build/

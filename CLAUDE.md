@@ -21,6 +21,22 @@
     `<meta name="asset-version" content="dev">` 도 같은 값으로 바꿔요. 동적으로 불러오는 법적 문서(`legal/*.js`)는 `cncAssetQuery()`(cnc/cnc-legal.js)가 같은 `?v=` 를 붙여요.
     `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 5개 · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
     → 배포 뒤 Ctrl+Shift+R 없이 새 화면. **index.html 에 새 js · css 를 넣으면 상대 경로(`src="ui/…"`)로** (자동으로 ?v= 가 붙어요), 새로 동적으로 불러오는 내 파일이 생기면 그 주소에도 `cncAssetQuery()`
+- **검색 · 링크 공유 (SEO)** — 파비콘 · 공유 이미지 · 구조화 데이터 · robots.txt · 사이트맵:
+  - 파비콘 = **전체 워드마크 "allAbut 5μm"** (네이비 #001D4A 정사각형 · 모서리 14% 둥글게, all/but 흰색 · A 골드 굵게 · 5μm 골드 위첨자, 사이트 로고와 같은 비율, 워드마크 폭 88% · 세로 가운데). 큰 A 하나만 쓰는 버전은 만들지 않는다
+    (`assets/brand/line-icon.png` = LINE 카드용 A 아이콘은 따로 그대로)
+    - 파일: `assets/brand/favicon.svg`(글자를 선(path)으로 — 글꼴 없이도 같게) · `favicon.ico`(16 · 32 · 48) · `favicon-48/96/192/512.png` · `apple-touch-icon.png`(180, 투명 배경 없음 · 모서리 없음) · `og-image.png`(1200×630) + 사이트 맨 위 `favicon.ico`(같은 파일)
+    - 작은 크기는 획을 굵게: 16px = all/but 600 · 32px = 500 · 48px = 400 (A 700), **5μm 은 48px 부터** / 96px = 300 · 600 / 180px 이상 = 사이트와 같은 200 · 600. favicon.svg 는 탭(16~32px)용으로 400 · 700 + 5μm
+    - **다시 만들기**: `pip install fonttools` → `python3 tools/brand/make_brand_assets.py` (IBM Plex 글꼴을 `tools/brand/.fonts/` 에 받아 글자를 선으로 → `tools/brand/render.js`(Playwright)가 PNG · ICO · 공유 이미지 · `docs/favicon-preview.png`(16 · 32 · 48 · 192px 나란히 + 확대 — 사이트에 안 올라감)).
+      `tools/` 는 배포되지 않아요, `.fonts` · `.build` 는 git 에서 빼요
+  - `index.html` head: title "allAbut 5μm — CNC Custom Abutments" · description(사실 설명만 — **광고 허가가 필요한 인증 · 성능 주장은 넣지 않는다**) · canonical · theme-color #001D4A ·
+    `rel="icon"`(svg + png 48 · 96 · 192) · `rel="apple-touch-icon"` · `rel="manifest"`(`site.webmanifest`: name "allAbut 5μm", short_name "allAbut", 아이콘 192 · 512) ·
+    og:title/description/url/locale(en_US + th_TH · ko_KR)/image(+ width · height · alt) · twitter:card summary_large_image · twitter:image
+    + **항상 들어가는 JSON-LD** `@graph` = Organization(`@id` `{SITE_URL}/#organization`, name · alternateName · url · logo = favicon-512.png) + WebSite(name "allAbut", alternateName "allAbut 5μm", url, publisher).
+    정적 JSON-LD 에는 바뀌지 않는 것만 (회사 연락처 · 주소 등은 회사소개를 열 때 `ui/page-about.js` 가 **같은 @id** 로 더해요, sameAs 는 값이 있을 때만)
+    + `<noscript>` 짧은 영어 소개 + 주요 링크 (스크립트를 못 읽는 로봇용). `404.html` 도 파비콘 · theme-color (주소는 `/assets/…` 로 시작 — 어느 주소에서 열려도)
+  - **절대 주소는 하드코딩하지 않는다**: index.html · robots.txt · sitemap.xml 의 `__SITE_URL__` 자리를 `build.sh` 가 config.js 의 `SITE_URL` 로 채워요 (남아 있으면 빌드 실패).
+    **파비콘 · 공유 이미지 주소에는 `?v=` 를 붙이지 않는다** (구글: 파비콘 주소가 바뀌지 않아야 — build.sh 의 ?v= 는 .js · .css 에만). 그래서 `_headers` 는 `/favicon.ico` · `/assets/brand/*` · `/site.webmanifest` = 하루 캐시(immutable 아님), robots · sitemap = 1시간
+  - `robots.txt` = 전체 허용 + Sitemap 주소 / `sitemap.xml` = 사이트 맨 위 주소 하나 (화면은 전부 # 주소라 검색엔진이 따로 색인하지 않아요)
 - GitHub Pages(gungungu3893.github.io/allAbut)는 **더 이상 사용하지 않는다**
 - 사이트 주소는 하드코딩 금지:
   - 브라우저: `config.js` 의 `SITE_URL` 하나만 사용 (예: 회원가입 인증 메일 링크 `emailRedirectTo`)
@@ -396,6 +412,8 @@
 - `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
 - `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`
 - `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
+- `favicon.ico` · `robots.txt` · `sitemap.xml` · `site.webmanifest` — 검색 · 공유용 맨 위 파일 (위 "검색 · 링크 공유"), `assets/brand/` — 파비콘 · 공유 이미지 · LINE 카드 아이콘
+- `tools/brand/make_brand_assets.py` · `tools/brand/render.js` — 파비콘 · 공유 이미지 · 미리보기 만들기 (배포 안 됨), `docs/favicon-preview.png` — 작은 크기 미리보기 (배포 안 됨)
 - `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시 (`formatDate` · `formatDateTime` · `formatTime` 시각만)
 - `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
 - `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`

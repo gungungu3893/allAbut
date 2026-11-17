@@ -32,6 +32,10 @@ FILES=(
   app.js
   _headers
   _redirects
+  favicon.ico       # 사이트 맨 위 /favicon.ico (검색엔진 · 오래된 브라우저가 찾는 곳 — assets/brand/favicon.ico 와 같은 파일)
+  robots.txt        # 검색 로봇 안내 (전체 허용 + 사이트맵 주소)
+  sitemap.xml       # 사이트맵 (맨 위 주소 하나 — # 주소는 따로 색인되지 않아요)
+  site.webmanifest  # 홈 화면에 추가할 때 이름 · 아이콘 · 색
 )
 
 # 2) 공개 폴더 (통째로)
@@ -39,7 +43,8 @@ FILES=(
 #    lang/ — 9개 언어 문구
 #    legal/ — 법적 문서 본문
 #    cnc/  — 주문·관리자·매출 로직 (영업 · 커미션 cnc/cnc-sales.js, 서비스 상태 cnc/cnc-service.js, 광고 배너 cnc/cnc-ads.js, 주문 파일 보관 기간 cnc/cnc-retention.js, 세금계산서 · 영수증 cnc/cnc-tax.js, 직원 계정 · 초대 · 영업 화면 데이터 cnc/cnc-staff.js 포함)
-#    assets/ — 공개 이미지 (assets/brand/line-icon.png = LINE 알림 카드 맨 위 로고, line-notify 가 SITE_URL 로 불러요)
+#    assets/ — 공개 이미지 (assets/brand/line-icon.png = LINE 알림 카드 맨 위 로고, line-notify 가 SITE_URL 로 불러요 /
+#              파비콘 favicon.svg · favicon.ico · favicon-48/96/192/512.png · apple-touch-icon.png · 공유 이미지 og-image.png — tools/brand/make_brand_assets.py 로 만들어요)
 #    ui/   — 화면 (공통 부품 layout.js, line-connect.js, datepicker.js, back-to-top.js(맨 위로 버튼), router.js + 각 페이지, 회사소개 page-about.js, 영업 · 커미션 page-admin-sales.js,
 #            TEST 배지 service-badge.js, 광고 배너 자리 ad-banner.js · 관리 page-admin-ads.js, 주문 파일 보관 기간 카드 page-admin-retention.js,
 #            세금계산서 A4 출력 tax-doc.js · 내 정보 문서 섹션 profile-docs.js · 관리자 세금계산서 탭 page-admin-tax.js,
@@ -81,13 +86,30 @@ sed -E -i \
   "$OUT/index.html"
 echo "버전 값: ${VER}"
 
+# 3-2) 검색 · 공유용 절대 주소: __SITE_URL__ 자리를 config.js 의 SITE_URL 로 채워요 (사이트 주소는 config.js 한 곳에서만)
+#      index.html (canonical · og:url · og:image · JSON-LD) · robots.txt (Sitemap) · sitemap.xml
+SITE_URL="$(sed -nE "s/^[[:space:]]*var SITE_URL = '([^']+)'.*/\1/p" config.js | head -1)"
+SITE_URL="${SITE_URL%/}"
+if [ -z "$SITE_URL" ]; then echo "config.js 에서 SITE_URL 을 못 읽었어요" >&2; exit 1; fi
+for f in index.html robots.txt sitemap.xml; do
+  sed -i "s#__SITE_URL__#${SITE_URL}#g" "$OUT/$f"
+done
+if grep -l "__SITE_URL__" "$OUT/index.html" "$OUT/robots.txt" "$OUT/sitemap.xml" >/dev/null 2>&1; then
+  echo "__SITE_URL__ 이 남아 있어요" >&2; exit 1
+fi
+echo "사이트 주소: ${SITE_URL}"
+
 # 4) 검사: index.html 이 부르는 내 파일(src="..." / href="...")이 dist/ 에 모두 있는지
 missing=0
-for ref in $(grep -oE '(src|href)="[^"#:?]+"' index.html | sed -E 's/^(src|href)="//; s/"$//' | grep -vE '^(https?:)?//' | sort -u); do
+for ref in $(grep -oE '(src|href)="[^"#:?]+"' index.html | sed -E 's/^(src|href)="//; s/"$//' | grep -vE '^(https?:)?//' | grep -v '__SITE_URL__' | sort -u); do
   if [ ! -f "$OUT/$ref" ]; then
     echo "index.html 이 부르는데 dist/ 에 없는 파일: $ref  → build.sh 목록에 추가하세요" >&2
     missing=1
   fi
+done
+# 공유 이미지 · 사이트맵 · 매니페스트 아이콘도 있는지
+for ref in assets/brand/og-image.png assets/brand/favicon-512.png assets/brand/favicon-192.png favicon.ico robots.txt sitemap.xml site.webmanifest; do
+  if [ ! -f "$OUT/$ref" ]; then echo "dist/ 에 없는 파일: $ref" >&2; missing=1; fi
 done
 if [ "$missing" -ne 0 ]; then exit 1; fi
 
