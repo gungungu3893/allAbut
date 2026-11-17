@@ -363,6 +363,13 @@ Object.assign(PageAdmin, {
         return (d.name || '') + (d.slot ? ' · ' + t('ad_slot_' + d.slot) : '') + (r.action === 'ad_banner_saved' ? ' · ' + t(d.active ? 'ad_on' : 'ad_status_off') : '');
       case 'service_mode':   // 서비스 상태 테스트 ↔ 정식 (sql/017)
         return t(d.from === 'live' ? 'svc_mode_live' : 'svc_mode_test') + ' → ' + t(d.to === 'live' ? 'svc_mode_live' : 'svc_mode_test');
+      case 'retention_settings': {   // 주문 파일 보관 기간 (sql/020)
+        var rf = d.from || {}, rt = d.to || {};
+        var rm = function (x) { return (x.months != null ? x.months + ' ' + t('ret_months_unit') : '—') + ' · ' + t(x.mode === 'delete' ? 'ret_mode_delete' : 'ret_mode_preview'); };
+        return rm(rf) + ' → ' + rm(rt);
+      }
+      case 'retention_run':
+        return t(d.started ? 'ret_run_started_short' : 'ret_run_no_secret_short');
       case 'settings_changed':
         return t('audit_table_' + r.target_type) + (Array.isArray(d.changed) && d.changed.length ? ' · ' + d.changed.join(', ') : (d.op ? ' · ' + d.op : ''));
       default:

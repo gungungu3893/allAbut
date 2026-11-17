@@ -172,7 +172,7 @@ var PageOrders = {
           uiStageBadge(o.stage) +
         '</span>' +
         '<span class="order-meta">' +
-          meta('patient_label', escHtml(o.patient || t('anonymous'))) +
+          meta('patient_label', escHtml(cncPatientLabel(o, t('anonymous')))) +
           meta('teeth_label', '<span class="mono">' + formatNumber(o.teeth_count) + '</span>' +
             (Number(o.crown_set_count || 0) > 0 ? ' ' + uiProductCountsHtml(cncOrderProductCounts(o)) : '')) +   // 크라운 세트가 있으면 "🔩 2 · 👑 1" (sql/018)
           meta('case_deadline_label', uiDeadlineHtml(o)) +   // 승인 전 = 디자인 승인 때 결정
@@ -289,7 +289,7 @@ var PageOrders = {
     // 파일
     var files = cncOrderFiles(o);
     html += '<h3 class="detail-title">' + escHtml(t('files_label')) + '</h3>';
-    html += files.length
+    html += cncOrderFilesPurged(o) ? uiRetentionNote(o, false) : files.length
       ? '<ul class="file-list">' + files.map(function (f, i) {
           return '<li class="file-row"><span class="file-icon" aria-hidden="true">' + uiFileIcon(f.name) + '</span>' +
             '<span class="file-info"><span class="file-name">' + escHtml(f.name) + '</span></span>' +

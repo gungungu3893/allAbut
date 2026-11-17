@@ -142,7 +142,7 @@ var PageHome = {
         return '<li><a href="#/orders" class="order-row" onclick="PageOrders.openId=\'' + escHtml(o.id) + '\'">' +
           '<span class="order-row-id mono">' + escHtml(o.id) + '</span>' +
           '<span class="order-row-meta">' + escHtml(formatDate(o.created_at)) + ' · ' +
-            escHtml(o.patient || t('anonymous')) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
+            escHtml(cncPatientLabel(o, t('anonymous'))) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
           uiStageBadge(o.stage) +
           '</a></li>';
       }).join('') + '</ul>';
@@ -188,7 +188,7 @@ var PageHome = {
         return '<li class="home-todo-item">' +
           '<div class="home-todo-text">' +
             '<p class="home-todo-msg">' + escHtml(t(isDesign ? 'home_todo_design' : 'home_todo_receive')) + '</p>' +
-            '<p class="home-todo-meta"><span class="mono">' + id + '</span> · ' + escHtml(o.patient || '—') + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</p>' +
+            '<p class="home-todo-meta"><span class="mono">' + id + '</span> · ' + escHtml(cncPatientLabel(o, '—')) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</p>' +
           '</div>' +
           (isDesign
             ? '<button type="button" class="btn btn-primary" onclick="PageHome.openDesign(\'' + id + '\')">' + escHtml(t('home_todo_view_design')) + ' <span class="arrow" aria-hidden="true">→</span></button>'

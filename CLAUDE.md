@@ -133,7 +133,7 @@
 - 관리자 Settings → "📢 광고 배너" (manager 이상 — **Settings 탭이 manager 에게도 열리고, manager 는 이 섹션만** 보여요. owner 는 기존 설정 + 맨 아래 이 섹션):
   목록(자리 · 이름 · 광고주 · 기간 · 상태 배지 · 노출 · 클릭 · 클릭률) + 추가/수정 창(이미지 2개 올리기 · 미리보기, 링크, 대체 글자, 기간 `uiDateField`, 순서, 켜기) + 삭제(확인창)
 - Dashboard 방문 통계 아래 "📢 광고" 카드 (manager 이상): 기간(오늘 · 7일 · 30일 · 이번 달 · 지난달)별 배너마다 노출 · 클릭 · 클릭률, CSV 는 owner (`allabut-ads-…csv`)
-- 개인정보처리방침: 광고 노출 · 클릭은 방문 통계와 같은 방식(같은 방문자 ID · 기기 · 언어 · 나라)으로 기록 — 방침에 "광고 노출 · 클릭" 이라는 말은 아직 없어요 (아래 법적 문서 참고)
+- 개인정보처리방침: 광고 노출 · 클릭은 방문 통계와 같은 방식(같은 방문자 ID · 기기 · 언어 · 나라)으로 기록 — 방침 "Banners on the Service" 섹션에 공개 (자체 배너만 · 외부 광고 네트워크 없음 · 맞춤형 광고 없음 · 광고주에게는 합계만)
 
 ## 크레딧 · 충전 정책 (확정)
 - 가격 (VAT 7% 별도, 개당 THB): 1개 2,200 / 10개 2,050 / 30개 1,900 / 50개 1,750 / 100개 1,500
@@ -170,10 +170,10 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
-  → 그 다음 **019** (전체 순서 끝 = 017 → 018 → 019). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
+  → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
   **013 을 다시 실행하면 019 도 다시** (log_site_event 가 광고 종류 · p_banner 를 모르는 모양으로 — 013 은 예전 인자 모양을 새로 만들어서 019 의 것과 둘이 생겨요)
   **`sql/launch_reset.sql` 은 일반 재실행 순서에 포함하지 않는다** (정식 오픈 날 1번만, 아래 "서비스 상태 · TEST 배지 · 정식 오픈 초기화")
   **008 을 다시 실행하면 009 → 010 → 012 도 다시** (create_cnc_order 가 008 모양 = 주문할 때 deadline 저장으로 돌아가서)
@@ -217,6 +217,24 @@
 - 대시보드 "기한 임박"·"지금 처리할 일"은 deadline 이 있는 주문만. Settings 의 "승인 후 최소 일수"(owner, `min_lead_days`)
 - LINE: 관리자 새 주문 카드 "Delivery · Set at design approval" / 승인 → 관리자 카드에 확정 납기 크게(`Section.big`) + 고객 확인 카드 "✅ 디자인 승인 · 납품일 확정"(사본 없음) /
   관리자 납기 변경 → 고객 "📅 납품일이 바뀌었어요"(이전 → 새 날짜, 사유) + 사본(Handled by). deadline 이 없으면 줄 자체를 빼요
+
+## 주문 파일 보관 기간 · 자동 삭제 (sql/020_order_file_retention.sql, 설정 안내: RETENTION_SETUP.md)
+- 개인정보처리방침의 약속 = **완료(done) 또는 취소된 지 24개월이 지난 주문의 스캔 · 사진 · 디자인 파일 삭제**. 방침 · 약관 · 가이드 문장과 이 기능은 같게 유지 (기간을 바꾸면 문서 3개 언어도)
+- 칸: `cnc_orders.closed_at`(완료 · 취소된 시각 — 트리거 `trg_orders_closed_at`, 예전 주문은 020 이 단계 기록의 마지막 날짜 → 없으면 updated_at 으로 한 번 채움) · `files_purged_at` · `files_purged_count`
+- 지울 때 (Edge Function `data-retention` 이 Storage 삭제가 성공한 뒤 `retention_finish_order`): Storage `cnc-files`(cases[].stlPaths) · `cnc-designs`(design_versions[].paths) 삭제 +
+  주문 안 `patient` · `cases[].patient` → 'deleted', `cases[].memo` → '', `cases[].stls` · `stlPaths` → [], `design_versions[].paths` · `names` → [] (version · date 는 남김), `review_history[].note` → ''.
+  **남기는 것**: 주문번호 · 날짜 · 단계 · 치아(번호 · 제품 · 브랜드 · 사이즈 · 쉐이드) · 치아 수 · 크레딧 사용 · 치과 · 배송 정보 (세금 · 회계). 입금 슬립(`topup-slips`)은 대상 아님
+- 실행: pg_cron `allabut-data-retention` 매일 방콕 02:15 = UTC `15 19 * * *` (01:00 만료 · 01:05 알림 · 01:30 방문 기록 정리와 안 겹침) → `run_data_retention()` → pg_net 으로 Edge Function 호출,
+  헤더 `x-notify-secret` = Vault `notify_secret` (**NOTIFY_SECRET 재사용, 값은 코드에 없음**). 함수 주소는 020 안 (만료 알림과 같은 프로젝트 주소). Edge Function 은 **Verify JWT OFF**
+- 안전장치: `data_retention_settings`(id 1: months 12~120 기본 24 · mode **'preview'(기본)** | 'delete' · batch_limit 기본 50). **020 은 mode 를 절대 'delete' 로 바꾸지 않아요** — owner 가 관리자 카드에서.
+  미리보기 = 지울 목록만 `retention_log`(status 'preview', 실행마다 새 목록으로 바꿈) / 실제 삭제 = 한 번에 batch_limit 개 · 오래된 것부터, 파일 삭제 실패는 'error' 기록만(다음 날 다시) · 그 사이 단계가 바뀐 주문은 'NOT_ELIGIBLE'.
+  Edge Function 은 `cnc-files` · `cnc-designs` 버킷만, `..` · 앞 `/` 경로는 안 보냄, 이미 없는 파일은 오류 아님, 50초 넘으면 남은 주문은 다음 실행
+- 기록 표 `retention_runs`(실행마다: trigger cron/manual · mode · months · due_total · orders_processed · files_found · files_deleted · errors · note) · `retention_log`(주문마다) — RLS 켜고 정책 없음, `launch_reset.sql` 지울 표 목록에 있음
+- 함수: 서비스 키만 `retention_begin_run` · `retention_finish_order` · `retention_end_run` / owner `admin_get_retention()` · `admin_set_retention(p_months, p_mode)` · `admin_run_retention_now()` (작업 기록 'retention_settings' · 'retention_run')
+- 관리자 Settings 맨 아래 "🗂 주문 파일 보관 기간" (owner, `ui/page-admin-retention.js`): 숫자(지금 대상 · 누적 삭제) · 보관 기간(24 가 아니면 "방침도 고치세요" 주황 안내) · 모드(실제 삭제로 바꿀 때 확인 창) ·
+  [저장] [▶ 지금 실행] [↻ 새로고침] · 최근 실행 5번 · 미리보기 목록(최대 100) · 최근 결과(삭제 · 오류 20). 020 실행 전이면 안내만
+- 고객 화면 (내 주문 상세): 파일 목록 대신 회색 안내 "🗂 보관 기간이 지나 파일이 삭제됐어요 · 날짜" (`uiRetentionNote`, 오류처럼 보이지 않게), 메모는 비어서 안 보임, 환자 ID 는 "삭제됨"(`cncPatientLabel`).
+  관리자 주문 상세: 같은 안내 + 지운 파일 수, 디자인 버전 자리에 "디자인 파일 삭제됨 (버전 n개)". 홈 · 목록의 환자 표시도 `cncPatientLabel`
 
 ## 잔액 나눠 보기: 💳 충전(Paid) · 🎁 무료(Free) (sql/011_admin_credit_split.sql)
 - **헤더는 전체 잔액만** (배지·팝오버 없음). 그 밖의 잔액이 보이는 곳은 전부 충전 / 무료를 나눠서, 항상 둘 다(0 이어도)
@@ -276,9 +294,16 @@
   본문 배열에서 문자열 = 문단, 배열 = 목록, '{{PRICE_TABLE}}' / '{{REFUND_EXAMPLE}}' = 가격표·환불 예시 (credit_packages 에서 자동)
 - 회사 정보는 하드코딩 금지 → `company_settings` 에서 읽어 `{company_name}` 등 자리에 자동 삽입 (비면 [자리표시])
 - "초안 · 법률 검토 필요" 표시는 관리자에게만
-- 개인정보처리방침에 공개한 것: 방문 통계(본 화면 · 날짜 · 기기 · 브라우저 언어 · 나라 · 들어온 곳, 24개월), 가입 IP · 기기 ID(중복 가입·부정 이용 방지, 계정이 있는 동안 + 삭제 후 법정 기간),
-  로컬 저장소의 방문자 ID(`allabut_visitor_id`) · 기기 ID(`allabut_device_id`), 방문 통계는 누구도 식별 못 하는 합계로만 외부 공유. **수집 항목을 늘리면 방침도 같이 고치고 새 버전 등록**
-  (광고 배너 노출 · 클릭 기록(sql/019)은 방문 통계와 같은 칸 + 배너 번호 — 방침 문장을 고칠지는 사용자가 결정, 코드에서 바꾸지 않음)
+- **문서는 지금 사이트 기능에 맞춰 쓴다** (2026-11 정리 — 기능을 바꾸면 문서 3종 · 3개 언어도 같이, 그리고 owner 가 새 버전 등록):
+  - 이용약관: 상품 두 종류(크라운은 협력 기공소(partner dental laboratory)가 제작할 수 있음, 기공소 이름은 안 씀) · 테스트 서비스 기간 기록 초기화 · 가입 필수 5개 · 등록 정보 잠금 + 변경 요청 승인 ·
+    전화 · Tax ID 당 계정 1개(당사가 달리 동의한 경우 제외 — `tax_id_policy` 'allow' 대비) · 부정 가입 시 무료 크레딧 회수 · 납품일은 디자인 승인 때 · 가공 후 취소 불가(고객 · 당사 모두) ·
+    하자 통지 "지체 없이, 늦어도 수령 후 14일" + 법이 허용하지 않는 권리 제한 없음 · 책임 한도 예외(사망 · 신체 상해, 고의 · 중과실, 제조물책임법 B.E. 2551) · 환자 데이터 위탁 조항(지시 · 보안 · 재수탁자 · 유출 통지 · 2년 삭제 · 종료 시 삭제/반환)
+  - 개인정보처리방침: 본명 · Tax ID(개인 사업자면 개인 식별번호일 수 있음) · 가입 IP/기기 ID/브라우저 정보(user agent) · 방문 통계 + 배너 노출 · 클릭 / "allAbut 안에서 볼 수 있는 사람"(역할별 · **직원용 LINE 단체방 알림 사본 = 고객 LINE 연결과 상관없이** · 영업 담당은 담당 고객 치과명 + 승인된 입금 금액 · 크레딧 · 날짜) /
+    제공 업체(Supabase · Cloudflare(호스팅 · Turnstile · 국가) · Google Fonts · jsDelivr · cdnjs · 인증 이메일 서비스 · LY Corporation(LINE) · 협력 기공소 · 은행 · 운송사) / 국외 이전(싱가포르 · 일본 · 미국 등, PDPA 28 · 29조 계약상 보호 조치) /
+    배너(자체 배너 · 외부 광고 네트워크 없음 · 맞춤형 광고 없음) / 권리 행사 30일 + 1회 30일 연장(사유 안내) / 보관 기간 = 아래 "주문 파일 보관 기간" 과 정확히 같게
+  - 크레딧 및 환불 정책: 상품 두 종류 · 종류별 가격표 · 환불 "1개 가격" = 같은 종류의 1크레딧 가격(`{single_price}` · 예시는 어버트먼트) · 무료 크레딧 조항 · 테스트 기간 · 세금계산서는 자동 발행 없음(문의, 발행했으면 환불 때 크레딧 노트)
+  - 로컬 저장소의 방문자 ID(`allabut_visitor_id`) · 기기 ID(`allabut_device_id`), 방문 통계는 누구도 식별 못 하는 합계로만 외부 공유. **수집 항목을 늘리면 방침도 같이 고치고 새 버전 등록**
+  - 영문본이 기준, th · ko 는 같은 뜻으로 번역 — **세 언어의 섹션 순서 · 개수 · 목록 모양을 같게** (페이지가 섹션 번호 · 목차를 자동으로 붙이고, 맨 끝에 연락처 섹션을 하나 더 붙여요)
 - 버전: `legal_versions` (문서별 최신 = 시행일 → 등록 순, 이름은 날짜 `YYYY-MM-DD`). **새 버전은 코드·SQL 로 자동 추가하지 않는다** (owner 가 관리자 Settings → 법적 버전에서). terms·privacy 최신 버전과 `profiles.terms_version / privacy_version` 이 다르면 전체 화면 재동의 창 (법적 문서·Sign Out 만 가능)
 - 가입: 동의 체크 필수 → `accept_legal()`. 충전 결제: Credit & Refund Policy 읽음 체크 필수
 - 계정 삭제: Profile → `request_account_deletion()` → 관리자 Customers 탭에서 처리 (실제 삭제는 Supabase 대시보드에서 수동)
@@ -343,6 +368,9 @@
 - `ui/ad-banner.js` — 광고 배너 자리 (랜딩 · 홈 · 주문 완료, 회전 · 노출 1번)
 - `ui/back-to-top.js` — "↑ 맨 위로" 버튼 (`BackToTop`, 모든 화면 공통 하나, 아래 "화면 공통 부품")
 - `ui/page-admin-ads.js` — Settings "📢 광고 배너" 섹션 + Dashboard 광고 카드 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-retention.js` — 주문 파일 보관 기간: 지운 주문 판단(`cncOrderFilesPurged`) · 환자 표시(`cncPatientLabel`) · 관리자 설정 · 지금 실행 (로직만, sql/020)
+- `ui/page-admin-retention.js` — Settings "🗂 주문 파일 보관 기간" 카드 (owner, `PageAdmin` 에 덧붙임)
+- `supabase/functions/data-retention/index.ts` — 매일 새벽 주문 파일 삭제 Edge Function (서비스 키 · `x-notify-secret`, 설정 안내 `RETENTION_SETUP.md`)
 - 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)
@@ -362,7 +390,9 @@
 - `ui/page-about.js` — 회사소개 `#/about` (로그인 전·후 공통, 회사 값은 company_settings)
 - `cnc/promptpay.js` — PromptPay QR 페이로드(EMVCo + CRC16), `promptPayPayload(id, amount)`
 - `ui/page-topup.js` — 크레딧 충전 `#/topup` (패키지 → QR·계좌 → 슬립 → 완료, 내 충전 내역)
-- `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용)
+- `ui/page-guide.js` — 사용 매뉴얼 `#/guide` (문구 `guide_...`, 새 주문 "? Help" 팝오버도 `guide_stepN_text` 재사용). 내용은 지금 기능과 같게:
+  시작하기 = 가입 때 넣은 등록된 치과 정보(바꾸려면 내 정보에서 변경 요청 → 승인) / 크레딧 = 두 종류(서로 못 바꿔 씀) · 충전 순서 4단계(`guide_topup_step1~4`, 패키지 → PromptPay QR · 계좌이체 → 슬립 → 승인) · 12개월 · 무료 크레딧은 등록 주소 배송 전용 + [충전 화면 열기] /
+  진행 단계 아래 파일 2년 보관 문장(`guide_flow_retention`) / FAQ = 로그아웃 · 작성 중 주문 · 파일 · **LINE 연결(6)** · **3D 미리보기 조작(7)** · 글자 크기 · 언어 + **테스트 서비스 안내(8, service_mode 'test' 일 때만 맨 앞, `cncIsTestMode()`)**
 - `ui/page-home.js`, `ui/page-new.js`, `ui/page-orders.js`, `ui/page-profile.js`
 - `cnc/cnc-admin.js` — 관리자 로직 (화면 코드 없음): 대시보드 집계, 주문 목록·상세, 단계 처리, 디자인 업로드, 배송, 취소·환불, 고객·크레딧
 - `ui/page-admin.js` — 관리자 화면 `#/admin/orders`, `#/admin/topups`, `#/admin/customers`, `#/admin/dashboard`, `#/admin/activity`, `#/admin/team`, `#/admin/commission`, `#/admin/settings`, `#/admin/sales` (역할에 따라 보이는 탭이 달라요)
@@ -545,7 +575,7 @@
     `#/admin/orders?order=`·`#/admin?order=` 는 `PageAdmin.pendingOrder` → 주문 상세 창. 로그인 전에 LINE 링크로 오면 로그인 화면 → 로그인 후 그 페이지(`rememberPendingRoute`/`takePendingRoute`, sessionStorage). LINE 링크가 아니면 예전처럼 랜딩
   - 관리자 화면 범례: Settings → LINE groups 의 "알림 색 안내" (`ADMIN_NOTICE_LEGEND`, cnc/cnc-team.js) — **색을 바꾸면 두 곳 다**
 - 관리자 Customers 탭: LINE 연결 표시(✅/❌, profiles.line_user_id) + "LINE 미연결 고객만" 필터
-- **비밀값은 코드·저장소에 절대 쓰지 않는다.** Edge Function 안에서 `Deno.env.get()` 으로만 (Secrets: LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, LINE_ADMIN_USER_ID, NOTIFY_SECRET).
+- **비밀값은 코드·저장소에 절대 쓰지 않는다.** Edge Function 안에서 `Deno.env.get()` 으로만 (Secrets: LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, LINE_ADMIN_USER_ID, NOTIFY_SECRET — `data-retention` 도 같은 NOTIFY_SECRET 을 써요, DB 쪽은 Vault `notify_secret`).
   SUPABASE_SERVICE_ROLE_KEY 는 Edge Function 에서만, 브라우저 코드에는 절대 넣지 않는다
 - `profiles.line_user_id` 는 **LINE 알림 연결 전용** (U + 16진수 32자리). 웹앱은 이 칸을 직접 쓰지 않는다 (연결은 line-webhook, 해제는 `unlink_my_line()`).
   주문의 "LINE ID" 칸(`cnc_orders.line_id`)은 연락용 글자일 뿐, 프로필에 저장하지 않는다

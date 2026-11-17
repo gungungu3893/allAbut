@@ -872,6 +872,16 @@ function uiDesignVersions(versions, viewCall) {
   }).join('') + '</ol>';
 }
 
+// 보관 기간이 지나 파일을 지운 주문 (sql/020) — 오류처럼 보이지 않게 회색 안내 상자
+//   고객: "🗂 보관 기간이 지나 파일이 삭제됐어요 (날짜)" + 주문 기록은 남아 있다는 설명 / 관리자: 지운 파일 수도
+function uiRetentionNote(order, admin) {
+  var when = order && order.files_purged_at ? formatDate(order.files_purged_at) : '';
+  return '<div class="retention-note" role="note"><span class="retention-note-icon" aria-hidden="true">🗂</span><div>' +
+    '<p class="retention-note-title">' + escHtml(t('ret_files_deleted_title')) + (when ? ' <span class="muted">· ' + escHtml(when) + '</span>' : '') + '</p>' +
+    '<p class="retention-note-text">' + escHtml(admin ? tf('ret_files_deleted_admin', { n: Number(order.files_purged_count) || 0 }) : t('ret_files_deleted_text')) + '</p>' +
+    '</div></div>';
+}
+
 // 처리 이력 타임라인 (review_history)
 // showNames: 관리자 화면에서만 true → 처리한 직원 이름(by_name)을 보여줘요 (고객 화면은 "관리자")
 // 고객 화면에서 숨기는 관리자 전용 기록 (담당 영업 변경 — sql/015 때 주문에 남은 기록, 016 부터는 새로 안 생겨요)

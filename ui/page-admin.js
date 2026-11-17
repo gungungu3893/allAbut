@@ -162,6 +162,8 @@ var PageAdmin = {
       box.innerHTML = this.settingsHtml();
       if (cncHasRole('owner')) { this.drawLineGroups(); if (this.settingsTab.settings) this.loadSignupGrants(); }
       if (this.loadAds && document.getElementById('ads-admin')) { if (this.ads.rows === null && !this.ads.error) this.loadAds(); else this.drawAds(); }
+      // 🗂 주문 파일 보관 기간 (owner, sql/020)
+      if (this.loadRetention && document.getElementById('retention-admin')) { if (!this.ret.data && !this.ret.error && !this.ret.missing && !this.ret.loading) this.loadRetention(); else this.drawRetention(); }
     }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
@@ -415,7 +417,7 @@ var PageAdmin = {
             ? '<ul class="order-list">' + d.now.due.map(function (o) {
                 return '<li><button type="button" class="order-row admin-due-row ' + cncDueState(o) + '" onclick="PageAdmin.openOrder(\'' + escHtml(o.id) + '\')">' +
                   '<span class="order-row-id mono">' + escHtml(o.id) + '</span>' +
-                  '<span class="order-row-meta">' + self.dueHtml(o) + ' · ' + escHtml(o.clinic || '') + ' · ' + escHtml(o.patient || '—') + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
+                  '<span class="order-row-meta">' + self.dueHtml(o) + ' · ' + escHtml(o.clinic || '') + ' · ' + escHtml(cncPatientLabel(o, '—')) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
                   uiStageBadge(o.stage) + '</button></li>';
               }).join('') + '</ul>'
             : '<p class="empty-text">' + escHtml(t('admin_no_due')) + '</p>') +
@@ -488,7 +490,7 @@ var PageAdmin = {
             '<th>' + escHtml(t('teeth_label')) + '</th><th>' + escHtml(t('admin_completed_date')) + '</th></tr></thead><tbody>' +
             m.completed.map(function (o) {
               return '<tr class="clickable" tabindex="0" onclick="PageAdmin.openOrder(\'' + escHtml(o.id) + '\')" onkeydown="if(event.key===\'Enter\')PageAdmin.openOrder(\'' + escHtml(o.id) + '\')">' +
-                '<td class="mono nowrap"><b>' + escHtml(o.id) + '</b></td><td>' + escHtml(o.clinic) + '</td><td>' + escHtml(o.patient || '—') + '</td>' +
+                '<td class="mono nowrap"><b>' + escHtml(o.id) + '</b></td><td>' + escHtml(o.clinic) + '</td><td>' + escHtml(cncPatientLabel(o, '—')) + '</td>' +
                 '<td class="mono">' + formatNumber(o.teeth_count) + '</td><td class="nowrap">' + escHtml(formatDate(o.updated_at)) + '</td></tr>';
             }).join('') + '</tbody></table></div>'
         : '<p class="empty-text">' + escHtml(t('admin_no_completed')) + '</p>') +
@@ -603,7 +605,7 @@ var PageAdmin = {
           '<td class="mono nowrap"><b>' + escHtml(r.id) + '</b>' + self.freeBadgeHtml(r, true) + '</td>' +
           '<td class="nowrap">' + escHtml(formatDate(r.created_at)) + '</td>' +
           '<td>' + escHtml(r.clinic) + '</td>' +
-          '<td>' + escHtml(r.patient || t('anonymous')) + '</td>' +
+          '<td>' + escHtml(cncPatientLabel(r, t('anonymous'))) + '</td>' +
           '<td class="nowrap"><span class="mono">' + formatNumber(r.teeth_count) + '</span>' + (Number(r.crown_set_count || 0) > 0 ? ' <span class="crown-mark" title="' + escHtml(t('product_crown_set')) + '">👑 <span class="mono">' + formatNumber(r.crown_set_count) + '</span></span>' : '') + '</td>' +
           '<td class="nowrap">' + self.dueHtml(r) + '</td>' +
           '<td>' + uiStageBadge(r.stage) + '</td></tr>';
@@ -616,7 +618,7 @@ var PageAdmin = {
         self.freeBadgeHtml(r, true) +
         '<span class="admin-card-clinic">' + escHtml(r.clinic) + '</span>' +
         '<span class="order-meta">' +
-          '<span><span class="muted">' + escHtml(t('patient_label')) + '</span> ' + escHtml(r.patient || t('anonymous')) + '</span>' +
+          '<span><span class="muted">' + escHtml(t('patient_label')) + '</span> ' + escHtml(cncPatientLabel(r, t('anonymous'))) + '</span>' +
           '<span><span class="muted">' + escHtml(t('teeth_label')) + '</span> <span class="mono">' + formatNumber(r.teeth_count) + '</span>' + (Number(r.crown_set_count || 0) > 0 ? ' <span class="crown-mark">👑 <span class="mono">' + formatNumber(r.crown_set_count) + '</span></span>' : '') + '</span>' +
           '<span><span class="muted">' + escHtml(t('case_deadline_label')) + '</span> ' + self.dueHtml(r) + '</span>' +
           '<span><span class="muted">' + escHtml(t('admin_received')) + '</span> ' + escHtml(formatDate(r.created_at)) + '</span>' +
@@ -714,7 +716,7 @@ var PageAdmin = {
       '<section><h3 class="detail-title">' + escHtml(t('admin_order_info')) + '</h3>' +
         row('order_number', escHtml(o.id), true) +
         row('admin_received', escHtml(formatDateTime(o.created_at))) +
-        row('patient_label', escHtml(o.patient || t('anonymous'))) +
+        row('patient_label', escHtml(cncPatientLabel(o, t('anonymous')))) +
         row('case_deadline_label', this.dueHtml(o) +
           // 납기 변경 (manager 이상, 끝난·취소된 주문 제외) → admin_set_deadline (sql/012)
           (cncHasRole('manager') && o.stage !== 'done' && o.stage !== 'cancelled'
@@ -749,8 +751,9 @@ var PageAdmin = {
 
     // 고객 파일
     var files = cncOrderFiles(o);
+    var purged = cncOrderFilesPurged(o);   // 보관 기간이 지나 파일을 지운 주문 (sql/020)
     html += '<h3 class="detail-title">' + escHtml(t('admin_customer_files')) + ' (' + files.length + ')</h3>' +
-      (files.length
+      (purged ? uiRetentionNote(o, true) : files.length
         ? '<ul class="file-list">' + files.map(function (f, i) {
             return '<li class="file-row"><span class="file-icon" aria-hidden="true">' + uiFileIcon(f.name) + '</span>' +
               '<span class="file-info"><span class="file-name">' + escHtml(f.name) + '</span></span>' +
@@ -764,7 +767,8 @@ var PageAdmin = {
 
     // 디자인 버전
     html += '<h3 class="detail-title">' + escHtml(t('admin_design_versions')) + '</h3>' +
-      uiDesignVersions(cncOrderDesigns(o), function (vi, fi) { return 'PageAdmin.viewDesign(' + vi + ', ' + fi + ')'; });
+      (purged ? '<p class="muted">' + escHtml(tf('ret_designs_deleted', { n: cncOrderDesigns(o).length })) + '</p>'
+              : uiDesignVersions(cncOrderDesigns(o), function (vi, fi) { return 'PageAdmin.viewDesign(' + vi + ', ' + fi + ')'; }));
 
     // 이력
     html += '<h3 class="detail-title">' + escHtml(t('admin_history')) + '</h3>' + uiHistoryList(o.review_history, true);
@@ -1397,7 +1401,7 @@ var PageAdmin = {
     else html += '<ul class="order-list">' + st.orders.map(function (o) {
       return '<li><button type="button" class="order-row" onclick="PageAdmin.openOrderFromCustomer(\'' + escHtml(o.id) + '\')">' +
         '<span class="order-row-id mono">' + escHtml(o.id) + '</span>' +
-        '<span class="order-row-meta">' + escHtml(formatDate(o.created_at)) + ' · ' + escHtml(o.patient || t('anonymous')) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
+        '<span class="order-row-meta">' + escHtml(formatDate(o.created_at)) + ' · ' + escHtml(cncPatientLabel(o, t('anonymous'))) + ' · ' + escHtml(tf('teeth_count_fmt', { n: o.teeth_count })) + '</span>' +
         uiStageBadge(o.stage) + '</button></li>';
     }).join('') + '</ul>';
 
@@ -1791,7 +1795,8 @@ var PageAdmin = {
           '</section>';
 
     return '<div class="admin-settings">' + this.serviceModeHtml(s) + '<section class="card" id="line-groups"></section>' + this.companyHtml() + this.versionsHtml() + payment +
-      this.signupEventHtml(s) + packages + (this.adsSectionHtml ? this.adsSectionHtml() : '') + '</div>';
+      this.signupEventHtml(s) + packages + (this.adsSectionHtml ? this.adsSectionHtml() : '') +
+      (this.retentionSectionHtml ? this.retentionSectionHtml() : '') + '</div>';
   },
 
   // ----- 서비스 상태 (테스트 / 정식) — owner, sql/017 -----

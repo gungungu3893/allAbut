@@ -2831,3 +2831,42 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
 @media print {
   .back-to-top { display: none !important; }
 }
+
+/* ================================================================
+   주문 파일 보관 기간 (sql/020)
+   ================================================================ */
+/* 고객 · 관리자 주문 상세: 파일이 보관 기간이 지나 삭제됨 — 오류가 아닌 차분한 회색 안내 */
+.retention-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: #F3F4F6;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.retention-note-icon { font-size: 1.375rem; line-height: 1.2; }
+.retention-note-title { font-weight: 600; color: var(--navy); }
+.retention-note-text { margin-top: 4px; color: var(--muted); font-size: 0.9375rem; }
+
+/* 관리자 Settings 카드 (owner) */
+.retention-card .card-head { gap: 10px; flex-wrap: wrap; }
+.ret-mode-badge.ret-mode-preview { background: #EEF2FF; color: #3730A3; }
+.ret-mode-badge.ret-mode-delete { background: #FEF2F2; color: #B91C1C; }
+.ret-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 16px; }
+.ret-stat { flex: 1 1 160px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #FAFBFC; display: grid; gap: 2px; }
+.ret-stat-num { font-size: 1.5rem; font-weight: 600; color: var(--navy); }
+.ret-stat-label { color: var(--muted); font-size: 0.9375rem; }
+.ret-months-row { display: flex; align-items: center; gap: 8px; }
+.ret-months-input { max-width: 120px; }
+.ret-policy-warn { color: #B45309; }
+.ret-actions { margin-top: 8px; flex-wrap: wrap; }
+.ret-note-row td { padding-top: 0; font-size: 0.875rem; }
+.badge.ret-ok { background: #ECFDF3; color: #027A48; }
+.badge.ret-err { background: #FEF2F2; color: #B91C1C; }
+.retention-card .seg { flex-wrap: wrap; }
+
+/* 이용 가이드: 크레딧 충전 순서 (번호 목록) */
+.guide-topup-steps { margin: 6px 0 14px; padding-inline-start: 1.6em; display: grid; gap: 6px; font-size: 1.0625rem; line-height: 1.6; }
+.guide-topup-steps li::marker { color: var(--gold-dark, #B8860B); font-weight: 700; }

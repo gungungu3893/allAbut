@@ -29,12 +29,13 @@
 --   cnc_orders · invoices · credit_lot_usage · credit_lots · credit_history · topup_requests · refund_cash_lots ·
 --   commission_payouts · signup_bonus_grants · clinic_change_requests · account_deletion_requests ·
 --   admin_audit_log · site_events · admin_group_link_codes(그룹 연결용 임시 코드)
+--   retention_runs · retention_log (주문 파일 자동 삭제 기록, sql/020)
 --   + credit_wallets 는 모든 계정 잔액 0 (018 이후면 크라운 세트 잔액 balance_crown_set 도 0)
 --   + 번호 다시 처음부터: 주문번호(cnc_order_seq) · 충전 요청번호(topup_seq) · 각 표의 자동 번호(RESTART IDENTITY)
 -- 남기는 것:
 --   credit_packages(가격·패키지) · payment_settings(결제 · 이벤트 · 서비스 상태 포함) · company_settings · legal_versions ·
 --   admins(팀·역할) · sales_reps · sales_rep_rates · admin_notify_targets(LINE 그룹) · blocked_email_domains ·
---   profiles(계정을 남기면 동의 버전 · 담당 영업 · 치과 정보 · LINE 연결 그대로)
+--   profiles(계정을 남기면 동의 버전 · 담당 영업 · 치과 정보 · LINE 연결 그대로) · data_retention_settings(주문 파일 보관 설정, sql/020)
 -- service_mode 는 바꾸지 않아요 → 끝나면 관리자 Settings → "서비스 상태" 에서 직접 '정식' 으로
 --
 -- Storage 파일은 SQL 로 지울 수 없어요 → Supabase → Storage → 버킷마다 ⋯ → Empty bucket
@@ -52,7 +53,8 @@ declare
   v_tables text[] := array[
     'invoices', 'credit_lot_usage', 'refund_cash_lots', 'commission_payouts', 'signup_bonus_grants',
     'clinic_change_requests', 'account_deletion_requests', 'credit_history', 'credit_lots',
-    'topup_requests', 'cnc_orders', 'admin_audit_log', 'site_events', 'admin_group_link_codes'
+    'topup_requests', 'cnc_orders', 'admin_audit_log', 'site_events', 'admin_group_link_codes',
+    'retention_runs', 'retention_log'   -- 주문 파일 자동 삭제 기록 (sql/020) — 보관 설정(data_retention_settings)은 남겨요
   ];
   v_existing text[] := '{}';
   v_t text;

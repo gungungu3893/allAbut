@@ -98,7 +98,7 @@ var AUDIT_ACTION_GROUPS = {
   credits: ['credits_added', 'credits_removed'],
   team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code'],
   sales: ['topup_rep', 'order_rep', 'customer_rep', 'sales_rep_on', 'sales_rep_off', 'commission_rate', 'commission_paid', 'commission_unpaid'],
-  settings: ['settings_changed', 'service_mode', 'ad_banner_saved', 'ad_banner_deleted']
+  settings: ['settings_changed', 'service_mode', 'ad_banner_saved', 'ad_banner_deleted', 'retention_settings', 'retention_run']
 };
 
 // filters: { actor: user id, group: 'orders'|..., target: 글자, before: 시각(더 보기) }
