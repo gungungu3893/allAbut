@@ -1974,6 +1974,20 @@ LANG.vi = {
   mywork_month: 'Tháng này',
   mywork_older: 'Trước đó',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: 'Trên máy tính dùng chung, hãy luôn đăng xuất khi dùng xong.',
+  session_idle_title: 'Bạn vẫn còn ở đó chứ?',
+  session_idle_text: 'Đã lâu không có hoạt động. Bạn sẽ bị đăng xuất sau',
+  session_keep_using: 'Tiếp tục sử dụng',
+  session_idle_left: 'Tự động đăng xuất sau 30 phút không hoạt động',
+  session_idle_signed_out: 'Bạn đã bị đăng xuất sau 30 phút không hoạt động. Vui lòng đăng nhập lại.',
+  signout_all_title: 'Đăng xuất trên mọi thiết bị',
+  signout_all_desc: 'Đăng xuất trên thiết bị này và trên mọi điện thoại hoặc máy tính khác mà bạn vẫn đang đăng nhập.',
+  signout_all_btn: 'Đăng xuất trên mọi thiết bị',
+  signout_all_confirm: 'Đăng xuất trên mọi thiết bị, kể cả thiết bị này? Bạn sẽ cần đăng nhập lại ở mọi nơi.',
+  signout_all_done: 'Bạn đã được đăng xuất trên mọi thiết bị.',
+  password_change_signs_out_others: 'Khi bạn đổi mật khẩu, bạn sẽ bị đăng xuất trên mọi thiết bị khác.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

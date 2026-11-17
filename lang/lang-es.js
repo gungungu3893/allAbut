@@ -1974,6 +1974,20 @@ LANG.es = {
   mywork_month: 'Este mes',
   mywork_older: 'Antes',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: 'En un equipo compartido, cierra siempre la sesión al terminar.',
+  session_idle_title: '¿Sigues ahí?',
+  session_idle_text: 'No hay actividad desde hace un rato. Tu sesión se cerrará en',
+  session_keep_using: 'Seguir usando',
+  session_idle_left: 'La sesión se cierra tras 30 minutos sin actividad',
+  session_idle_signed_out: 'Tu sesión se cerró tras 30 minutos sin actividad. Vuelve a iniciar sesión.',
+  signout_all_title: 'Cerrar sesión en todos los dispositivos',
+  signout_all_desc: 'Cierra la sesión aquí y en cualquier otro teléfono o equipo donde la tengas abierta.',
+  signout_all_btn: 'Cerrar sesión en todos los dispositivos',
+  signout_all_confirm: '¿Cerrar sesión en todos los dispositivos, incluido este? Tendrás que volver a iniciar sesión en todos.',
+  signout_all_done: 'Se cerró la sesión en todos los dispositivos.',
+  password_change_signs_out_others: 'Al cambiar tu contraseña, se cierra la sesión en todos los demás dispositivos.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

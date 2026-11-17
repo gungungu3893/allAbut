@@ -3079,3 +3079,9 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
 @media (max-width: 720px) {
   .rtable-wrap { border: 0; background: none; box-shadow: none; }
 }
+
+/* ===== 로그인 유지 (직원): 공용 컴퓨터 안내 · 모든 기기에서 로그아웃 ===== */
+.auth-public-note { margin: 14px 0 0; font-size: .875rem; color: #4B5563; text-align: center; line-height: 1.5; }
+.auth-public-note::before { content: "🔒 "; }
+.join-public-note { margin-top: 12px; }
+.signout-all-card .btn { margin-top: 4px; }

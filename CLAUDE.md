@@ -416,7 +416,7 @@
 - `tools/brand/make_brand_assets.py` · `tools/brand/render.js` — 파비콘 · 공유 이미지 · 미리보기 만들기 (배포 안 됨), `docs/favicon-preview.png` — 작은 크기 미리보기 (배포 안 됨)
 - `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시 (`formatDate` · `formatDateTime` · `formatTime` 시각만)
 - `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
-- `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()`
+- `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()` + 로그인 저장소 `AUTH_STORAGE`(고객 localStorage · 직원 sessionStorage)
 - `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
 - `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)
 - `cnc/cnc-analytics.js` — 방문 · 페이지뷰 기록, 방문자 ID, 기기·로봇·들어온 곳 판별, TODAY/TOTAL, 관리자 방문 통계·CSV (로직만)
@@ -441,7 +441,7 @@
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)
 - `ui/page-complete.js` — 필수 정보 입력 `#/complete`
-- `session.js` — 1시간 세션 + 연장(최대 3시간) + 5분 전 경고. 로그아웃돼도 작성 중 주문은 유지
+- `session.js` — 로그인 시간 제한: 고객 = 1시간 세션 + 연장(최대 3시간) + 5분 전 경고 / 직원 = 자리 비움 30분 (아래 "로그인 유지 규칙"). 로그아웃돼도 작성 중 주문은 유지
 - `app.js` — `APP { user, profile, balance }`, 화면 전환, 로그인 폼, 시작(boot)
 - `cnc/cnc-data.js` — 브랜드 11종, VITA 14색, 주문 단계, FDI 32개, `getToothName()`, 파일 규칙
 - `cnc/cnc-core.js` — 화면 코드 없는 순수 로직: draft 저장/복원, 단계별 검사, 파일 규칙, cases 만들기, 업로드, 제출(RPC), 주문 조회, 고객 액션, 크레딧, 프로필 저장
@@ -516,6 +516,25 @@
   - 가볍게: scroll · resize 는 passive 리스너 → requestAnimationFrame 으로 프레임당 1번 계산. 화면 전환 · 모달 · 토스트는 MutationObserver(class · hidden, 버튼 자신의 변화는 무시)
   - 모든 화면은 창(window) 전체가 스크롤돼요 (안쪽 스크롤 영역 없음) → window 기준. 새 화면에 안쪽 스크롤 영역을 만들면 이 부품도 같이 고쳐요
   - 새로 아래쪽에 고정되는 줄 · 덮는 창을 만들면 `OBSTACLES` · `BLOCKERS` 목록에도 넣어요. 인쇄할 때는 안 보여요(`@media print`)
+
+## 로그인 유지 규칙 (session.js · auth.js)
+- **고객 계정**: 예전 그대로 — 로그인 토큰 · 만료 시각(`allabut_session_expires`) = localStorage (같은 브라우저의 모든 탭이 공유, 창을 닫았다 열어도 유지),
+  1시간 + [+1h] 연장(남은 시간 최대 3시간) + 5분 전 경고 [1시간 연장] → 만료되면 랜딩 + "Session expired" 3초. 작성 중 주문은 저장
+- **직원 계정 = `admin_me()` 로 역할이 있는 계정** (owner · manager · staff · sales — owner 처럼 customer 계정이어도 역할이 있으면 직원 규칙):
+  - **브라우저 창을 닫으면 로그아웃**: Supabase 클라이언트의 저장소를 `AUTH_STORAGE`(auth.js)로 바꿔 둠 → sessionStorage 의 `allabut_staff_session` = '1' 이면 sessionStorage, 아니면 localStorage.
+    로그인 · 가입은 항상 고객 저장소로 시작(`clearStaffSessionMode`) → `enterApp` 이 역할을 확인하면 `switchToStaffSession()`(session.js) → `useStaffSessionStorage()` 가 토큰을 sessionStorage 로 옮기고 localStorage 것은 지움
+    (옮길 키 = `sb.auth.storageKey` + `sb-…-auth-token`). 그 뒤 자동 토큰 갱신도 sessionStorage 에만. 만료 시각도 sessionStorage.
+    같은 창 새로고침 · 그 창에서 연 탭 = 유지 / 주소를 새로 친 새 탭 · 창을 닫았다 열기 = 다시 로그인
+  - **자리 비움 30분**: 마우스 · 키보드 · 터치 입력(`STAFF_ACTIVITY_EVENTS`)이 있을 때마다 만료 = 지금 + 30분(10초에 한 번만 저장). 5분 전 경고 "자리를 비우셨나요?" + **[계속 사용]**(경고가 떠 있는 동안 지나가는 마우스 움직임으로는 안 닫혀요).
+    0이 되면 로그아웃 → **바로 로그인 화면** + "30분 동안 입력이 없어 로그아웃됐어요". 직원에게는 +1h 버튼이 없어요 (헤더 시간은 "입력이 없으면 남은 시간")
+  - 로그아웃되면(직원 · 고객 공통 `endSession` → `onSessionEnded`) `#app-main` · `#app-header` · `#app-tabbar` 내용을 지우고, 주소의 # 를 히스토리에서 지워요(`history.replaceState`) → 뒤로 가기로도 앱 화면이 다시 그려지지 않아요(router 는 로그인 전이면 공개 화면만).
+    뒤로 가기 캐시(`pageshow` persisted) · 다시 보이는 창(`visibilitychange`)에서도 바로 시간 확인
+  - **정지 · 역할 변경 즉시 반영**: `cncRecheckStaffAccess()`(cnc/cnc-team.js)가 `admin_me()` 를 다시 읽어 바뀌었으면 헤더 · 화면을 다시 그림 → 직원 계정이 정지 · 대기면 정지 안내(`PageStaffGate`).
+    부르는 때: 1분마다(session.js) · 화면을 옮길 때(router.js, 5초에 한 번까지) · 서버가 `NOT_ADMIN` · `NOT_SALES` 로 거절했을 때(cnc-core.js `cncError`). 네트워크 오류면 아무것도 안 바꿈
+  - 로그인 화면 · 직원 초대 가입 화면에 "🔒 공용 컴퓨터에서는 사용 후 꼭 로그아웃하세요" (`public_pc_note`)
+- **모든 계정 공통**: 내 정보 "모든 기기에서 로그아웃" 카드(`signOutAllHtml` → `handleSignOutEverywhere` → `endSession('global')` → Supabase `signOut({ scope: 'global' })`) /
+  **비밀번호를 바꾸면 다른 기기의 로그인은 모두 끊어요** (`updatePassword` 안에서 `signOut({ scope: 'others' })` — 지금 기기는 유지, 재설정 링크 · 직원 내 정보 둘 다)
+- LINE 알림 링크로 들어온 흐름(로그인 전 → 로그인 화면 → 로그인 후 그 페이지, `rememberPendingRoute` 는 sessionStorage)은 직원 · 고객 모두 그대로
 
 ## 사용 흐름 규칙
 - 로그인(재로그인 포함) 성공 → 항상 `#/home` (예외: 로그인 전에 LINE 알림 링크로 들어왔으면 로그인 후 그 페이지로 — 아래 LINE 링크). 이 계정 첫 로그인이면 한 번 `#/guide` (`localStorage.allabut_guide_seen_{user_id}`). 로그인 상태 새로고침은 지금 페이지 유지

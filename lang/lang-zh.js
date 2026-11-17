@@ -1974,6 +1974,20 @@ LANG.zh = {
   mywork_month: '本月',
   mywork_older: '更早',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: '在公用电脑上使用后，请务必退出登录。',
+  session_idle_title: '您还在吗？',
+  session_idle_text: '一段时间没有操作，将自动退出登录，剩余',
+  session_keep_using: '继续使用',
+  session_idle_left: '30 分钟无操作后自动退出登录',
+  session_idle_signed_out: '由于 30 分钟无操作，您已退出登录。请重新登录。',
+  signout_all_title: '在所有设备上退出登录',
+  signout_all_desc: '退出此设备以及其他所有仍在登录的手机或电脑。',
+  signout_all_btn: '在所有设备上退出登录',
+  signout_all_confirm: '要在所有设备（包括此设备）上退出登录吗？之后需要在所有设备上重新登录。',
+  signout_all_done: '已在所有设备上退出登录。',
+  password_change_signs_out_others: '修改密码后，其他所有设备都会退出登录。',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

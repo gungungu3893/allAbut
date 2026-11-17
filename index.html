@@ -192,6 +192,7 @@
           <p class="auth-msg" id="signin-error" role="alert"></p>
           <button type="submit" class="auth-submit" id="signin-btn" data-i18n="btn_sign_in">Sign In</button>
           <button type="button" class="auth-link" id="forgot-link" onclick="showResetForm()" data-i18n="forgot_password">Forgot your password?</button>
+          <p class="auth-public-note" data-i18n="public_pc_note">On a shared computer, always sign out when you finish.</p>
         </form>
 
         <!-- 비밀번호 찾기: 메일로 재설정 링크 -->
@@ -329,7 +330,7 @@
         <p class="session-modal-text" data-i18n="session_ending_text">You will be signed out in</p>
         <p class="session-modal-countdown mono" id="session-modal-countdown">05:00</p>
         <div class="session-modal-actions">
-          <button type="button" class="btn btn-primary btn-lg" onclick="handleModalExtend()" data-i18n="session_extend_btn">Extend 1 hour</button>
+          <button type="button" class="btn btn-primary btn-lg" id="session-modal-extend" onclick="handleModalExtend()" data-i18n="session_extend_btn">Extend 1 hour</button>
           <button type="button" class="btn btn-outline btn-lg" onclick="endSession('manual')" data-i18n="sign_out">Sign Out</button>
         </div>
       </div>

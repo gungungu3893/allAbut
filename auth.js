@@ -3,9 +3,78 @@
 // 비밀번호 재설정 메일의 링크로 들어왔는지 (Supabase 가 주소의 #...type=recovery 를 읽고 지우기 전에 기억해요)
 window.__passwordRecovery = /[#&?]type=recovery\b/.test(String(location.hash || '') + String(location.search || ''));
 
-// Supabase 클라이언트 만들기 (어디서든 window.sb 로 사용)
-// 로그인 상태(세션)는 Supabase 가 브라우저에 자동 저장하므로, 새로고침해도 로그인이 유지돼요.
-window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ----------------------------------------------------------------
+// 로그인 토큰을 어디에 둘지 (계정 종류마다 다르게)
+// ----------------------------------------------------------------
+//   고객 계정: localStorage — 브라우저를 닫았다 열어도 남아 있어요 (1시간 세션 · 연장은 session.js)
+//   직원 계정(admin_me() 로 역할이 있는 계정 — owner · manager · staff · sales):
+//     sessionStorage — **브라우저 창(그 창의 모든 탭)을 닫으면 사라져요** = 창을 닫으면 로그아웃.
+//     같은 창에서 새로고침 · 그 창에서 연 탭은 유지, 주소를 새로 친 새 탭은 다시 로그인.
+//   로그인 직후 역할을 확인하고(app.js enterApp) 직원이면 useStaffSessionStorage() 가 토큰을 sessionStorage 로 옮기고 localStorage 것은 지워요.
+//   그 뒤 Supabase 가 토큰을 새로 고칠 때도(자동 갱신) 아래 저장소가 sessionStorage 에만 써요.
+var STAFF_SESSION_FLAG = 'allabut_staff_session';   // sessionStorage 에 '1' = 이 창은 직원 모드
+
+function isStaffSessionMode() {
+  try { return sessionStorage.getItem(STAFF_SESSION_FLAG) === '1'; } catch (e) { return false; }
+}
+
+// Supabase 로그인 저장소 (getItem · setItem · removeItem) — 직원 모드면 sessionStorage, 아니면 localStorage
+var AUTH_STORAGE = {
+  getItem: function (key) {
+    try {
+      if (isStaffSessionMode()) return sessionStorage.getItem(key);
+      var v = localStorage.getItem(key);
+      return v !== null ? v : sessionStorage.getItem(key);
+    } catch (e) { return null; }
+  },
+  setItem: function (key, value) {
+    try {
+      if (isStaffSessionMode()) {
+        sessionStorage.setItem(key, value);
+        localStorage.removeItem(key);   // 창을 닫아도 남는 곳에는 두지 않아요
+      } else {
+        localStorage.setItem(key, value);
+      }
+    } catch (e) { /* 저장 불가 (사생활 보호 모드 등) */ }
+  },
+  removeItem: function (key) {
+    try { sessionStorage.removeItem(key); } catch (e) { /* 무시 */ }
+    try { localStorage.removeItem(key); } catch (e) { /* 무시 */ }
+  }
+};
+
+// Supabase 가 쓰는 로그인 키인지 (sb-<프로젝트>-auth-token … + 클라이언트가 알려 주는 실제 키 sb.auth.storageKey)
+function isAuthStorageKey(key) {
+  key = String(key || '');
+  var own = window.sb && sb.auth && sb.auth.storageKey;
+  return (own && (key === own || key.indexOf(own + '-') === 0)) || /^sb-.+-auth-token/.test(key);
+}
+
+// 직원 계정으로 확인됐을 때: 이 창을 직원 모드로 바꾸고 로그인 토큰을 sessionStorage 로 옮겨요 (localStorage 것은 지워요)
+function useStaffSessionStorage() {
+  try {
+    sessionStorage.setItem(STAFF_SESSION_FLAG, '1');
+    var keys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (isAuthStorageKey(k)) keys.push(k);
+    }
+    keys.forEach(function (k) {
+      sessionStorage.setItem(k, localStorage.getItem(k));
+      localStorage.removeItem(k);
+    });
+  } catch (e) { /* 저장 불가 */ }
+}
+
+// 로그아웃 · 새 로그인 전에: 직원 모드 표시를 지워요 (다음 로그인은 고객처럼 시작 → 역할을 보고 다시 정해요)
+function clearStaffSessionMode() {
+  try { sessionStorage.removeItem(STAFF_SESSION_FLAG); } catch (e) { /* 무시 */ }
+}
+
+// Supabase 클라이언트 만들기 (어디서든 window.sb 로 사용) — 로그인 저장소는 위 AUTH_STORAGE
+window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storage: AUTH_STORAGE, persistSession: true, autoRefreshToken: true }
+});
 
 // 회원가입
 //   info: { email, password, fullName, phone, clinicName, taxId, address, country, legal: { terms, privacy }, captchaToken, staffInvite }
@@ -17,6 +86,7 @@ window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //   - legal: 가입 화면에서 동의한 약관·개인정보 버전 (이메일 인증 때문에 바로 기록을 못 하면 첫 로그인 때 이 값으로 기록)
 //   - captchaToken: Turnstile 토큰 (TURNSTILE_SITE_KEY 가 비어 있으면 undefined → 안 보내요)
 async function signUp(info) {
+  clearStaffSessionMode();   // 새 로그인은 고객 저장소로 시작 (직원 초대 가입이면 enterApp 이 직원 모드로 바꿔요)
   var legal = info.legal || {};
   var fullName = cncNormName(info.fullName);
   var options = {
@@ -78,7 +148,9 @@ async function createProfile(userId, nickname, extra) {
 }
 
 // 로그인 (captchaToken: Turnstile 토큰, 없으면 안 보내요)
+//   새 로그인은 항상 고객 저장소(localStorage)로 시작 → enterApp 이 역할을 보고 직원이면 sessionStorage 로 옮겨요
 async function signIn(email, password, captchaToken) {
+  clearStaffSessionMode();
   var cred = { email: email, password: password };
   if (captchaToken !== undefined) cred.options = { captchaToken: captchaToken };
   var result = await sb.auth.signInWithPassword(cred);
@@ -94,15 +166,21 @@ async function sendPasswordReset(email, captchaToken) {
   if (result.error) throw result.error;
 }
 
-// 새 비밀번호 저장 (재설정 링크로 들어와 잠깐 로그인된 상태에서)
+// 새 비밀번호 저장 (재설정 링크로 들어와 잠깐 로그인된 상태에서 · 직원 내 정보의 비밀번호 변경)
+//   비밀번호를 바꾸면 **다른 기기의 로그인은 모두 끊어요** (scope 'others' — 지금 이 기기는 그대로)
 async function updatePassword(password) {
   var result = await sb.auth.updateUser({ password: password });
   if (result.error) throw result.error;
+  try {
+    var r2 = await sb.auth.signOut({ scope: 'others' });
+    if (r2 && r2.error) console.warn('sign out other devices failed', r2.error);
+  } catch (e) { console.warn('sign out other devices failed', e); }
 }
 
-// 로그아웃
-async function signOut() {
-  var result = await sb.auth.signOut();
+// 로그아웃 (이 기기만) — scope 'global' 이면 모든 기기에서 (내 정보의 "모든 기기에서 로그아웃")
+async function signOut(scope) {
+  var result = await sb.auth.signOut(scope ? { scope: scope } : undefined);
+  clearStaffSessionMode();
   if (result.error) throw result.error;
 }
 

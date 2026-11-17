@@ -66,6 +66,43 @@ function cncApplyAdminMe(me) {
   APP.isSalesRep = active && !!me.salesRep;
 }
 
+// ----------------------------------------------------------------
+// 권한 다시 확인 (직원 계정의 열려 있는 화면)
+// ----------------------------------------------------------------
+// 대표가 직원을 [정지] 하거나 역할을 바꾸면, 그 직원의 열려 있는 화면도 바로 막혀야 해요.
+//   부르는 곳: session.js (1분마다 · 창으로 돌아왔을 때) · router.js (화면을 옮길 때, 5초에 한 번까지) ·
+//              cnc-core.js cncError (서버가 NOT_ADMIN · NOT_SALES 로 거절했을 때 = 권한 함수가 false)
+//   바뀌었으면 APP 을 고치고 헤더 · 화면을 다시 그려요 → 직원 계정이 정지 · 대기면 router.js 가 정지 안내 화면(PageStaffGate)으로
+//   네트워크 오류면 아무것도 바꾸지 않아요 (잠깐 끊긴 것으로 권한을 잃지 않게)
+var _staffRecheck = { busy: false, last: 0 };
+async function cncRecheckStaffAccess(throttled) {
+  if (!window.APP || !APP.user || !APP.adminRole) return false;
+  var now = Date.now();
+  if (_staffRecheck.busy) return false;
+  if (throttled && now - _staffRecheck.last < 5000) return false;
+  _staffRecheck.busy = true;
+  _staffRecheck.last = now;
+  try {
+    var result = await sb.rpc('admin_me');
+    if (result.error) return false;
+    var d = result.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+    var me = (d && typeof d === 'object' && TEAM_ROLES.indexOf(d.role) !== -1)
+      ? { role: d.role, name: d.name || '', salesRep: !!d.sales_rep, status: d.status || 'active' } : null;
+    var before = [APP.adminRole, APP.adminStatus || 'active', !!APP.isSalesRep].join('|');
+    var after = me ? [me.role, me.status, me.status === 'active' && me.salesRep].join('|') : '||false';
+    if (before === after) return false;
+    cncApplyAdminMe(me);
+    if (typeof renderLayout === 'function') renderLayout();
+    if (typeof renderRoute === 'function') renderRoute();
+    return true;
+  } catch (e) {
+    return false;
+  } finally {
+    _staffRecheck.busy = false;
+  }
+}
+
 // 관리자 화면(#/admin)에 들어갈 수 있는지 (관리 팀 또는 영업 담당)
 function cncCanOpenAdmin() {
   return !!(window.APP && (APP.isAdmin || APP.isSalesRep));

@@ -113,6 +113,9 @@ async function enterApp() {
     var loaded = await Promise.all([getProfile(), cncLoadAdminMe(), cncGetLegalVersions(true).catch(function () { return null; })]);
     APP.profile = loaded[0];
     cncApplyAdminMe(loaded[1]);   // adminRole · adminName · isAdmin(관리 팀) · isSalesRep(영업 담당)
+    // 직원 계정(역할이 있는 계정 — owner · manager · staff · sales): 로그인을 창을 닫으면 사라지는 저장소로 옮기고 "자리 비움 30분" 방식으로 (session.js)
+    //   고객 계정은 예전 그대로 (1시간 + 연장, localStorage)
+    if (APP.adminRole && typeof switchToStaffSession === 'function') switchToStaffSession();
     APP.legal = loaded[2];
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
 
@@ -188,6 +191,25 @@ function goStartPage() {
   window.__guideCheckPending = true;   // enterApp 에서 사용자 id 를 안 뒤에 가이드를 열지 정해요
 }
 
+// 로그인 화면 바로 열기 (직원 로그아웃 · 자리 비움 뒤 — session.js endSession)
+function showSignInScreen() {
+  if (typeof resetAuthForms === 'function') resetAuthForms();
+  switchTab('signin');
+  showScreen('auth');
+}
+
+// 내 정보의 "모든 기기에서 로그아웃": 확인 → 이 기기 + 다른 기기(휴대폰 · 다른 컴퓨터)의 로그인을 모두 끊어요 (Supabase signOut scope 'global')
+async function handleSignOutEverywhere() {
+  var ok = await uiConfirm({
+    title: t('signout_all_title'),
+    message: t('signout_all_confirm'),
+    okLabel: t('signout_all_btn'),
+    cancelLabel: t('btn_cancel'),
+    danger: true
+  });
+  if (ok) endSession('global');
+}
+
 // 헤더의 Sign Out 버튼 → 확인 모달 (세션 만료로 인한 자동 로그아웃은 확인 없이 바로)
 async function handleSignOut() {
   closeHeaderMenu();
@@ -211,12 +233,19 @@ function onSessionEnded() {
   if (window.LineConnect) LineConnect.reset();          // LINE 자동 확인 멈춤 + 연결 코드 지우기
   var modals = document.getElementById('modal-root');
   if (modals) modals.innerHTML = '';
+  // 화면에 남은 내용(고객 이름 · 주문 · 금액 등)을 바로 지워요 — 로그인 화면 뒤에 숨어 있다가 다시 보이지 않게
+  ['app-main', 'app-header', 'app-tabbar'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  if (typeof hideSessionModal === 'function') hideSessionModal();
   APP.user = null;
   APP.profile = null;
   APP.balance = null;
   APP.isAdmin = false;
   APP.isSalesRep = false;
   APP.adminRole = null;
+  APP.adminStatus = null;
   APP.adminName = '';
   APP.needsConsent = false;
   APP.legal = null;

@@ -81,6 +81,7 @@ var PageJoin = {
           '<p class="error-text" id="join-error" role="alert">' + (e._form ? escHtml(e._form) : '') + '</p>' +
           '<button type="submit" class="btn btn-primary btn-lg btn-block" id="join-btn"' + (this.busy ? ' disabled' : '') + '>' +
             escHtml(this.busy ? t('loading') : t('join_submit')) + '</button>' +
+          '<p class="auth-public-note join-public-note">' + escHtml(t('public_pc_note')) + '</p>' +   // 직원 계정: 공용 컴퓨터 안내
         '</form>';
     }
     html += '</section></div>';

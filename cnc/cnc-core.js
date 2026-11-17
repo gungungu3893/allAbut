@@ -122,6 +122,10 @@ function cncError(code, extra) {
   var e = new Error(code);
   e.code = code;
   if (extra) for (var k in extra) e[k] = extra[k];
+  // 서버가 "권한 없음"으로 거절했으면 (정지 · 역할 변경일 수 있어요) 바로 권한을 다시 확인 → 정지 안내 화면 (cnc/cnc-team.js)
+  if ((code === 'NOT_ADMIN' || code === 'NOT_SALES') && typeof cncRecheckStaffAccess === 'function') {
+    setTimeout(function () { cncRecheckStaffAccess(false); }, 0);
+  }
   return e;
 }
 

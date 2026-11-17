@@ -161,6 +161,8 @@ function renderRoute() {
   cleanExternalQuery();
   if (!window.APP || !APP.user) { renderPublicRoute(); return; }
   publicPageActive = false;
+  // 직원 계정: 화면을 옮길 때마다 권한 다시 확인 (5초에 한 번까지 — 대표가 정지했으면 바로 정지 안내 화면으로, cnc/cnc-team.js)
+  if (APP.adminRole && typeof cncRecheckStaffAccess === 'function') cncRecheckStaffAccess(true);
   var main = document.getElementById('app-main');
   if (!main) return;
 

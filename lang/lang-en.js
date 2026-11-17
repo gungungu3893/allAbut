@@ -1977,6 +1977,20 @@ LANG.en = {
   mywork_month: 'This month',
   mywork_older: 'Earlier',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: 'On a shared computer, always sign out when you finish.',
+  session_idle_title: 'Are you still there?',
+  session_idle_text: 'No activity for a while. You will be signed out in',
+  session_keep_using: 'Keep using',
+  session_idle_left: 'Signs out after 30 minutes without activity',
+  session_idle_signed_out: 'You were signed out after 30 minutes without activity. Please sign in again.',
+  signout_all_title: 'Sign out on all devices',
+  signout_all_desc: 'Signs you out here and on every other phone or computer where you are still signed in.',
+  signout_all_btn: 'Sign out on all devices',
+  signout_all_confirm: 'Sign out on all devices, including this one? You will need to sign in again everywhere.',
+  signout_all_done: 'You have been signed out on all devices.',
+  password_change_signs_out_others: 'When you change your password, you are signed out on all other devices.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -1974,6 +1974,20 @@ LANG.tr = {
   mywork_month: 'Bu ay',
   mywork_older: 'Daha önce',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: 'Ortak bir bilgisayarda işiniz bitince mutlaka oturumu kapatın.',
+  session_idle_title: 'Hâlâ orada mısınız?',
+  session_idle_text: 'Bir süredir işlem yapılmadı. Oturumunuzun kapanmasına kalan süre:',
+  session_keep_using: 'Kullanmaya devam et',
+  session_idle_left: '30 dakika işlem yapılmazsa oturum kapanır',
+  session_idle_signed_out: '30 dakika işlem yapılmadığı için oturumunuz kapatıldı. Lütfen tekrar giriş yapın.',
+  signout_all_title: 'Tüm cihazlarda oturumu kapat',
+  signout_all_desc: 'Bu cihazda ve oturumunuzun hâlâ açık olduğu diğer tüm telefon ve bilgisayarlarda oturumu kapatır.',
+  signout_all_btn: 'Tüm cihazlarda oturumu kapat',
+  signout_all_confirm: 'Bu cihaz dahil tüm cihazlarda oturum kapatılsın mı? Her yerde yeniden giriş yapmanız gerekecek.',
+  signout_all_done: 'Tüm cihazlarda oturumunuz kapatıldı.',
+  password_change_signs_out_others: 'Şifrenizi değiştirdiğinizde diğer tüm cihazlarda oturumunuz kapatılır.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

@@ -83,8 +83,17 @@ var PageProfile = {
           '<div class="field"><label class="field-label" for="ps-pw2">' + escHtml(t('password_confirm_label')) + '</label>' +
             '<input class="input' + (e.pw2 ? ' invalid' : '') + '" id="ps-pw2" type="password" minlength="6" autocomplete="new-password">' + uiFieldError(e.pw2) + '</div>' +
           '<div class="span-2 form-actions"><button type="submit" class="btn btn-outline btn-lg">' + escHtml(t('staff_change_password')) + '</button></div>' +
-        '</form></section>' +
+        '</form>' +
+        '<p class="field-help">' + escHtml(t('password_change_signs_out_others')) + '</p></section>' +
+        this.signOutAllHtml() +
       '</div>';
+  },
+
+  // "모든 기기에서 로그아웃" (고객 · 직원 공통) — 휴대폰 · 다른 컴퓨터에 남아 있는 로그인까지 끊어요 (app.js handleSignOutEverywhere)
+  signOutAllHtml: function () {
+    return '<section class="card signout-all-card"><h2 class="card-title">' + escHtml(t('signout_all_title')) + '</h2>' +
+      '<p class="card-desc">' + escHtml(t('signout_all_desc')) + '</p>' +
+      '<button type="button" class="btn btn-outline btn-lg btn-danger-text" onclick="handleSignOutEverywhere()">' + escHtml(t('signout_all_btn')) + '</button></section>';
   },
 
   saveStaff: async function (event) {
@@ -244,6 +253,7 @@ var PageProfile = {
         '<section class="card reg-card" id="profile-reg"></section>' +
         '<section class="card docs-card" id="profile-docs" hidden></section>' +
         '<section class="card line-card" id="profile-line"></section>' +
+        this.signOutAllHtml() +
         '<section class="card delete-card" id="profile-delete"></section>' +
       '</div>';
     this.phoneState = null;

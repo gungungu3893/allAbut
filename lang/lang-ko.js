@@ -1975,6 +1975,20 @@ LANG.ko = {
   mywork_month: '이번 달',
   mywork_older: '그 전',
 
+  // ----- 로그인 유지: 직원 자리 비움 · 모든 기기에서 로그아웃 -----
+  public_pc_note: '공용 컴퓨터에서는 사용 후 꼭 로그아웃하세요',
+  session_idle_title: '아직 사용 중이세요?',
+  session_idle_text: '한동안 활동이 없어 자동으로 로그아웃돼요. 남은 시간',
+  session_keep_using: '계속 사용',
+  session_idle_left: '30분 동안 활동이 없으면 로그아웃돼요',
+  session_idle_signed_out: '30분 동안 활동이 없어 로그아웃되었어요. 다시 로그인해 주세요.',
+  signout_all_title: '모든 기기에서 로그아웃',
+  signout_all_desc: '이 기기와 로그인되어 있는 다른 모든 휴대폰·컴퓨터에서 로그아웃돼요.',
+  signout_all_btn: '모든 기기에서 로그아웃',
+  signout_all_confirm: '이 기기를 포함한 모든 기기에서 로그아웃할까요? 모든 곳에서 다시 로그인해야 해요.',
+  signout_all_done: '모든 기기에서 로그아웃되었어요.',
+  password_change_signs_out_others: '비밀번호를 바꾸면 다른 모든 기기에서 로그아웃돼요.',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
