@@ -407,6 +407,8 @@ var PageOrders = {
           (required ? ' <span class="required">*</span>' : ' <span class="optional">(' + escHtml(t('optional')) + ')</span>') + '</label>' +
         (type === 'date'
           ? uiDateField({ id: 'e-' + name, value: value || '', min: (value && value < cncToday()) ? value : cncToday() })
+          : type === 'tel'
+          ? uiPhoneField({ id: 'e-' + name, value: value || '', country: cncProfileCountry(APP.profile) })   // 국가번호 + 뒷번호 (공통 부품)
           : '<input class="input" id="e-' + name + '" type="' + (type || 'text') + '" maxlength="' + (name === 'patient' ? 50 : 200) + '" value="' + escHtml(value || '') + '">') +
         '<div class="err-slot" data-err="' + name + '"></div>' +
         '</div>';
@@ -431,7 +433,8 @@ var PageOrders = {
             var input = el.querySelector('#e-' + n);
             return input.classList.contains('date-field') ? (input.getAttribute('data-value') || '') : input.value.trim();
           };
-          var f = { patient: v('patient'), clinic: v('clinic'), addr: v('addr'), phone: v('phone'), line_id: v('line_id') };
+          // 전화: 국가번호 + 뒷번호 → 내 치과 국가 규칙으로 정규화 (태국 번호 = 0812345678, 그 밖 = +국가번호…)
+          var f = { patient: v('patient'), clinic: v('clinic'), addr: v('addr'), phone: uiPhoneValue('e-phone', cncProfileCountry(APP.profile)), line_id: v('line_id') };
           var errs = {};
           if (!f.patient) errs.patient = 'err_patient_required';
           ['clinic', 'addr', 'phone'].forEach(function (k) { if (!f[k]) errs[k] = 'err_required'; });
@@ -441,6 +444,7 @@ var PageOrders = {
             slots[i].innerHTML = uiFieldError(errs[k]);
             el.querySelector('#e-' + k).classList.toggle('invalid', !!errs[k]);
           }
+          uiPhoneSetInvalid('e-phone', !!errs.phone);
           if (Object.keys(errs).length) return;
           btn.disabled = true;
           close();

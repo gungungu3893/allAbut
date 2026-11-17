@@ -266,7 +266,8 @@ function clearAuthMessages() {
 
 // 가입 폼 칸 아래 빨간 글씨 (errors: { field: '번역 키' })
 // ===== 회원가입: 치과 소재 국가 (sql/021) =====
-// 태국 = Tax ID 13자리 필수 · 태국 전화 / 그 밖 = "Tax / VAT ID (optional)" · 국가번호(+) 포함 전화
+// 태국 = Tax ID 13자리 필수 / 그 밖 = "Tax / VAT ID (optional)"
+// 전화번호 칸 = 공통 부품 uiPhoneField (국가번호 + 뒷번호, 국가번호는 고른 국가를 따라가요)
 function signupCountry() {
   var el = document.getElementById('signup-country');
   return cncNormCountry(el && el.value ? el.value : 'TH');
@@ -276,8 +277,11 @@ function fillSignupCountries() {
   if (!el) return;
   var cur = el.value || 'TH';
   el.innerHTML = cncCountryOptions(cur, currentLang).map(function (c) {
-    return '<option value="' + c.code + '"' + (c.code === cur ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+    return '<option value="' + c.code + '"' + (c.code === cur ? ' selected' : '') + '>' + escHtml(c.label) + '</option>';
   }).join('');
+  // 전화번호 칸 (언어가 바뀌어 다시 그려도 입력하던 번호 · 고른 국가번호는 그대로)
+  var slot = document.getElementById('signup-phone-slot');
+  if (slot) slot.innerHTML = uiPhoneField({ id: 'signup-phone', value: '', country: cur, state: uiPhoneState('signup-phone') });
   onSignupCountryChange();
 }
 function onSignupCountryChange() {
@@ -288,10 +292,7 @@ function onSignupCountryChange() {
   if (req) req.hidden = !th;
   var tax = document.getElementById('signup-tax_id');
   if (tax) { tax.setAttribute('inputmode', th ? 'numeric' : 'text'); tax.maxLength = th ? 20 : 30; }
-  var hint = document.getElementById('signup-phone-hint');
-  if (hint) { hint.hidden = th; hint.textContent = th ? '' : t('phone_intl_hint'); }
-  var phone = document.getElementById('signup-phone');
-  if (phone) phone.placeholder = th ? '' : '+82 10 1234 5678';
+  uiPhoneSetCountry('signup-phone', signupCountry());   // 국가번호가 국가를 따라가요 (뒷번호는 그대로)
 }
 window.addEventListener('langchange', fillSignupCountries);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillSignupCountries);
@@ -305,6 +306,7 @@ function setSignupFieldErrors(errors) {
     var input = slots[i].parentNode.querySelector('input');
     if (input) input.classList.toggle('invalid', !!key);
   }
+  uiPhoneSetInvalid('signup-phone', !!errors.phone);
   var first = document.querySelector('#form-signup input.invalid');
   if (first) first.focus();
 }
@@ -386,7 +388,7 @@ async function handleSignUp(event) {
   var password = document.getElementById('signup-password').value;
   var password2 = document.getElementById('signup-password2').value;
   var fields = {
-    full_name: v('signup-full_name'), phone: v('signup-phone'), clinic_name: v('signup-clinic'),
+    full_name: v('signup-full_name'), phone: uiPhoneRaw('signup-phone'), clinic_name: v('signup-clinic'),
     tax_id: v('signup-tax_id'), address: v('signup-address'), country: signupCountry()
   };
   var button = document.getElementById('signup-btn');
@@ -419,7 +421,7 @@ async function handleSignUp(event) {
     var versions = await cncGetLegalVersions(true).catch(function () { return null; });
     var legal = versions && versions.terms && versions.privacy ? { terms: versions.terms.version, privacy: versions.privacy.version } : null;
     var data = await signUp({
-      email: email, password: password, fullName: fields.full_name, phone: fields.phone, clinicName: fields.clinic_name,
+      email: email, password: password, fullName: fields.full_name, phone: cncNormPhone(fields.phone, fields.country), clinicName: fields.clinic_name,
       taxId: fields.tax_id, address: fields.address, country: fields.country, legal: legal, captchaToken: tsToken('signup')
     });
 

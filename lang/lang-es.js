@@ -1632,7 +1632,6 @@ LANG.es = {
   country_filter_th: 'Tailandia',
   country_filter_overseas: 'Extranjero',
   phone_intl_hint: 'Escribe el número con el código de país, empezando por + (por ejemplo +82 10 1234 5678).',
-  err_phone_intl: 'Escribe el número de teléfono con el código de país, empezando por + (8–15 dígitos).',
   tax_vat_optional_label: 'Tax / VAT ID (opcional)',
   tax_vat_optional_help: 'Si tu clínica tiene un número fiscal o de VAT, escríbelo. Aparecerá en tus recibos. Letras, números y guiones, de 5 a 30 caracteres.',
   err_tax_id_intl: 'Usa de 5 a 30 letras, números o guiones.',
@@ -1761,6 +1760,11 @@ LANG.es = {
   err_no_docs: 'Seleccione al menos un documento.',
   err_invalid_month: 'Elija un mes válido.',
   err_credit_split_mismatch: 'No se pudo calcular correctamente el saldo de créditos. Actualice la página e inténtelo de nuevo. Si sigue ocurriendo, contáctenos.',
+
+  // ----- 전화번호 칸: 국가번호 + 뒷번호 (ui/layout.js uiPhoneField) -----
+  phone_dial_label: 'Código de país (elegir otro código de país)',
+  phone_placeholder: 'número de teléfono',
+  err_phone_intl: 'Revise el número de teléfono. Con el código de país debe tener de 8 a 15 dígitos.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

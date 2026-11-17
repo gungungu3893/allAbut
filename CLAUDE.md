@@ -170,7 +170,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -182,6 +182,7 @@
   **015 를 다시 실행하면 016 도 다시** (주문 기준 함수 · 칸 · 트리거가 다시 생겨서)
   **021 (세금계산서) — 010 을 다시 실행하면 021 도 다시** (identity 트리거 · `_profile_complete` · `check_signup_available` · `request_clinic_change` · `admin_review_clinic_change` 가 국가를 모르는 모양으로),
   **018 을 다시 실행하면 021 도 다시** (`create_topup_request` · `_credit_refund_quote` 가 해외 VAT · 충전별 VAT 를 모르는 모양으로). 그래서 018 을 다시 했으면 019 → 020 → 021 순서로
+  **022 (전화 국가번호) — 021 을 다시 실행하면 022 도 다시** (`_norm_phone(p, country)` · `_valid_phone(p, country)` 가 태국 치과의 해외 번호를 모르는 모양으로). 010 → 021 → 022 순서
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
 - `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
@@ -252,7 +253,15 @@
 
 ## 회원 필수 정보 · 중복 · 신규 가입 이벤트 · Turnstile (sql/010_signup_identity_campaign.sql)
 - **필수 5개**: 본명(`profiles.full_name`) · 전화 · 치과명 · 치과 Tax ID(13자리 + 태국 체크섬) · 치과 주소. 회원가입 폼은 칸마다 빨간 글씨(`[data-su-err]`), 닉네임 칸 없음(닉네임 = 본명)
-- **정규화는 SQL 과 JS 가 똑같이** (`cnc/cnc-identity.js` ↔ `_norm_phone` / `_norm_tax_id` / `_valid_tax_id`): 전화 = 숫자만 + `+66`/`66` → `0`, Tax ID = 숫자만, 체크섬 = (11 − Σ d[i]·(13−i) % 11) % 10. **한쪽을 바꾸면 다른 쪽도**
+- **정규화는 SQL 과 JS 가 똑같이** (`cnc/cnc-identity.js` ↔ `_norm_phone` / `_norm_tax_id` / `_valid_tax_id`): Tax ID = 숫자만, 체크섬 = (11 − Σ d[i]·(13−i) % 11) % 10. **한쪽을 바꾸면 다른 쪽도**
+  전화 = 치과 국가에 따라 (`_norm_phone(p, country)` ↔ `cncNormPhone(v, country)`, sql/021 + 022):
+  태국 치과 + 태국 번호(+66 · 0066 · 66 · 0…) → `0812345678` / 태국 치과 + 해외 번호 → `+821012345678` / 해외 치과 → `+국가번호…`(+66 도 그대로). 길이: 국내 9~15자리, 국제 + 뒤 8~15자리
+- **전화번호 칸 = 공통 부품 `uiPhoneField`** (ui/layout.js — 회원가입 · `#/complete` · 내 정보 · 등록 정보 변경 요청 · 새 주문 배송 연락처 · 주문 수정, 새 전화 입력도 이것만):
+  왼쪽 회색 "[국기] +66 ▾" (직접 입력 안 됨, 누르면 숨은 `<select>` 로 다른 국가번호 — "Thailand (+66)") + 오른쪽 뒷번호(`inputmode="tel"`, 예시 TH "81 234 5678" / 그 밖 `phone_placeholder`).
+  국가번호는 **치과 국가를 따라가요** (`uiPhoneSetCountry`, 뒷번호는 그대로). 사람이 다른 국가번호를 고르면 그때부터 안 따라가고(`data-follow="0"`), 치과 국가 번호를 다시 고르면 다시 따라가요.
+  붙여넣기(+66812345678 · 0066… · 0812345678)는 국가번호 · 앞의 0 을 정리 (`cncParsePhoneInput`, 이탈리아 +39 만 0 유지). 칸 전체 `dir="ltr"` (ar · fa 에서도 국가번호가 앞).
+  읽기: `uiPhoneRaw(id)` = '+66812345678'(검사용) / `uiPhoneValue(id, 치과 국가)` = 저장값(정규화) / 다시 그리기 전 `uiPhoneState(id)` → `uiPhoneField({ state })`. 저장된 번호는 `cncSplitPhone` 으로 두 칸에.
+  국가 · 국가번호 표는 `COUNTRY_DIAL` (cnc/cnc-identity.js 한 곳, 모든 나라 — 국가 선택 목록도 이 표). 같은 번호를 여러 나라가 쓰면 `DIAL_PRIMARY` (+1 → US, +7 → RU …, 치과 국가가 먼저)
 - 서버 트리거 `_trg_profile_identity` 가 다시 검사: `PHONE_TAKEN` / `PHONE_INVALID` / `TAX_ID_TAKEN` / `TAX_ID_INVALID` / `EMAIL_DISPOSABLE` (일회용 메일 `blocked_email_domains` ↔ `DISPOSABLE_EMAIL_DOMAINS`)
 - 중복: 정규화 전화 = 유니크(`profiles_phone_norm_unique`, 기존 중복이 있으면 목록만 출력하고 인덱스는 건너뜀). Tax ID 는 `payment_settings.tax_id_policy` 'block'(기본) / 'allow'(가입 허용, 이벤트는 Tax ID 당 1번). 이름·치과명·주소는 의심 표시만
 - 가입 전 확인 `check_signup_available(phone, tax_id, email)` (로그인 전, 겹침 여부 true/false 만 → 다른 사람 정보는 안 보여요)
@@ -347,7 +356,7 @@
 ## 세금계산서 · 영수증 · 치과 소재 국가 (sql/021_tax_invoices.sql, 설정 안내: TAX_SETUP.md)
 - **국가**: `profiles.country`(ISO 2글자, 기본 'TH') + `reg_country`(등록 정보가 잠길 때 같이 정해지고 잠김, 트리거 `trg_profile_country`). 바꾸려면 등록 정보 변경 요청(`clinic_change_requests.country`) → 관리자 승인.
   예전 계정 = 'TH'. 가입 · `#/complete` 에 "치과 소재 국가" 선택 (태국 맨 위, 이름은 `Intl.DisplayNames` 로 지금 언어 — `cncCountryOptions`)
-  - 태국 아님: Tax ID 선택("Tax / VAT ID (optional)", 영문 · 숫자 · 하이픈 5~30, 있을 때만 중복 검사), 전화는 국제 형식(+ 로 시작 · 8~15자리, 00 → +), 필수 정보에서 Tax ID 빠짐
+  - 태국 아님: Tax ID 선택("Tax / VAT ID (optional)", 영문 · 숫자 · 하이픈 5~30, 있을 때만 중복 검사), 전화는 국제 형식(국가번호 칸이 자동으로 붙여요 — 아래 "전화번호 칸"), 필수 정보에서 Tax ID 빠짐
   - 태국: 지금 규칙 그대로 (13자리 체크섬 · +66 → 0). **SQL `_norm_phone(p, country)` · `_norm_tax_id(p, country)` 와 JS `cncNormPhone(v, country)` · `cncNormTaxId(v, country)` 는 같은 규칙** (하나를 고치면 둘 다)
   - 관리자 Customers: 국가 칸 + 전체 / 태국 / 해외 필터 (의심 배지 규칙은 그대로)
 - **문서 종류는 승인 시점의 `reg_country` 로만**: TH → 세금계산서(`invoice`, IV) / 그 밖 → 영수증(`receipt`, RC). 현금 환불 → 크레딧 노트(`credit_note`, CN) / 환불 영수증(`receipt_refund`, RF)
@@ -403,7 +412,8 @@
 - `ui/tax-doc.js` — A4 출력 (`TaxDoc.open` 원본/사본/둘 다/확인용 · `TaxDoc.labels` 주소 라벨)
 - `ui/profile-docs.js` — 내 정보 "🧾 세금계산서 · 영수증" 섹션 (`ProfileDocs.mount`)
 - `ui/page-admin-tax.js` — 관리자 "세금계산서" 탭 + 충전 상세의 문서 줄 (`PageAdmin` 에 덧붙임)
-- 국가 공통 (sql/021, cnc/cnc-identity.js): `COUNTRY_CODES` · `cncNormCountry` · `cncIsThai` · `cncCountryName` · `cncCountryOptions` · `cncProfileCountry` · `cncNormBranch` · `cncValidBranch`
+- 국가 공통 (sql/021, cnc/cnc-identity.js): `COUNTRY_DIAL`(국가번호 표) · `COUNTRY_CODES` · `cncNormCountry` · `cncIsThai` · `cncCountryName` · `cncCountryOptions`(label "Thailand (+66)") · `cncProfileCountry` · `cncNormBranch` · `cncValidBranch`
+- 전화번호 칸 (sql/022): 로직 `cncDialCode` · `cncCountryFlag` · `cncDialCountry` · `cncParsePhoneInput` · `cncSplitPhone` · `cncComposePhone` (cnc/cnc-identity.js), 화면 `uiPhoneField` · `uiPhoneRaw` · `uiPhoneValue` · `uiPhoneState` · `uiPhoneSetCountry` · `uiPhoneSetInvalid` (ui/layout.js)
 - 상품 종류 공통 (sql/018): 로직 `CNC_PRODUCTS` · `cncProductOf` · `cncProductCounts` · `cncOrderProductCounts` · `cncPackagesFor` · `cncHasProducts` (cnc/cnc-core.js),
   화면 `uiProductName` · `uiProductBadge` · `uiProductCountsHtml` · `uiProductCreditsHtml` · `cncProductCredits` · `cncShowCrownSet` (ui/layout.js)
 - `ui/logo-intro.js` — 랜딩 큰 로고(`.logo-hero`) 불꽃 인트로 (페이지를 열 때마다 1번 · 새로고침 포함, `LogoIntro.maybePlay()` / `stop()`)

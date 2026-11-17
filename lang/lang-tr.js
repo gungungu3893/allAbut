@@ -1632,7 +1632,6 @@ LANG.tr = {
   country_filter_th: 'Tayland',
   country_filter_overseas: 'Yurt dışı',
   phone_intl_hint: 'Numarayı ülke koduyla, + ile başlayarak girin (örneğin +82 10 1234 5678).',
-  err_phone_intl: 'Telefon numarasını ülke koduyla, + ile başlayarak girin (8–15 rakam).',
   tax_vat_optional_label: 'Tax / VAT ID (isteğe bağlı)',
   tax_vat_optional_help: 'Kliniğinizin vergi veya VAT numarası varsa girin. Makbuzlarınıza yazdırılır. Harf, rakam ve kısa çizgi; 5–30 karakter.',
   err_tax_id_intl: '5–30 harf, rakam veya kısa çizgi kullanın.',
@@ -1761,6 +1760,11 @@ LANG.tr = {
   err_no_docs: 'Lütfen en az bir belge seçin.',
   err_invalid_month: 'Lütfen geçerli bir ay seçin.',
   err_credit_split_mismatch: 'Kredi bakiyesi doğru hesaplanamadı. Lütfen sayfayı yenileyip tekrar deneyin. Devam ederse bize ulaşın.',
+
+  // ----- 전화번호 칸: 국가번호 + 뒷번호 (ui/layout.js uiPhoneField) -----
+  phone_dial_label: 'Ülke kodu (başka bir ülke kodu seçin)',
+  phone_placeholder: 'telefon numarası',
+  err_phone_intl: 'Lütfen telefon numarasını kontrol edin. Ülke koduyla birlikte 8–15 haneli olmalıdır.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

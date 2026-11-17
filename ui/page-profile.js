@@ -70,6 +70,8 @@ var PageProfile = {
     this.drawCredits();
   },
 
+  phoneState: null,   // 다시 그릴 때 전화번호 칸 상태 (uiPhoneState) — 한 번 쓰고 비워요
+
   draw: function () {
     if (!this.main) return;
     var p = APP.profile || {};
@@ -112,7 +114,7 @@ var PageProfile = {
         countryHtml = '<div class="field"><label class="field-label" for="p-country">' + escHtml(t('country_label')) + '</label>' +
           '<select class="input" id="p-country" onchange="PageProfile.onCountry()">' +
           cncCountryOptions(country, currentLang).map(function (c) {
-            return '<option value="' + c.code + '"' + (c.code === country ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+            return '<option value="' + c.code + '"' + (c.code === country ? ' selected' : '') + '>' + escHtml(c.label) + '</option>';
           }).join('') + '</select></div>';
       }
     }
@@ -133,7 +135,11 @@ var PageProfile = {
               input('clinic_name', 'clinic_name', p.clinic_name, { span: true, required: ident }) +
               input('address', 'address_label', p.address, { span: true, required: ident }) +
               countryHtml +
-              input('phone', 'phone_label', p.phone, { type: 'tel', required: ident, help: hasCountry && !thai ? 'phone_intl_hint' : '' }) +
+              // 전화: 국가번호 + 뒷번호 (공통 부품 uiPhoneField — 국가번호는 치과 국가를 따라가요)
+              '<div class="field"><label class="field-label" for="p-phone">' + escHtml(t('phone_label')) +
+                (ident ? '' : ' <span class="optional">(' + escHtml(t('optional')) + ')</span>') + '</label>' +
+                uiPhoneField({ id: 'p-phone', value: p.phone, country: country, invalid: !!e.phone, state: this.phoneState }) +
+                uiFieldError(e.phone) + '</div>' +
               taxHtml +
               '<div class="field">' +
                 '<label class="field-label" for="p-lang">' + escHtml(t('language')) + '</label>' +
@@ -154,6 +160,7 @@ var PageProfile = {
         '<section class="card line-card" id="profile-line"></section>' +
         '<section class="card delete-card" id="profile-delete"></section>' +
       '</div>';
+    this.phoneState = null;
     this.drawCredits();
     this.drawReg();
     if (typeof ProfileDocs !== 'undefined') ProfileDocs.mount(document.getElementById('profile-docs'));
@@ -164,7 +171,8 @@ var PageProfile = {
   // 국가를 바꾸면 (아직 잠기지 않았을 때만) 입력하던 값을 남긴 채 라벨 · 규칙만 다시 그려요
   onCountry: function () {
     var v = function (id) { var el = document.getElementById('p-' + id); return el ? el.value.trim() : undefined; };
-    var keep = { clinic_name: v('clinic_name'), address: v('address'), phone: v('phone'), country: v('country') };
+    var keep = { clinic_name: v('clinic_name'), address: v('address'), country: v('country') };
+    this.phoneState = uiPhoneState('p-phone');   // 뒷번호 · 고른 국가번호 그대로 (따라가는 중이면 새 국가번호로)
     if (v('tax_id') !== undefined) keep.tax_id = v('tax_id');
     if (v('full_name') !== undefined) keep.full_name = v('full_name');
     this.errors = {};
@@ -238,7 +246,7 @@ var PageProfile = {
     var countryField = !hasCountry ? '' :
       '<div class="field"><label class="field-label" for="rc-country">' + escHtml(t('country_label')) + ' <span class="required">*</span></label>' +
       '<select class="input" id="rc-country">' + cncCountryOptions(curCountry, currentLang).map(function (c) {
-        return '<option value="' + c.code + '"' + (c.code === curCountry ? ' selected' : '') + '>' + escHtml(c.name) + '</option>';
+        return '<option value="' + c.code + '"' + (c.code === curCountry ? ' selected' : '') + '>' + escHtml(c.label) + '</option>';
       }).join('') + '</select>' +
       '<p class="field-help">' + escHtml(t('country_change_help')) + '</p><div class="err-slot" data-rc-err="country"></div></div>';
     var thaiNow = cncIsThai(curCountry);
@@ -247,7 +255,9 @@ var PageProfile = {
       body: '<p class="modal-text">' + escHtml(t('reg_change_text')) + '</p>' +
         (ident ? field('full_name', 'full_name_label', p.full_name) : '') +
         countryField +
-        field('clinic', 'clinic_name', reg.clinic) + field('addr', 'address_label', reg.addr) + field('phone', 'phone_label', reg.phone, 'tel') +
+        field('clinic', 'clinic_name', reg.clinic) + field('addr', 'address_label', reg.addr) +
+        '<div class="field"><label class="field-label" for="rc-phone">' + escHtml(t('phone_label')) + ' <span class="required">*</span></label>' +
+          uiPhoneField({ id: 'rc-phone', value: reg.phone, country: curCountry }) + '<div class="err-slot" data-rc-err="phone"></div></div>' +
         (ident ? field('tax_id', thaiNow ? 'clinic_tax_id_label' : 'tax_vat_optional_label', p.tax_id, 'text', !thaiNow) : '') +
         '<div class="field"><label class="field-label" for="rc-reason">' + escHtml(t('reg_change_reason')) + ' <span class="optional">(' + escHtml(t('optional')) + ')</span></label>' +
         '<textarea class="input textarea" id="rc-reason" rows="2" maxlength="500"></textarea></div>',
@@ -255,7 +265,7 @@ var PageProfile = {
         { label: t('btn_cancel'), kind: 'outline' },
         { label: t('reg_change_submit'), kind: 'primary', onClick: async function (close, btn) {
           var v = function (id) { return modal.el.querySelector('#rc-' + id).value.trim(); };
-          var vals = { clinic: v('clinic'), addr: v('addr'), phone: v('phone') };
+          var vals = { clinic: v('clinic'), addr: v('addr'), phone: uiPhoneRaw('rc-phone') };
           if (ident) { vals.full_name = v('full_name'); vals.tax_id = v('tax_id'); }
           var country = hasCountry ? cncNormCountry(v('country')) : 'TH';
           var thai = cncIsThai(country);
@@ -268,10 +278,11 @@ var PageProfile = {
           Object.keys(vals).forEach(function (k) {
             modal.el.querySelector('[data-rc-err="' + k + '"]').innerHTML = uiFieldError(errs[k]);
           });
+          uiPhoneSetInvalid('rc-phone', !!errs.phone);
           if (Object.keys(errs).length) return;
           btn.disabled = true;
           try {
-            await cncRequestClinicChange(vals.clinic, vals.addr, vals.phone, v('reason'),
+            await cncRequestClinicChange(vals.clinic, vals.addr, cncNormPhone(vals.phone, country), v('reason'),
               ident ? vals.full_name : undefined, ident ? vals.tax_id : undefined, hasCountry ? country : undefined);
             close();
             uiToast(t('reg_change_sent'), 'success');
@@ -289,8 +300,9 @@ var PageProfile = {
         } }
       ]
     });
-    // 국가를 바꾸면 Tax ID 라벨 · 필수 표시가 바뀌어요
+    // 국가를 바꾸면 Tax ID 라벨 · 필수 표시가 바뀌고, 전화 국가번호가 따라가요
     var sel = modal.el.querySelector('#rc-country');
+    if (sel) sel.addEventListener('change', function () { uiPhoneSetCountry('rc-phone', sel.value); });
     if (sel && ident) sel.addEventListener('change', function () {
       var th = cncIsThai(sel.value);
       var lab = modal.el.querySelector('#rc-tax_id-label');
@@ -450,7 +462,7 @@ var PageProfile = {
     var fields = {
       clinic_name: v('clinic_name'),
       address: v('address'),
-      phone: v('phone'),
+      phone: uiPhoneRaw('p-phone'),   // '+66812345678' — 검사 뒤 치과 국가 규칙으로 정규화해서 저장
       lang: document.getElementById('p-lang').value
     };
     // 국가: 아직 잠기지 않았을 때만 입력칸이 있어요 (sql/021)
@@ -475,10 +487,12 @@ var PageProfile = {
       if (fields.tax_id && !/^[0-9A-Za-z\- ]{5,20}$/.test(fields.tax_id)) this.errors.tax_id = 'err_tax_id';
       if (fields.phone && !/^[0-9+\-() ]{6,20}$/.test(fields.phone)) this.errors.phone = 'err_phone';
     }
+    this.phoneState = uiPhoneState('p-phone');   // 다시 그려도 전화번호 칸이 그대로
     if (Object.keys(this.errors).length) {
       this.keepValues(fields);
       return;
     }
+    if (fields.phone) fields.phone = cncNormPhone(fields.phone, country);
 
     this.saving = true;
     this.keepValues(fields);
@@ -501,6 +515,7 @@ var PageProfile = {
       var code = cncErrorCode(err);
       var fieldOf = { PHONE_TAKEN: 'phone', PHONE_INVALID: 'phone', TAX_ID_TAKEN: 'tax_id', TAX_ID_INVALID: 'tax_id' };
       if (fieldOf[code]) this.errors[fieldOf[code]] = uiErrorMessageKey(code, country);   // 칸 아래 빨간 글씨 (ui/page-complete.js)
+      this.phoneState = uiPhoneState('p-phone');
       this.keepValues(fields);
       if (!fieldOf[code]) uiToast(uiErrorMessage(err), 'error');
     }

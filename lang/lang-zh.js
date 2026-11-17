@@ -1632,7 +1632,6 @@ LANG.zh = {
   country_filter_th: '泰国',
   country_filter_overseas: '海外',
   phone_intl_hint: '请输入带国家区号的号码，以 + 开头（例如 +82 10 1234 5678）。',
-  err_phone_intl: '请输入带国家区号的电话号码，以 + 开头（8–15 位数字）。',
   tax_vat_optional_label: 'Tax / VAT ID（选填）',
   tax_vat_optional_help: '如果您的诊所有税号或 VAT 号码，请填写。它会打印在您的收据上。可使用字母、数字和连字符，5–30 个字符。',
   err_tax_id_intl: '请使用 5–30 个字母、数字或连字符。',
@@ -1761,6 +1760,11 @@ LANG.zh = {
   err_no_docs: '请至少选择一份文件。',
   err_invalid_month: '请选择有效的月份。',
   err_credit_split_mismatch: '无法正确计算点数余额。请刷新后重试。如果问题持续，请联系我们。',
+
+  // ----- 전화번호 칸: 국가번호 + 뒷번호 (ui/layout.js uiPhoneField) -----
+  phone_dial_label: '国家区号（选择其他区号）',
+  phone_placeholder: '电话号码',
+  err_phone_intl: '请检查电话号码。包括国家区号应为 8–15 位数字。',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

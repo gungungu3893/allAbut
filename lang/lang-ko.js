@@ -1633,7 +1633,6 @@ LANG.ko = {
   country_filter_th: '태국',
   country_filter_overseas: '해외',
   phone_intl_hint: '국가번호를 포함해 + 로 시작하는 번호를 입력해 주세요 (예: +82 10 1234 5678).',
-  err_phone_intl: '국가번호를 포함해 + 로 시작하는 전화번호를 입력해 주세요 (숫자 8~15자리).',
   tax_vat_optional_label: 'Tax / VAT ID (선택)',
   tax_vat_optional_help: '치과에 세금 · VAT 번호가 있으면 입력해 주세요. 영수증에 들어가요. 영문 · 숫자 · 하이픈 5~30자.',
   err_tax_id_intl: '영문 · 숫자 · 하이픈으로 5~30자를 입력해 주세요.',
@@ -1762,6 +1761,11 @@ LANG.ko = {
   err_no_docs: '문서를 하나 이상 골라 주세요.',
   err_invalid_month: '올바른 달을 골라 주세요.',
   err_credit_split_mismatch: '크레딧 잔액을 바르게 계산하지 못했어요. 새로고침한 뒤 다시 해 주세요. 계속되면 문의해 주세요.',
+
+  // ----- 전화번호 칸: 국가번호 + 뒷번호 (ui/layout.js uiPhoneField) -----
+  phone_dial_label: '국가번호 (다른 국가번호 고르기)',
+  phone_placeholder: '전화번호',
+  err_phone_intl: '전화번호를 확인해 주세요. 국가번호를 포함해 숫자 8~15자리여야 해요.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

@@ -183,8 +183,8 @@
           </div>
           <div class="auth-field">
             <label for="signup-phone"><span data-i18n="phone_label">Phone</span> <span class="required">*</span></label>
-            <input type="tel" id="signup-phone" autocomplete="tel" maxlength="30" inputmode="tel">
-            <p class="auth-hint" id="signup-phone-hint" hidden></p>
+            <!-- 국가번호 + 뒷번호 (ui/layout.js uiPhoneField — app.js fillSignupCountries 가 그려요, 국가번호는 위 국가를 따라가요) -->
+            <div id="signup-phone-slot"><input type="tel" id="signup-phone" autocomplete="tel" maxlength="30" inputmode="tel"></div>
             <p class="auth-field-err" data-su-err="phone" role="alert"></p>
           </div>
           <div class="auth-field">

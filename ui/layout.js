@@ -697,6 +697,142 @@ function uiFieldError(key, params) {
   return '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(tf(key, params)) + '</p>';
 }
 
+// ================================================================
+// 전화번호 칸 (공통 부품) — 왼쪽 "[국기] +66 ▾" (회색, 직접 입력 안 됨) + 오른쪽 뒷번호 입력
+// ================================================================
+// 회원가입 · 필수 정보 입력 · 내 정보 · 등록 정보 변경 요청 · 새 주문 배송 연락처가 모두 이것 하나를 써요.
+//   uiPhoneField({ id, value, country, invalid, inputClass, state, onchange })  → HTML
+//     onchange = 값이 바뀔 때마다 실행할 자바스크립트 글자 (예: "PageNew.setDeliveryPhone()") — 국가번호를 바꿀 때도
+//     value   = 저장된 번호 ('0812345678' / '+821012345678') → cncSplitPhone 으로 두 칸에 나눠 보여줘요
+//     country = 치과 국가 — 국가번호는 기본으로 이 나라를 따라가요 (국가 선택이 바뀌면 uiPhoneSetCountry)
+//   국가번호 표시를 누르면 숨은 <select> 가 열려 다른 국가번호를 고를 수 있어요 (예: 태국 치과인데 해외 번호)
+//     → 그때부터는 국가를 바꿔도 따라가지 않아요 (치과 국가와 같은 번호를 다시 고르면 다시 따라가요)
+//   번호를 통째로 붙여넣으면 (+66812345678 · 0066… · 0812345678) 국가번호 · 앞의 0 을 알아서 정리 (cncParsePhoneInput)
+//   uiPhoneRaw(id)            → '+66812345678' (검사용 — cncValidateIdentity / cncValidPhone 에 그대로)
+//   uiPhoneValue(id, country) → 저장할 값 (cncNormPhone — 태국 치과 + 태국 번호 = 0812345678, 그 밖 = +국가번호…)
+//   RTL(ar · fa) 에서도 국가번호가 번호 앞에 오게 칸 전체가 dir="ltr"
+function uiPhoneField(opts) {
+  opts = opts || {};
+  var id = opts.id;
+  var clinic = cncNormCountry(opts.country || 'TH');
+  var split = cncSplitPhone(opts.value, clinic);
+  // opts.state (uiPhoneState 로 읽어 둔 값): 다시 그려도 뒷번호 · 고른 국가번호 · "국가 따라가기" 가 그대로
+  if (opts.state) split = { country: opts.state.follow ? clinic : opts.state.dial, rest: opts.state.rest };
+  var cur = split.country || clinic;
+  var follow = cur === clinic ? '1' : '0';
+  var hook = opts.onchange ? '; ' + opts.onchange : '';
+  var lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+  var options = cncCountryOptions(cur, lang).map(function (c) {
+    return '<option value="' + c.code + '"' + (c.code === cur ? ' selected' : '') + '>' + escHtml(c.label) + '</option>';
+  }).join('');
+  return '<div class="phone-field' + (opts.invalid ? ' invalid' : '') + '" dir="ltr" id="' + id + '-wrap">' +
+      '<span class="phone-dial">' +
+        '<span class="phone-dial-show" id="' + id + '-dial-show" aria-hidden="true">' + uiPhoneDialText(cur) + '</span>' +
+        '<select class="phone-dial-select" id="' + id + '-dial" aria-label="' + escHtml(t('phone_dial_label')) + '"' +
+          ' data-clinic="' + clinic + '" data-follow="' + follow + '" onchange="uiPhoneDialChange(\'' + id + '\')' + escHtml(hook) + '">' + options + '</select>' +
+      '</span>' +
+      '<input class="' + (opts.inputClass || 'input') + ' phone-rest' + (opts.invalid ? ' invalid' : '') + '" id="' + id + '" type="tel" inputmode="tel" autocomplete="tel-national"' +
+        ' maxlength="20" dir="ltr" placeholder="' + escHtml(uiPhonePlaceholder(cur)) + '" value="' + escHtml(split.rest) + '"' +
+        ' oninput="uiPhoneInput(\'' + id + '\', false)' + escHtml(hook) + '" onchange="uiPhoneInput(\'' + id + '\', true)' + escHtml(hook) + '"' +
+        ' onpaste="setTimeout(function () { uiPhoneInput(\'' + id + '\', true)' + escHtml(hook) + '; }, 0)">' +
+    '</div>';
+}
+
+function uiPhoneDialText(country) {
+  var dial = cncDialCode(country);
+  return '<span class="phone-flag">' + cncCountryFlag(country) + '</span> <span class="mono">+' + escHtml(dial) + '</span> <span class="phone-caret">▾</span>';
+}
+
+// 입력 칸 예시: 태국 "81 234 5678", 그 밖 "phone number" (지금 언어)
+function uiPhonePlaceholder(country) {
+  return cncNormCountry(country) === 'TH' ? '81 234 5678' : t('phone_placeholder');
+}
+
+// 국가번호 표시 · 예시를 지금 고른 나라로
+function _uiPhoneRefresh(id) {
+  var sel = document.getElementById(id + '-dial');
+  if (!sel) return;
+  var show = document.getElementById(id + '-dial-show');
+  if (show) show.innerHTML = uiPhoneDialText(sel.value);
+  var input = document.getElementById(id);
+  if (input) input.placeholder = uiPhonePlaceholder(sel.value);
+}
+
+// 사람이 국가번호를 직접 골랐을 때: 치과 국가와 다르면 그때부터는 국가를 따라가지 않아요
+function uiPhoneDialChange(id) {
+  var sel = document.getElementById(id + '-dial');
+  if (!sel) return;
+  sel.setAttribute('data-follow', sel.value === sel.getAttribute('data-clinic') ? '1' : '0');
+  _uiPhoneRefresh(id);
+}
+
+// 치과 국가 선택이 바뀌었을 때 (따라가는 중이면 국가번호도 바꿔요, 뒷번호는 그대로)
+function uiPhoneSetCountry(id, country) {
+  var sel = document.getElementById(id + '-dial');
+  if (!sel) return;
+  var c = cncNormCountry(country);
+  sel.setAttribute('data-clinic', c);
+  if (sel.getAttribute('data-follow') === '1') {
+    if (!sel.querySelector('option[value="' + c + '"]')) sel.insertAdjacentHTML('beforeend', '<option value="' + c + '">' + escHtml(cncCountryOption(c, currentLang).label) + '</option>');
+    sel.value = c;
+  } else if (sel.value === c) {
+    sel.setAttribute('data-follow', '1');
+  }
+  _uiPhoneRefresh(id);
+}
+
+// 글자 정리: 입력 중에는 + / 00 으로 시작하는 통째 번호만, 붙여넣기 · 칸을 떠날 때는 앞의 0 까지
+function uiPhoneInput(id, full) {
+  var input = document.getElementById(id);
+  var sel = document.getElementById(id + '-dial');
+  if (!input || !sel) return;
+  var v = input.value;
+  var intl = /^\s*(\+|00)/.test(v);
+  if (!full && !(intl && v.replace(/[^0-9]/g, '').length >= 6)) return;
+  var p = cncParsePhoneInput(v, sel.value);
+  if (p.country && p.country !== sel.value) {
+    if (!sel.querySelector('option[value="' + p.country + '"]')) sel.insertAdjacentHTML('beforeend', '<option value="' + p.country + '">' + escHtml(cncCountryOption(p.country, currentLang).label) + '</option>');
+    sel.value = p.country;
+    sel.setAttribute('data-follow', p.country === sel.getAttribute('data-clinic') ? '1' : '0');
+    _uiPhoneRefresh(id);
+  }
+  // 입력 중에는 국가번호가 들어간 통째 번호일 때만, 붙여넣기 · 칸을 떠날 때는 늘 숫자만 남겨요
+  if ((full || intl) && p.rest !== v) input.value = p.rest;
+}
+
+// 지금 칸 상태 { dial, rest, follow } — 화면을 다시 그리기 전에 읽어 두었다가 uiPhoneField({ state }) 로 (칸이 없으면 null)
+function uiPhoneState(id) {
+  var input = document.getElementById(id);
+  var sel = document.getElementById(id + '-dial');
+  if (!input || !sel) return null;
+  return { dial: sel.value, rest: input.value, follow: sel.getAttribute('data-follow') === '1' };
+}
+
+// '+66812345678' (뒷번호가 비면 '')
+function uiPhoneRaw(id) {
+  var input = document.getElementById(id);
+  var sel = document.getElementById(id + '-dial');
+  if (!input) return '';
+  if (!sel) return input.value.trim();
+  // 정리 전에 저장을 눌러도 붙여넣은 국가번호를 읽어요
+  var p = cncParsePhoneInput(input.value, sel.value);
+  return cncComposePhone(p.country || sel.value, p.rest);
+}
+
+// 저장할 값 (치과 국가 규칙으로 정규화)
+function uiPhoneValue(id, country) {
+  var raw = uiPhoneRaw(id);
+  return raw ? cncNormPhone(raw, country) : '';
+}
+
+// 칸 테두리를 빨갛게 (검사 에러)
+function uiPhoneSetInvalid(id, on) {
+  var wrap = document.getElementById(id + '-wrap');
+  var input = document.getElementById(id);
+  if (wrap) wrap.classList.toggle('invalid', !!on);
+  if (input) input.classList.toggle('invalid', !!on);
+}
+
 // 단계 색 (상태 배지 · 관리자 단계 카드 · 진행 줄 공통)
 // 이 표 하나만 고치면 홈 · 내 주문 · 관리자 화면 색이 같이 바뀌어요
 //   fg: 배지 글자, bg: 배지 바탕, accent: 카드 왼쪽 선 · 강조

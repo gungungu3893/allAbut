@@ -1632,7 +1632,6 @@ LANG.vi = {
   country_filter_th: 'Thái Lan',
   country_filter_overseas: 'Nước ngoài',
   phone_intl_hint: 'Nhập số kèm mã quốc gia, bắt đầu bằng + (ví dụ +82 10 1234 5678).',
-  err_phone_intl: 'Nhập số điện thoại kèm mã quốc gia, bắt đầu bằng + (8–15 chữ số).',
   tax_vat_optional_label: 'Tax / VAT ID (không bắt buộc)',
   tax_vat_optional_help: 'Nếu phòng khám có mã số thuế hoặc số VAT, hãy nhập vào. Số này sẽ được in trên biên nhận. Gồm chữ cái, chữ số và dấu gạch ngang, 5–30 ký tự.',
   err_tax_id_intl: 'Dùng 5–30 chữ cái, chữ số hoặc dấu gạch ngang.',
@@ -1761,6 +1760,11 @@ LANG.vi = {
   err_no_docs: 'Vui lòng chọn ít nhất một tài liệu.',
   err_invalid_month: 'Vui lòng chọn một tháng hợp lệ.',
   err_credit_split_mismatch: 'Không thể tính đúng số dư tín dụng. Vui lòng tải lại trang và thử lại. Nếu vẫn tiếp diễn, hãy liên hệ chúng tôi.',
+
+  // ----- 전화번호 칸: 국가번호 + 뒷번호 (ui/layout.js uiPhoneField) -----
+  phone_dial_label: 'Mã quốc gia (chọn mã quốc gia khác)',
+  phone_placeholder: 'số điện thoại',
+  err_phone_intl: 'Vui lòng kiểm tra số điện thoại. Kể cả mã quốc gia phải có 8–15 chữ số.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

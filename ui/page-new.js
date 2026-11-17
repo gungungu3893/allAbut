@@ -843,7 +843,10 @@ var PageNew = {
           '</div>' : '') +
         '<div class="form-grid two">' +
           input('clinic', 'clinic_name', true) +
-          input('phone', 'phone_label', true, 'tel') +
+          // 배송 연락처 전화: 국가번호 + 뒷번호 (공통 부품, 국가번호 기본 = 내 치과 국가)
+          '<div class="field"><label class="field-label" for="f-phone">' + escHtml(t('phone_label')) + ' <span class="required">*</span></label>' +
+            uiPhoneField({ id: 'f-phone', value: d.delivery.phone, country: cncProfileCountry(APP.profile), invalid: !!e.phone, onchange: 'PageNew.setDeliveryPhone()' }) +
+            uiFieldError(e.phone) + '</div>' +
           '<div class="span-2">' + input('addr', 'address_label', true) + '</div>' +
           input('line_id', 'line_id_label', false) +
         '</div>' +
@@ -931,6 +934,14 @@ var PageNew = {
     this.draft.delivery[field] = value;
     this.save();
     this.clearError(field);
+  },
+
+  // 배송 연락처 전화 (국가번호 + 뒷번호 → 내 치과 국가 규칙으로 정규화: 태국 번호 = 0812345678, 그 밖 = +국가번호…)
+  setDeliveryPhone: function () {
+    this.draft.delivery.phone = uiPhoneValue('f-phone', cncProfileCountry(APP.profile));
+    this.save();
+    this.clearError('phone');
+    if (this.draft.delivery.phone) uiPhoneSetInvalid('f-phone', false);
   },
 
   // ================================================================
