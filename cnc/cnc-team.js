@@ -9,6 +9,7 @@
 //   + 'sales' (영업, sql/015) — 위 계층과 별개: 관리자 탭은 하나도 없고 "영업" 메뉴(#/admin/sales)만.
 //     cncHasRole('staff' 이상) 은 sales 에게 false. 팀원 누구나 "영업 담당"을 켤 수 있어요 (APP.isSalesRep)
 //   화면에서 숨기는 것은 편의일 뿐, 실제 보호는 DB 규칙(RLS·함수 안의 역할 확인)이 해요.
+//   sql/023: 상태 status 'active' | 'pending'(대표 확인 전) | 'suspended'(정지) → active 가 아니면 역할이 있어도 권한 없음 (APP.adminStatus)
 
 // 팀 관련 서버 에러 코드 — "USER_NOT_FOUND" 가 "NOT_FOUND" 보다 먼저 찾아지게 맨 앞에 붙여요
 CNC_ERROR_CODES = ['USER_NOT_FOUND', 'ALREADY_MEMBER', 'INVALID_ROLE', 'NOT_MEMBER', 'LAST_OWNER', 'CANNOT_REMOVE_SELF'].concat(CNC_ERROR_CODES);
@@ -20,6 +21,7 @@ var ADMIN_ROLE_RANK = { owner: 3, manager: 2, staff: 1 };   // sales 는 0 → �
 // 지금 사용자가 이 역할 이상인지 (예: cncHasRole('manager'))
 function cncHasRole(min) {
   var role = window.APP && APP.adminRole;
+  if (window.APP && APP.adminStatus && APP.adminStatus !== 'active') return false;   // 확인 대기 · 정지 (sql/023)
   return !!role && (ADMIN_ROLE_RANK[role] || 0) >= (ADMIN_ROLE_RANK[min] || 1);
 }
 
@@ -38,7 +40,9 @@ async function cncLoadAdminMe() {
     if (!result.error) {
       var d = result.data;
       if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
-      if (d && typeof d === 'object' && TEAM_ROLES.indexOf(d.role) !== -1) return { role: d.role, name: d.name || '', salesRep: !!d.sales_rep };
+      if (d && typeof d === 'object' && TEAM_ROLES.indexOf(d.role) !== -1) {
+        return { role: d.role, name: d.name || '', salesRep: !!d.sales_rep, status: d.status || 'active' };   // status: sql/023 (전이면 active)
+      }
       return null;
     }
     if (!cncIsMissingFunction(result.error)) return null;
@@ -52,11 +56,14 @@ async function cncLoadAdminMe() {
 // admin_me 결과를 APP 에 넣기 (로그인 · 내 역할이 바뀌었을 때 같이 써요)
 //   APP.isAdmin    = 관리 팀(owner · manager · staff) → Admin 메뉴
 //   APP.isSalesRep = 켜진 영업 담당 → "영업" 탭 (sales 역할이면 "영업" 메뉴 하나만)
+//   APP.adminStatus = 'active' | 'pending' | 'suspended' (sql/023) — active 가 아니면 isAdmin · isSalesRep 모두 false
 function cncApplyAdminMe(me) {
+  var active = !!me && (me.status || 'active') === 'active';
   APP.adminRole = me ? me.role : null;
   APP.adminName = me ? me.name : '';
-  APP.isAdmin = !!me && ADMIN_ROLES.indexOf(me.role) !== -1;
-  APP.isSalesRep = !!me && !!me.salesRep;
+  APP.adminStatus = me ? (me.status || 'active') : null;
+  APP.isAdmin = active && ADMIN_ROLES.indexOf(me.role) !== -1;
+  APP.isSalesRep = active && !!me.salesRep;
 }
 
 // 관리자 화면(#/admin)에 들어갈 수 있는지 (관리 팀 또는 영업 담당)
@@ -96,7 +103,8 @@ var AUDIT_ACTION_GROUPS = {
   orders: ['order_stage', 'order_shipping', 'order_design', 'order_cancelled', 'order_deadline'],
   topups: ['topup_approved', 'topup_rejected', 'refund_cash'],
   credits: ['credits_added', 'credits_removed'],
-  team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code'],
+  team: ['team_add', 'team_role', 'team_name', 'team_remove', 'group_code',
+    'staff_joined', 'staff_invite_created', 'staff_invite_revoked', 'staff_confirmed', 'staff_suspended', 'staff_reactivated', 'clients_moved', 'staff_converted'],   // 직원 (sql/023)
   sales: ['topup_rep', 'order_rep', 'customer_rep', 'sales_rep_on', 'sales_rep_off', 'commission_rate', 'commission_paid', 'commission_unpaid'],
   settings: ['settings_changed', 'service_mode', 'ad_banner_saved', 'ad_banner_deleted', 'retention_settings', 'retention_run']
 };

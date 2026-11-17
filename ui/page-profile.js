@@ -24,6 +24,8 @@ var PageProfile = {
     this.history = null;
     this.historyError = false;
     this.errors = {};
+    // 직원 계정 (sql/023): 이름 · 전화 · 비밀번호 변경 · 언어만 (크레딧 · 치과 정보 · LINE 고객 연결 · 세금계산서 없음)
+    if (cncIsStaffAccount()) { this.drawStaff(); return; }
     this.draw();
     this.loadHistory();
     this.loadDeletion();
@@ -44,7 +46,90 @@ var PageProfile = {
   },
 
   rerender: function () {
+    if (cncIsStaffAccount()) { this.drawStaff(uiPhoneState('ps-phone')); return; }
     this.draw();
+  },
+
+  // ================================================================
+  // 직원 계정의 내 정보 (sql/023)
+  // ================================================================
+  drawStaff: function (phoneState) {
+    if (!this.main) return;
+    var p = APP.profile || {};
+    var e = this.errors;
+    var role = APP.adminRole ? t('role_' + APP.adminRole) + (APP.adminStatus && APP.adminStatus !== 'active' ? ' · ' + t(cncMemberStatusKey(APP.adminStatus)) : '') : t('staff_account');
+    this.main.innerHTML = '<div class="page page-profile staff-profile">' +
+      '<h1 class="page-title">' + escHtml(t('nav_profile')) + '</h1>' +
+      '<section class="card"><h2 class="card-title">' + escHtml(t('staff_profile_title')) + '</h2>' +
+        '<form class="form-grid two" onsubmit="PageProfile.saveStaff(event)" novalidate>' +
+          '<div class="field"><span class="field-label">' + escHtml(t('full_name_label')) + '</span><p class="readonly-value">' + escHtml(p.full_name || p.nickname || '—') + '</p>' +
+            '<p class="field-help">' + escHtml(t('staff_name_help')) + '</p></div>' +
+          '<div class="field"><span class="field-label">' + escHtml(t('email_label')) + '</span><p class="readonly-value">' + escHtml((APP.user && APP.user.email) || '—') + '</p></div>' +
+          '<div class="field"><span class="field-label">' + escHtml(t('staff_role_label')) + '</span><p class="readonly-value"><span class="staff-role-badge">' + escHtml(role) + '</span></p></div>' +
+          '<div class="field"><label class="field-label" for="ps-phone">' + escHtml(t('phone_label')) + '</label>' +
+            uiPhoneField({ id: 'ps-phone', value: p.phone, country: 'TH', invalid: !!e.phone, state: phoneState }) + uiFieldError(e.phone) + '</div>' +
+          '<div class="field"><label class="field-label" for="ps-lang">' + escHtml(t('language')) + '</label>' +
+            '<select class="input" id="ps-lang">' + LANGUAGES.map(function (l) {
+              return '<option value="' + l.code + '"' + (l.code === currentLang ? ' selected' : '') + '>' + escHtml(l.name) + '</option>';
+            }).join('') + '</select></div>' +
+          '<div class="span-2 form-actions"><button type="submit" class="btn btn-primary btn-lg"' + (this.saving ? ' disabled' : '') + '>' +
+            escHtml(this.saving ? t('saving') : t('pe_save')) + '</button></div>' +
+        '</form></section>' +
+      '<section class="card"><h2 class="card-title">' + escHtml(t('staff_password_title')) + '</h2>' +
+        '<form class="form-grid two" onsubmit="PageProfile.saveStaffPassword(event)" novalidate>' +
+          '<div class="field"><label class="field-label" for="ps-pw">' + escHtml(t('staff_new_password')) + '</label>' +
+            '<input class="input' + (e.pw ? ' invalid' : '') + '" id="ps-pw" type="password" minlength="6" autocomplete="new-password">' + uiFieldError(e.pw) + '</div>' +
+          '<div class="field"><label class="field-label" for="ps-pw2">' + escHtml(t('password_confirm_label')) + '</label>' +
+            '<input class="input' + (e.pw2 ? ' invalid' : '') + '" id="ps-pw2" type="password" minlength="6" autocomplete="new-password">' + uiFieldError(e.pw2) + '</div>' +
+          '<div class="span-2 form-actions"><button type="submit" class="btn btn-outline btn-lg">' + escHtml(t('staff_change_password')) + '</button></div>' +
+        '</form></section>' +
+      '</div>';
+  },
+
+  saveStaff: async function (event) {
+    event.preventDefault();
+    if (this.saving) return;
+    var raw = uiPhoneRaw('ps-phone');
+    var st = uiPhoneState('ps-phone');
+    var lang = document.getElementById('ps-lang').value;
+    this.errors = {};
+    if (!raw) this.errors.phone = 'err_phone_required';
+    else if (!cncValidPhone(raw, 'TH')) this.errors.phone = 'err_phone_intl';
+    if (Object.keys(this.errors).length) { this.drawStaff(st); return; }
+    this.saving = true;
+    this.drawStaff(st);
+    try {
+      await cncSaveProfile({ phone: cncNormPhone(raw, 'TH'), lang: lang });
+      this.saving = false;
+      uiToast(t('profile_saved'), 'success');
+      if (lang !== currentLang) setLang(lang);
+      else this.drawStaff();
+    } catch (err) {
+      console.error(err);
+      this.saving = false;
+      var code = cncErrorCode(err);
+      if (code === 'PHONE_TAKEN' || code === 'PHONE_INVALID') this.errors.phone = code === 'PHONE_TAKEN' ? 'err_phone_taken' : 'err_phone_intl';
+      else uiToast(uiErrorMessage(err), 'error');
+      this.drawStaff(st);
+    }
+  },
+
+  saveStaffPassword: async function (event) {
+    event.preventDefault();
+    var pw = document.getElementById('ps-pw').value;
+    var pw2 = document.getElementById('ps-pw2').value;
+    this.errors = {};
+    if (pw.length < 6) this.errors.pw = 'err_password_short';
+    else if (pw !== pw2) this.errors.pw2 = 'err_password_mismatch';
+    if (Object.keys(this.errors).length) { this.drawStaff(uiPhoneState('ps-phone')); return; }
+    try {
+      await updatePassword(pw);
+      uiToast(t('staff_password_changed'), 'success');
+      this.drawStaff(uiPhoneState('ps-phone'));
+    } catch (err) {
+      console.error(err);
+      uiToast(uiErrorMessage(err), 'error');
+    }
   },
 
   leave: function () {

@@ -24,7 +24,8 @@ LEGAL_DOCS['privacy.en'] = {
           'Payment and credit data: top-up requests, payment slips, credit balances and history, free credit grants and refund records.',
           'LINE: if you connect LINE notifications, your LINE user identifier.',
           'Sign-up and security data: the IP address, a random device identifier and browser information (user agent) recorded at sign-up to prevent duplicate or fraudulent accounts; login times; records of actions taken by our staff; error logs.',
-          'Visit statistics: pages viewed, date and time, device type, browser language, country (worked out by our hosting provider from your IP address — we do not store the IP address for statistics), the website or app you came from, and views and clicks of banners shown on the Service, linked to a random visitor ID.'
+          'Visit statistics: pages viewed, date and time, device type, browser language, country (worked out by our hosting provider from your IP address — we do not store the IP address for statistics), the website or app you came from, and views and clicks of banners shown on the Service, linked to a random visitor ID.',
+          'Staff accounts (people who work for allAbut and sign up with an invite link from the owner): full name, phone number, email address and password only, plus their role, sign-in times and records of the actions they take on the Service. Staff accounts are kept separate from customer accounts.'
         ],
         'Scan files and photos relate to patients\' health and are treated as sensitive personal data. Please do not include patient names in patient IDs, notes, file names or file contents.'
       ]
@@ -58,7 +59,7 @@ LEGAL_DOCS['privacy.en'] = {
         [
           'Our team sees order, customer and payment information according to their role (for example, production staff see orders; managers also see customers and payments).',
           'Order and top-up notifications: whether or not you connect LINE, a copy of the notifications about your orders, credits and top-ups is sent to allAbut\'s staff LINE groups so that our team can follow up. These copies can contain your clinic name, phone number and email address, the pseudonymous patient ID and tooth information.',
-          'Sales staff: a member of our sales team assigned to your clinic can see your clinic name and your approved payments (amount, number of credits and date). They cannot see your orders, patient data or payment slips.'
+          'Sales staff: a member of our sales team assigned to your clinic can see only what they need to look after your clinic: your clinic name, contact name, phone number, region (the start of your address), sign-up date, the dates of your last order and last payment, your approved payments and top-up requests waiting for approval (amount, number of credits and date), your credit balance numbers, and the progress of your orders (order number, product, number of teeth and the dates of each step). They cannot see patient data, notes, files, designs, delivery addresses or payment slips, and they cannot place orders or top-ups for you.'
         ]
       ]
     },

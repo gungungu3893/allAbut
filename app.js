@@ -117,8 +117,15 @@ async function enterApp() {
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
 
     // 필수 정보(본명 · 전화 · 치과명 · Tax ID · 주소)가 비어 있으면 정보 입력 화면 (sql/010 실행 후에만)
+    //   직원 계정(sql/023)은 본명 · 전화 · 이메일만 → 정보 입력 · 가입 기록 · 무료 크레딧 이벤트 없음
     APP.needsInfo = cncNeedsProfileInfo(APP.profile);
-    if (cncHasIdentityColumns(APP.profile)) {
+    var staffAcc = cncIsStaffAccount(APP.profile);
+    if (staffAcc) {
+      window.__guideCheckPending = false;   // 고객 이용 가이드는 열지 않아요 (직원 화면마다 접는 도움말)
+      var h = location.hash || '';
+      if (!/^#\/[a-z-]+/.test(h) || /^#\/(home|guide|new|orders|topup|complete)\b/.test(h)) history.replaceState(null, '', '#/' + cncStaffStartRoute());
+    }
+    if (cncHasIdentityColumns(APP.profile) && !staffAcc) {
       if (!APP.profile.signup_meta_at) cncRecordSignupMeta();   // 가입 IP · 기기 · 브라우저 (처음 한 번)
       // 신규 가입 무료 크레딧 이벤트: 이메일 인증·LINE 연결 뒤 로그인할 때 다시 시도
       cncClaimSignupBonus().then(function (r) { if (r && r.granted_now > 0) refreshBalance(); });

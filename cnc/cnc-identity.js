@@ -296,6 +296,7 @@ function cncMissingProfileFields(profile) {
 
 // 정보 입력 화면을 보여줘야 하는지 (010 실행 후 + 필수 칸이 빔)
 function cncNeedsProfileInfo(profile) {
+  if (profile && profile.account_type === 'staff') return false;   // 직원 계정은 치과 정보가 없어요 (sql/023)
   return cncHasIdentityColumns(profile) && cncMissingProfileFields(profile).length > 0;
 }
 

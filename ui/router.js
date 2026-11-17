@@ -21,7 +21,9 @@ var ROUTES = {
   'credit-policy': function () { return PageLegal; },
   contact: function () { return PageContact; },  // 문의하기 (로그인 없이도)
   about: function () { return PageAbout; },      // 회사소개 (로그인 없이도)
-  complete: function () { return PageComplete; } // 필수 정보 입력 (본명 · 전화 · 치과명 · Tax ID · 주소가 비었을 때)
+  complete: function () { return PageComplete; }, // 필수 정보 입력 (본명 · 전화 · 치과명 · Tax ID · 주소가 비었을 때)
+  join: function () { return PageJoin; },         // 직원 초대 링크 가입 #/join?t=… (로그인 없이, sql/023)
+  staffgate: function () { return PageStaffGate; } // 직원 계정: 대표 확인 대기 · 정지 안내 (주소로는 못 와요 — renderRoute 가 보내요)
 };
 
 // ----------------------------------------------------------------
@@ -98,9 +100,9 @@ function parseRoute(hash) {
   return ROUTES[name] ? name : 'home';
 }
 
-// 로그인 없이 볼 수 있는 페이지인지 (법적 문서 + 문의하기 + 회사소개)
+// 로그인 없이 볼 수 있는 페이지인지 (법적 문서 + 문의하기 + 회사소개 + 직원 초대 가입)
 function isPublicRoute(name) {
-  return name === 'contact' || name === 'about' || isLegalRoute(name);
+  return name === 'contact' || name === 'about' || name === 'join' || isLegalRoute(name);
 }
 
 // 주소가 지금 로그인 없이 볼 수 있는 페이지인지 (이름은 예전 그대로)
@@ -120,6 +122,9 @@ function pageTitle(name) {
   if (name === 'contact') return t('contact_title') + ' · allAbut';
   if (name === 'about') return t('about_meta_title');
   if (name === 'complete') return t('complete_title') + ' · allAbut';
+  if (name === 'join') return t('join_title') + ' · allAbut';
+  if (name === 'staffgate') return t('staff_account') + ' · allAbut';
+  if (name === 'admin' && typeof cncIsStaffAccount === 'function' && cncIsStaffAccount() && window.APP && APP.adminRole) return t('role_' + APP.adminRole) + ' · allAbut';
   return (doc ? t(doc.titleKey) : t('nav_' + name)) + ' · allAbut';
 }
 
@@ -162,6 +167,18 @@ function renderRoute() {
   var name = parseRoute(location.hash);
   if (!/^#\/[a-z-]+/.test(location.hash || '')) {
     history.replaceState(null, '', '#/' + name);   // 주소를 #/home 처럼 맞춰 둬요
+  }
+  if (name === 'staffgate') name = 'home';
+  // 직원 계정 (sql/023): 고객 화면(홈 · 새 주문 · 내 주문 · 충전 · 가이드)은 없어요 → 역할 첫 화면으로.
+  //   대표 확인 대기 · 정지 · 팀에서 빠짐이면 안내 화면만 (법적 문서 · 문의 · 회사소개 · 내 정보는 열어 둬요)
+  if (cncIsStaffAccount()) {
+    if (cncStaffBlocked() && !isPublicRoute(name) && name !== 'profile') {
+      name = 'staffgate';
+    } else if (cncIsCustomerOnlyRoute(name) || (name === 'admin' && !cncCanOpenAdmin())) {
+      var start = cncStaffStartRoute();
+      history.replaceState(null, '', '#/' + start);
+      name = parseRoute('#/' + start);
+    }
   }
   // 관리 팀도 영업 담당도 아닌 사람이 #/admin 으로 들어오면 홈으로 (영업만이면 PageAdmin 이 "영업" 탭만 보여줘요)
   if (name === 'admin' && !cncCanOpenAdmin()) {

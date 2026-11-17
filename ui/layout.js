@@ -81,9 +81,64 @@ var ADMIN_NAV_ITEM = { route: 'admin', icon: '🛠', key: 'nav_admin', admin: tr
 // 영업 담당(관리 팀이 아닌 sales 역할)에게 Admin 대신 보이는 메뉴 하나 → #/admin/sales (sql/015)
 var SALES_NAV_ITEM = { route: 'admin', href: 'admin/sales', icon: '💼', key: 'nav_sales', admin: true, sales: true };
 
+// ----------------------------------------------------------------
+// 직원 계정(sql/023)의 메뉴 — "Admin" 대신 역할에 맞는 메뉴가 위쪽 메뉴 줄(휴대폰은 하단 탭 + ☰)에 바로
+//   nav = data-nav 값 ('admin:탭' — PageAdmin 이 지금 탭을 강조), more = 휴대폰 하단 탭에는 없고 ☰ 메뉴에
+// ----------------------------------------------------------------
+var STAFF_NAV = {
+  sales: [
+    { tab: 'sales', icon: '🏠', key: 'snav_home' },
+    { tab: 'sclients', icon: '🏥', key: 'snav_clients' },
+    { tab: 'sorders', icon: '📋', key: 'snav_orders' },
+    { tab: 'spay', icon: '💳', key: 'snav_payments' },
+    { tab: 'scomm', icon: '💰', key: 'snav_commission', more: true },
+    { tab: 'srev', icon: '📈', key: 'snav_revenue', more: true }
+  ],
+  staff: [
+    { tab: 'orders', icon: '📋', key: 'admin_tab_orders' },
+    { tab: 'activity', icon: '📝', key: 'admin_tab_activity' }
+  ],
+  manager: [
+    { tab: 'orders', icon: '📋', key: 'admin_tab_orders' },
+    { tab: 'topups', icon: '💳', key: 'admin_tab_topups' },
+    { tab: 'customers', icon: '👥', key: 'admin_tab_customers' },
+    { tab: 'dashboard', icon: '📊', key: 'admin_tab_dashboard' },
+    { tab: 'tax', icon: '🧾', key: 'admin_tab_tax', more: true },
+    { tab: 'activity', icon: '📝', key: 'admin_tab_activity', more: true },
+    { tab: 'settings', icon: '📢', key: 'snav_ads', more: true }
+  ]
+};
+function staffNavItems() {
+  var A = window.APP || {};
+  var role = A.adminRole;
+  if (!role || (A.adminStatus && A.adminStatus !== 'active')) {
+    return [{ route: 'profile', icon: '👤', key: 'nav_profile' }];
+  }
+  var list = (STAFF_NAV[role] || STAFF_NAV.staff).slice();
+  if (role !== 'sales' && A.isSalesRep) list.push({ tab: 'sales', icon: '💼', key: 'nav_sales', more: true });   // 영업 담당도 겸하면
+  var items = list.map(function (n) {
+    return { route: 'admin', href: 'admin/' + n.tab, nav: 'admin:' + n.tab, icon: n.icon, key: n.key, more: !!n.more, noTab: !!n.more, staff: true };
+  });
+  items.push({ route: 'profile', icon: '👤', key: 'nav_profile', more: items.length >= 4, noTab: items.length >= 4, staff: true });
+  return items;
+}
+
+// 직원 계정의 역할 배지 (로고 옆) — 예: "영업" / "매니저 · 확인 대기"
+function staffRoleBadgeHtml() {
+  var A = window.APP || {};
+  if (!cncIsStaffAccount()) return '';
+  var text = A.adminRole ? t('role_' + A.adminRole) : t('staff_account');
+  if (A.adminStatus && A.adminStatus !== 'active') text += ' · ' + t(cncMemberStatusKey(A.adminStatus));
+  return '<span class="staff-role-badge">' + escHtml(text) + '</span>';
+}
+
 // 메뉴 주소 (#/ 뒤)
 function navHref(n) {
   return n.href || n.route;
+}
+// 메뉴 강조용 이름 (data-nav)
+function navKey(n) {
+  return n.nav || n.route;
 }
 
 // Admin 배지 옆 역할 (Owner / Manager / Staff) — 영업 메뉴에는 안 붙여요 (글자가 겹쳐서)
@@ -111,6 +166,7 @@ function uiContactHelpHtml() {
 
 // 지금 사용자에게 보여줄 메뉴 목록
 function navItems() {
+  if (typeof cncIsStaffAccount === 'function' && cncIsStaffAccount()) return staffNavItems();   // 직원 계정 (sql/023)
   if (window.APP && APP.isAdmin) return NAV_ITEMS.concat([ADMIN_NAV_ITEM]);
   if (window.APP && APP.isSalesRep) return NAV_ITEMS.concat([SALES_NAV_ITEM]);
   return NAV_ITEMS;
@@ -171,21 +227,25 @@ function renderLayout() {
   var header = document.getElementById('app-header');
   var tabbar = document.getElementById('app-tabbar');
   if (!header || !tabbar) return;
+  // 직원 계정 (sql/023): 크레딧 · 충전 · LINE 고객 연결은 없고, 로고 옆에 역할 배지 · 로고는 역할 첫 화면으로
+  var staffAcc = typeof cncIsStaffAccount === 'function' && cncIsStaffAccount();
+  document.body.classList.toggle('staff-account', staffAcc);
+  var homeHref = staffAcc ? '#/' + cncStaffStartRoute() : '#/home';
 
   header.innerHTML =
     '<div class="hdr-inner">' +
-      '<a href="#/home" class="hdr-logo">' + logoHtml() + '</a>' +
+      '<a href="' + homeHref + '" class="hdr-logo">' + logoHtml() + '</a>' +
       '<span class="test-badge-slot" hidden></span>' +   // 테스트 서비스면 "TEST" 배지 (ui/service-badge.js)
+      (staffAcc ? staffRoleBadgeHtml() : '') +
       '<nav class="hdr-nav" aria-label="Main">' +
         navItems().map(function (n) {
-          return '<a href="#/' + navHref(n) + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + n.route + '">' +
+          return '<a href="#/' + navHref(n) + '" class="hdr-link' + (n.admin ? ' hdr-link-admin' : '') + '" data-nav="' + navKey(n) + '">' +
             (n.admin ? '<span class="admin-badge">' + escHtml(t(n.key)) + adminRoleTagHtml() + '</span>'
               : (n.showIcon ? '<span aria-hidden="true">' + n.icon + '</span>&nbsp;' : '') + escHtml(t(n.key))) + '</a>';
         }).join('') +
       '</nav>' +
       '<div class="hdr-right">' +
-        '<span class="hdr-line-slot">' + lineHeaderHtml() + '</span>' +
-        creditBadgeHtml() +
+        (staffAcc ? '' : '<span class="hdr-line-slot">' + lineHeaderHtml() + '</span>' + creditBadgeHtml()) +
         '<div class="hdr-wide">' +
           sessionBadgeHtml() +
           langSelectHtml('hdr-lang') +
@@ -200,8 +260,13 @@ function renderLayout() {
     // 펼치는 메뉴 (모바일·좁은 화면)
     '<div class="hdr-menu" id="hdr-menu" hidden>' +
       // 회사소개: 메뉴 맨 위 첫 번째 (위쪽 메뉴 줄이 보이는 PC 에서는 CSS 로 숨겨요 — 거기엔 이미 있어서)
-      '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about" data-nav="about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
-      '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>' +
+      (staffAcc
+        // 직원: 하단 탭에 못 들어간 역할 메뉴를 ☰ 메뉴 맨 위에
+        ? navItems().filter(function (n) { return n.more; }).map(function (n) {
+            return '<a href="#/' + navHref(n) + '" class="btn btn-outline btn-block hdr-menu-staff" data-nav="' + navKey(n) + '"><span aria-hidden="true">' + n.icon + '</span> ' + escHtml(t(n.key)) + '</a>';
+          }).join('')
+        : '<a href="#/about" class="btn btn-outline btn-block hdr-menu-about" data-nav="about"><span aria-hidden="true">🏢</span> ' + escHtml(t('about_nav')) + '</a>' +
+          '<a href="#/topup" class="btn btn-gold btn-block hdr-menu-topup">💳 ' + escHtml(t('topup_btn')) + '</a>') +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('session_time_left')) + '</span>' + sessionBadgeHtml() + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('language')) + '</span>' + langSelectHtml('menu-lang') + '</div>' +
       '<div class="hdr-menu-row"><span class="hdr-menu-label">' + escHtml(t('font_size')) + '</span>' + fontButtonsHtml() + '</div>' +
@@ -214,7 +279,7 @@ function renderLayout() {
   var shown = items.filter(function (n) { return !n.noTab; });
   tabbar.style.gridTemplateColumns = 'repeat(' + shown.length + ', 1fr)';
   tabbar.innerHTML = items.map(function (n) {
-    return '<a href="#/' + navHref(n) + '" class="tab-link' + (n.noTab ? ' tab-pc-only' : '') + '" data-nav="' + n.route + '">' +
+    return '<a href="#/' + navHref(n) + '" class="tab-link' + (n.noTab ? ' tab-pc-only' : '') + '" data-nav="' + navKey(n) + '">' +
       '<span class="tab-icon" aria-hidden="true">' + n.icon + '</span>' +
       '<span class="tab-label">' + escHtml(t(n.key)) + '</span></a>';
   }).join('');
@@ -966,6 +1031,14 @@ function uiErrorMessage(err) {
     ALREADY_PAID: 'comm_err_already_paid',
     NOT_PAID: 'comm_err_not_paid',
     NOT_SALES: 'admin_err_not_admin',
+    // 직원 계정 · 초대 링크 (sql/023)
+    INVITE_INVALID: 'join_invalid',
+    STAFF_ACCOUNT: 'err_staff_account',
+    CANNOT_CHANGE_SELF: 'err_cannot_change_self',
+    HAS_CREDITS: 'err_has_credits',
+    HAS_ACTIVE_ORDERS: 'err_has_active_orders',
+    NOT_CUSTOMER: 'err_not_customer',
+    INVALID_HOURS: 'err_invalid_hours',
     INVALID_RATE_VALUE: 'rate_err_value',
     INVALID_RATE_TYPE: 'rate_err_type',
     INVALID_MONTH: 'err_invalid_month',

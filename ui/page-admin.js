@@ -41,7 +41,13 @@ var PageAdmin = {
     { id: 'team', key: 'admin_tab_team', min: 'owner' },
     { id: 'commission', key: 'admin_tab_commission', min: 'owner' },
     { id: 'settings', key: 'admin_tab_settings', min: 'manager' },   // manager 는 📢 광고 배너 섹션만 (나머지 설정은 owner)
-    { id: 'sales', key: 'admin_tab_sales', sales: true }   // 영업 담당만 (역할과 상관없이)
+    { id: 'sales', key: 'admin_tab_sales', sales: true },   // 영업 담당만 (역할과 상관없이) — 영업 홈 (ui/page-sales.js)
+    // 영업 안쪽 화면 (sql/023): 탭 줄에는 안 나오고 "영업" 탭 안 작은 메뉴 · 직원 계정은 위쪽 메뉴 줄에
+    { id: 'sclients', key: 'snav_clients', sales: true, sub: true },
+    { id: 'sorders', key: 'snav_orders', sales: true, sub: true },
+    { id: 'spay', key: 'snav_payments', sales: true, sub: true },
+    { id: 'scomm', key: 'snav_commission', sales: true, sub: true },
+    { id: 'srev', key: 'snav_revenue', sales: true, sub: true }
   ],
 
   // 지금 역할로 볼 수 있는 탭
@@ -49,9 +55,10 @@ var PageAdmin = {
     return this.TABS.filter(function (x) { return x.sales ? !!APP.isSalesRep : cncHasRole(x.min); });
   },
 
-  // 처음 열 탭 (관리 팀 = Orders, 영업만 = 영업)
+  // 처음 열 탭 (관리 팀 = Orders, 영업만 = 영업 · 직원 계정 매니저 = 대시보드)
   defaultTab: function () {
     var tabs = this.allowedTabs();
+    if (cncIsStaffAccount() && APP.adminRole === 'manager' && this.canSeeTab('dashboard')) return 'dashboard';
     return tabs.length ? tabs[0].id : 'orders';
   },
 
@@ -108,6 +115,16 @@ var PageAdmin = {
   // 제목 + 새로고침 + 탭
   drawFrame: function () {
     var self = this;
+    // 직원 계정 (sql/023): 탭 줄 대신 위쪽 메뉴 줄 (ui/layout.js staffNavItems) → 여기서는 제목만 + 메뉴 강조
+    if (cncIsStaffAccount()) {
+      var view = this.TABS.filter(function (x) { return x.id === self.tab; })[0];
+      this.main.innerHTML = '<div class="page page-admin staff-admin">' +
+        '<div class="page-head"><h1 class="page-title">' + escHtml(t(this.staffTabKey(this.tab, view))) + '</h1>' +
+          '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button></div>' +
+        '<div id="admin-body"></div></div>';
+      setActiveNav('admin:' + this.tab);
+      return;
+    }
     this.main.innerHTML =
       '<div class="page page-admin">' +
         '<div class="page-head">' +
@@ -116,12 +133,19 @@ var PageAdmin = {
             : '<h1 class="page-title"><span class="admin-badge admin-badge-lg">💼 ' + escHtml(t('nav_sales')) + '</span> ' + escHtml(t('sales_title')) + '</h1>') +
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button>' +
         '</div>' +
-        (this.allowedTabs().length < 2 ? '' : '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().map(function (x) {
-          var on = self.tab === x.id;
+        (this.allowedTabs().length < 2 ? '' : '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().filter(function (x) { return !x.sub; }).map(function (x) {
+          var on = self.tab === x.id || (x.id === 'sales' && self.isSalesTab && self.isSalesTab(self.tab));
           return '<button type="button" role="tab" class="seg-btn' + (on ? ' active' : '') + '" aria-selected="' + on + '" onclick="PageAdmin.setTab(\'' + x.id + '\')">' + escHtml(t(x.key)) + '</button>';
         }).join('') + '</div>') +
         '<div id="admin-body"></div>' +
       '</div>';
+  },
+
+  // 직원 계정 화면 제목 (매니저의 Settings = 광고 배너)
+  staffTabKey: function (id, view) {
+    if (id === 'settings' && !cncHasRole('owner')) return 'snav_ads';
+    if (id === 'sales') return 'snav_home';
+    return view ? view.key : 'nav_admin';
   },
 
   setTab: function (id) {
@@ -149,16 +173,24 @@ var PageAdmin = {
     if (this.tab === 'settings') return this.loadSettings();
     if (this.tab === 'activity') return this.loadActivity();
     if (this.tab === 'team') return this.loadTeam();
-    if (this.tab === 'sales') return this.loadSales();
+    if (this.tab === 'sales') return this.loadSalesHome();
     if (this.tab === 'commission') return this.loadCommission();
     if (this.tab === 'tax') return this.loadTax();
+    // 영업 (sql/023, ui/page-sales.js) — 'sales' = 영업 홈, 'scomm' = 내 커미션 (page-admin-sales.js)
+    if (this.tab === 'sclients') return this.loadSalesClients();
+    if (this.tab === 'sorders') return this.loadSalesOrders();
+    if (this.tab === 'spay') return this.loadSalesPayments();
+    if (this.tab === 'srev') return this.loadSalesRevenue();
+    if (this.tab === 'scomm') return this.loadSales();
     return this.loadDash();
   },
 
   drawBody: function () {
     var box = document.getElementById('admin-body');
     if (!box) return;
-    if (this.tab === 'orders') box.innerHTML = this.ordersHtml();
+    // 직원 계정의 첫 화면에는 접는 도움말 "이 화면에서 할 수 있는 일" (ui/page-sales.js staffHelpHtml)
+    var help = cncIsStaffAccount() ? ((this.tab === 'orders' && APP.adminRole === 'staff') ? this.staffHelpHtml('staff') : (this.tab === 'dashboard' && APP.adminRole === 'manager') ? this.staffHelpHtml('manager') : '') : '';
+    if (this.tab === 'orders') box.innerHTML = help + this.ordersHtml();
     else if (this.tab === 'topups') box.innerHTML = this.topupsHtml();
     else if (this.tab === 'customers') box.innerHTML = this.usersHtml();
     else if (this.tab === 'settings') {
@@ -170,10 +202,15 @@ var PageAdmin = {
     }
     else if (this.tab === 'activity') box.innerHTML = this.activityHtml();
     else if (this.tab === 'team') box.innerHTML = this.teamHtml();
-    else if (this.tab === 'sales') box.innerHTML = this.salesHtml();
+    else if (this.tab === 'sales') box.innerHTML = this.salesHomeHtml();
+    else if (this.tab === 'scomm') box.innerHTML = this.salesSubNavHtml() + this.salesHtml();
+    else if (this.tab === 'sclients') box.innerHTML = this.salesClientsHtml();
+    else if (this.tab === 'sorders') box.innerHTML = this.salesOrdersHtml();
+    else if (this.tab === 'spay') box.innerHTML = this.salesPaymentsHtml();
+    else if (this.tab === 'srev') box.innerHTML = this.salesRevenueHtml();
     else if (this.tab === 'commission') box.innerHTML = this.commissionHtml();
     else if (this.tab === 'tax') box.innerHTML = this.taxHtml();
-    else box.innerHTML = this.dashHtml();
+    else box.innerHTML = help + this.dashHtml();
   },
 
   errorBox: function (retryCall, err) {
@@ -225,7 +262,8 @@ var PageAdmin = {
         cncAdminPendingTopupCount().catch(function () { return null; }),
         cncAdminMonthStats(d.year, d.month),
         cncAdminTrend(d.year, d.month),
-        cncHasRole('manager') ? cncAdminPendingMailCount().catch(function () { return null; }) : Promise.resolve(null)   // 우편 발송 대기 (sql/021)
+        cncHasRole('manager') ? cncAdminPendingMailCount().catch(function () { return null; }) : Promise.resolve(null),   // 우편 발송 대기 (sql/021)
+        cncHasRole('owner') && typeof cncAdminStaffTodo === 'function' ? cncAdminStaffTodo().catch(function () { return null; }) : Promise.resolve(null)   // 새 직원 · 매니저 확인 대기 (sql/023)
       ]);
       if (token !== this.loadToken) return;
       d.now = res[0];
@@ -233,6 +271,7 @@ var PageAdmin = {
       d.monthData = res[2];
       d.trend = res[3];
       d.pendingMail = res[4];
+      d.staffTodo = res[5];
     } catch (err) {
       console.error(err);
       if (token !== this.loadToken) return;
@@ -385,11 +424,24 @@ var PageAdmin = {
     if (cncHasRole('manager') && d.pendingTopups != null) items += card(d.pendingTopups, 'admin_pending_topups', "PageAdmin.setTab('topups')", 'dash-action-topups');
     // 세금계산서 원본 우편 발송 대기 (sql/021) → 세금계산서 탭의 우편 발송 화면
     if (cncHasRole('manager') && d.pendingMail != null) items += card(d.pendingMail, 'tax_dash_pending_mail', 'PageAdmin.openMailQueue()', 'dash-action-mail');
+    // 직원 (sql/023, owner): 매니저 확인 대기 + 최근 7일 새 직원 가입 → 직원 탭
+    var staffList = '';
+    if (d.staffTodo) {
+      var pend = d.staffTodo.pending || [];
+      if (pend.length) items += card(pend.length, 'staff_dash_pending', "PageAdmin.setTab('team')", 'dash-action-staff');
+      var joins = d.staffTodo.joins || [];
+      if (joins.length) {
+        staffList = '<ul class="dash-staff-joins">' + joins.map(function (j) {
+          return '<li><button type="button" class="link-btn" onclick="PageAdmin.setTab(\'team\')">' +
+            escHtml(tf('staff_dash_joined', { name: j.name || '', role: t('role_' + j.role) })) + ' →</button></li>';
+        }).join('') + '</ul>';
+      }
+    }
     items += card(d.now.counts.submitted, 'dash_waiting_orders', "PageAdmin.filterStage('submitted')", 'dash-action-submitted');
     items += card(d.now.due.length, 'dash_due_soon', 'PageAdmin.filterDue()', 'dash-action-due');
     return '<section class="dash-section">' +
       '<h2 class="dash-section-title">' + escHtml(t('dash_now_title')) + '</h2>' +
-      '<div class="dash-actions">' + items + '</div></section>';
+      '<div class="dash-actions">' + items + '</div>' + staffList + '</section>';
   },
 
   // 기한 임박 → Orders 탭 (진행 중 · 납기 빠른 순)

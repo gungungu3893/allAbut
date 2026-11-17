@@ -170,7 +170,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -183,6 +183,10 @@
   **021 (세금계산서) — 010 을 다시 실행하면 021 도 다시** (identity 트리거 · `_profile_complete` · `check_signup_available` · `request_clinic_change` · `admin_review_clinic_change` 가 국가를 모르는 모양으로),
   **018 을 다시 실행하면 021 도 다시** (`create_topup_request` · `_credit_refund_quote` 가 해외 VAT · 충전별 VAT 를 모르는 모양으로). 그래서 018 을 다시 했으면 019 → 020 → 021 순서로
   **022 (전화 국가번호) — 021 을 다시 실행하면 022 도 다시** (`_norm_phone(p, country)` · `_valid_phone(p, country)` 가 태국 치과의 해외 번호를 모르는 모양으로). 010 → 021 → 022 순서
+  **023 (직원 계정) — 005 · 015 를 다시 실행하면 023 도 다시** (권한 함수 `has_admin_role` · `is_admin` · `admin_role` · `is_sales_rep` · `admin_me` · `admin_set_role` 이 정지 · 확인 대기를 모르는 모양으로 → 정지된 직원이 다시 열려요),
+  **010 · 013 · 016 을 다시 실행하면 023 도 다시** (`_suspicion_flags` · `admin_visit_stats` · `admin_set_customer_rep` 가 직원 계정을 다시 셈),
+  **019 · 021 을 다시 실행하면 023 도 다시** (`create_cnc_order`(019 정의) · `create_topup_request`(021 정의) 맨 앞의 STAFF_ACCOUNT 검사가 빠짐 — 표 트리거 `trg_order_0_block_staff` · `trg_topup_0_block_staff` 가 남아서 막히긴 해요).
+  그래서 018 을 다시 했으면 019 → 020 → 021 → 022 → 023 순서로
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
 - `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
@@ -425,7 +429,7 @@
 - `cnc/cnc-viewer.js` — 파일 뷰어 (STL·OBJ 3D, 이미지, PDF), 서명 URL. 3D 조작은 아래 "3D 파일 뷰어"
 - `ui/layout.js` — 헤더, 모바일 하단 탭, 공통 부품 (`escHtml`, 토스트, 모달, 확인창, 에러 글씨, 상태 배지, 진행 막대), 헤더 자동 맞춤 `fitHeader()`
 - `ui/line-connect.js` — LINE 연결 공통 부품 (헤더 버튼, 안내 띠, 연결 모달·자동 확인, Profile 섹션, 완료 카드, QR 라이브러리)
-- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about`, `#/complete`(필수 정보가 비었을 때만) (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about)
+- `ui/router.js` — 해시 라우팅 `#/home`, `#/guide`, `#/new`, `#/orders`, `#/profile`, `#/topup`, `#/admin`, `#/terms`, `#/privacy`, `#/credit-policy`, `#/contact`, `#/about`, `#/complete`(필수 정보가 비었을 때만) (새로고침해도 같은 페이지). 로그인 없이 열리는 곳은 `isPublicRoute()` (법적 문서 + contact + about + join)
 - `ui/datepicker.js` — 자체 달력 `uiDateField({ id, value, min, onChange })` / `uiDateValue(id)`. 앱의 모든 날짜 입력은 이것만 쓴다 (`<input type="date">` 금지: 브라우저 언어를 따라가서)
 - `cnc/cnc-legal.js` — 법적 문서 불러오기·버전·동의·회사 정보·삭제 요청 (로직만)
 - `ui/page-legal.js` — 법적 문서 페이지 (목차, 섹션 번호, 버전·시행일, 연락처, 인쇄)
@@ -445,6 +449,11 @@
 - `ui/page-admin-team.js` — Team 탭, Activity 탭, Settings 의 LINE groups 섹션 (`PageAdmin` 에 덧붙임)
 - `cnc/cnc-sales.js` — 영업 담당 목록 · 요율 · 입금/고객 담당자 지정 · 수금 기준 커미션 결과 · 정산 · CSV (로직만, sql/015 · 016)
 - `ui/page-admin-sales.js` — 영업 탭 · 커미션 탭 · Top-ups/고객 담당 칸 · Team 의 영업 담당 스위치 · 커미션 설정 (`PageAdmin` 에 덧붙임)
+- `cnc/cnc-staff.js` — 직원 계정 로직 (sql/023): 직원 판별(`cncIsStaffAccount`) · 상태(`cncStaffStatus` · `cncStaffBlocked`) · 역할 첫 화면(`cncStaffStartRoute`) · 고객 전용 주소(`cncIsCustomerOnlyRoute`) ·
+  초대 링크(`cncInviteLink` · `cncCheckStaffInvite` · `cncStaffSignUp` · `cncValidateStaffJoin`) · 대표 직원 메뉴 함수 · 영업 화면 데이터(`cncSalesSummary` · `cncSalesClients` · `cncSalesClientOrders` · `cncSalesPendingTopups` · `cncSalesRevenue`). cnc-sales.js 다음에 불러와요
+- `ui/page-join.js` — 초대 링크 가입 `#/join?t=…` (`PageJoin`, 로그인 없이) + 직원 대기 · 정지 안내 (`PageStaffGate`, `#/staffgate`)
+- `ui/page-sales.js` — 영업 화면 확장 (`PageAdmin` 에 덧붙임): 영업 홈 · 내 거래처 · 거래처 주문 · 거래처 입금 · 내 월별 매출 + 역할별 "이 화면에서 할 수 있는 일" 도움말 (`staffHelpHtml`)
+- `ui/page-admin-staff.js` — 대표 "직원" 메뉴 (Team 탭을 바꿔 끼움, 023 전이면 예전 Team 화면): 직원 목록 · 초대 링크 · 정지/다시 켜기 · 거래처 옮기기 · 직원 계정 전환
 - `ui/page-admin-free.js` — 무료 크레딧 사용 배지, 무료 크레딧 지급·회수, 신규 가입 이벤트 설정, 등록 치과 정보 변경 요청 승인 (`PageAdmin` 에 덧붙임, sql/008·009)
 - `css/landing.css` (공통 변수 + 랜딩·로그인·세션 팝업), `css/app.css` (앱 화면)
 
@@ -491,6 +500,9 @@
 
 ## 사용 흐름 규칙
 - 로그인(재로그인 포함) 성공 → 항상 `#/home` (예외: 로그인 전에 LINE 알림 링크로 들어왔으면 로그인 후 그 페이지로 — 아래 LINE 링크). 이 계정 첫 로그인이면 한 번 `#/guide` (`localStorage.allabut_guide_seen_{user_id}`). 로그인 상태 새로고침은 지금 페이지 유지
+- **직원 계정(account_type 'staff', sql/023)** 은 로그인하면 역할 첫 화면: sales → `#/admin/sales`(영업 홈) / staff → `#/admin/orders` / manager → `#/admin/dashboard` (owner 는 customer 계정이라 지금처럼 `#/home` + Admin).
+  가이드 자동 열기 · 가입 이벤트 · 필수 정보(#/complete) 없음. 고객 주소(`#/home` · `#/new` · `#/orders` · `#/topup` · `#/guide` · `#/complete`)나 권한 없는 관리 탭으로 오면 첫 화면으로 (`CUSTOMER_ONLY_ROUTES`, router.js).
+  확인 대기(매니저 초대) · 정지 · 팀에서 빠진 직원은 `PageStaffGate` 안내만 ("대표의 확인을 기다리고 있어요" / "계정이 정지됐어요. 대표에게 문의해 주세요" + [다시 확인] · [로그아웃])
 - Sign Out → 앱 확인 모달 (작성 중 주문이 있으면 "저장되어 있어요" 안내). 세션 만료 자동 로그아웃은 확인 없음
 - 작성 중 주문(draft)이 있으면 새 주문 맨 위에 "이어서 하기 / 삭제" 카드, 고르기 전엔 입력 잠금. 홈의 안내 바도 같은 동작
 - 환자 ID 필수 (앞뒤 공백 제거, 최대 50자). "Anonymous" 기본값 없음
@@ -513,7 +525,8 @@
   fit-1 LINE 버튼 "LINE" 만 → fit-2 오른쪽 전체를 ☰ 메뉴로 → fit-3 Top up 을 ☰ 메뉴로 → fit-4 메뉴 간격 좁게 → fit-5 로고 작게 → fit-6 메뉴 글자 조금 작게 + 가이드 아이콘·역할 글자·크레딧 단위 숨김 → fit-7 위쪽 메뉴 대신 아래 탭(회사소개 탭 포함) + 5μm 숨김
   → fit-8 (아주 좁을 때 — 360px · 아랍어/페르시아어 · 글자 130%, 잔액 4자리 등) 헤더 양옆 여백 10px · 간격 좁게, 로고 22px, LINE 버튼은 초록 버튼에 글자 "LINE" 만(로고 아이콘 숨김), ☰ 메뉴 버튼은 글자만("메뉴"), 크레딧 아이콘 작게
   → fit-9 (그래도 넘치면) 크레딧 숫자 · 버튼 글자 조금 작게, 로고 20px. **글자 라벨은 끝까지 남겨요** (아이콘만 있는 버튼 금지). 아래 탭 전환은 계속 fit-7 기준 (`HEADER_TABBAR_LEVEL`).
-  헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인 (9개 언어 × 글자 100/115/130% × 고객 · 관리자 · 영업 · 크라운 세트 잔액 두 줄)
+  헤더에 새 버튼을 넣으면 360px·1024px·1440px 에서 넘치지 않는지 꼭 확인 (9개 언어 × 글자 100/115/130% × 고객 · 관리자 · 영업 · 직원 계정 · 크라운 세트 잔액 두 줄)
+- 직원 계정 헤더: 크레딧 · LINE 고객 버튼 · Top up 없음, 로고 옆 역할 배지(`staffRoleBadgeHtml`), 역할 메뉴가 위쪽 메뉴에 바로 (`STAFF_NAV` · `staffNavItems()`, 모바일은 아래 탭 + ☰ 의 `more` 항목). Admin 메뉴 · 탭 줄은 안 보여요
 - 좁은 화면 넘침 주의: 안내 상자(`.notice`, `.notice-box`)는 `overflow-wrap: anywhere` — 긴 파일 이름(예: `sql/019_…sql`)이 큰 글씨 · 360px 에서 카드 밖으로 나가 화면 전체가 옆으로 밀리지 않게
 
 ## 팀 권한 · 작업 기록 (sql/005_team.sql, 설정 안내: TEAM_SETUP.md)
@@ -525,6 +538,8 @@
 - 005 는 기존 관리자 함수 정의 안의 `is_admin()` 만 `has_admin_role('…')` 로 바꿔 끼워요 → **002·003·004 를 다시 실행하면 005 도 다시**
 - 새 관리자 함수를 만들 때는 처음부터 `has_admin_role('필요한 역할')` 로 확인하고, 화면은 `cncHasRole('…')` 로 버튼·탭을 숨긴다.
   **`admins` 표를 직접 조회해서 권한을 판단하지 않는다** (sales 도 admins 에 있어서 열려요 — 015 가 그런 RLS 규칙이 있으면 notice 로 알려줘요)
+- **정지 · 확인 대기 (sql/023)**: `admins.active = false`(정지) · `admins.pending_confirm = true`(매니저 초대 → 대표 [확인] 전) 이면 `admin_role` · `has_admin_role` · `is_admin` · `is_sales_rep` 모두 false.
+  `admin_me()` 는 역할 + `status`('active' | 'pending' | 'suspended') + `account_type` 을 돌려주고, 화면은 `APP.adminStatus` 가 'active' 일 때만 `cncHasRole` · `isAdmin` · `isSalesRep` 를 켜요
 - 화면: `APP.adminRole`, `APP.adminName`, `APP.isAdmin`(관리 팀만), `APP.isSalesRep`(켜진 영업 담당) ← 로그인 때 `admin_me()` → `cncApplyAdminMe()` (005 미실행이면 is_admin → owner 로 봄).
   `PageAdmin.TABS` 의 `min` 으로 탭 제한(`sales: true` 탭은 영업 담당만), 권한 없는 탭 주소는 첫 탭으로 (`defaultTab()`). #/admin 은 `cncCanOpenAdmin()` = 관리 팀 또는 영업 담당
 
@@ -570,6 +585,34 @@
 - 팀 함수(owner): `admin_list_team`, `admin_add_member(email, role, name)`(가입한 이메일만, USER_NOT_FOUND), `admin_set_role`, `admin_set_member_name`, `admin_remove_member` (자기 자신·마지막 owner 불가: CANNOT_REMOVE_SELF / LAST_OWNER)
 - 작업 기록 `admin_audit_log`: staff 이상 읽기, 쓰기는 트리거·함수만 (팀원이 한 일만 기록: 주문 단계·배송·디자인·관리자 취소, 충전 승인/거절, 크레딧 지급/차감, 현금 환불, 팀 변경, 설정 변경)
 - `review_history` 의 관리자 기록은 `by: 'admin'` 그대로 + DB 트리거가 `by_name`·`by_id`(실제 처리자)를 붙임. 관리자 화면 타임라인만 이름 표시 (`uiHistoryList(history, true)`), 고객 화면은 "관리자"
+
+## 직원 계정 · 초대 링크 · 역할별 화면 (sql/023_staff_accounts.sql)
+- **계정 종류** `profiles.account_type`: 'customer'(기본, 기존 계정 전부 · owner 도) | 'staff'. 고객이 직접 못 바꿔요 (트리거 `_trg_profile_account` 가 되돌림, 서버 함수만 `allabut.staff_ok`)
+  - 직원 계정 = 본명 · 전화 · 이메일 · 비밀번호만. 필수 정보 입력(`cncNeedsProfileInfo`) · PROFILE_INCOMPLETE · 등록 정보 잠금에서 빠져요. 전화 중복 검사는 고객 · 직원 통틀어 그대로
+  - 크레딧 · 무료 크레딧 이벤트 · 세금계산서 · 고객 목록 · 고객 수 · 가입 전환 · 의심 배지 · 담당 영업 지정(`NOT_CUSTOMER`) 대상에서 빠짐. 고객 목록은 `cncAdminListUsers` 가 화면에서 걸러요 (`admin_list_users` 는 repo 밖)
+  - 주문 · 충전 불가: `create_cnc_order` · `create_topup_request` 맨 앞 + 표 트리거 → `STAFF_ACCOUNT`. 약관 · 개인정보 동의는 고객과 같이
+- **초대 링크** `staff_invites`(token_hash sha256 · role 'sales' | 'staff' | 'manager' · note · expires_at(1~168시간, 기본 48) · created_by · used_by · used_at · revoked_at). RLS 켜짐 + 정책 없음 = 함수로만
+  - owner: `admin_create_staff_invite(role, hours, note)` → 토큰 원문은 이때 한 번만 (96자 16진수, gen_random_uuid 3개 = 랜덤 366비트 ≈ 45바이트 (32바이트 이상)) / `admin_list_staff_invites()`(상태 waiting · used(누가) · expired · revoked) / `admin_revoke_staff_invite(id)`
+  - 링크 `{SITE_URL}/#/join?t=토큰` (`cncInviteLink`). 로그인 없이: `check_staff_invite(token)` → `{ valid, role }` 만 (64자 미만은 바로 invalid)
+  - 가입: `#/join` 칸 = 본명 · 전화(uiPhoneField) · 이메일 · 비밀번호 · 비밀번호 확인 · 약관 동의 · Turnstile → `signUp` 메타데이터 `staff_invite`. 프로필이 만들어질 때 트리거가 초대 줄을 잠그고(for update — 같은 링크 동시 가입은 하나만) 검사 →
+    account_type 'staff' + admins 역할(매니저는 pending_confirm) + 영업이면 sales_reps + 초대 사용 처리 + 작업 기록 'staff_joined'. **역할은 초대 기록에서만** (브라우저 값 안 믿음)
+  - 만료는 **auth.users.created_at(가입 시각) 기준** — 이메일 인증을 나중에 해도 가입할 때 유효했으면 통과. 틀림 · 만료 · 사용됨 · 취소 → `INVITE_INVALID` (프로필 안 만듦 = 고객 계정이 생기지 않음) → 화면 "이 초대 링크는 더 이상 쓸 수 없어요. 대표에게 새 링크를 요청해 주세요"
+  - 일반 회원가입 화면에는 직원 선택지가 없어요
+- **역할별 메뉴** (`STAFF_NAV`, ui/layout.js): 영업 = 영업 홈 · 내 거래처 · 거래처 주문 · 거래처 입금 · 내 커미션 · 내 월별 매출 / 제작 직원 = 주문 · 작업 기록 / 매니저 = 주문 · 충전 · 고객 · 세금계산서 · 대시보드 · 작업 기록 · 광고 배너(설정 탭) / owner = 지금처럼 전부 + 직원.
+  각 역할 첫 화면 위에 접는 도움말 "이 화면에서 할 수 있는 일" (`staff_help_sales` · `staff_help_staff` · `staff_help_manager`). 내 정보(직원) = 이름 · 이메일(읽기 전용) · 전화 · 언어 · 비밀번호 변경만
+- **영업 화면** (전부 `my_sales_rep_id()` 의 담당 거래처만, 정지 · 대기면 `NOT_SALES`): `sales_my_summary()`(이번 달 입금 · 커미션 · 거래처 수 · 진행 중 주문 · 대기 충전 · 최근 활동) /
+  `sales_my_clients()`(치과명 · 담당자 · 전화 · 지역(주소 앞 24자) · 가입일 · 최근 주문일 · 최근 입금일 · 이번 달 입금액 · 진행 중 주문 · 잔액 숫자만, 화면에서 검색 · 정렬) /
+  `sales_my_client_orders(from, to, stage 'active' | 'done')`(주문번호 · 치과명 · 접수일 · 단계 · 납품일 · 치아 수 + 타임라인(종류 · 날짜만) — **환자 · 메모 · 파일 · 디자인 · 주소 없음**, 읽기 전용) /
+  `sales_my_pending_topups()`(금액 · 날짜) / `sales_my_revenue(months 1~24)`(달별 입금 · 건수 · 환불 · 커미션 — 막대 그래프, 달을 누르면 `my_commission_month` 건별로 거래처 표) / `sales_my_payments` 에 client_id (거래처 · 기간 필터).
+  영업에게 cnc_orders · profiles(본인 제외) · topup_requests 표 직접 읽기는 안 열려요. 영업 계정은 주문 · 충전 불가. 입금 실적은 "그 입금을 받은 담당자" 기준, 거래처 목록은 "지금 담당" 기준
+- **대표 "직원" 메뉴** (`#/admin/team`, 탭 이름 "직원", owner): `admin_list_staff()`(이름 · 이메일 · 전화 · 역할 · 상태 · 계정 종류 · 가입 · 마지막 로그인 · 초대 가입 여부 · 거래처 수 · 요율) ·
+  [초대 링크 만들기](역할 · 유효 시간 · 메모 → 링크 + [복사] + "한 번만 · n시간 뒤 만료", 창을 닫으면 다시 못 봄) · 초대 목록 + [취소] ·
+  직원마다 역할 변경 · 매니저 [확인](`admin_confirm_member`) · [거래처 n](`admin_rep_clients` → 여러 곳 골라 `admin_move_clients(users[], to)`) · 커미션 설정(기존) ·
+  [정지](`admin_set_member_active(user, false, move_to)` — 영업 거래처는 담당 없음 또는 다른 영업에게) / [다시 켜기] · 이름 변경 · [직원 계정으로 전환](`admin_convert_to_staff`, 크레딧 잔액 `HAS_CREDITS` · 진행 중 주문/대기 충전 `HAS_ACTIVE_ORDERS` 이면 막힘, 자동 전환 없음).
+  자기 자신 · 마지막 owner 는 정지 · 역할 변경 불가 (`CANNOT_CHANGE_SELF` · `LAST_OWNER`). 맨 아래 작게 "기존 계정을 직원으로 전환"(예전 `admin_add_member`)
+- 대시보드 "지금 처리할 일"(owner): `admin_staff_todo()` → 매니저 확인 대기 카드 + "새 직원 가입: 이름(역할)" (최근 7일) → 직원 탭
+- 작업 기록: staff_joined · staff_invite_created · staff_invite_revoked · staff_confirmed · staff_suspended · staff_reactivated · clients_moved · staff_converted (Activity "팀" 묶음)
+- `launch_reset.sql` 의 계정 삭제는 직원 계정 · 초대 기록을 지우지 않아요
 
 ## 관리자 화면
 - 로그인할 때 `admin_me()` → `APP.adminRole` / `APP.isAdmin`. 팀원만 헤더·하단 탭에 골드 "Admin · 역할" 메뉴

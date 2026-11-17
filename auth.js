@@ -8,7 +8,9 @@ window.__passwordRecovery = /[#&?]type=recovery\b/.test(String(location.hash || 
 window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 회원가입
-//   info: { email, password, fullName, phone, clinicName, taxId, address, country, legal: { terms, privacy }, captchaToken }
+//   info: { email, password, fullName, phone, clinicName, taxId, address, country, legal: { terms, privacy }, captchaToken, staffInvite }
+//   - staffInvite: 직원 초대 링크의 토큰 (ui/page-join.js, sql/023). 메타데이터 staff_invite 로 넘기면 프로필이 만들어질 때
+//     DB 트리거가 검증해서 직원 계정 + 역할을 정해요 (역할은 서버의 초대 기록에서만 — 브라우저 값은 안 믿어요). 틀리면 INVITE_INVALID
 //   - 필수 정보를 유저 정보(metadata)에도 같이 저장해 둬요.
 //     (이메일 인증이 켜져 있으면 가입 직후엔 로그인 상태가 아니라서 profiles 저장이 안 될 수 있어요.
 //      그럴 땐 처음 로그인할 때 getProfile() 이 이 정보로 profiles 행을 만들어 줘요.)
@@ -26,6 +28,7 @@ async function signUp(info) {
       accepted_terms_version: legal.terms || '', accepted_privacy_version: legal.privacy || ''
     }
   };
+  if (info.staffInvite) options.data.staff_invite = String(info.staffInvite);
   if (info.captchaToken !== undefined) options.captchaToken = info.captchaToken;
   var result = await sb.auth.signUp({ email: info.email, password: info.password, options: options });
   if (result.error) throw result.error;

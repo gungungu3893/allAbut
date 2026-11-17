@@ -37,6 +37,7 @@
 --   credit_packages(가격·패키지) · payment_settings(결제 · 이벤트 · 서비스 상태 포함) · company_settings · legal_versions ·
 --   admins(팀·역할) · sales_reps · sales_rep_rates · admin_notify_targets(LINE 그룹) · blocked_email_domains ·
 --   profiles(계정을 남기면 동의 버전 · 담당 영업 · 치과 정보 · LINE 연결 그대로) · data_retention_settings(주문 파일 보관 설정, sql/020)
+--   staff_invites(직원 초대 기록, sql/023) · 직원 계정(account_type 'staff' — 아래 계정 삭제 옵션에서도 남겨요)
 -- service_mode 는 바꾸지 않아요 → 끝나면 관리자 Settings → "서비스 상태" 에서 직접 '정식' 으로
 --
 -- Storage 파일은 SQL 로 지울 수 없어요 → Supabase → Storage → 버킷마다 ⋯ → Empty bucket
@@ -94,9 +95,12 @@ begin
 
   -- 4) (선택) 팀원이 아닌 고객 계정 삭제 — profiles 를 먼저, 그다음 auth.users
   if v_delete_customer_accounts then
-    delete from public.profiles p where not exists (select 1 from public.admins a where a.user_id = p.id);
+    -- 직원 계정(account_type 'staff', sql/023)은 팀에서 빠져 있어도 남겨요 (023 전이면 칸이 없어서 to_jsonb 로 읽어요)
+    delete from public.profiles p where not exists (select 1 from public.admins a where a.user_id = p.id)
+      and coalesce(to_jsonb(p) ->> 'account_type', 'customer') <> 'staff';
     get diagnostics v_profiles = row_count;
-    delete from auth.users u where not exists (select 1 from public.admins a where a.user_id = u.id);
+    delete from auth.users u where not exists (select 1 from public.admins a where a.user_id = u.id)
+      and not exists (select 1 from public.profiles p where p.id = u.id and coalesce(to_jsonb(p) ->> 'account_type', 'customer') = 'staff');
     get diagnostics v_users = row_count;
   end if;
 

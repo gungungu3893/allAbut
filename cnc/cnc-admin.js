@@ -402,14 +402,17 @@ async function cncAdminListUsers() {
     var ids = users.map(function (u) { return u.id; }).filter(Boolean);
     var linked = {};
     var country = {};
+    var staffIds = {};   // 직원 계정 (sql/023) — 고객 목록 · 고객 수에서 빼요
     for (var i = 0; i < ids.length; i += 200) {
       var rows = cncCheck(await sb.from('profiles').select('*').in('id', ids.slice(i, i + 200))) || [];
       rows.forEach(function (p) {
         linked[p.id] = cncIsLineLinked(p);
+        if (p.account_type === 'staff') staffIds[p.id] = true;
         // 치과 소재 국가 (sql/021 — 등록 국가가 먼저). 021 실행 전이면 칸이 없어서 빈칸
         if (country) country[p.id] = cncHasCountryColumns(p) ? cncProfileCountry(p) : '';
       });
     }
+    users = users.filter(function (u) { return !staffIds[u.id]; });
     users.forEach(function (u) {
       if (u.id in linked) u.line_linked = linked[u.id];
       if (country[u.id] !== undefined) u.country = country[u.id];

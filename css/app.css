@@ -1882,6 +1882,7 @@ body.consent-open { overflow: hidden; }
 .role-chip.role-owner { background: var(--navy); }
 .role-chip.role-manager { background: #2563EB; }
 .role-chip.role-staff { background: #6B7280; }
+.role-chip.role-sales { background: #0F766E; }
 .team-table td { vertical-align: middle; }
 .team-table .team-name { font-weight: 600; margin-inline-end: 6px; }
 .team-table .team-role-select { min-width: 140px; }
@@ -2919,3 +2920,91 @@ html.btt-room body.on-auth .public-footer { padding-bottom: var(--btt-room, 96px
   text-align: left;
 }
 .phone-field.invalid .phone-dial { border-color: var(--danger); }
+
+/* ===== 직원 계정 (sql/023): 역할 배지 · 가입 · 대기/정지 · 영업 화면 · 대표 직원 메뉴 ===== */
+.staff-role-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  background: var(--navy); color: #fff; font-weight: 700; font-size: .8125rem; line-height: 1.4;
+}
+.hdr-menu-staff { justify-content: flex-start; }
+.notice-success { background: var(--success-bg); border: 1.5px solid var(--success); }
+.notice-info { background: #EFF6FF; border: 1.5px solid #BFDBFE; }
+
+/* 가입 화면 · 대기/정지 안내 — 가운데 카드 하나 */
+.page-join, .page-staffgate { max-width: 560px; margin: 0 auto; }
+.join-card, .staffgate-card { padding: 24px 20px; }
+.join-logo { margin: 0 0 8px; font-size: 1.5rem; }
+.join-role { margin: 0 0 8px; font-size: 1.0625rem; }
+.join-form { display: grid; gap: 14px; margin-top: 12px; }
+.join-agree { align-items: flex-start; }
+.join-agree a { font-weight: 600; }
+.staffgate-card { text-align: center; }
+.staffgate-icon { font-size: 3rem; margin: 0 0 8px; line-height: 1; }
+.staffgate-card .form-actions { justify-content: center; flex-wrap: wrap; }
+
+/* "이 화면에서 할 수 있는 일" 접는 도움말 */
+.staff-help { padding: 12px 16px; }
+.staff-help summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; gap: 6px; }
+.staff-help p { margin: 8px 0 0; white-space: pre-line; }
+
+/* 영업 화면 */
+.sales-subnav { margin-bottom: 16px; flex-wrap: wrap; }
+.sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.sales-stat { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: grid; gap: 4px; }
+.sales-stat-label { color: var(--muted); font-weight: 600; font-size: .9375rem; }
+.sales-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--navy); overflow-wrap: anywhere; }
+.sales-recent { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sales-recent li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.sales-recent li:last-child { border-bottom: 0; }
+.sales-recent-icon { flex: 0 0 auto; }
+.sales-recent-main { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.sales-orders { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sales-order { padding: 0; overflow: hidden; }
+.sales-order-head {
+  width: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; text-align: start;
+  background: none; border: 0; padding: 14px 16px; cursor: pointer; font: inherit; color: inherit; min-height: 52px;
+}
+.sales-order-head:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.sales-order-meta { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.sales-timeline { list-style: none; margin: 0; padding: 0 16px 14px 32px; display: grid; gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.sales-timeline li { position: relative; }
+.sales-timeline li::before { content: ''; position: absolute; inset-inline-start: -16px; top: .55em; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+.sales-clients-table td, .sales-payments-table td, .sales-rev-table td { vertical-align: top; }
+
+/* 대표 직원 메뉴 */
+.admin-staff { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.admin-staff > * { min-width: 0; }
+.staff-head .card-head { flex-wrap: wrap; gap: 10px; }
+.staff-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.staff-item { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: grid; gap: 10px; background: #fff; }
+.staff-item.staff-suspended { background: #F9FAFB; }
+.staff-item.staff-pending { border-color: var(--gold); background: #FFFBEB; }
+.staff-item-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.staff-item-grid { display: grid; grid-template-columns: 1fr; gap: 4px 16px; }
+.staff-item-grid p { margin: 0; overflow-wrap: anywhere; }
+.staff-actions { flex-wrap: wrap; gap: 8px; }
+.staff-status-active { background: var(--success-bg); color: var(--success); }
+.staff-status-pending { background: #FEF3C7; color: #92400E; }
+.staff-status-suspended { background: var(--danger-bg); color: var(--danger); }
+.staff-acc-badge { background: #E0E7FF; color: #3730A3; }
+.staff-legacy-add { padding: 12px 16px; }
+.staff-legacy-add summary { cursor: pointer; color: var(--muted); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.invite-result { margin-top: 14px; width: 100%; }
+.invite-link { width: 100%; padding: 10px 12px; background: #fff; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); word-break: break-all; margin: 0; user-select: all; }
+.invite-waiting { background: #FEF3C7; color: #92400E; }
+.invite-used { background: var(--success-bg); color: var(--success); }
+.invite-expired, .invite-revoked { background: #F3F4F6; color: var(--muted); }
+.rep-clients { list-style: none; margin: 8px 0; padding: 0; max-height: 50vh; overflow-y: auto; display: grid; gap: 4px; }
+.rep-clients li { overflow-wrap: anywhere; }
+.rep-move-row { margin-top: 12px; }
+.dash-staff-joins { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+@media (min-width: 768px) {
+  .staff-item-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.staff-item .team-role-select { max-width: 240px; min-height: 44px; }
+.sales-stat-value .mono { white-space: nowrap; }   /* 금액 숫자가 중간에서 줄바꿈되지 않게 */
+.sales-stat { text-align: start; cursor: pointer; font: inherit; color: inherit; }
+.sales-stat:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 420px) {
+  .sales-stats { grid-template-columns: 1fr; }
+}

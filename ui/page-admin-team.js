@@ -315,6 +315,7 @@ Object.assign(PageAdmin, {
     if (r.target_type === 'order') {
       return '<button type="button" class="link-btn mono" onclick="PageAdmin.openOrder(\'' + escHtml(r.target_id) + '\')">' + escHtml(r.target_id) + '</button>';
     }
+    if (r.target_type === 'invite') return '<span class="mono">#' + escHtml(r.target_id) + '</span>';
     if (r.target_type === 'topup' || r.target_type === 'line_group' || r.target_type === 'tax_invoice') return '<span class="mono">' + escHtml(r.target_id) + '</span>';
     if (r.target_type === 'member' || r.target_type === 'customer') {
       var d = r.detail || {};
@@ -350,6 +351,17 @@ Object.assign(PageAdmin, {
         return t('role_' + d.from) + ' → ' + t('role_' + d.to);
       case 'team_remove':
         return d.role ? t('role_' + d.role) : '';
+      // 직원 계정 · 초대 링크 (sql/023)
+      case 'staff_joined': case 'staff_converted':
+        return d.role ? t('role_' + d.role) : '';
+      case 'staff_invite_created':
+        return t('role_' + (d.role || 'staff')) + (d.hours ? ' · ' + tf('staff_hours_n', { n: d.hours }) : '') + (d.note ? ' · ' + d.note : '');
+      case 'staff_invite_revoked':
+        return t('role_' + (d.role || 'staff')) + (d.note ? ' · ' + d.note : '');
+      case 'staff_suspended':
+        return d.moved ? tf('staff_clients_moved', { n: d.moved }) + (d.to_name ? ' → ' + d.to_name : '') : '';
+      case 'clients_moved':
+        return tf('staff_clients_moved', { n: d.count || 0 }) + ' → ' + (d.to_name || t('rep_none'));
       // 영업 · 커미션 (sql/015 · 016) — order_rep 는 015 때 기록 (지금은 입금 기준 topup_rep)
       case 'topup_rep': case 'order_rep': case 'customer_rep':
         return (d.from_name || t('rep_none')) + ' → ' + (d.to_name || t('rep_none')) +
