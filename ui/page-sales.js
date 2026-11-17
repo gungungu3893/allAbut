@@ -11,7 +11,7 @@ Object.assign(PageAdmin, {
     { tab: 'sales', key: 'snav_home' }, { tab: 'sclients', key: 'snav_clients' }, { tab: 'sorders', key: 'snav_orders' },
     { tab: 'spay', key: 'snav_payments' }, { tab: 'scomm', key: 'snav_commission' }, { tab: 'srev', key: 'snav_revenue' }
   ],
-  shome: { data: null, error: null },
+  shome: { data: null, error: null, missing: false },   // missing = sql/023 실행 전
   sclients: { rows: null, error: null, q: '', sort: 'name' },
   sorders: { rows: null, error: null, stage: 'active', client: '', open: null },
   spay: { rows: null, pending: null, error: null, client: '', from: '', to: '' },
@@ -23,7 +23,7 @@ Object.assign(PageAdmin, {
 
   // 고객 계정 팀원(탭 줄이 있을 때)용 영업 안쪽 메뉴 — 직원 계정은 위쪽 메뉴 줄에 이미 있어요
   salesSubNavHtml: function () {
-    if (cncIsStaffAccount()) return '';
+    if (cncIsStaffAccount() || this.shome.missing) return '';   // sql/023 전이면 새 영업 화면이 없어요
     var self = this;
     return '<div class="seg sales-subnav" role="tablist">' + this.SALES_VIEWS.map(function (v) {
       var on = self.tab === v.tab;
@@ -51,8 +51,10 @@ Object.assign(PageAdmin, {
       if (token !== this.loadToken) return;
       st.data = d;
     } catch (err) {
-      console.error(err);
       if (token !== this.loadToken) return;
+      // sql/023 을 아직 실행하지 않았으면 → 예전 영업 화면(내 커미션 + 내 담당 입금) 그대로
+      if (cncIsMissingFunction(err)) { st.missing = true; return this.loadSales(); }
+      console.error(err);
       st.error = err;
     }
     this.drawBody();
@@ -60,6 +62,7 @@ Object.assign(PageAdmin, {
 
   salesHomeHtml: function () {
     var st = this.shome;
+    if (st.missing) return this.salesHtml();   // sql/023 전: 예전 영업 화면
     var html = this.salesSubNavHtml() + this.staffHelpHtml('sales');
     if (st.error) return html + this.errorBox('PageAdmin.loadSalesHome()', st.error);
     if (!st.data) return html + '<div class="card">' + uiLoading() + '</div>';

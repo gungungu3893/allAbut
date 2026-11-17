@@ -133,7 +133,7 @@ var PageAdmin = {
             : '<h1 class="page-title"><span class="admin-badge admin-badge-lg">💼 ' + escHtml(t('nav_sales')) + '</span> ' + escHtml(t('sales_title')) + '</h1>') +
           '<button type="button" class="btn btn-outline" onclick="PageAdmin.refresh()"><span aria-hidden="true">↻</span> ' + escHtml(t('admin_refresh')) + '</button>' +
         '</div>' +
-        (this.allowedTabs().length < 2 ? '' : '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().filter(function (x) { return !x.sub; }).map(function (x) {
+        (this.allowedTabs().filter(function (x) { return !x.sub; }).length < 2 ? '' : '<div class="seg admin-tabs" role="tablist">' + this.allowedTabs().filter(function (x) { return !x.sub; }).map(function (x) {
           var on = self.tab === x.id || (x.id === 'sales' && self.isSalesTab && self.isSalesTab(self.tab));
           return '<button type="button" role="tab" class="seg-btn' + (on ? ' active' : '') + '" aria-selected="' + on + '" onclick="PageAdmin.setTab(\'' + x.id + '\')">' + escHtml(t(x.key)) + '</button>';
         }).join('') + '</div>') +
