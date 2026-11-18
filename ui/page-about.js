@@ -4,7 +4,9 @@
 //   founded_year · implant_brands · lead_time · delivery · remake_policy (+ 주소·이메일·LINE 은 cncContactInfo)
 // 값이 비어 있는 줄·카드·섹션은 숨겨요.
 //
-// 순서: Hero(다크) → 01 About → 02 Why allAbut(강점 5개) → 03 Products → 04 How to order → 05 Delivery & guarantee → 06 Contact
+// 순서: Hero(다크) → 01 About → 02 Why allAbut(강점 5개) → 03 Products → 04 How to order → 05 Delivery & guarantee → 06 Manufacturer(제조사, sql/026) → 07 Contact
+// 브랜드 규칙: 판매 = allAbut, 제조 = 제조사(관리자 설정의 manufacturer_name — 문구 안 {manufacturer}). 인증은 제조사가 보유한 것으로만 보여요.
+//   제품 이름에는 항상 CNC, 정밀도는 "<5μm" (HTML 에 넣을 때는 escHtml 로 &lt;5μm)
 // SEO: 이 페이지가 열려 있는 동안 title · description · og 태그(언어별) + 회사 정보 JSON-LD(Organization, index.html 기본값과 같은 @id)를 넣고, 나가면 원래대로.
 
 // 제품 카드 — 나중에 사진을 넣으려면 img 에 경로를 쓰고(예: 'img/abutment.jpg'), 그 폴더를 build.sh 목록에도 추가하세요.
@@ -20,11 +22,12 @@ var ABOUT_STRENGTHS = [
   { icon: 'metrology', titleKey: 'about_why2_title', textKey: 'about_why2_text' },
   { icon: 'titanium', titleKey: 'about_why3_title', textKey: 'about_why3_text' },
   { icon: 'design', titleKey: 'about_why4_title', textKey: 'about_why4_text' },
-  { icon: 'certified', titleKey: 'about_why5_title', textKey: 'about_why5_text', chips: ['ISO 13485', 'Thai FDA', 'GMP'] }
+  { icon: 'certified', titleKey: 'about_why5_title', textKey: 'about_why5_text' }   // 인증 이름은 여기 쓰지 않아요 — 제조사 섹션에 제조사 보유 인증으로만
 ];
 
 // 숫자·규격 글자 → IBM Plex Mono 골드 (번역문 안에서도 이 글자 그대로 찾아요)
-var ABOUT_SPEC_TOKENS = ['Ti-6Al-4V ELI', 'ASTM F136', 'Grade 23', 'ISO 13485', '5μm'];
+//   "<5μm" 을 "5μm" 보다 먼저 찾아요 (긴 것부터 — specHtml 이 한 번에 바꿔서 겹쳐 감싸지 않아요)
+var ABOUT_SPEC_TOKENS = ['Ti-6Al-4V ELI', 'ASTM F136', 'Grade 23', 'ISO 13485', '<5μm', '5μm'];
 
 // 선 아이콘 (stroke 만, 색은 CSS 의 currentColor = 골드)
 var ABOUT_ICONS = {
@@ -79,14 +82,22 @@ var PageAbout = {
   // ----------------------------------------------------------------
   // 작은 도우미
   // ----------------------------------------------------------------
-  // 번역문을 안전하게 바꾼 뒤, 규격 글자만 Mono 골드로 감싸요
+  // 번역문을 안전하게 바꾼 뒤(escHtml — "<" 는 &lt;), 규격 글자만 Mono 골드로 감싸요.
+  //   긴 글자부터 한 번에 찾아서 "<5μm" 안의 "5μm" 을 두 번 감싸지 않아요. dir="ltr" = 아랍어 · 페르시아어에서도 "<" 가 뒤집히지 않게
   specHtml: function (text) {
     var html = escHtml(text);
-    ABOUT_SPEC_TOKENS.forEach(function (tok) {
-      var safe = escHtml(tok);
-      html = html.split(safe).join('<span class="mono about-spec">' + safe + '</span>');
-    });
-    return html;
+    var toks = ABOUT_SPEC_TOKENS.map(escHtml).sort(function (a, b) { return b.length - a.length; });
+    var re = new RegExp(toks.map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
+    return html.replace(re, function (m) { return '<span class="mono about-spec" dir="ltr">' + m + '</span>'; });
+  },
+
+  // 문구 안 {manufacturer} = 관리자 설정의 제조사 이름 (비어 있으면 "제조 협력사")
+  mfrName: function () {
+    var m = cncManufacturerInfo();
+    return m.name || t('about_mfr_partner');
+  },
+  mt: function (key) {
+    return tf(key, { manufacturer: this.mfrName() });
   },
 
   icon: function (name) {
@@ -109,7 +120,7 @@ var PageAbout = {
       '<path d="M1 4v20M319 4v20" />' +
       '<path d="M8 14h126M186 14h126" />' +
       '<path d="M8 14l8-4M8 14l8 4M312 14l-8-4M312 14l-8 4" />' +
-      '<text x="160" y="18.5" text-anchor="middle">5 μm</text>' +
+      '<text x="160" y="18.5" text-anchor="middle" direction="ltr" unicode-bidi="embed">&lt;5 μm</text>' +   // 아랍어 · 페르시아어에서도 "<5 μm" 순서 그대로   // 정밀도 표기 "<5μm" (공차)
     '</svg>';
   },
 
@@ -132,9 +143,9 @@ var PageAbout = {
             '<span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>' +
           '</div>' +
           '<h1 class="about-hero-title" id="about-hero-title">' + escHtml(t('about_hero_title')) +
-            ' <span class="mono about-hero-um">5μm.</span></h1>' +
+            ' <span class="mono about-hero-um" dir="ltr">' + escHtml('<5μm.') + '</span></h1>' +
           this.dimensionSvg() +
-          '<p class="about-hero-sub">' + escHtml(t('about_hero_sub')) + '</p>' +
+          '<p class="about-hero-sub">' + escHtml(this.mt('about_hero_sub')) + '</p>' +
           '<div class="about-hero-actions">' +
             '<button type="button" class="btn btn-gold btn-lg about-cta-order" onclick="PageAbout.startOrder()">' + escHtml(t('about_cta_order')) + ' <span class="arrow" aria-hidden="true">→</span></button>' +
             '<a href="#/contact" class="btn btn-lg about-btn-ghost">' + escHtml(t('about_cta_contact')) + '</a>' +
@@ -144,7 +155,7 @@ var PageAbout = {
 
     // ===== 01 About =====
     var yearMark = '\u0000';
-    var intro = escHtml(tf('about_intro', { year: yearMark })).split(yearMark)
+    var intro = escHtml(tf('about_intro', { year: yearMark, manufacturer: this.mfrName() })).split(yearMark)
       .join('<span class="mono about-num">' + escHtml(String(p.foundedYear)) + '</span>');
     var about =
       '<section class="about-section about-reveal" id="about-company">' +
@@ -153,7 +164,7 @@ var PageAbout = {
           '<p class="about-lead">' + intro + '</p>' +
           '<dl class="about-stats">' +
             '<div class="about-stat"><dt class="mono">20<span class="about-stat-plus">+</span></dt><dd>' + escHtml(t('about_stat_years')) + '</dd></div>' +
-            '<div class="about-stat"><dt class="mono">5μm</dt><dd>' + escHtml(t('about_stat_precision')) + '</dd></div>' +
+            '<div class="about-stat"><dt class="mono" dir="ltr">' + escHtml('<5μm') + '</dt><dd>' + escHtml(t('about_stat_precision')) + '</dd></div>' +
             '<div class="about-stat"><dt class="mono">Grade 23</dt><dd>' + escHtml(t('about_stat_material')) + '</dd></div>' +
           '</dl>' +
         '</div>' +
@@ -168,10 +179,7 @@ var PageAbout = {
             return '<article class="about-why-card">' +
               '<div class="about-why-top">' + self.icon(s.icon) + '<span class="about-why-idx mono" aria-hidden="true">' + (i + 1) + '/5</span></div>' +
               '<h3 class="about-why-title">' + self.specHtml(t(s.titleKey)) + '</h3>' +
-              '<p class="about-why-text">' + self.specHtml(t(s.textKey)) + '</p>' +
-              (s.chips ? '<ul class="about-cert-chips">' + s.chips.map(function (ch) {
-                return '<li class="about-cert-chip"><span class="about-cert-dot" aria-hidden="true"></span>' + self.specHtml(ch) + '</li>';
-              }).join('') + '</ul>' : '') +
+              '<p class="about-why-text">' + self.specHtml(self.mt(s.textKey)) + '</p>' +
             '</article>';
           }).join('') +
         '</div>' +
@@ -231,7 +239,33 @@ var PageAbout = {
         }).join('') + '</dl>' +
       '</section>' : '';
 
-    // ===== 06 Contact =====
+    // ===== 06 Manufacturer (제조사 이름이 있을 때만 — sql/026, 관리자 Settings → Company info → 제조사) =====
+    //   "Manufactured by …" + 주소 + 제조사가 보유한 인증 목록(+ 태국 FDA 제조 허가 번호). 인증은 allAbut 것이 아니라고 분명히
+    var m = cncManufacturerInfo();
+    var mfrCerts = m.certs.slice();
+    var manufacturer = m.name ?
+      '<section class="about-section about-reveal about-mfr" id="about-manufacturer">' +
+        this.sectionHead(next(), 'about_sec_mfr') +
+        '<div class="about-mfr-box">' +
+          '<p class="about-mfr-by">' + escHtml(tf('about_mfr_by', { name: m.name })) + '</p>' +
+          (m.address ? '<p class="about-mfr-address pre">' + escHtml(m.address) + '</p>' : '') +
+          '<p class="about-mfr-role">' + escHtml(tf('about_mfr_role', { name: m.name })) + '</p>' +
+          (mfrCerts.length || m.licenseNo ?
+            '<div class="about-mfr-certs">' +
+              '<h3 class="about-sub-title">' + escHtml(t('about_mfr_certs_title')) + '</h3>' +
+              '<p class="about-mfr-note">' + escHtml(tf('about_mfr_certs_note', { name: m.name })) + '</p>' +
+              '<ul class="about-mfr-list">' +
+                mfrCerts.map(function (ct) {
+                  return '<li class="about-mfr-cert"><span class="about-cert-dot" aria-hidden="true"></span><span>' + self.specHtml(ct) + '</span></li>';
+                }).join('') +
+                (m.licenseNo ? '<li class="about-mfr-cert about-mfr-license"><span class="about-cert-dot" aria-hidden="true"></span><span>' +
+                  escHtml(t('about_mfr_license')) + ' <span class="mono">' + escHtml(m.licenseNo) + '</span></span></li>' : '') +
+              '</ul>' +
+            '</div>' : '') +
+        '</div>' +
+      '</section>' : '';
+
+    // ===== 07 Contact =====
     var contactBits = [];
     if (c.address) contactBits.push('<span class="about-contact-item about-contact-address">' + escHtml(c.address).replace(/\n/g, ', ') + '</span>');
     if (c.email) contactBits.push('<a class="about-contact-item" href="' + escHtml(cncMailto(c.email)) + '">' + escHtml(c.email) + '</a>');
@@ -249,7 +283,7 @@ var PageAbout = {
         '</div>' +
       '</section>';
 
-    this.main.innerHTML = '<div class="page page-about">' + hero + '<div class="about-body">' + about + why + products + how + delivery + contact + '</div></div>';
+    this.main.innerHTML = '<div class="page page-about">' + hero + '<div class="about-body">' + about + why + products + how + delivery + manufacturer + contact + '</div></div>';
     this.applyMeta(p, c);
     this.setupReveal();
   },
@@ -299,7 +333,7 @@ var PageAbout = {
   applyMeta: function (p, c) {
     var self = this;
     var title = t('about_meta_title');
-    var desc = t('about_meta_desc');
+    var desc = this.mt('about_meta_desc');
     var url = (typeof SITE_URL === 'string' ? SITE_URL : '') + '/#/about';
     var tags = [
       ['name', 'description', desc],

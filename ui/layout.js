@@ -1215,18 +1215,36 @@ function uiTopupBadge(status) {
 // ================================================================
 // 12) 하단 푸터 (모든 화면): About · Terms · Privacy · Credit & Refund Policy · © 2026 회사명
 // ================================================================
+//   + "판매: 회사명 · 제조: 제조사" 한 줄 (제조사 이름이 있을 때만, sql/026)
+//   + 광고 허가 번호 한 줄 (값이 있을 때만, **로그인 전 화면의 푸터에만** — 앱 화면(#screen-app) 푸터에는 없어요)
 function renderFooters() {
   var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
   var name = c.company_name || 'allAbut';
+  var mfr = typeof cncManufacturerInfo === 'function' ? cncManufacturerInfo() : { name: '', adLicenseNo: '' };
   var html = footerContactHtml() +
     '<nav class="footer-links" aria-label="' + escHtml(t('legal_documents')) + '">' +
     ['<a href="#/about" class="footer-about">' + escHtml(t('about_nav')) + '</a>'].concat(LEGAL_DOCS_LIST.map(function (d) {
       return '<a href="#/' + d.route + '">' + escHtml(t(d.titleKey)) + '</a>';
     })).join('<span aria-hidden="true">·</span>') +
-    '</nav><p class="footer-copy">© 2026 ' + escHtml(name) + '</p>';
+    '</nav>' +
+    (mfr.name ? '<p class="footer-maker">' + escHtml(tf('footer_sold_by', { seller: name, maker: mfr.name })) + '</p>' : '') +
+    '<p class="footer-copy">© 2026 ' + escHtml(name) + '</p>';
+  var adLine = mfr.adLicenseNo ? '<p class="footer-ad-license">' + escHtml(tf('footer_ad_license', { no: mfr.adLicenseNo })) + '</p>' : '';
   var els = document.querySelectorAll('.site-footer');
-  for (var i = 0; i < els.length; i++) els[i].innerHTML = html;
+  for (var i = 0; i < els.length; i++) {
+    var inApp = !!(els[i].closest && els[i].closest('#screen-app'));
+    els[i].innerHTML = html + (inApp ? '' : adLine);
+  }
+  updatePublicFooterSpace();
 }
+
+// 랜딩 · 로그인 화면의 고정 푸터 높이 → 본문 아래 여백 (줄이 늘어도 본문이 푸터에 가리지 않게, css/landing.css --public-footer-h)
+function updatePublicFooterSpace() {
+  var f = document.querySelector('.public-footer');
+  if (!f || !f.offsetHeight) return;
+  document.documentElement.style.setProperty('--public-footer-h', f.offsetHeight + 'px');
+}
+window.addEventListener('resize', function () { updatePublicFooterSpace(); });
 
 
 // ================================================================

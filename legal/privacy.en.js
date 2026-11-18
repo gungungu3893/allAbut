@@ -1,5 +1,5 @@
 // allAbut — Privacy Policy (English, governing version) — Thailand PDPA
-// 내용은 지금 사이트 기능에 맞춰 써요: 수집 항목(본명 · Tax ID · 가입 IP/기기/브라우저), 제공 업체(Supabase · Cloudflare · Google Fonts · jsDelivr · cdnjs · 이메일 · LINE · 협력 기공소),
+// 내용은 지금 사이트 기능에 맞춰 써요: 수집 항목(본명 · Tax ID · 가입 IP/기기/브라우저), 제공 업체(Supabase · Cloudflare · Google Fonts · jsDelivr · cdnjs · 이메일 · LINE · 제조사 {manufacturer_name} · 협력 기공소 — 제조사와 기공소는 따로),
 // 직원용 LINE 단체방 사본, 영업 담당 열람, 자체 광고 배너 집계, 보관 기간(파일 2년 자동 삭제 — sql/020, 방문 통계 24개월 — sql/014).
 window.LEGAL_DOCS = window.LEGAL_DOCS || {};
 LEGAL_DOCS['privacy.en'] = {
@@ -50,7 +50,7 @@ LEGAL_DOCS['privacy.en'] = {
         'As a processor, allAbut uses patient data only to process your orders and for related quality checks, claims and legal record keeping.',
         'You confirm that you have a lawful basis under the PDPA, including explicit patient consent where required, to share patient data with us.',
         'Please enter only pseudonymous IDs such as chart numbers. We do not need and do not want patients\' real names.',
-        'Our staff access patient files only when needed to work on your order. For crown sets, the scan files, pseudonymous patient ID and tooth information may be shared with our partner dental laboratory to make the crown.'
+        'Our staff access patient files only when needed to work on your order. To manufacture your products, the scan files, pseudonymous patient ID, tooth information and order specifications are processed by {manufacturer_name}, the manufacturer of the CNC Custom Abutments. For crown sets, the scan files, pseudonymous patient ID and tooth information may be shared with our partner dental laboratory to make the crown.'
       ]
     },
     {
@@ -73,7 +73,8 @@ LEGAL_DOCS['privacy.en'] = {
           'Google Fonts, jsDelivr and cdnjs — delivering fonts and program files to your browser; like any website, they receive your IP address and browser information when your browser downloads these files;',
           'the email service used by our authentication provider — sending sign-up confirmation and password reset emails;',
           'LY Corporation (LINE) — sending notifications if you connect LINE, and sending notification copies to our staff LINE groups;',
-          'our partner dental laboratory — for crown set orders: scan files, the pseudonymous patient ID and tooth information;',
+          '{manufacturer_name} — the manufacturer of the CNC Custom Abutments: scan files, the pseudonymous patient ID, tooth information, order specifications and designs, to manufacture your orders;',
+          'our partner dental laboratory (separate from the manufacturer) — for crown set orders: scan files, the pseudonymous patient ID and tooth information;',
           'banks and the PromptPay system — when you make payments or receive refunds;',
           'shipping carriers — your clinic name, address and phone number for delivery;',
           'postal and courier services — the name, address and phone number on your tax invoices, to post the original documents;',

@@ -2195,6 +2195,7 @@ var PageAdmin = {
         input('dpo_email', 'legal_dpo_email', c.dpo_email, { type: 'email' }) +
         input('line_id', 'line_id_label', c.line_id) +
         this.aboutFieldsHtml(c) +
+        this.manufacturerFieldsHtml(c) +
         '<div class="span-2"><button type="submit" class="btn btn-primary btn-lg"' + (saving ? ' disabled' : '') + '>' + escHtml(saving ? t('saving') : t('pe_save')) + '</button></div>' +
       '</form></section>';
   },
@@ -2238,6 +2239,34 @@ var PageAdmin = {
       localized('remake_policy', 'about_remake');
   },
 
+  // 제조사 입력칸 (sql/026, owner — Company info 저장 버튼으로 같이 저장). 비어 있으면 화면에 안 보여요
+  //   판매 = allAbut(위 회사 정보), 제조 = 여기 제조사. 인증은 제조사가 보유한 것만 (한 줄에 하나)
+  manufacturerFieldsHtml: function (c) {
+    var head = '<div class="span-2 co-about-head" id="co-mfr-head">' +
+      '<h3 class="co-about-title">' + escHtml(t('admin_mfr_title')) + '</h3>' +
+      '<p class="card-desc">' + escHtml(t('admin_mfr_help')) + '</p>' +
+    '</div>';
+    if (!cncHasManufacturerFields()) {
+      return head + '<p class="span-2 notice-box" id="co-mfr-need-sql">' + escHtml(t('admin_mfr_need_sql')) + '</p>';
+    }
+    var field = function (id, labelKey, opts) {
+      opts = opts || {};
+      var val = escHtml(c[id] || '');
+      var max = MANUFACTURER_MAX[id] || 300;
+      var input = opts.rows
+        ? '<textarea class="input" id="co-' + id + '" rows="' + opts.rows + '" maxlength="' + max + '">' + val + '</textarea>'
+        : '<input class="input" id="co-' + id + '" type="text" maxlength="' + max + '" value="' + val + '">';
+      return '<div class="field' + (opts.span ? ' span-2' : '') + '"><label class="field-label" for="co-' + id + '">' + escHtml(t(labelKey)) + '</label>' + input +
+        (opts.hint ? '<p class="field-hint">' + escHtml(t(opts.hint)) + '</p>' : '') + '</div>';
+    };
+    return head +
+      field('manufacturer_name', 'admin_mfr_name', { span: true }) +
+      field('manufacturer_address', 'admin_mfr_address', { span: true, rows: 2 }) +
+      field('manufacturer_certs', 'admin_mfr_certs', { span: true, rows: 4, hint: 'admin_mfr_certs_hint' }) +
+      field('manufacturer_license_no', 'admin_mfr_license_no') +
+      field('ad_license_no', 'admin_ad_license_no', { hint: 'admin_ad_license_hint' });
+  },
+
   saveCompany: async function (event) {
     event.preventDefault();
     var sx = this.settingsTab;
@@ -2264,6 +2293,10 @@ var PageAdmin = {
       });
       var y = fields.founded_year;
       if (y && !(/^\d{4}$/.test(y) && +y >= 1900 && +y <= 2100)) errs.founded_year = 'about_err_year';
+    }
+    // 제조사 칸 (sql/026 실행 후에만 화면에 있어요)
+    if (document.getElementById('co-manufacturer_name')) {
+      MANUFACTURER_FIELDS.forEach(function (k) { fields[k] = v(k); });
     }
     var slots = document.querySelectorAll('[data-co-err]');
     for (var i = 0; i < slots.length; i++) slots[i].innerHTML = uiFieldError(errs[slots[i].getAttribute('data-co-err')]);

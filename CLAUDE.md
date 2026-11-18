@@ -203,7 +203,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023 → 024 → 025.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023 → 024 → 025 → 026.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -223,6 +223,7 @@
   **024 (작업 기록 역할별 읽기) — 005 를 다시 실행하면 024 도 다시** (005 가 "audit: team read" 규칙을 다시 만들어서 제작 직원이 다시 전부 봐요). 024 는 다른 파일의 함수를 다시 정의하지 않아요
   **025 (주문번호 날짜를 방콕 날짜로) — 008 · 012 · 018 · 019 · 023 을 다시 실행하면 025 도 다시** (`create_cnc_order` 가 UTC 날짜(`to_char(now(), 'YYMMDD')`) 모양으로 돌아가서).
   025 = 023 의 `create_cnc_order`(019 정의 + 맨 앞 STAFF_ACCOUNT) 그대로 + 주문번호 한 줄만 `to_char(now() at time zone 'Asia/Bangkok', 'YYMMDD')`. **create_cnc_order 를 새로 고칠 때는 025 정의에서 시작**
+  **026 (제조사 칸 · 세금 문서 품목 이름 CNC) — 021 을 다시 실행하면 026 도 다시** (`_issue_tax_doc_for_topup` 이 CNC 가 없는 품목 이름으로 돌아가서). 026 = 021 정의 그대로 + 품목 이름 두 줄만. 제조사 칸 · 값은 그대로 남아요
   **004 는 다시 실행해도 오류가 안 나요** (`admin_topups_export` 앞에 `drop function if exists` — 018 의 product 칸 모양과 달라서). 004 를 다시 했으면 위 규칙대로 005 → 016 → 018 도 다시
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
@@ -374,9 +375,10 @@
 
 ## 회사소개 (#/about, sql/007_company_profile.sql)
 - `ui/page-about.js` — 로그인 없이도 열림 (screen-legal). 로그인 상태면 앱 화면 안에서. 최대 너비 1120px, Hero 만 다크(#06090f→#001D4A) + 치수선 장식
-- 순서: Hero → 01 About → 02 Why allAbut(강점 5개, 선 아이콘 SVG `ABOUT_ICONS`) → 03 Products(`ABOUT_PRODUCTS`, img 를 채우면 사진 자리 생김) → 04 How to order(`wiz_step1~5` 재사용) → 05 Delivery & guarantee → 06 Contact
+- 순서: Hero → 01 About → 02 Why allAbut(강점 5개, 선 아이콘 SVG `ABOUT_ICONS` — 인증 칩 없음) → 03 Products(`ABOUT_PRODUCTS`, img 를 채우면 사진 자리 생김) → 04 How to order(`wiz_step1~5` 재사용) → 05 Delivery & guarantee → 06 Manufacturer(제조사 이름이 있을 때만, sql/026) → 07 Contact
 - 섹션 번호 01~ 은 보이는 섹션만 순서대로. 값이 빈 줄·칩·섹션은 숨김
-- 규격 글자(`ABOUT_SPEC_TOKENS`: 5μm, ASTM F136, Grade 23, Ti-6Al-4V ELI, ISO 13485)는 번역문 안에서 찾아 Mono 골드 → **번역할 때 이 글자는 그대로 둔다**
+- 규격 글자(`ABOUT_SPEC_TOKENS`: <5μm, 5μm, ASTM F136, Grade 23, Ti-6Al-4V ELI, ISO 13485)는 번역문 안에서 찾아 Mono 골드(긴 것부터 한 번에 — `specHtml`) → **번역할 때 이 글자는 그대로 둔다**
+- 제조사 값(이름 · 주소 · 인증 · 태국 FDA 제조 허가)은 `cncManufacturerInfo()` — 위 "규칙"의 판매 / 제조 표기
 - 회사 값은 `company_settings` 만 (`cncCompanyProfile(lang)`): founded_year, implant_brands(쉼표), lead_time·delivery·remake_policy (jsonb `{en, th, ko, ...}`, 지금 언어 → en 순으로, `cncLocalizedText`)
 - 관리자 Settings → Company info 아래 "About page" 칸 (en/th/ko 입력, 다른 언어 값은 저장할 때 보존). 007 실행 전이면 안내만 보이고 기존 칸 저장은 그대로 동작 (`cncHasCompanyProfile()`)
 - SEO: 페이지가 열려 있는 동안 title·description·og 태그(언어별, og:url 은 `SITE_URL`) + JSON-LD Organization, 떠나면 원래대로
@@ -572,6 +574,20 @@
 - 가공(milling) 시작 후 취소 불가 — 고객 취소는 submitted 에서만, 관리자 Cancel & refund 는 submitted ~ approved 에서만. DB 트리거 `prevent_late_cancel` → 에러 `CANNOT_CANCEL_AFTER_MILLING`
 
 ## 규칙
+- **제품 이름에는 항상 CNC 를 붙인다** (9개 언어 모두 "CNC" 는 영문 그대로): 정식 "CNC Custom Abutment" / "CNC Custom Abutment + Zirconia Crown Set", 짧게 "CNC Abutment"(ko "CNC 어버트먼트") / "Crown set"(ko "크라운 세트").
+  ko = "CNC 커스텀 어버트먼트", th · vi · tr = 영어 이름 그대로 "CNC Custom Abutment", zh = "CNC定制基台", es · ar · fa = 그 언어 어순("pilar personalizado CNC" · "دعامة CNC مخصصة" · "اباتمنت CNC سفارشی").
+  "어버트먼트만" = "CNC 어버트먼트만", 크레딧 종류 = "CNC 어버트먼트 크레딧". 일반 공정 문장("어버트먼트를 가공 중")은 제품 이름이 아니라 그대로.
+  범위: lang/ 9개 · 가이드 · 회사소개 · 법적 문서 3종 × 3개 언어 · LINE(`prod_abutment` · `bal_abutment`) · index.html 검색 글 · 세금 문서 품목 이름(sql/026, 앞으로 발행분만)
+- **정밀도 표기는 "<5μm" (공차 · tolerance)** — "5μm precision / 5μm 정밀도" 라고 쓰지 않는다. 로고 위첨자 "5μm" · 파비콘 · 공유 이미지 · LINE 아이콘은 브랜드 이름이라 그대로.
+  HTML 에 넣을 때는 escHtml(→ `&lt;5μm`), index.html 정적 글은 `&lt;5μm`. 회사소개 `ABOUT_SPEC_TOKENS` 에 '<5μm'(Mono 골드, `dir="ltr"`). ar · fa 문구는 `\u2066<5μm\u2069`(LTR 구간)로 감싸 "<" 가 뒤집히지 않게
+- **판매 = allAbut, 제조 = BIOPLANT Co., Ltd. — 인증은 제조사 것으로만 표기** (sql/026):
+  - 제조사 값은 **코드에 쓰지 않는다** → `company_settings.manufacturer_name · manufacturer_address · manufacturer_certs(한 줄에 하나: 인증 이름 + 번호) · manufacturer_license_no(태국 FDA 제조 허가) · ad_license_no(광고 허가)`,
+    관리자 Settings → Company info → "제조사"(owner, `manufacturerFieldsHtml`). 비어 있는 값은 화면에 안 보여요. 읽기 `cncManufacturerInfo()` · 있는지 `cncHasManufacturerFields()` (cnc/cnc-legal.js)
+  - allAbut 이 직접 만들거나 직접 인증을 가진 것처럼 쓰지 않는다 ("We produce …", "in-house metrology", "Certified Quality" + ISO 칩 같은 문장 금지). 회사소개 문구의 제조사 자리는 `{manufacturer}`(비면 "제조 협력사" `about_mfr_partner`, `PageAbout.mt()`)
+  - 보이는 곳: 회사소개 "Manufacturer" 섹션(Manufactured by · 주소 · 판매/제조 역할 · **"제조사가 보유한 인증"** 목록 + 태국 FDA 제조 허가 번호) / 모든 푸터 "Sold by {회사명} · Manufactured by {제조사}" (`footer_sold_by`) /
+    로그인 전 화면 푸터(랜딩 · 로그인 · 로그인 전 법적 문서 · 회사소개)에만 광고 허가 번호 한 줄 (`footer_ad_license`) / 이용약관 `{manufacturer_name}`(제조사 · 계약 상대방은 allAbut · 인증은 제조사 것) /
+    개인정보처리방침 제공 업체 목록에 제조사(스캔 · 주문 자료를 제조를 위해 처리) — **협력 치과기공소(크라운)와 따로** 적어요
+  - 랜딩 고정 푸터가 줄이 늘어도 본문을 가리지 않게 `--public-footer-h`(renderFooters 가 재요)
 - 사용자가 입력한 값은 HTML 에 넣을 때 **항상 `escHtml()`** (XSS 방지)
 - 화면 글자는 전부 번역 키로 (`t()` / `tf()`), 새 키는 9개 언어 파일에 모두 추가
 - **숫자 1 일 때 단수 문구**: `tf(key, { n })` 은 n 이 1 이고 **지금 언어에** `key_one` 이 있으면 그 문구를 써요 (영어 "1 tooth" · 스페인어 "1 diente" · 아랍어 "سن واحد").

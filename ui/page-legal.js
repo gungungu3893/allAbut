@@ -72,6 +72,7 @@ var PageLegal = {
       dpo_email: v(c.dpo_email || c.email, 'Privacy contact email'),
       phone: v(c.phone, 'Phone'),
       line_id: v(c.line_id, 'LINE ID'),
+      manufacturer_name: v(String(c.manufacturer_name || '').trim(), 'Manufacturer name'),   // sql/026 (비면 [Manufacturer name])
       vat: escHtml(formatNumber(this.state ? this.state.vat : 7)),
       single_price: single ? escHtml(formatTHB(single)) : '<span class="legal-ph">[1-credit price]</span>'
     };

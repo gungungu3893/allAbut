@@ -2236,7 +2236,18 @@ body.hdr-tabbar .app-main { padding-bottom: 110px; }
 .about-term dt { color: var(--gold-dark); font-weight: 600; font-size: 0.9375rem; letter-spacing: 0.3px; }
 .about-term dd { margin: 0; color: var(--navy); font-size: 1.0625rem; line-height: 1.6; }
 
-/* ----- 06 Contact ----- */
+/* ----- 06 Manufacturer (제조사 — sql/026, 판매 = allAbut / 제조 = 제조사) ----- */
+.about-mfr-box { padding: 24px; border-radius: 16px; background: #fff; border: 1px solid var(--border); }
+.about-mfr-by { margin: 0 0 4px; color: var(--navy); font-size: 1.1875rem; font-weight: 600; overflow-wrap: anywhere; }
+.about-mfr-address { margin: 0 0 10px; color: var(--muted); overflow-wrap: anywhere; }
+.about-mfr-role { margin: 0; color: #344054; line-height: 1.6; }
+.about-mfr-certs { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.about-mfr-note { margin: 0 0 10px; color: var(--muted); font-size: 0.9375rem; }
+.about-mfr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.about-mfr-cert { display: flex; align-items: baseline; gap: 10px; color: var(--navy); font-weight: 500; overflow-wrap: anywhere; }
+.about-mfr-cert .about-cert-dot { flex: 0 0 auto; transform: translateY(-2px); }
+
+/* ----- 07 Contact ----- */
 .about-contact { padding-bottom: 24px; }
 .about-contact-box {
   display: grid; gap: 20px; align-items: center;

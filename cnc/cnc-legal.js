@@ -108,6 +108,33 @@ function cncTelUrl(phone) {
 }
 
 // ----------------------------------------------------------------
+// 제조사 (sql/026) — 판매 = allAbut(회사 정보), 제조 = 제조사. 값은 관리자 Settings 에서만 (코드에 쓰지 않아요)
+// ----------------------------------------------------------------
+var MANUFACTURER_FIELDS = ['manufacturer_name', 'manufacturer_address', 'manufacturer_certs', 'manufacturer_license_no', 'ad_license_no'];
+var MANUFACTURER_MAX = { manufacturer_name: 200, manufacturer_address: 500, manufacturer_certs: 2000, manufacturer_license_no: 100, ad_license_no: 100 };
+
+// sql/026 을 실행했는지 (회사 정보에 manufacturer_name 칸이 있는지)
+function cncHasManufacturerFields() {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  return Object.prototype.hasOwnProperty.call(c, 'manufacturer_name');
+}
+
+// 화면에 쓸 제조사 값 (비어 있으면 '' / []) — 인증은 한 줄에 하나
+//   { name, address, certs: ['ISO 13485:2016 — No. 1', ...], licenseNo, adLicenseNo, seller }
+function cncManufacturerInfo() {
+  var c = (typeof _companyCache !== 'undefined' && _companyCache) || {};
+  var clean = function (v) { return String(v == null ? '' : v).trim(); };
+  return {
+    name: clean(c.manufacturer_name),
+    address: clean(c.manufacturer_address),
+    certs: clean(c.manufacturer_certs).split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 30),
+    licenseNo: clean(c.manufacturer_license_no),
+    adLicenseNo: clean(c.ad_license_no),
+    seller: clean(c.company_name) || 'allAbut'
+  };
+}
+
+// ----------------------------------------------------------------
 // 회사소개 #/about (company_settings 의 sql/007 칸들)
 // ----------------------------------------------------------------
 // 언어별로 다르게 쓸 수 있는 칸 (jsonb: { "en": "...", "th": "...", "ko": "..." })
@@ -242,6 +269,14 @@ async function cncAdminSaveCompany(fields) {
     COMPANY_LOCALIZED_FIELDS.forEach(function (k) { clean[k] = cncCleanLocalized(fields[k]); });
     var year = parseInt(fields.founded_year, 10);
     clean.founded_year = (year >= 1900 && year <= 2100) ? year : null;
+  }
+  // 제조사 칸 — sql/026 을 실행한 뒤에만 보내요
+  if (cncHasManufacturerFields()) {
+    MANUFACTURER_FIELDS.forEach(function (k) {
+      var v = String(fields[k] == null ? '' : fields[k]);
+      v = k === 'manufacturer_certs' ? v.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean).join('\n') : v.trim();
+      clean[k] = v.slice(0, MANUFACTURER_MAX[k]);
+    });
   }
   clean.updated_at = new Date().toISOString();
   var r = await sb.from('company_settings').update(clean).eq('id', 1).select();

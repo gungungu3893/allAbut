@@ -1,10 +1,11 @@
 // allAbut — Terms of Service (English, governing version)
 // {company_name} 같은 자리는 company_settings 값으로 자동으로 바뀌어요. 본문 배열 안의 배열 = 글머리표 목록.
+// 브랜드 규칙: 제품 이름에는 CNC · 판매 = allAbut / 제조 = {manufacturer_name}(company_settings.manufacturer_name, sql/026).
 // 내용은 지금 사이트 기능에 맞춰 써요 (상품 두 종류 · 등록된 치과 정보 · 납품일은 디자인 승인 때 · 가공 후 취소 불가 · 테스트 서비스 기간 · 파일 2년 보관).
 window.LEGAL_DOCS = window.LEGAL_DOCS || {};
 LEGAL_DOCS['terms.en'] = {
   title: 'Terms of Service',
-  intro: 'These Terms of Service ("Terms") govern your use of the allAbut ordering platform for CNC custom abutments and abutment + zirconia crown sets. Please read them carefully. By creating an account or placing an order, you agree to these Terms.',
+  intro: 'These Terms of Service ("Terms") govern your use of the allAbut ordering platform for CNC Custom Abutments and CNC Custom Abutment + Zirconia Crown Sets. Please read them carefully. By creating an account or placing an order, you agree to these Terms.',
   sections: [
     {
       title: 'About these Terms',
@@ -16,7 +17,8 @@ LEGAL_DOCS['terms.en'] = {
     {
       title: 'The Service',
       body: [
-        'The Service lets dental professionals order two products online: CNC-milled custom implant abutments, and sets of a custom abutment with a zirconia crown ("crown sets"). You enter case details, upload scan files, review and approve designs, and track production and delivery.',
+        'The Service lets dental professionals order two products online: CNC Custom Abutments (CNC-milled custom implant abutments), and CNC Custom Abutment + Zirconia Crown Sets ("crown sets"). You enter case details, upload scan files, review and approve designs, and track production and delivery.',
+        'allAbut sells the products and is your contracting party. The CNC Custom Abutments are manufactured for allAbut by {manufacturer_name} (the "Manufacturer"). Certifications and licences shown on the Service for manufacturing are held by the Manufacturer, not by allAbut.',
         'Zirconia crowns in crown sets may be designed or manufactured by a partner dental laboratory working on our behalf. We remain responsible to you for the products we deliver under these Terms.',
         'We send order and credit notifications on the website and, if you connect LINE, by LINE message. Connecting LINE is optional.',
         'While the Service is in a test service period (shown by a "TEST" badge next to the logo), order and credit records created during that period may be reset when the official service starts. We will announce the official start on the Service.',
@@ -43,7 +45,7 @@ LEGAL_DOCS['terms.en'] = {
     {
       title: 'Orders',
       body: [
-        'You are responsible for the accuracy and completeness of everything you provide in an order, including tooth positions, the product for each tooth (custom abutment or crown set), implant brand and size, the shade for crown set teeth, notes, delivery details and scan files.',
+        'You are responsible for the accuracy and completeness of everything you provide in an order, including tooth positions, the product for each tooth (CNC Custom Abutment or crown set), implant brand and size, the shade for crown set teeth, notes, delivery details and scan files.',
         'Use a chart number or another code as the patient ID. Do not enter patients\' real names, and do not upload files that contain patient names.',
         'Production follows these steps:',
         [
@@ -59,7 +61,7 @@ LEGAL_DOCS['terms.en'] = {
     {
       title: 'Credits and payment',
       body: [
-        'Orders are paid with credits: 1 tooth = 1 credit of the product kind chosen for that tooth. Custom abutment credits and crown set credits are separate: they cannot be used for the other product, converted into each other, or transferred to another account.',
+        'Orders are paid with credits: 1 tooth = 1 credit of the product kind chosen for that tooth. CNC Custom Abutment credits and crown set credits are separate: they cannot be used for the other product, converted into each other, or transferred to another account.',
         'Credits are purchased in advance. Prices are shown in Thai Baht (THB) and exclude VAT unless stated otherwise. Prices, validity, free credits, cancellations and refunds are described in our Credit & Refund Policy, which forms part of these Terms.',
         'The documents you receive for payments, and their tax treatment, may differ by the country of your clinic: clinics in Thailand receive a Thai tax invoice (the original is sent by post), and clinics in other countries receive a receipt, which is not a Thai tax invoice. The VAT rate for clinics outside Thailand may differ. Details are in the Credit & Refund Policy. You are responsible for any taxes or duties in your own country.'
       ]
@@ -89,7 +91,7 @@ LEGAL_DOCS['terms.en'] = {
     {
       title: 'Clinical responsibility and limitation of liability',
       body: [
-        'allAbut manufactures products to your order. All clinical decisions — including diagnosis, treatment planning, the suitability of a design for the patient, and the fitting and use of the product — are the sole responsibility of the treating dentist.',
+        'allAbut supplies products made to your order (manufactured by the Manufacturer and, for zirconia crowns, possibly by our partner dental laboratory). All clinical decisions — including diagnosis, treatment planning, the suitability of a design for the patient, and the fitting and use of the product — are the sole responsibility of the treating dentist.',
         'To the maximum extent permitted by law, our total liability for any claim relating to an order is limited to the value of the credits used for that order. We are not liable for indirect or consequential loss, including loss of profit, chair time or reputation.',
         'These limits do not apply to liability that cannot be limited or excluded under Thai law, including liability for death or personal injury, liability for wilful misconduct or gross negligence, and liability under the Product Liability Act B.E. 2551 (2008).'
       ]
@@ -102,7 +104,7 @@ LEGAL_DOCS['terms.en'] = {
         [
           'process it only on your documented instructions — to produce, deliver and support your orders, handle claims and keep legally required records — and not for any other purpose;',
           'protect it with appropriate security measures, including encrypted connections, private file storage with time-limited links, and access limited to staff who need it for your order;',
-          'use other service providers (sub-processors), such as our hosting and storage provider, notification provider and partner dental laboratory for crown sets, only under obligations that protect the data at least as well as these Terms; the current list is in our Privacy Policy;',
+          'use other service providers (sub-processors), such as our hosting and storage provider, notification provider, the Manufacturer (to manufacture your products) and partner dental laboratory for crown sets, only under obligations that protect the data at least as well as these Terms; the current list is in our Privacy Policy;',
           'notify you without undue delay after we become aware of a personal data breach affecting your patient data, so that you can meet your own obligations;',
           'delete scan, photo and design files 2 years after the order is completed or cancelled, together with the patient ID, notes and file names in the order (the order record itself is kept for tax and accounting purposes), and delete or return the data when our contract ends, unless the law requires us to keep it;',
           'help you, where reasonable, to respond to patients exercising their rights.'

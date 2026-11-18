@@ -87,7 +87,7 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 72px 16px 120px;   /* 아래 푸터에 가리지 않게 */
+  padding: 72px 16px calc(var(--public-footer-h, 104px) + 16px);   /* 아래 푸터에 가리지 않게 (높이는 renderFooters 가 재요) */
 }
 #screen-auth {
   justify-content: flex-start;
@@ -408,6 +408,9 @@ body.in-app .public-footer { display: none; }
 body.on-auth .public-footer { position: static; padding-top: 14px; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 8px; }
 .footer-copy { margin-top: 2px; }
+/* 판매 · 제조 한 줄 + 로그인 전 광고 허가 번호 (sql/026) — 긴 회사 이름은 줄바꿈 */
+.footer-maker, .footer-ad-license { margin: 2px 0 0; overflow-wrap: anywhere; }
+.footer-ad-license { font-size: 0.75rem; }
 .public-footer .footer-contact { margin: 0 0 2px; color: var(--public-footer-text); }
 .public-footer .footer-contact a { color: var(--public-footer-link); }
 

@@ -359,7 +359,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Credits added', adjusted: 'Adjusted', expired: 'Expired', package: 'Package', unit_price: 'Unit price',
     free_title: "🎁 Free credits", free_body: "{n} free credits have been added (valid until {date}).", free_event: "Event",
     free_address_only: "Can only be used for orders shipped to your registered clinic address.", free_any_address: "Can be used for any order.", order_now: "Order now",
-    product: "Product", prod_abutment: "Abutment credits", prod_crown_set: "Crown set credits", bal_abutment: "Abutment", bal_crown_set: "Crown set",
+    product: "Product", prod_abutment: "CNC Abutment credits", prod_crown_set: "Crown set credits", bal_abutment: "CNC Abutment", bal_crown_set: "Crown set",
   },
   ko: {
     notice_order: '주문 알림', notice_credit: '크레딧 알림', notice_topup: '충전 알림',
@@ -370,7 +370,7 @@ const R: Record<string, ReceiptTexts> = {
     added: '충전 크레딧', adjusted: '조정', expired: '만료', package: '패키지', unit_price: '단가',
     free_title: "🎁 무료 크레딧", free_body: "무료 크레딧 {n}개가 들어왔어요 (유효기간 ~{date}).", free_event: "이벤트",
     free_address_only: "등록된 치과 주소로 배송하는 주문에만 쓸 수 있어요.", free_any_address: "모든 주문에 쓸 수 있어요.", order_now: "주문하기",
-    product: "제품", prod_abutment: "어버트먼트 크레딧", prod_crown_set: "크라운 세트 크레딧", bal_abutment: "어버트먼트", bal_crown_set: "크라운 세트",
+    product: "제품", prod_abutment: "CNC 어버트먼트 크레딧", prod_crown_set: "크라운 세트 크레딧", bal_abutment: "CNC 어버트먼트", bal_crown_set: "크라운 세트",
   },
   th: {
     notice_order: 'แจ้งเตือนคำสั่งงาน', notice_credit: 'แจ้งเตือนเครดิต', notice_topup: 'แจ้งเตือนการเติมเครดิต',
@@ -381,7 +381,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'เครดิตที่เติม', adjusted: 'ปรับปรุง', expired: 'หมดอายุ', package: 'แพ็กเกจ', unit_price: 'ราคาต่อหน่วย',
     free_title: "🎁 เครดิตฟรี", free_body: "ได้รับเครดิตฟรี {n} เครดิตแล้ว (ใช้ได้ถึง {date})", free_event: "กิจกรรม",
     free_address_only: "ใช้ได้เฉพาะคำสั่งงานที่จัดส่งไปยังที่อยู่คลินิกที่ลงทะเบียน", free_any_address: "ใช้ได้กับทุกคำสั่งงาน", order_now: "สั่งงานเลย",
-    product: "สินค้า", prod_abutment: "เครดิตแอบัทเมนต์", prod_crown_set: "เครดิตชุดครอบฟัน", bal_abutment: "แอบัทเมนต์", bal_crown_set: "ชุดครอบฟัน",
+    product: "สินค้า", prod_abutment: "เครดิต CNC Abutment", prod_crown_set: "เครดิตชุดครอบฟัน", bal_abutment: "CNC Abutment", bal_crown_set: "ชุดครอบฟัน",
   },
   zh: {
     notice_order: '订单通知', notice_credit: '积分通知', notice_topup: '充值通知',
@@ -392,7 +392,7 @@ const R: Record<string, ReceiptTexts> = {
     added: '充值积分', adjusted: '调整', expired: '过期', package: '套餐', unit_price: '单价',
     free_title: "🎁 免费积分", free_body: "已到账 {n} 个免费积分（有效期至 {date}）。", free_event: "活动",
     free_address_only: "只能用于寄往已登记诊所地址的订单。", free_any_address: "可用于任何订单。", order_now: "立即下单",
-    product: "产品", prod_abutment: "基台积分", prod_crown_set: "牙冠套装积分", bal_abutment: "基台", bal_crown_set: "牙冠套装",
+    product: "产品", prod_abutment: "CNC基台积分", prod_crown_set: "牙冠套装积分", bal_abutment: "CNC基台", bal_crown_set: "牙冠套装",
   },
   vi: {
     notice_order: 'Thông báo đơn hàng', notice_credit: 'Thông báo tín dụng', notice_topup: 'Thông báo nạp tín dụng',
@@ -403,7 +403,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Tín dụng đã nạp', adjusted: 'Điều chỉnh', expired: 'Hết hạn', package: 'Gói', unit_price: 'Đơn giá',
     free_title: "🎁 Tín dụng miễn phí", free_body: "Đã nhận {n} tín dụng miễn phí (hiệu lực đến {date}).", free_event: "Sự kiện",
     free_address_only: "Chỉ dùng cho đơn giao đến địa chỉ phòng khám đã đăng ký.", free_any_address: "Dùng được cho mọi đơn hàng.", order_now: "Đặt hàng ngay",
-    product: "Sản phẩm", prod_abutment: "Tín dụng abutment", prod_crown_set: "Tín dụng bộ mão răng", bal_abutment: "Abutment", bal_crown_set: "Bộ mão răng",
+    product: "Sản phẩm", prod_abutment: "Tín dụng CNC Abutment", prod_crown_set: "Tín dụng bộ mão răng", bal_abutment: "CNC Abutment", bal_crown_set: "Bộ mão răng",
   },
   es: {
     notice_order: 'Aviso de pedido', notice_credit: 'Aviso de créditos', notice_topup: 'Aviso de recarga',
@@ -414,7 +414,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Créditos añadidos', adjusted: 'Ajuste', expired: 'Vencidos', package: 'Paquete', unit_price: 'Precio unitario',
     free_title: "🎁 Créditos gratuitos", free_body: "Se añadieron {n} créditos gratuitos (válidos hasta el {date}).", free_event: "Evento",
     free_address_only: "Solo sirven para pedidos enviados a la dirección de su clínica registrada.", free_any_address: "Sirven para cualquier pedido.", order_now: "Hacer un pedido",
-    product: "Producto", prod_abutment: "Créditos de pilar", prod_crown_set: "Créditos de set con corona", bal_abutment: "Pilar", bal_crown_set: "Set con corona",
+    product: "Producto", prod_abutment: "Créditos de pilar CNC", prod_crown_set: "Créditos de set con corona", bal_abutment: "Pilar CNC", bal_crown_set: "Set con corona",
   },
   tr: {
     notice_order: 'Sipariş bildirimi', notice_credit: 'Kredi bildirimi', notice_topup: 'Yükleme bildirimi',
@@ -425,7 +425,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'Yüklenen kredi', adjusted: 'Düzeltme', expired: 'Süresi doldu', package: 'Paket', unit_price: 'Birim fiyat',
     free_title: "🎁 Ücretsiz kredi", free_body: "{n} ücretsiz kredi eklendi ({date} tarihine kadar geçerli).", free_event: "Etkinlik",
     free_address_only: "Yalnızca kayıtlı klinik adresinize gönderilen siparişlerde kullanılabilir.", free_any_address: "Tüm siparişlerde kullanılabilir.", order_now: "Sipariş ver",
-    product: "Ürün", prod_abutment: "Abutment kredisi", prod_crown_set: "Kron seti kredisi", bal_abutment: "Abutment", bal_crown_set: "Kron seti",
+    product: "Ürün", prod_abutment: "CNC Abutment kredisi", prod_crown_set: "Kron seti kredisi", bal_abutment: "CNC Abutment", bal_crown_set: "Kron seti",
   },
   ar: {
     notice_order: 'إشعار طلب', notice_credit: 'إشعار رصيد', notice_topup: 'إشعار شحن الرصيد',
@@ -436,7 +436,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'الرصيد المضاف', adjusted: 'تعديل', expired: 'منتهي', package: 'الباقة', unit_price: 'سعر الوحدة',
     free_title: "🎁 رصيد مجاني", free_body: "تمت إضافة {n} رصيد مجاني (صالح حتى {date}).", free_event: "الفعالية",
     free_address_only: "يُستخدم فقط للطلبات المرسلة إلى عنوان عيادتك المسجلة.", free_any_address: "يمكن استخدامه لأي طلب.", order_now: "اطلب الآن",
-    product: "المنتج", prod_abutment: "أرصدة الدعامة", prod_crown_set: "أرصدة طقم التاج", bal_abutment: "الدعامة", bal_crown_set: "طقم التاج",
+    product: "المنتج", prod_abutment: "أرصدة دعامة CNC", prod_crown_set: "أرصدة طقم التاج", bal_abutment: "دعامة CNC", bal_crown_set: "طقم التاج",
   },
   fa: {
     notice_order: 'اعلان سفارش', notice_credit: 'اعلان اعتبار', notice_topup: 'اعلان شارژ',
@@ -447,7 +447,7 @@ const R: Record<string, ReceiptTexts> = {
     added: 'اعتبار افزوده', adjusted: 'اصلاح', expired: 'منقضی', package: 'بسته', unit_price: 'قیمت واحد',
     free_title: "🎁 اعتبار رایگان", free_body: "{n} اعتبار رایگان اضافه شد (معتبر تا {date}).", free_event: "رویداد",
     free_address_only: "فقط برای سفارش‌های ارسالی به آدرس کلینیک ثبت‌شده قابل استفاده است.", free_any_address: "برای هر سفارشی قابل استفاده است.", order_now: "سفارش دهید",
-    product: "محصول", prod_abutment: "اعتبار اباتمنت", prod_crown_set: "اعتبار ست روکش", bal_abutment: "اباتمنت", bal_crown_set: "ست روکش",
+    product: "محصول", prod_abutment: "اعتبار اباتمنت CNC", prod_crown_set: "اعتبار ست روکش", bal_abutment: "اباتمنت CNC", bal_crown_set: "ست روکش",
   },
 };
 
@@ -852,7 +852,7 @@ async function getCrownBalance(userId: string): Promise<number> {
   }
 }
 
-// 합계의 잔액 줄: 크라운 세트가 있거나 이 카드가 세트 관련이면 종류별 "🔩 12 · 👑 3" + 작은 줄 "Abutment 12 · Crown set 3",
+// 합계의 잔액 줄: 크라운 세트가 있거나 이 카드가 세트 관련이면 종류별 "🔩 12 · 👑 3" + 작은 줄 "CNC Abutment 12 · Crown set 3" (제품 이름에는 항상 CNC),
 //   아니면 예전처럼 숫자 하나 + "Paid n · Free n" (withSplit = false 면 작은 줄 없음)
 async function balanceTotals(L: Lang, userId: string, balance: number | null, product?: unknown, withSplit = true): Promise<{ final: Row; split: string }> {
   if (balance == null) return { final: [L.r.credit_balance, ''], split: '' };

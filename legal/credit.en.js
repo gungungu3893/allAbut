@@ -13,8 +13,8 @@ LEGAL_DOCS['credit.en'] = {
       body: [
         'Orders are paid with credits. There are two kinds of credits, one for each product:',
         [
-          'custom abutment credits — 1 credit = 1 tooth with a custom abutment;',
-          'crown set credits — 1 credit = 1 tooth with a custom abutment and a zirconia crown.'
+          'CNC Custom Abutment credits — 1 credit = 1 tooth with a CNC Custom Abutment;',
+          'crown set credits — 1 credit = 1 tooth with a CNC Custom Abutment and a zirconia crown.'
         ],
         'The two kinds are separate. Credits of one kind cannot be used for the other product, converted into the other kind, or transferred to another account.',
         'Credits are sold in packages for each kind. Prices are per credit in Thai Baht and exclude VAT ({vat}%), which is added at payment. Packages currently on sale:',
@@ -47,7 +47,7 @@ LEGAL_DOCS['credit.en'] = {
         [
           'cannot be refunded in cash;',
           'can be used only for orders shipped to your registered clinic address, unless we state otherwise when we give them — to use them, turn on "Order with free credits" when you place an order;',
-          'are of one credit kind (custom abutment or crown set) and can be used only for that product;',
+          'are of one credit kind (CNC Custom Abutment or crown set) and can be used only for that product;',
           'are valid for the period stated when they are given;',
           'may have promotion conditions, for example one grant per clinic, phone number, LINE account or Tax ID, a required LINE connection, or approval by allAbut.'
         ],
@@ -67,9 +67,9 @@ LEGAL_DOCS['credit.en'] = {
         'You can request a cash refund of purchased credits within 14 days of the top-up date:',
         [
           'If none of the credits in that top-up have been used, we refund the full amount you paid, including VAT.',
-          'If some credits in that top-up have been used, we recalculate the used credits at the single-credit price of the same credit kind (for custom abutment credits, {single_price} per credit plus VAT) and refund the balance.'
+          'If some credits in that top-up have been used, we recalculate the used credits at the single-credit price of the same credit kind (for CNC Custom Abutment credits, {single_price} per credit plus VAT) and refund the balance.'
         ],
-        'Example (custom abutment credits):',
+        'Example (CNC Custom Abutment credits):',
         '{{REFUND_EXAMPLE}}',
         'The following cannot be refunded:',
         [
