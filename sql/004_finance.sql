@@ -223,6 +223,9 @@ end $$;
 -- ================================================================
 -- 7) admin_topups_export(년, 월) — 그 달 승인된 충전 목록 (CSV 용)
 -- ================================================================
+-- 다시 실행해도 오류가 안 나게: 018 이후에는 반환 칸(product)이 달라서 create or replace 만으로는 못 바꿔요 → 먼저 지우고 만들어요
+--   (004 를 다시 실행했으면 018 도 다시 — product 칸이 있는 018 모양으로 돌아가요)
+drop function if exists public.admin_topups_export(integer, integer);
 create or replace function public.admin_topups_export(p_year int, p_month int)
 returns table (
   request_id text, approved_at text, customer_email text, clinic_name text, tax_id text,

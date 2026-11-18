@@ -22,7 +22,6 @@ LANG.ko = {
   btn_back: '뒤로',
   signup_check_email: '가입이 완료되었어요! 이메일에서 인증을 완료한 뒤 로그인해 주세요.',
   err_email_invalid: '올바른 이메일 주소를 입력해 주세요.',
-  err_password_short: '비밀번호는 6자 이상이어야 해요.',
   err_password_mismatch: '비밀번호가 일치하지 않아요.',
   err_nickname_required: '닉네임을 입력해 주세요.',
   err_login_invalid: '이메일 또는 비밀번호가 올바르지 않아요.',
@@ -1988,6 +1987,11 @@ LANG.ko = {
   signout_all_confirm: '이 기기를 포함한 모든 기기에서 로그아웃할까요? 모든 곳에서 다시 로그인해야 해요.',
   signout_all_done: '모든 기기에서 로그아웃되었어요.',
   password_change_signs_out_others: '비밀번호를 바꾸면 다른 모든 기기에서 로그아웃돼요.',
+
+  // ----- 전체 점검 수정: 비밀번호 8자 · 기간 오류 안내 · 숫자 1 일 때 단수 문구 -----
+  err_password_short: '비밀번호는 8자 이상이어야 해요.',
+  err_invalid_range: '끝 날짜가 시작 날짜보다 빨라요. 날짜를 확인해 주세요.',
+  err_range_too_long: '기간이 너무 길어요. 400일 이하로 골라 주세요.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

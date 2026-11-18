@@ -22,7 +22,6 @@ LANG.vi = {
   btn_back: 'Quay lại',
   signup_check_email: 'Đã tạo tài khoản! Vui lòng kiểm tra email để xác nhận, sau đó đăng nhập.',
   err_email_invalid: 'Vui lòng nhập địa chỉ email hợp lệ.',
-  err_password_short: 'Mật khẩu phải có ít nhất 6 ký tự.',
   err_password_mismatch: 'Mật khẩu không khớp.',
   err_nickname_required: 'Vui lòng nhập biệt danh.',
   err_login_invalid: 'Email hoặc mật khẩu không đúng.',
@@ -1987,6 +1986,11 @@ LANG.vi = {
   signout_all_confirm: 'Đăng xuất trên mọi thiết bị, kể cả thiết bị này? Bạn sẽ cần đăng nhập lại ở mọi nơi.',
   signout_all_done: 'Bạn đã được đăng xuất trên mọi thiết bị.',
   password_change_signs_out_others: 'Khi bạn đổi mật khẩu, bạn sẽ bị đăng xuất trên mọi thiết bị khác.',
+
+  // ----- 전체 점검 수정: 비밀번호 8자 · 기간 오류 안내 · 숫자 1 일 때 단수 문구 -----
+  err_password_short: 'Mật khẩu phải có ít nhất 8 ký tự.',
+  err_invalid_range: 'Ngày kết thúc sớm hơn ngày bắt đầu. Vui lòng kiểm tra lại ngày.',
+  err_range_too_long: 'Khoảng thời gian quá dài. Vui lòng chọn tối đa 400 ngày.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

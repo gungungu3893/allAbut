@@ -71,8 +71,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@200;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
 
-  <!-- Supabase JS v2 (버전 고정) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <!-- Supabase JS v2 (버전 고정) + 무결성 검사(SRI): CDN 의 파일이 한 글자라도 바뀌면 브라우저가 실행하지 않아요.
+       값 = npm 패키지 @supabase/supabase-js@2.45.4 의 dist/umd/supabase.js 의 sha384. 버전을 바꾸면 이 값도 새로 계산해서 바꿔야 해요
+       (openssl dgst -sha384 -binary supabase.js | openssl base64 -A) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
+    integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 
   <!-- 화면 스타일: 랜딩·로그인(다크) / 앱(밝은 테마) -->
   <link rel="stylesheet" href="css/landing.css">

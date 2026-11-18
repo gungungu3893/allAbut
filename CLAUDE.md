@@ -16,7 +16,13 @@
   - `build.sh` 가 공개 파일만 `dist/` 에 복사 → `*.md`, `sql/`, `supabase/` 는 배포되지 않아 404
   - **사이트에 새 파일·폴더를 추가하면 `build.sh` 목록에도 추가** (안 하면 사이트에서 404)
   - `404.html` 은 지우지 않는다 (없으면 Cloudflare 가 없는 주소에 index.html 을 200 으로 보여줌)
-  - `_redirects` (빌드 설정을 깜빡했을 때 문서 주소 → 404 페이지 안전장치), `_headers` (기본 보안 헤더 + 캐시)
+  - `_redirects` (빌드 설정을 깜빡했을 때 문서 주소 → 404 페이지 안전장치 — *.md 전부 · build.sh · /sql/* · /supabase/* · /tools/* · /docs/*. **새 안내문 · 폴더를 만들면 여기에도**), `_headers` (기본 보안 헤더 + 캐시)
+  - **보안 헤더** (`_headers` 의 `/*`): X-Content-Type-Options · Referrer-Policy · X-Frame-Options DENY · **Strict-Transport-Security max-age=31536000** · **Permissions-Policy camera=(), microphone=(), geolocation=()** ·
+    **Content-Security-Policy-Report-Only** (허용: 우리 사이트 · `*.supabase.co`(https · wss) · challenges.cloudflare.com(Turnstile) · fonts.googleapis.com · fonts.gstatic.com · cdn.jsdelivr.net · cdnjs.cloudflare.com,
+    이미지는 광고 배너 때문에 https: 전체, onclick 속성 때문에 'unsafe-inline'). **지금은 Report-Only = 막지 않고 콘솔에 경고만** → 한동안 경고가 없으면 이름을 `Content-Security-Policy` 로 바꿔 실제로 막기.
+    새 외부 주소(CDN · API)를 쓰면 이 목록에도 추가
+  - **supabase-js 무결성 검사(SRI)**: index.html 의 `<script … supabase.js integrity="sha384-…" crossorigin="anonymous">`. 값 = npm 패키지 `@supabase/supabase-js@2.45.4` 의 `dist/umd/supabase.js` 의 sha384
+    (`openssl dgst -sha384 -binary supabase.js | openssl base64 -A`). **버전을 바꾸면 이 값도 새로** (안 바꾸면 브라우저가 스크립트를 막아 사이트가 안 열려요)
   - **캐시 깨기**: `build.sh` 가 `dist/index.html` 의 내 js · css 주소 뒤에 `?v=버전`(Cloudflare `CF_PAGES_COMMIT_SHA` 앞 12자 → 없으면 git 해시 → 빌드 시각)을 붙이고
     `<meta name="asset-version" content="dev">` 도 같은 값으로 바꿔요. 동적으로 불러오는 법적 문서(`legal/*.js`)는 `cncAssetQuery()`(cnc/cnc-legal.js)가 같은 `?v=` 를 붙여요.
     `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 5개 · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
@@ -186,7 +192,7 @@
 - 매출 대시보드: 무료 크레딧은 매출이 아니라 "🎁 지급한 무료 크레딧"(지급 · 사용 · 만료) 카드로 따로 (`admin_finance_free_month`), 사용 카드는 산 크레딧 수 + "무료 n"
 - LINE: 무료 크레딧 지급은 묶음 정보로 판단(`isFreeCharge`, 예전 "Signup bonus"·"Welcome gift" 이력도 인식) → 고객 "🎁 Free credits" 카드(9개 언어, 주문하기 버튼 `#/new`) + 사본
 - **002 를 다시 실행하면 008 → 009 도 다시**, **008 을 다시 실행하면 009 도 다시** (함수가 예전 모양으로 돌아가서)
-- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023 → 024.
+- **SQL 재실행 순서 (전체)**: 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013 → 014 → 015 → 016 → 017 → 018 → 019 → 020 → 021 → 022 → 023 → 024 → 025.
   **002 · 003 · 004 · 008 · 009 · 010 · 011 · 012 · 016 중 하나를 다시 실행하면 018 도 다시** (함수가 상품 종류를 모르는 예전 모양으로 돌아가서).
   **018 이후에는 002 를 다시 실행하지 않는다** (가격표 줄 `on conflict (credits)` 가 오류 — 중복 검사가 (종류, 크레딧) 으로 바뀌어서. 꼭 필요하면 먼저 확인)
   → 그 다음 **019** → **020** (전체 순서 끝 = 017 → 018 → 019 → 020). **020 은 다른 파일의 함수를 다시 정의하지 않아요** (새 칸 · 표 · 함수 · 트리거만) → 앞 파일을 다시 실행해도 020 은 다시 안 해도 돼요 (해도 안전, 보관 설정 · 모드는 그대로). **008 · 012 · 018 을 다시 실행하면 019 도 다시** (create_cnc_order 가 쉐이드 규칙을 모르는 모양으로),
@@ -204,6 +210,9 @@
   **019 · 021 을 다시 실행하면 023 도 다시** (`create_cnc_order`(019 정의) · `create_topup_request`(021 정의) 맨 앞의 STAFF_ACCOUNT 검사가 빠짐 — 표 트리거 `trg_order_0_block_staff` · `trg_topup_0_block_staff` 가 남아서 막히긴 해요).
   그래서 018 을 다시 했으면 019 → 020 → 021 → 022 → 023 순서로
   **024 (작업 기록 역할별 읽기) — 005 를 다시 실행하면 024 도 다시** (005 가 "audit: team read" 규칙을 다시 만들어서 제작 직원이 다시 전부 봐요). 024 는 다른 파일의 함수를 다시 정의하지 않아요
+  **025 (주문번호 날짜를 방콕 날짜로) — 008 · 012 · 018 · 019 · 023 을 다시 실행하면 025 도 다시** (`create_cnc_order` 가 UTC 날짜(`to_char(now(), 'YYMMDD')`) 모양으로 돌아가서).
+  025 = 023 의 `create_cnc_order`(019 정의 + 맨 앞 STAFF_ACCOUNT) 그대로 + 주문번호 한 줄만 `to_char(now() at time zone 'Asia/Bangkok', 'YYMMDD')`. **create_cnc_order 를 새로 고칠 때는 025 정의에서 시작**
+  **004 는 다시 실행해도 오류가 안 나요** (`admin_topups_export` 앞에 `drop function if exists` — 018 의 product 칸 모양과 달라서). 004 를 다시 했으면 위 규칙대로 005 → 016 → 018 도 다시
 
 ## 서비스 상태 · TEST 배지 · 정식 오픈 초기화 (sql/017_service_mode.sql, sql/launch_reset.sql, LAUNCH_CHECKLIST.md)
 - `payment_settings.service_mode` = 'test'(기본) | 'live'. 읽기 `get_service_mode()` (누구나, anon 포함) / 바꾸기 `admin_set_service_mode(mode)` (**owner 만**, 작업 기록 'service_mode' from → to)
@@ -268,7 +277,8 @@
   값을 직접 넘기지 않은 부품은 `refreshBalance()` 때 `uiRefreshCreditSplits()` 로 자동 갱신. `setBalance()` 도 뒤에서 `refreshBalance()` 를 불러 나눔을 서버 값으로 맞춰요
 - 묶음 종류 `cncLotKind(lot)` (요약과 같은 규칙: paid = 제한 없음 + 무료 출처 아님), 이력 줄 종류 `cncCreditHistoryKinds(rows)` (lot_id → 묶음 / 주문 줄 → bonus_used·credits_used / 그 밖 → 무료 설명이면 무료) → 배지 `uiCreditKindBadge`
 - 표시 위치: 홈 크레딧 카드(만료일 + 안내) · Profile · 충전 · 새 주문 요약/5단계(이번 차감 + "주문 후 잔액") · 주문 완료 · 내 주문 상세(`uiOrderCreditUseHtml(credits_used, bonus_used)`) · 이력·묶음 배지
-  - "주문 후 잔액"은 미리보기: 무료 몫은 무료에서, 나머지는 충전에서 먼저 (제한 없는 무료가 있으면 실제 DB 차감 순서와 조금 다를 수 있어요 — 주문 뒤엔 서버 값)
+  - "주문 후 잔액"은 미리보기: 무료 몫은 무료에서, 나머지는 충전에서 먼저 (제한 없는 무료가 있으면 실제 DB 차감 순서와 조금 다를 수 있어요 — 주문 뒤엔 서버 값).
+    **크레딧이 모자라 제출할 수 없으면 "주문 후 잔액" 줄(숫자 · 나눔)은 숨겨요** (5단계 크레딧 상자 · 요약 카드 둘 다)
 - 관리자: Customers 목록 "💳 충전 / 🎁 무료" 두 칸, 고객 상세 나눔 + 이력·묶음 배지 ← `admin_credit_split(p_users)` (manager, sql/011). 011 실행 전이면 전부 충전
 - LINE: 고객 카드 · 사본 카드의 "Credit balance" 아래 작은 줄 "Paid n · Free n" (R 문구 `split_paid` · `split_free`, `getCreditSplit` 이 credit_lots 에서 같은 규칙으로). 관리자 새 주문 카드는 없음
 
@@ -296,6 +306,8 @@
   - 목록 `admin_list_signup_bonus(status)` — Customers 탭 맨 위(대기 있을 때) + Settings 이벤트 카드 아래 (manager 이상). 의심 배지(같은 IP · 기기 · 비슷한 치과명 · 주소 · 이름 · Tax ID, `admin_suspicion_flags`)는 목록과 고객 상세에
   - LINE: pending 이 되면 관리자(카테고리 account)에 "🎁 Free credits — approval needed" 카드 (Database Webhook `signup_bonus_grants` Insert·Update)
 - 배너: 진행 중이면 랜딩·로그인 화면에 골드 배너 `.campaign-banner` (배너 문구 → 없으면 `campaign_default` + "~ 종료일"), 기간이 끝나면 `get_signup_campaign()` 이 active:false → 자동으로 사라짐
+- **비밀번호는 8자 이상** (`PASSWORD_MIN_LENGTH`, cnc/cnc-core.js): 회원가입 · 비밀번호 재설정 · 직원 초대 가입 · 내 정보 비밀번호 변경. **로그인 화면은 길이 검사를 안 해요** (예전 6자 비밀번호 계정도 로그인돼야 해서 — 비어 있는지만).
+  Supabase → Authentication → Password 최소 길이도 8 로 맞춰요 (서버에서도 막게)
 - **비밀번호 찾기**: 로그인 폼 "비밀번호를 잊으셨나요?" → `#form-reset` (`sendPasswordReset`, redirectTo = `SITE_URL/`) → 메일 링크로 오면 `window.__passwordRecovery` → `#form-newpass` (`updatePassword`) → 로그아웃 후 다시 로그인
 - **Cloudflare Turnstile**: `config.js` 의 `TURNSTILE_SITE_KEY` (비어 있으면 위젯 숨김, 예전처럼 동작). 회원가입·로그인·비밀번호 찾기 폼의 `.ts-box[data-ts]` (`ui/turnstile.js`), 토큰은 `captchaToken` 으로 Supabase Auth 에 전달, 호출 뒤 `tsReset`.
   **시크릿 키는 코드에 절대 넣지 않는다** → Supabase → Authentication → Bot and Abuse Protection 에만
@@ -550,6 +562,8 @@
 ## 규칙
 - 사용자가 입력한 값은 HTML 에 넣을 때 **항상 `escHtml()`** (XSS 방지)
 - 화면 글자는 전부 번역 키로 (`t()` / `tf()`), 새 키는 9개 언어 파일에 모두 추가
+- **숫자 1 일 때 단수 문구**: `tf(key, { n })` 은 n 이 1 이고 **지금 언어에** `key_one` 이 있으면 그 문구를 써요 (영어 "1 tooth" · 스페인어 "1 diente" · 아랍어 "سن واحد").
+  단수 · 복수 구별이 없는 언어(ko · th · zh · vi · tr · fa)는 `_one` 을 만들지 않아요 (영어로 넘어가지 않게 지금 언어에서만 찾아요). 지금 `_one` 이 있는 키: `teeth_count_fmt` · `teeth_selected` · `teeth_selected_credits` · `applied_all_fmt` · `sales_recent_order`
 - **새 SQL 에러 코드(`raise exception 'CODE'`)를 만들면 화면 코드도 같이**: `cnc/cnc-core.js` 의 `CNC_ERROR_CODES` 에 추가 + `ui/layout.js` `uiErrorMessage` 표에 번역 키 + 9개 언어 문구.
   안 하면 `cncErrorCode` 가 'UNKNOWN' → "문제가 발생했어요" 만 나와요. 메시지 안 코드 찾기는 **긴 코드부터** (`cncErrorCodesLongestFirst` — 'INVALID_MONTHS' / 'INVALID_MONTH', 'SLIP_NOT_FOUND' / 'NOT_FOUND')
 - 미리 알 수 있는 실패는 버튼을 막고 이유를 보여 줘요 (예: 세금계산서 판매자 설정이 없으면 [발행] 비활성 + "설정을 마치면 발행할 수 있어요", 그래도 서버가 TAX_SETTINGS_MISSING / RECEIPT_SETTINGS_MISSING 이면 안내 창 + owner 는 [설정으로])

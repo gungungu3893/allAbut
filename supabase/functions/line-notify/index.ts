@@ -790,13 +790,22 @@ function buildReceiptCard(o: ReceiptOpts) {
 // ================================================================
 // DB 읽기
 // ================================================================
-type Profile = { line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null; phone?: string | null; address?: string | null };
+// full_name · tax_id: 무료 크레딧 승인 요청 카드(관리자)에 본명 · Tax ID 를 보여 줘요 (sql/010 의 칸)
+type Profile = {
+  line_user_id: string | null; lang: string | null; clinic_name?: string | null; nickname?: string | null;
+  phone?: string | null; address?: string | null; full_name?: string | null; tax_id?: string | null;
+};
 
 async function getProfile(userId: string): Promise<Profile | null> {
   if (!userId) return null;
-  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone, address').eq('id', userId).maybeSingle();
-  if (error) { console.error('profile read failed', error); return null; }
-  return data;
+  const { data, error } = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone, address, full_name, tax_id').eq('id', userId).maybeSingle();
+  if (error) {
+    // sql/010 전(full_name · tax_id 칸이 없음)이면 예전 칸만 다시 읽어요 — 알림이 멈추지 않게
+    const old = await db.from('profiles').select('line_user_id, lang, clinic_name, nickname, phone, address').eq('id', userId).maybeSingle();
+    if (old.error) { console.error('profile read failed', old.error); return null; }
+    return old.data as Profile | null;
+  }
+  return data as Profile | null;
 }
 
 // LINE 사용자 id 모양이면 연결된 것

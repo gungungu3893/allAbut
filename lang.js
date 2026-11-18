@@ -62,7 +62,13 @@ function tEn(key) {
 }
 
 // 자리 바꾸기: tf('teeth_selected', { n: 3 }) → "3 teeth selected"
+//   n 이 1 이고 지금 언어에 "키_one" 이 있으면 그 문구 (영어 "1 tooth" · 스페인어 "1 diente" · 아랍어 "سن واحد").
+//   단수 · 복수 구별이 없는 언어(한국어 · 태국어 · 중국어 · 베트남어 · 터키어 · 페르시아어)는 _one 이 없어서 그대로 — 영어로 넘어가지 않아요
 function tf(key, params) {
+  if (params && Number(params.n) === 1) {
+    var table = LANG[currentLang];
+    if (table && table[key + '_one'] != null) key = key + '_one';
+  }
   var text = t(key);
   if (!params) return text;
   return text.replace(/\{(\w+)\}/g, function (all, name) {

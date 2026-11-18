@@ -1044,6 +1044,9 @@ function uiErrorMessage(err) {
     CREDIT_SPLIT_MISMATCH: 'err_credit_split_mismatch',
     // 광고 배너 · 방문 기록 (sql/019)
     INVALID_KIND: 'err_invalid_action',
+    // 기간 검사 (sql/013 · sql/023)
+    INVALID_RANGE: 'err_invalid_range',
+    RANGE_TOO_LONG: 'err_range_too_long',
     INVALID_URL: 'ad_err_link',
     NAME_REQUIRED: 'err_required',
     INVALID_SLOT: 'ad_err_slot',

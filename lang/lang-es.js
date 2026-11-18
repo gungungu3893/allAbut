@@ -22,7 +22,6 @@ LANG.es = {
   btn_back: 'Atrás',
   signup_check_email: '¡Cuenta creada! Revise su correo electrónico para confirmarla y luego inicie sesión.',
   err_email_invalid: 'Introduzca un correo electrónico válido.',
-  err_password_short: 'La contraseña debe tener al menos 6 caracteres.',
   err_password_mismatch: 'Las contraseñas no coinciden.',
   err_nickname_required: 'Introduzca un nombre de usuario.',
   err_login_invalid: 'El correo electrónico o la contraseña son incorrectos.',
@@ -1987,6 +1986,16 @@ LANG.es = {
   signout_all_confirm: '¿Cerrar sesión en todos los dispositivos, incluido este? Tendrás que volver a iniciar sesión en todos.',
   signout_all_done: 'Se cerró la sesión en todos los dispositivos.',
   password_change_signs_out_others: 'Al cambiar tu contraseña, se cierra la sesión en todos los demás dispositivos.',
+
+  // ----- 전체 점검 수정: 비밀번호 8자 · 기간 오류 안내 · 숫자 1 일 때 단수 문구 -----
+  err_password_short: 'La contraseña debe tener al menos 8 caracteres.',
+  err_invalid_range: 'La fecha final es anterior a la fecha inicial. Revisa las fechas.',
+  err_range_too_long: 'El período es demasiado largo. Elige 400 días o menos.',
+  teeth_count_fmt_one: '{n} diente',
+  teeth_selected_one: '{n} diente seleccionado',
+  teeth_selected_credits_one: '{n} diente seleccionado · usa {n} crédito (saldo {balance})',
+  applied_all_fmt_one: '"{value}" aplicado a {n} diente.',
+  sales_recent_order_one: 'Nuevo pedido · {n} diente',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

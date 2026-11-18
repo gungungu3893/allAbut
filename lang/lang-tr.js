@@ -22,7 +22,6 @@ LANG.tr = {
   btn_back: 'Geri',
   signup_check_email: 'Hesap oluşturuldu! Onaylamak için e-postanızı kontrol edin, ardından giriş yapın.',
   err_email_invalid: 'Lütfen geçerli bir e-posta adresi girin.',
-  err_password_short: 'Şifre en az 6 karakter olmalıdır.',
   err_password_mismatch: 'Şifreler eşleşmiyor.',
   err_nickname_required: 'Lütfen bir kullanıcı adı girin.',
   err_login_invalid: 'E-posta veya şifre hatalı.',
@@ -1987,6 +1986,11 @@ LANG.tr = {
   signout_all_confirm: 'Bu cihaz dahil tüm cihazlarda oturum kapatılsın mı? Her yerde yeniden giriş yapmanız gerekecek.',
   signout_all_done: 'Tüm cihazlarda oturumunuz kapatıldı.',
   password_change_signs_out_others: 'Şifrenizi değiştirdiğinizde diğer tüm cihazlarda oturumunuz kapatılır.',
+
+  // ----- 전체 점검 수정: 비밀번호 8자 · 기간 오류 안내 · 숫자 1 일 때 단수 문구 -----
+  err_password_short: 'Şifre en az 8 karakter olmalıdır.',
+  err_invalid_range: 'Bitiş tarihi başlangıç tarihinden önce. Lütfen tarihleri kontrol edin.',
+  err_range_too_long: 'Süre çok uzun. Lütfen en fazla 400 gün seçin.',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

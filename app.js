@@ -396,7 +396,8 @@ async function handleSignIn(event) {
   var button = document.getElementById('signin-btn');
 
   if (!isValidEmail(email)) return showAuthMessage('signin-error', t('err_email_invalid'));
-  if (password.length < 6) return showAuthMessage('signin-error', t('err_password_short'));
+  // 로그인은 길이 검사를 하지 않아요 (예전 6자 비밀번호 계정도 로그인돼야 해서) — 비어 있는지만
+  if (!password) return showAuthMessage('signin-error', t('err_required'));
   if (tsMissing('signin')) return showAuthMessage('signin-error', t('err_captcha_needed'));
 
   setLoading(button, true, 'btn_sign_in');
@@ -433,7 +434,7 @@ async function handleSignUp(event) {
   var errors = cncValidateIdentity(fields);
   if (!isValidEmail(email)) errors.email = 'err_email_invalid';
   else if (cncIsDisposableEmail(email)) errors.email = 'err_email_disposable';
-  if (password.length < 6) errors.password = 'err_password_short';
+  if (password.length < PASSWORD_MIN_LENGTH) errors.password = 'err_password_short';   // 새 비밀번호는 8자 이상
   else if (password !== password2) errors.password2 = 'err_password_mismatch';
   if (Object.keys(errors).length) { setSignupFieldErrors(errors); return showAuthMessage('signup-error', t('err_check_fields')); }
   if (!document.getElementById('signup-agree').checked) return showAuthMessage('signup-error', t('signup_agree_required'));
@@ -512,7 +513,7 @@ async function handleNewPassword(event) {
   var pw = document.getElementById('newpass-password').value;
   var pw2 = document.getElementById('newpass-password2').value;
   var button = document.getElementById('newpass-btn');
-  if (pw.length < 6) return showAuthMessage('newpass-error', t('err_password_short'));
+  if (pw.length < PASSWORD_MIN_LENGTH) return showAuthMessage('newpass-error', t('err_password_short'));
   if (pw !== pw2) return showAuthMessage('newpass-error', t('err_password_mismatch'));
   setLoading(button, true, 'newpass_save');
   try {

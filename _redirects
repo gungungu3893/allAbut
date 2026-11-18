@@ -18,6 +18,12 @@
 /TOPUP_SETUP.md       /404.html  302
 /LEGAL_SETUP.md       /404.html  302
 /FINANCE_SETUP.md     /404.html  302
+/TAX_SETUP.md         /404.html  302
+/RETENTION_SETUP.md   /404.html  302
+/TEAM_SETUP.md        /404.html  302
+/LAUNCH_CHECKLIST.md  /404.html  302
 /build.sh             /404.html  302
 /sql/*                /404.html  302
 /supabase/*           /404.html  302
+/tools/*              /404.html  302
+/docs/*               /404.html  302

@@ -79,9 +79,9 @@ var PageProfile = {
       '<section class="card"><h2 class="card-title">' + escHtml(t('staff_password_title')) + '</h2>' +
         '<form class="form-grid two" onsubmit="PageProfile.saveStaffPassword(event)" novalidate>' +
           '<div class="field"><label class="field-label" for="ps-pw">' + escHtml(t('staff_new_password')) + '</label>' +
-            '<input class="input' + (e.pw ? ' invalid' : '') + '" id="ps-pw" type="password" minlength="6" autocomplete="new-password">' + uiFieldError(e.pw) + '</div>' +
+            '<input class="input' + (e.pw ? ' invalid' : '') + '" id="ps-pw" type="password" minlength="' + PASSWORD_MIN_LENGTH + '" autocomplete="new-password">' + uiFieldError(e.pw) + '</div>' +
           '<div class="field"><label class="field-label" for="ps-pw2">' + escHtml(t('password_confirm_label')) + '</label>' +
-            '<input class="input' + (e.pw2 ? ' invalid' : '') + '" id="ps-pw2" type="password" minlength="6" autocomplete="new-password">' + uiFieldError(e.pw2) + '</div>' +
+            '<input class="input' + (e.pw2 ? ' invalid' : '') + '" id="ps-pw2" type="password" minlength="' + PASSWORD_MIN_LENGTH + '" autocomplete="new-password">' + uiFieldError(e.pw2) + '</div>' +
           '<div class="span-2 form-actions"><button type="submit" class="btn btn-outline btn-lg">' + escHtml(t('staff_change_password')) + '</button></div>' +
         '</form>' +
         '<p class="field-help">' + escHtml(t('password_change_signs_out_others')) + '</p></section>' +
@@ -129,7 +129,7 @@ var PageProfile = {
     var pw = document.getElementById('ps-pw').value;
     var pw2 = document.getElementById('ps-pw2').value;
     this.errors = {};
-    if (pw.length < 6) this.errors.pw = 'err_password_short';
+    if (pw.length < PASSWORD_MIN_LENGTH) this.errors.pw = 'err_password_short';
     else if (pw !== pw2) this.errors.pw2 = 'err_password_mismatch';
     if (Object.keys(this.errors).length) { this.drawStaff(uiPhoneState('ps-phone')); return; }
     try {

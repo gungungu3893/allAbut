@@ -97,7 +97,7 @@ function cncValidateStaffJoin(f) {
   else if (!cncValidPhone(f.phone, 'TH')) e.phone = 'err_phone_intl';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(f.email || '').trim())) e.email = 'err_email_invalid';
   else if (cncIsDisposableEmail(f.email)) e.email = 'err_email_disposable';
-  if (String(f.password || '').length < 6) e.password = 'err_password_short';
+  if (String(f.password || '').length < PASSWORD_MIN_LENGTH) e.password = 'err_password_short';   // 8자 이상
   else if (f.password !== f.password2) e.password2 = 'err_password_mismatch';
   if (!f.agree) e.agree = 'err_agree_required';
   return e;

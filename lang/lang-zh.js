@@ -22,7 +22,6 @@ LANG.zh = {
   btn_back: '返回',
   signup_check_email: '账户已创建！请查收邮件完成验证，然后登录。',
   err_email_invalid: '请输入有效的邮箱地址。',
-  err_password_short: '密码至少需要6个字符。',
   err_password_mismatch: '两次输入的密码不一致。',
   err_nickname_required: '请输入昵称。',
   err_login_invalid: '邮箱或密码错误。',
@@ -1987,6 +1986,11 @@ LANG.zh = {
   signout_all_confirm: '要在所有设备（包括此设备）上退出登录吗？之后需要在所有设备上重新登录。',
   signout_all_done: '已在所有设备上退出登录。',
   password_change_signs_out_others: '修改密码后，其他所有设备都会退出登录。',
+
+  // ----- 전체 점검 수정: 비밀번호 8자 · 기간 오류 안내 · 숫자 1 일 때 단수 문구 -----
+  err_password_short: '密码至少需要8个字符。',
+  err_invalid_range: '结束日期早于开始日期，请检查日期。',
+  err_range_too_long: '时间范围太长，请选择 400 天以内。',
 
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구

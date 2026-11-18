@@ -18,6 +18,10 @@ var CNC_DRAFT_PREFIX = 'allabut_cnc_draft_';   // + user_id
 var CNC_PAGE_SIZE = 20;
 
 // 서버(DB 함수)가 돌려주는 에러 코드 목록
+// 새 비밀번호 최소 길이 (회원가입 · 비밀번호 재설정 · 직원 초대 가입 · 내 정보 비밀번호 변경). 로그인 화면은 길이 검사 없음
+//   Supabase → Authentication → Password 최소 길이도 같은 값(8)으로 맞춰요
+var PASSWORD_MIN_LENGTH = 8;
+
 var CNC_ERROR_CODES = [
   'INSUFFICIENT_CREDITS', 'NO_TEETH', 'DELIVERY_REQUIRED', 'NOT_LOGGED_IN',
   'NOT_EDITABLE', 'NOT_CANCELLABLE', 'NOT_FOUND', 'NOTE_REQUIRED', 'INVALID_ACTION', 'NOT_ADMIN',
@@ -45,6 +49,8 @@ CNC_ERROR_CODES = ['SHADE_REQUIRED_CROWN_SET'].concat(CNC_ERROR_CODES);
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['CREDIT_SPLIT_MISMATCH', 'NOT_SALES']);
 // sql/019: 광고 배너 · 방문 기록
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['INVALID_KIND', 'INVALID_URL', 'NAME_REQUIRED', 'INVALID_SLOT', 'IMAGE_REQUIRED', 'INVALID_DATES']);
+// 기간 검사 (sql/013 방문 통계 · sql/023 영업 화면): 끝 날짜가 시작보다 빠름 / 400일보다 긺
+CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['INVALID_RANGE', 'RANGE_TOO_LONG']);
 // sql/020: 주문 파일 보관 기간
 CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['RUN_NOT_FOUND', 'INVALID_MONTHS', 'INVALID_MODE']);
 // sql/021: 세금계산서 · 영수증 · 치과 소재 국가

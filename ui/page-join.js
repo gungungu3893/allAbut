@@ -72,8 +72,8 @@ var PageJoin = {
           '<div class="field"><label class="field-label" for="join-phone">' + escHtml(t('phone_label')) + ' <span class="required">*</span></label>' +
             uiPhoneField({ id: 'join-phone', value: '', country: 'TH', invalid: !!e.phone, state: phoneState }) + uiFieldError(e.phone) + '</div>' +
           this.field('email', 'email_label', 'email', 'maxlength="120" autocomplete="email"') +
-          this.field('password', 'password_label', 'password', 'minlength="6" autocomplete="new-password"') +
-          this.field('password2', 'password_confirm_label', 'password', 'minlength="6" autocomplete="new-password"') +
+          this.field('password', 'password_label', 'password', 'minlength="' + PASSWORD_MIN_LENGTH + '" autocomplete="new-password"') +
+          this.field('password2', 'password_confirm_label', 'password', 'minlength="' + PASSWORD_MIN_LENGTH + '" autocomplete="new-password"') +
           '<label class="check-line join-agree"><input type="checkbox" id="join-agree"> <span>' + escHtml(t('join_agree')) +
             ' <a href="#/terms" target="_blank" rel="noopener">' + escHtml(t('legal_terms')) + '</a> · <a href="#/privacy" target="_blank" rel="noopener">' + escHtml(t('legal_privacy')) + '</a></span></label>' +
           uiFieldError(e.agree) +

@@ -919,7 +919,8 @@ var PageNew = {
         ' <span aria-hidden="true">/</span> <span class="split-paid">💳 ' + escHtml(t('paid_short')) + ' <b class="mono">' + formatNumber(sp.paid) + '</b></span></span></div>' +
       row('credits_current', known ? formatNumber(pc.balance) : '—') +
       '<div class="review-row review-split"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml({ product: product }) + '</span></div>' +
-      row('credits_after', known ? formatNumber(pc.balance - sp.need) : '—') +
+      // 주문 후 잔액: 크레딧이 모자라 제출할 수 없으면 숨겨요 (주문이 안 되는데 줄어든 숫자가 보이지 않게)
+      (known && !sp.ok ? '' : row('credits_after', known ? formatNumber(pc.balance - sp.need) : '—')) +
       (known && sp.ok
         ? '<div class="review-row review-split" id="after-split' + sfx + '"><span class="review-label"></span><span class="review-value">' + uiCreditSplitHtml(this.afterSplit(product)) + '</span></div>'
         : '') +

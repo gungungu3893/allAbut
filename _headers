@@ -2,10 +2,20 @@
 # allAbut — Cloudflare Pages 응답 헤더
 # ================================================================
 # 모든 페이지: 기본 보안 헤더
+#   Strict-Transport-Security: 1년 동안 이 사이트는 https 로만 열어요 (브라우저가 기억)
+#   Permissions-Policy: 카메라 · 마이크 · 위치를 쓰지 않아요 (혹시 들어온 다른 코드도 못 써요)
+#   Content-Security-Policy-Report-Only: 허용한 곳(우리 사이트 · Supabase · Cloudflare Turnstile · Google Fonts · jsDelivr · cdnjs)이
+#     아닌 곳에서 스크립트 · 연결이 생기면 브라우저 개발자 도구(Console)에 경고만 남겨요. **아직 막지는 않아요(Report-Only)** —
+#     한동안 경고가 없는지 확인한 뒤 이름을 Content-Security-Policy 로 바꾸면 실제로 막아요.
+#     화면 버튼이 onclick="…" 을 쓰고 style 속성도 많아서 'unsafe-inline' 은 지금은 필요해요.
+#     이미지는 광고 배너(관리자가 https 주소 등록)가 있어서 https: 전체 허용
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-src 'self' blob: https://challenges.cloudflare.com https://*.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # 404 페이지는 검색엔진에 나오지 않게
 /404.html
