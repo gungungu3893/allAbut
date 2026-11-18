@@ -13,6 +13,21 @@
 
 // 팀 관련 서버 에러 코드 — "USER_NOT_FOUND" 가 "NOT_FOUND" 보다 먼저 찾아지게 맨 앞에 붙여요
 CNC_ERROR_CODES = ['USER_NOT_FOUND', 'ALREADY_MEMBER', 'INVALID_ROLE', 'NOT_MEMBER', 'LAST_OWNER', 'CANNOT_REMOVE_SELF'].concat(CNC_ERROR_CODES);
+// 영업 · 커미션 서버 에러 코드 (sql/015 · 016) — 긴 이름 먼저 ('NOT_PAID' 가 다른 코드 안에서 먼저 찾아지지 않게).
+//   cnc/cnc-sales.js 는 관리 팀 · 영업 담당만 불러와서 여기에 둬요 (NOT_SALES 는 권한 다시 확인에도 써요)
+CNC_ERROR_CODES = ['COMMISSION_LOCKED', 'REP_NOT_FOUND', 'MONTH_NOT_ENDED', 'ALREADY_PAID', 'NOT_PAID', 'NOT_SALES',
+  'INVALID_RATE_VALUE', 'INVALID_RATE_TYPE', 'INVALID_MONTH'].concat(CNC_ERROR_CODES);
+
+// 관리자면 true (에러가 나면 false — 안전한 쪽으로). 005 실행 전 역할 확인용 (cncLoadAdminMe)
+async function cncCheckAdmin() {
+  try {
+    var result = await sb.rpc('is_admin');
+    if (result.error) return false;
+    return result.data === true;
+  } catch (err) {
+    return false;
+  }
+}
 
 var ADMIN_ROLES = ['owner', 'manager', 'staff'];            // 관리 계층 (관리자 탭)
 var TEAM_ROLES = ADMIN_ROLES.concat(['sales']);             // 팀 역할 선택 (영업 포함, sql/015)
@@ -64,6 +79,8 @@ function cncApplyAdminMe(me) {
   APP.adminStatus = me ? (me.status || 'active') : null;
   APP.isAdmin = active && ADMIN_ROLES.indexOf(me.role) !== -1;
   APP.isSalesRep = active && !!me.salesRep;
+  // 관리 팀 · 영업 담당이면 관리자 · 영업 화면 파일을 미리 받기 시작 (loader.js — 고객은 받지 않아요)
+  if (cncCanOpenAdmin() && typeof cncLoadStaffScripts === 'function') cncLoadStaffScripts().catch(function () { /* router 가 다시 시도 */ });
 }
 
 // ----------------------------------------------------------------

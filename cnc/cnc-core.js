@@ -58,6 +58,25 @@ CNC_ERROR_CODES = CNC_ERROR_CODES.concat(['TAX_SETTINGS_MISSING', 'RECEIPT_SETTI
   'BRANCH_INVALID', 'TAX_ID_REQUIRED', 'NO_DOCS', 'INVALID_DATE', 'INVALID_MONTH']);
 
 // ----------------------------------------------------------------
+// 작은 도우미 (관리자 화면 파일에서 옮겨 왔어요 — 고객 · 직원 초대 가입 화면에서도 써서 처음부터 있어야 해요)
+// ----------------------------------------------------------------
+// 서버가 JSON 을 글자로 줄 때도 객체로 (못 읽으면 null)
+function cncParseJson(d) {
+  if (typeof d === 'string') { try { return JSON.parse(d); } catch (e) { return null; } }
+  return d;
+}
+
+// CSV 칸 하나를 안전하게 넣기
+//  - 쉼표·따옴표·줄바꿈이 있으면 "..." 로 감싸고 " 는 "" 로
+//  - 글자 칸이 = + - @ 로 시작하면 엑셀이 수식으로 실행하지 않게 앞에 ' 를 붙여요 (CSV 수식 주입 방지)
+function cncCsvCell(value, isText) {
+  var s = value == null ? '' : String(value);
+  if (isText && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+// ----------------------------------------------------------------
 // 상품 종류 (sql/018): 'abutment' = 🔩 커스텀 어버트먼트 / 'crown_set' = 👑 어버트먼트 + 지르코니아 크라운 세트
 //   크레딧도 종류별로 따로예요 (어버트먼트 크레딧으로 크라운 세트를 주문할 수 없어요)
 // ----------------------------------------------------------------

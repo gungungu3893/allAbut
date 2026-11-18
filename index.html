@@ -355,35 +355,28 @@
 
   </div>
 
-  <!-- 설정 · 언어 -->
+  <!-- 설정 · 언어
+       loader.js = 필요할 때 불러오기 (cncAssetQuery · cncLoadScript · 관리자 화면 목록 STAFF_SCRIPTS)
+       언어 파일은 영어(대체용)만 여기에 — 지금 언어는 lang.js 가, 다른 언어는 고를 때 받아요 -->
   <script src="config.js"></script>
+  <script src="loader.js"></script>
   <script src="lang/lang-en.js"></script>
-  <script src="lang/lang-ko.js"></script>
-  <script src="lang/lang-th.js"></script>
-  <script src="lang/lang-zh.js"></script>
-  <script src="lang/lang-vi.js"></script>
-  <script src="lang/lang-es.js"></script>
-  <script src="lang/lang-tr.js"></script>
-  <script src="lang/lang-ar.js"></script>
-  <script src="lang/lang-fa.js"></script>
   <script src="lang.js"></script>
 
   <!-- 로그인 · 세션 -->
   <script src="auth.js"></script>
   <script src="session.js"></script>
 
-  <!-- CNC 주문 (데이터 · 로직 · 파일 뷰어 · 관리자 로직) — Three.js 는 뷰어를 열 때만 불러와요 -->
+  <!-- CNC 주문 (데이터 · 로직 · 파일 뷰어) — Three.js 는 뷰어를 열 때만 불러와요.
+       관리자 · 영업 · 세금계산서 화면 파일은 여기 없어요: 관리 팀 · 영업 담당이 로그인하면 loader.js 가 받아요 -->
   <script src="cnc/cnc-data.js"></script>
   <script src="cnc/cnc-core.js"></script>
   <script src="cnc/promptpay.js"></script>
   <script src="cnc/cnc-legal.js"></script>
   <script src="cnc/cnc-viewer.js"></script>
-  <script src="cnc/cnc-admin.js"></script>
-  <script src="cnc/cnc-finance.js"></script>
   <script src="cnc/cnc-team.js"></script>
   <script src="cnc/cnc-identity.js"></script>
   <script src="cnc/cnc-analytics.js"></script>
-  <script src="cnc/cnc-sales.js"></script>
   <script src="cnc/cnc-staff.js"></script>
   <script src="cnc/cnc-service.js"></script>
   <script src="cnc/cnc-ads.js"></script>
@@ -413,17 +406,6 @@
   <script src="ui/page-about.js"></script>
   <script src="ui/page-complete.js"></script>
   <script src="ui/page-join.js"></script>
-  <script src="ui/page-admin.js"></script>
-  <script src="ui/page-admin-finance.js"></script>
-  <script src="ui/page-admin-team.js"></script>
-  <script src="ui/page-admin-free.js"></script>
-  <script src="ui/page-admin-visits.js"></script>
-  <script src="ui/page-admin-ads.js"></script>
-  <script src="ui/page-admin-retention.js"></script>
-  <script src="ui/page-admin-tax.js"></script>
-  <script src="ui/page-admin-sales.js"></script>
-  <script src="ui/page-sales.js"></script>
-  <script src="ui/page-admin-staff.js"></script>
   <script src="ui/router.js"></script>
 
   <!-- 시작 -->

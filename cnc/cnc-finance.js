@@ -112,15 +112,7 @@ async function cncAdminTopupsExport(year, month) {
 // CSV 만들기
 // ----------------------------------------------------------------
 
-// 칸 하나를 CSV 에 안전하게 넣기
-//  - 쉼표·따옴표·줄바꿈이 있으면 "..." 로 감싸고 " 는 "" 로
-//  - 글자 칸이 = + - @ 로 시작하면 엑셀이 수식으로 실행하지 않게 앞에 ' 를 붙여요 (CSV 수식 주입 방지)
-function cncCsvCell(value, isText) {
-  var s = value == null ? '' : String(value);
-  if (isText && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
-  if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
-  return s;
-}
+// 칸 하나 = cncCsvCell(value, isText) — cnc/cnc-core.js (광고 · 방문 통계 CSV 도 같이 써서 처음에 불러오는 파일에 있어요)
 
 // 금액: 엑셀이 숫자로 읽게 쉼표 없이 소수점 2자리 (예: 20500.00)
 function cncCsvMoney(v) {

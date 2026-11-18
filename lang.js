@@ -1,5 +1,7 @@
 // ===== 다국어 (9개 언어) =====
 // - 번역 글자는 lang/lang-xx.js 파일에 있어요 (LANG.en, LANG.ko ...).
+// - 처음에는 영어(대체용, index.html) + 지금 언어만 받아요. 다른 언어는 고를 때 받아요 (cncLoadLang — loader.js 의 cncLoadScript, ?v= 캐시 규칙 그대로).
+//   못 받으면 영어로 보여 주고 조용히 다시 시도 → 받으면 화면을 다시 그려요.
 // - t('키')            → 현재 언어 글자 (없으면 영어, 그것도 없으면 키 그대로)
 // - tf('키', { n: 3 }) → 글자 안의 {n} 같은 자리를 값으로 바꿔요
 // - setLang('ko')      → 언어 바꾸기 (아랍어·페르시아어는 오른쪽→왼쪽(RTL) 화면)
@@ -77,11 +79,93 @@ function tf(key, params) {
 }
 
 
+// ===== 언어 파일 불러오기 =====
+var LANG_WAIT_MS = 4000;                                   // 이 시간 안에 못 받으면 우선 영어로 보여 줘요
+var LANG_RETRY_DELAYS = [3000, 10000, 30000, 60000];       // 못 받았을 때 다시 시도하는 간격 (마지막 값으로 계속)
+var LANG_RETRY_MAX = 10;
+var _langRetry = {};          // 언어별 다시 시도 중인지
+var _langNeedsRefresh = {};   // 그 언어 파일 없이(영어로) 화면을 그린 적이 있는지 → 받으면 다시 그려요
+
+function langFilePath(code) {
+  return 'lang/lang-' + code + '.js';
+}
+
+// 언어 파일 받기 → Promise(true = 받음 / false = 못 받음). 이미 있으면 바로 true
+function cncLoadLang(code) {
+  if (!isSupportedLang(code)) code = 'en';
+  if (LANG[code]) return Promise.resolve(true);
+  return cncLoadScript(langFilePath(code)).then(function () {
+    langArrived(code);
+    return !!LANG[code];
+  }, function () {
+    _langNeedsRefresh[code] = true;   // 못 받았으니 이 언어는 영어로 보여요
+    scheduleLangRetry(code);
+    return false;
+  });
+}
+
+// 정해진 시간까지만 기다리기 (늦으면 영어로 먼저 보여 주고, 도착하면 다시 그려요)
+function cncLoadLangWithin(code, ms) {
+  if (!isSupportedLang(code)) code = 'en';
+  if (LANG[code]) return Promise.resolve(true);
+  return cncWithin(cncLoadLang(code), ms == null ? LANG_WAIT_MS : ms).then(function (ok) {
+    if (!ok && !LANG[code]) _langNeedsRefresh[code] = true;
+    return !!LANG[code];
+  });
+}
+
+// 조용히 다시 시도
+function scheduleLangRetry(code) {
+  if (_langRetry[code]) return;
+  _langRetry[code] = true;
+  var tries = 0;
+  function again() {
+    var wait = LANG_RETRY_DELAYS[Math.min(tries, LANG_RETRY_DELAYS.length - 1)];
+    setTimeout(function () {
+      if (LANG[code]) { _langRetry[code] = false; langArrived(code); return; }
+      cncLoadScript(langFilePath(code)).then(function () {
+        _langRetry[code] = false;
+        langArrived(code);
+      }, function () {
+        tries++;
+        if (tries < LANG_RETRY_MAX) again();
+        else _langRetry[code] = false;   // 다음에 언어를 고르면 다시 시도해요
+      });
+    }, wait);
+  }
+  again();
+}
+
+// 늦게 도착한 언어 파일 → 지금 그 언어를 쓰고 있으면 화면을 다시 그려요
+function langArrived(code) {
+  if (!LANG[code] || !_langNeedsRefresh[code]) return;
+  _langNeedsRefresh[code] = false;
+  if (code !== currentLang) return;
+  applyLangToDocument();
+  window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: code } }));
+}
+
+
 // ===== 언어 바꾸기 =====
+// 파일이 이미 있으면 바로 바꿔요. 없으면 받은 뒤에 바꾸고 화면을 다시 그려요 (늦으면 영어로 먼저 → 도착하면 다시)
+var _langWanted = null;
 function setLang(code) {
   if (!isSupportedLang(code)) code = 'en';
-  currentLang = code;
   try { localStorage.setItem(LANG_STORAGE_KEY, code); } catch (e) { /* 무시 */ }
+  _langWanted = code;
+  if (LANG[code]) {
+    useLang(code);
+    return Promise.resolve(true);
+  }
+  return cncLoadLangWithin(code).then(function (ok) {
+    if (_langWanted !== code) return ok;   // 기다리는 사이 다른 언어를 골랐으면 그 언어를 따라가요
+    useLang(code);
+    return ok;
+  });
+}
+
+function useLang(code) {
+  currentLang = code;
   applyLangToDocument();
   // 화면들이 다시 그려지도록 알려요 (ui/router.js 가 듣고 있어요)
   window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: code } }));
@@ -174,3 +258,8 @@ function formatTHB(n) {
     return v.toFixed(2) + ' THB';
   }
 }
+
+
+// ===== 처음: 지금 언어 파일을 바로 받기 시작 (다른 스크립트를 받는 동안 같이) =====
+//   app.js 의 boot 가 cncLoadLangWithin(currentLang) 으로 기다려요
+cncLoadLang(currentLang);

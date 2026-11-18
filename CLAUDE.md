@@ -24,9 +24,20 @@
   - **supabase-js 무결성 검사(SRI)**: index.html 의 `<script … supabase.js integrity="sha384-…" crossorigin="anonymous">`. 값 = npm 패키지 `@supabase/supabase-js@2.45.4` 의 `dist/umd/supabase.js` 의 sha384
     (`openssl dgst -sha384 -binary supabase.js | openssl base64 -A`). **버전을 바꾸면 이 값도 새로** (안 바꾸면 브라우저가 스크립트를 막아 사이트가 안 열려요)
   - **캐시 깨기**: `build.sh` 가 `dist/index.html` 의 내 js · css 주소 뒤에 `?v=버전`(Cloudflare `CF_PAGES_COMMIT_SHA` 앞 12자 → 없으면 git 해시 → 빌드 시각)을 붙이고
-    `<meta name="asset-version" content="dev">` 도 같은 값으로 바꿔요. 동적으로 불러오는 법적 문서(`legal/*.js`)는 `cncAssetQuery()`(cnc/cnc-legal.js)가 같은 `?v=` 를 붙여요.
-    `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 5개 · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
+    `<meta name="asset-version" content="dev">` 도 같은 값으로 바꿔요. 동적으로 불러오는 파일(지금 언어 · 관리자 화면 · 법적 문서 `legal/*.js`)은 `cncAssetQuery()`(loader.js)가 같은 `?v=` 를 붙여요.
+    `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 6개(loader.js 포함) · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
     → 배포 뒤 Ctrl+Shift+R 없이 새 화면. **index.html 에 새 js · css 를 넣으면 상대 경로(`src="ui/…"`)로** (자동으로 ?v= 가 붙어요), 새로 동적으로 불러오는 내 파일이 생기면 그 주소에도 `cncAssetQuery()`
+- **첫 접속을 가볍게 — 필요할 때 불러오기** (`loader.js`):
+  - index.html 은 모든 사람이 쓰는 파일만 (스크립트 44개 = 내 파일 43 + supabase-js, 예전 65개). **관리자 · 영업 · 세금계산서 화면 파일과 영어가 아닌 언어 파일은 index.html 에 넣지 않는다**
+  - 언어: index.html 에는 `lang/lang-en.js`(대체용)만. `lang.js` 가 끝에서 `cncLoadLang(currentLang)` 으로 지금 언어를 바로 받기 시작 → boot · 로그인 후 프로필 언어는 `cncLoadLangWithin(code)`(최대 4초 `LANG_WAIT_MS`) 로 기다려요.
+    `setLang(code)` = 파일이 있으면 바로, 없으면 받은 뒤에 바꾸고 `langchange` (기다리는 사이 다른 언어를 고르면 마지막 것). 못 받으면 영어로 보여 주고 조용히 다시 시도(3초 · 10초 · 30초 · 60초…, 최대 10번) → 도착하면 다시 그려요(`langArrived`).
+    `currentLang` 을 직접 바꾸지 말고 `setLang` 을 쓰거나, 꼭 직접 바꿔야 하면 먼저 `cncLoadLangWithin`. 다른 언어 문구를 미리 읽어야 하는 코드는 `cncLoadLang(code)` 를 기다린 뒤에
+  - 관리자 화면: `STAFF_SCRIPTS`(loader.js — cnc-admin · cnc-finance · cnc-sales · page-admin(+ 탭 파일 전부) · page-sales · page-admin-staff, **순서 그대로**)는 관리 팀 · 영업 담당만 받아요.
+    `cncApplyAdminMe` 가 역할을 보면 `cncLoadStaffScripts()` 시작(한꺼번에 preload, 실행은 목록 순서대로 하나씩, 실패하면 그 파일부터 다시) → `enterApp` 은 최대 8초 기다려요.
+    router 는 `#/admin` 인데 아직 없으면 "불러오는 중"(`renderStaffLoading`) → 받으면 같은 주소를 다시 그려요(LINE `#/admin/orders?order=` 그대로). 못 받으면 `err_network` + 5초 뒤 조용히 다시
+  - **새 관리자 · 영업 화면 파일은 `STAFF_SCRIPTS` 에** (index.html 아님). **고객 화면 · 로그인 · 직원 초대 가입이 쓰는 함수는 그 파일들에 두지 않는다** —
+    그래서 `cncParseJson` · `cncCsvCell` 은 cnc-core.js, `cncCheckAdmin` · 영업 에러 코드(COMMISSION_LOCKED · NOT_SALES …)는 cnc-team.js, `cncAssetQuery` 는 loader.js 에 있어요
+  - `build.sh` 검사: index.html 이 부르는 파일 + `STAFF_SCRIPTS` 목록 + `LANGUAGES` 의 `lang/lang-xx.js` 가 dist/ 에 모두 있는지 (빠지면 배포 멈춤)
 - **검색 · 링크 공유 (SEO)** — 파비콘 · 공유 이미지 · 구조화 데이터 · robots.txt · 사이트맵:
   - 파비콘 = **전체 워드마크 "allAbut 5μm"** (네이비 #001D4A 정사각형 · 모서리 14% 둥글게, all/but 흰색 · A 골드 굵게 · 5μm 골드 위첨자, 사이트 로고와 같은 비율, 워드마크 폭 88% · 세로 가운데). 큰 A 하나만 쓰는 버전은 만들지 않는다
     (`assets/brand/line-icon.png` = LINE 카드용 A 아이콘은 따로 그대로)
@@ -423,11 +434,12 @@
 ## 파일 구조 (로직과 화면 분리)
 - `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
 - `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`
+- `loader.js` — 필요할 때 불러오기: `cncAssetQuery()` · `cncLoadScript(path)` · `cncWithin(promise, ms)` · 관리자 화면 목록 `STAFF_SCRIPTS` · `cncLoadStaffScripts()` · `cncStaffScriptsReady()` (위 "첫 접속을 가볍게")
 - `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
 - `favicon.ico` · `robots.txt` · `sitemap.xml` · `site.webmanifest` — 검색 · 공유용 맨 위 파일 (위 "검색 · 링크 공유"), `assets/brand/` — 파비콘 · 공유 이미지 · LINE 카드 아이콘
 - `tools/brand/make_brand_assets.py` · `tools/brand/render.js` — 파비콘 · 공유 이미지 · 미리보기 만들기 (배포 안 됨), `docs/favicon-preview.png` — 작은 크기 미리보기 (배포 안 됨)
-- `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`, RTL 처리, 날짜·숫자 표시 (`formatDate` · `formatDateTime` · `formatTime` 시각만)
-- `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
+- `lang.js` — `t()`, `tf('키', {n:3})`, `setLang()`(필요하면 파일을 받은 뒤), `cncLoadLang` · `cncLoadLangWithin`, RTL 처리, 날짜·숫자 표시 (`formatDate` · `formatDateTime` · `formatTime` 시각만)
+- `lang/lang-en.js ~ lang-fa.js` — 9개 언어 (키 이름은 모두 같음, 영어만 처음에 · 나머지는 그 언어를 쓸 때 받아요). 위쪽은 allAbut 문구, 아래쪽은 Dentalk 에서 가져온 CNC 문구
 - `auth.js` — 회원가입(본명 · 전화 · 치과명 · Tax ID · 주소 필수, captchaToken) / 로그인 / 비밀번호 재설정 / `getProfile()` + 로그인 저장소 `AUTH_STORAGE`(고객 localStorage · 직원 sessionStorage)
 - `cnc/cnc-identity.js` — 필수 정보 정규화·검사(전화 · Tax ID 체크섬 · 일회용 메일), 가입 전 확인, 기기 ID, 가입 기록, 신규 가입 이벤트 안내 (로직만)
 - `ui/turnstile.js` — Cloudflare Turnstile 위젯 (키가 있을 때만)

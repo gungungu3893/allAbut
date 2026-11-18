@@ -7,6 +7,10 @@
 //   - # 앞의 ?openExternalBrowser=1 은 LINE 이 휴대폰 기본 브라우저로 열게 하는 표시 → 열리면 주소창에서 지워요 (해시는 그대로)
 //   - # 뒤의 ?id=… 은 그 주문을 자동으로 펼쳐요. 관리자는 #/admin/orders?order=… (또는 #/admin?order=…) → 주문 상세 창
 //   - 로그인 전에 이런 링크로 오면 로그인 화면을 보여 주고, 로그인하면 그 페이지로 가요 (rememberPendingRoute)
+//
+// 관리자 · 영업 화면(PageAdmin)은 처음에 불러오지 않아요 (loader.js STAFF_SCRIPTS — 관리 팀 · 영업 담당이 로그인하면 받아요).
+//   #/admin 인데 아직 없으면 "불러오는 중" → 받으면 같은 주소를 다시 그려요 (#/admin/orders?order=… 바로가기도 그대로).
+//   못 받으면 네트워크 오류 안내 + 조용히 다시 시도
 
 var ROUTES = {
   home: function () { return PageHome; },
@@ -15,7 +19,7 @@ var ROUTES = {
   orders: function () { return PageOrders; },
   profile: function () { return PageProfile; },
   topup: function () { return PageTopup; },
-  admin: function () { return PageAdmin; },      // 관리자만 (아래 renderRoute 에서 확인)
+  admin: function () { return window.PageAdmin; },  // 관리자만 (아래 renderRoute 에서 확인). 파일은 필요할 때 받아요 (renderStaffLoading)
   terms: function () { return PageLegal; },
   privacy: function () { return PageLegal; },
   'credit-policy': function () { return PageLegal; },
@@ -197,6 +201,12 @@ function renderRoute() {
     history.replaceState(null, '', '#/home');
   }
 
+  // 관리자 · 영업 화면 파일을 아직 못 받았으면: 받는 동안 "불러오는 중" → 받으면 다시 그리기
+  if (name === 'admin' && !cncStaffScriptsReady()) {
+    renderStaffLoading(main, name);
+    return;
+  }
+
   if (currentPage && currentPage.leave) currentPage.leave();
   window.currentRoute = name;
   currentPage = ROUTES[name]();
@@ -211,6 +221,30 @@ function renderRoute() {
   main.focus({ preventScroll: true });
 
   // 바뀐 약관·개인정보에 아직 동의하지 않았으면 동의 창 (법적 문서는 읽을 수 있게 열어 둬요)
+  updateConsentGate();
+}
+
+// 관리자 · 영업 화면 파일 받는 중 (loader.js)
+var STAFF_RETRY_MS = 5000;
+var _staffRetryTimer = null;
+function renderStaffLoading(main, name) {
+  if (currentPage && currentPage.leave) currentPage.leave();
+  currentPage = null;
+  window.currentRoute = name;
+  setActiveNav(name);
+  document.title = pageTitle(name);
+  main.innerHTML = uiLoading();
+  var want = location.hash;
+  var stillHere = function () { return window.APP && APP.user && location.hash === want && window.currentRoute === name && !currentPage; };
+  cncLoadStaffScripts().then(function () {
+    if (stillHere()) renderRoute();
+  }, function () {
+    if (!stillHere()) return;
+    main.innerHTML = '<p class="field-error" role="alert"><span aria-hidden="true">⚠</span> ' + escHtml(t('err_network')) + '</p>' + uiLoading();
+    // 조용히 다시 시도 (같은 주소에 있을 때만)
+    clearTimeout(_staffRetryTimer);
+    _staffRetryTimer = setTimeout(function () { if (stillHere()) renderRoute(); }, STAFF_RETRY_MS);
+  });
   updateConsentGate();
 }
 

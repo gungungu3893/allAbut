@@ -22,12 +22,7 @@ function isLegalRoute(route) {
   return !!legalDocForRoute(route);
 }
 
-// 배포 버전 → '?v=1a2b3c4d' (index.html 의 <meta name="asset-version">, build.sh 가 채워요. 로컬 'dev' 면 빈 글자)
-function cncAssetQuery() {
-  var m = document.querySelector('meta[name="asset-version"]');
-  var v = m ? String(m.getAttribute('content') || '') : '';
-  return v && v !== 'dev' ? '?v=' + encodeURIComponent(v) : '';
-}
+// 배포 버전 ?v= 는 cncAssetQuery() (loader.js — 처음에 불러오는 파일)
 
 // 문서 본문 파일 불러오기 → LEGAL_DOCS['terms.en'] 같은 값
 var _legalLoading = {};

@@ -26,6 +26,7 @@ FILES=(
   index.html
   404.html
   config.js
+  loader.js         # 필요할 때 불러오기 (언어 파일 · 관리자 화면 파일 STAFF_SCRIPTS)
   lang.js
   auth.js
   session.js
@@ -75,7 +76,7 @@ find "$OUT" -name '*.md' -delete
 #      → 브라우저가 예전 파일을 캐시에서 꺼내 쓰지 않아요 (Ctrl+Shift+R 없이 새 화면).
 #      Cloudflare Pages 는 CF_PAGES_COMMIT_SHA 를 줘요. 없으면 git 해시 → 그것도 없으면 빌드 시각.
 #      _headers: index.html 은 no-cache, ?v= 가 붙는 js · css 는 길게 캐시.
-#      법적 문서(legal/*.js)는 cnc/cnc-legal.js 가 <meta name="asset-version"> 값으로 같은 ?v= 를 붙여요.
+#      필요할 때 불러오는 파일(지금 언어 lang/*.js · 관리자 화면 · 법적 문서 legal/*.js)은 loader.js 의 cncAssetQuery() 가 <meta name="asset-version"> 값으로 같은 ?v= 를 붙여요.
 VER="${CF_PAGES_COMMIT_SHA:-}"
 if [ -z "$VER" ]; then VER="$(git rev-parse --short=8 HEAD 2>/dev/null || true)"; fi
 if [ -z "$VER" ]; then VER="$(date -u +%Y%m%d%H%M%S)"; fi
@@ -111,6 +112,20 @@ done
 for ref in assets/brand/og-image.png assets/brand/favicon-512.png assets/brand/favicon-192.png favicon.ico robots.txt sitemap.xml site.webmanifest; do
   if [ ! -f "$OUT/$ref" ]; then echo "dist/ 에 없는 파일: $ref" >&2; missing=1; fi
 done
+# 필요할 때 불러오는 파일도 있는지
+#   - 관리자 · 영업 화면: loader.js 의 STAFF_SCRIPTS 목록 ('…' 안의 .js)
+#   - 언어 파일: lang.js 의 LANGUAGES 목록 (code: 'xx') → lang/lang-xx.js
+staff_list="$(sed -n '/^var STAFF_SCRIPTS = \[/,/^\];/p' loader.js | grep -oE "'[^']+\.js'" | tr -d "'" || true)"
+if [ -z "$staff_list" ]; then echo "loader.js 에서 STAFF_SCRIPTS 목록을 못 읽었어요" >&2; missing=1; fi
+for ref in $staff_list; do
+  if [ ! -f "$OUT/$ref" ]; then echo "loader.js(STAFF_SCRIPTS)가 부르는데 dist/ 에 없는 파일: $ref" >&2; missing=1; fi
+done
+lang_list="$(sed -n '/^var LANGUAGES = \[/,/^\];/p' lang.js | grep -oE "code: '[a-z]+'" | sed -E "s/code: '([a-z]+)'/\1/" || true)"
+if [ -z "$lang_list" ]; then echo "lang.js 에서 LANGUAGES 목록을 못 읽었어요" >&2; missing=1; fi
+for code in $lang_list; do
+  if [ ! -f "$OUT/lang/lang-$code.js" ]; then echo "lang.js(LANGUAGES)가 부르는데 dist/ 에 없는 파일: lang/lang-$code.js" >&2; missing=1; fi
+done
+echo "필요할 때 불러오는 파일: 관리자 화면 $(echo "$staff_list" | wc -w)개 · 언어 $(echo "$lang_list" | wc -w)개 — 모두 있어요"
 if [ "$missing" -ne 0 ]; then exit 1; fi
 
 echo "dist/ 준비 완료:"

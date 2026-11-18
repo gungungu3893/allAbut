@@ -25,16 +25,7 @@ var ADMIN_DUE_DAYS = 3;   // 납기 3일 이내면 "임박"
 // 0) 관리자 확인
 // ================================================================
 
-// 관리자면 true (에러가 나면 false — 안전한 쪽으로)
-async function cncCheckAdmin() {
-  try {
-    var result = await sb.rpc('is_admin');
-    if (result.error) return false;
-    return result.data === true;
-  } catch (err) {
-    return false;
-  }
-}
+// 관리자 확인 cncCheckAdmin() 은 cnc/cnc-team.js 에 있어요 (로그인할 때 역할을 읽으면서 써서 — 이 파일은 관리 팀 · 영업 담당만 불러와요)
 
 // 'YYYY-MM-DD' 날짜를 n일 더하기
 function cncAddDays(dateStr, n) {

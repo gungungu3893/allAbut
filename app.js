@@ -116,6 +116,9 @@ async function enterApp() {
     // 직원 계정(역할이 있는 계정 — owner · manager · staff · sales): 로그인을 창을 닫으면 사라지는 저장소로 옮기고 "자리 비움 30분" 방식으로 (session.js)
     //   고객 계정은 예전 그대로 (1시간 + 연장, localStorage)
     if (APP.adminRole && typeof switchToStaffSession === 'function') switchToStaffSession();
+    // 관리 팀 · 영업 담당: 관리자 · 영업 화면 파일(loader.js)을 받을 때까지 잠깐 기다려요 (cncApplyAdminMe 가 이미 받기 시작했어요).
+    //   늦거나 못 받으면 그냥 진행 → router 가 "불러오는 중" 을 보여 주고 받으면 다시 그려요
+    if (cncCanOpenAdmin()) await cncWithin(cncLoadStaffScripts(), 8000);
     APP.legal = loaded[2];
     APP.needsConsent = cncNeedsConsent(APP.profile, APP.legal);
 
@@ -148,7 +151,9 @@ async function enterApp() {
     }
 
     // 언어를 직접 고른 적이 없으면 프로필에 저장된 언어로
+    //   그 언어 파일을 먼저 받아요 (늦으면 영어로 먼저 보여 주고, 도착하면 다시 그려요 — lang.js)
     if (!hasSavedLang() && APP.profile && APP.profile.lang && isSupportedLang(APP.profile.lang) && APP.profile.lang !== currentLang) {
+      await cncLoadLangWithin(APP.profile.lang);
       currentLang = APP.profile.lang;
       applyLangToDocument();
     }
@@ -596,6 +601,7 @@ function leaveLegalPage(event, toSignIn) {
   //   화면을 막지 않게 기다리지 않아요 (실패해도 조용히)
   if (window.cncTrackVisit) cncTrackVisit().then(function () { if (window.VisitCounter) VisitCounter.load(); });
 
+  await cncLoadLangWithin(currentLang);   // 지금 언어 파일 (lang.js 가 이미 받기 시작했어요. 늦으면 영어로 먼저 → 도착하면 다시 그려요)
   applyLangToDocument();   // 저장된 언어 반영 (아랍어·페르시아어는 RTL)
   applyFontScale();        // 저장된 글자 크기 반영
   fillLangSelects();

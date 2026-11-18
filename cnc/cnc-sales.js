@@ -15,9 +15,7 @@
 //   무료 크레딧 지급(관리자 · 이벤트)은 실적 아님
 // 지급 완료한 달은 스냅샷 숫자 그대로 (다시 계산 안 함), 그 달 입금은 담당자 변경 불가 (COMMISSION_LOCKED)
 
-// 서버 에러 코드 (긴 이름 먼저 — 'NOT_PAID' 가 다른 코드 안에서 먼저 찾아지지 않게)
-CNC_ERROR_CODES = ['COMMISSION_LOCKED', 'REP_NOT_FOUND', 'MONTH_NOT_ENDED', 'ALREADY_PAID', 'NOT_PAID', 'NOT_SALES',
-  'INVALID_RATE_VALUE', 'INVALID_RATE_TYPE', 'INVALID_MONTH'].concat(CNC_ERROR_CODES);
+// 서버 에러 코드(COMMISSION_LOCKED · NOT_SALES …)는 cnc/cnc-team.js 에 있어요 (이 파일은 관리 팀 · 영업 담당이 로그인했을 때만 불러와서)
 
 var RATE_TYPES = ['percent', 'per_credit'];
 
@@ -111,10 +109,7 @@ function cncAdminSetCustomerRep(userId, repId) {
 // ----------------------------------------------------------------
 // 커미션
 // ----------------------------------------------------------------
-function cncParseJson(d) {
-  if (typeof d === 'string') { try { return JSON.parse(d); } catch (e) { return null; } }
-  return d;
-}
+// JSON 읽기 = cncParseJson(d) — cnc/cnc-core.js
 
 // 건별 상세 한 줄 → 화면용 (입금 'payment' / 환불 차감 'refund' / 015 때 주문 기준 정산 'order')
 function cncCommissionItem(i) {
