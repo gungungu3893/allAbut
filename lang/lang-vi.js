@@ -2026,6 +2026,30 @@ LANG.vi = {
   mono_fact_price: 'Từ {price} THB mỗi răng, chưa gồm VAT',
   mono_landing_image_alt: 'CNC Custom Abutment',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'Bảng giá',
+  navy_eyebrow: 'CNC Custom Abutment · dung sai <5μm',
+  navy_hero_title: 'CNC Custom Abutment xứng tầm với implant của bạn.',
+  navy_hero_desc: 'Tải lên bản quét, duyệt thiết kế và theo dõi mọi bước trực tuyến.',
+  navy_cta_start: 'Bắt đầu đặt hàng',
+  navy_cta_how: 'Cách hoạt động',
+  navy_card_material: 'Vật liệu',
+  navy_card_tolerance: 'Dung sai',
+  navy_card_manufacturer: 'Nhà sản xuất',
+  navy_why_title: 'Vì sao chọn allAbut',
+  navy_how_title: 'Cách hoạt động',
+  navy_steps_aria: 'Các bước đặt hàng',
+  navy_how_head: 'Năm bước, tất cả trực tuyến.',
+  navy_how_desc: 'Bạn chọn ngày giao khi duyệt thiết kế. Bạn có thể hủy khi đơn còn ở trạng thái "Đã gửi"; khi bắt đầu phay thì không thể hủy nữa.',
+  navy_price_title: 'Bảng giá',
+  navy_price_credits: '{n} tín dụng',
+  navy_price_per: 'mỗi răng',
+  navy_price_note: 'THB mỗi răng, chưa gồm {vat}% VAT · Tín dụng có hiệu lực 12 tháng.',
+  navy_final_title: 'Gửi ca đầu tiên của bạn ngay hôm nay.',
+  navy_final_signup: 'Tạo tài khoản',
+  navy_final_line: 'Trò chuyện qua LINE',
+  navy_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

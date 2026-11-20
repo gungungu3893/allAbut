@@ -2026,6 +2026,30 @@ LANG.zh = {
   mono_fact_price: '每颗牙 {price} THB 起（不含增值税）',
   mono_landing_image_alt: 'CNC定制基台',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: '价格',
+  navy_eyebrow: 'CNC定制基台 · 公差 <5μm',
+  navy_hero_title: '为您的种植体量身定制的CNC定制基台。',
+  navy_hero_desc: '上传扫描、确认设计，并在线跟踪每一步。',
+  navy_cta_start: '开始下单',
+  navy_cta_how: '了解流程',
+  navy_card_material: '材料',
+  navy_card_tolerance: '公差',
+  navy_card_manufacturer: '制造商',
+  navy_why_title: '为什么选择 allAbut',
+  navy_how_title: '下单流程',
+  navy_steps_aria: '下单步骤',
+  navy_how_head: '五个步骤，全部在线完成。',
+  navy_how_desc: '您在确认设计时选择交货日期。订单处于"已提交"状态时可以取消；开始加工后将无法取消。',
+  navy_price_title: '价格',
+  navy_price_credits: '{n} 积分',
+  navy_price_per: '每颗牙',
+  navy_price_note: '每颗牙 THB，不含 {vat}% 增值税 · 积分有效期 12 个月。',
+  navy_final_title: '今天就发送您的第一个病例。',
+  navy_final_signup: '注册账户',
+  navy_final_line: '通过 LINE 咨询',
+  navy_image_alt: 'CNC定制基台',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

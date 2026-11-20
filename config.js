@@ -11,10 +11,13 @@ var SITE_URL = 'https://allabut.com';
 // ⚠️ 시크릿 키는 여기에 넣지 마세요 → Supabase 대시보드 Authentication → Bot and Abuse Protection 에만 넣어요.
 var TURNSTILE_SITE_KEY = '0x4AAAAAAF8VDP_n3vg55h4E';
 
-// 사이트 디자인 스위치 — 'mono' = 흑백 미니멀(새 디자인) / 'classic' = 예전 디자인(네이비 · 골드 · 다크 랜딩 · 불꽃 인트로)
-//   'classic' 으로 바꾸면 모든 화면이 예전과 완전히 같아요 (새 스타일은 css/theme-mono.css 에만 있고 mono 일 때만 적용).
-//   theme.js 가 <html data-site-theme="..."> 를 붙여요. 다른 값이면 'classic'.
-var SITE_THEME = 'mono';
+// 사이트 디자인 스위치 — 세 가지 중 하나:
+//   'navy'    = 네이비 스플릿 (로그인 전 화면: 네이비 · 골드 반반 Hero 랜딩 / 로그인 후는 classic 과 같음) — css/theme-navy.css · ui/landing-navy.js
+//   'mono'    = 흑백 미니멀 (사이트 전체 흑백) — css/theme-mono.css · ui/landing-mono.js
+//   'classic' = 처음 디자인 (네이비 · 골드 · 다크 랜딩 · 불꽃 인트로) — css/landing.css · css/app.css 만
+//   theme.js 가 <html data-site-theme="..."> 를 붙여요. 모르는 값이면 'classic'. 각 디자인의 스타일은 그 값일 때만 적용돼요.
+var SITE_THEME = 'navy';
 
-// mono 랜딩의 "주문 5단계" 면 위쪽에 보여 줄 사진 주소 (비워 두면 사진 자리 없음). 예: 'assets/landing/abutment.jpg' (build.sh 목록에 그 폴더도 추가)
+// mono · navy 랜딩에 보여 줄 사진 주소 (비워 두면 사진 자리 없음). 예: 'assets/landing/abutment.jpg' (build.sh 목록에 그 폴더도 추가)
+//   mono = "주문 5단계" 면 위쪽 / navy = 반으로 나눈 Hero 의 오른쪽 면 (없으면 소재 · 공차 · 제조사 카드)
 var LANDING_IMAGE = '';

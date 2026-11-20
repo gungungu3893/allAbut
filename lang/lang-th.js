@@ -2026,6 +2026,30 @@ LANG.th = {
   mono_fact_price: 'เริ่มต้น {price} THB ต่อซี่ ไม่รวม VAT',
   mono_landing_image_alt: 'CNC Custom Abutment',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'ราคา',
+  navy_eyebrow: 'CNC Custom Abutment · ค่าพิกัดความเผื่อ <5μm',
+  navy_hero_title: 'CNC Custom Abutment ที่รากเทียมของคุณควรได้รับ',
+  navy_hero_desc: 'อัปโหลดไฟล์สแกน อนุมัติแบบ และติดตามทุกขั้นตอนทางออนไลน์',
+  navy_cta_start: 'เริ่มสั่งงาน',
+  navy_cta_how: 'วิธีการทำงาน',
+  navy_card_material: 'วัสดุ',
+  navy_card_tolerance: 'ค่าพิกัดความเผื่อ',
+  navy_card_manufacturer: 'ผู้ผลิต',
+  navy_why_title: 'ทำไมต้อง allAbut',
+  navy_how_title: 'วิธีการทำงาน',
+  navy_steps_aria: 'ขั้นตอนการสั่งงาน',
+  navy_how_head: 'ห้าขั้นตอน ทั้งหมดทางออนไลน์',
+  navy_how_desc: 'คุณเลือกวันส่งมอบเองเมื่ออนุมัติแบบ ยกเลิกได้ขณะที่คำสั่งงานยังอยู่ในสถานะ "ส่งแล้ว" เมื่อเริ่มกลึงแล้วจะยกเลิกไม่ได้',
+  navy_price_title: 'ราคา',
+  navy_price_credits: '{n} เครดิต',
+  navy_price_per: 'ต่อซี่',
+  navy_price_note: 'THB ต่อซี่ ไม่รวม VAT {vat}% · เครดิตมีอายุ 12 เดือน',
+  navy_final_title: 'ส่งเคสแรกของคุณวันนี้',
+  navy_final_signup: 'สมัครสมาชิก',
+  navy_final_line: 'แชทผ่าน LINE',
+  navy_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

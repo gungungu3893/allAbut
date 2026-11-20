@@ -2027,6 +2027,30 @@ LANG.ko = {
   mono_fact_price: '치아 1개당 {price} THB 부터 (VAT 별도)',
   mono_landing_image_alt: 'CNC 커스텀 어버트먼트',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: '가격',
+  navy_eyebrow: 'CNC 커스텀 어버트먼트 · 공차 <5μm',
+  navy_hero_title: '임플란트에 꼭 맞는 CNC 커스텀 어버트먼트.',
+  navy_hero_desc: '스캔을 올리고, 디자인을 승인하고, 모든 단계를 온라인으로 확인하세요.',
+  navy_cta_start: '주문 시작하기',
+  navy_cta_how: '주문 방법 보기',
+  navy_card_material: '소재',
+  navy_card_tolerance: '공차',
+  navy_card_manufacturer: '제조사',
+  navy_why_title: 'allAbut 을 고르는 이유',
+  navy_how_title: '주문 방법',
+  navy_steps_aria: '주문 순서',
+  navy_how_head: '다섯 단계, 모두 온라인으로.',
+  navy_how_desc: '납품일은 디자인을 승인할 때 직접 정해요. 주문이 "접수" 상태일 때는 취소할 수 있고, 가공이 시작되면 취소할 수 없어요.',
+  navy_price_title: '가격',
+  navy_price_credits: '{n} 크레딧',
+  navy_price_per: '치아 1개당',
+  navy_price_note: '치아 1개당 THB, VAT {vat}% 별도 · 크레딧은 12개월 동안 쓸 수 있어요.',
+  navy_final_title: '오늘 첫 케이스를 보내 보세요.',
+  navy_final_signup: '회원가입',
+  navy_final_line: 'LINE 으로 상담하기',
+  navy_image_alt: 'CNC 커스텀 어버트먼트',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

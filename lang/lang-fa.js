@@ -2026,6 +2026,30 @@ LANG.fa = {
   mono_fact_price: 'از {price} THB برای هر دندان، بدون مالیات بر ارزش افزوده',
   mono_landing_image_alt: 'اباتمنت CNC سفارشی',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'قیمت‌ها',
+  navy_eyebrow: 'اباتمنت CNC سفارشی · تلرانس ⁦<5μm⁩',
+  navy_hero_title: 'اباتمنت CNC سفارشی که ایمپلنت شما شایسته آن است.',
+  navy_hero_desc: 'اسکن را بارگذاری کنید، طرح را تأیید کنید و هر مرحله را آنلاین دنبال کنید.',
+  navy_cta_start: 'شروع سفارش',
+  navy_cta_how: 'چگونه کار می‌کند',
+  navy_card_material: 'جنس',
+  navy_card_tolerance: 'تلرانس',
+  navy_card_manufacturer: 'سازنده',
+  navy_why_title: 'چرا allAbut',
+  navy_how_title: 'چگونه کار می‌کند',
+  navy_steps_aria: 'مراحل سفارش',
+  navy_how_head: 'پنج مرحله، همه آنلاین.',
+  navy_how_desc: 'تاریخ تحویل را هنگام تأیید طرح خودتان انتخاب می‌کنید. تا زمانی که سفارش «ارسال‌شده» است می‌توانید لغو کنید؛ پس از شروع فرزکاری لغو ممکن نیست.',
+  navy_price_title: 'قیمت‌ها',
+  navy_price_credits: '{n} اعتبار',
+  navy_price_per: 'برای هر دندان',
+  navy_price_note: 'THB برای هر دندان، بدون {vat}٪ مالیات بر ارزش افزوده · اعتبارها ۱۲ ماه معتبرند.',
+  navy_final_title: 'اولین کیس خود را امروز بفرستید.',
+  navy_final_signup: 'ایجاد حساب',
+  navy_final_line: 'گفتگو در LINE',
+  navy_image_alt: 'اباتمنت CNC سفارشی',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

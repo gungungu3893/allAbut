@@ -2026,6 +2026,30 @@ LANG.tr = {
   mono_fact_price: 'Diş başına {price} THB\'den başlayan fiyatlar, KDV hariç',
   mono_landing_image_alt: 'CNC Custom Abutment',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'Fiyatlar',
+  navy_eyebrow: 'CNC Custom Abutment · tolerans <5μm',
+  navy_hero_title: 'İmplantınızın hak ettiği CNC Custom Abutment.',
+  navy_hero_desc: 'Taramayı yükleyin, tasarımı onaylayın ve her adımı çevrimiçi takip edin.',
+  navy_cta_start: 'Sipariş başlatın',
+  navy_cta_how: 'Nasıl çalışır',
+  navy_card_material: 'Malzeme',
+  navy_card_tolerance: 'Tolerans',
+  navy_card_manufacturer: 'Üretici',
+  navy_why_title: 'Neden allAbut',
+  navy_how_title: 'Nasıl çalışır',
+  navy_steps_aria: 'Sipariş adımları',
+  navy_how_head: 'Beş adım, tamamı çevrimiçi.',
+  navy_how_desc: 'Teslim tarihini tasarımı onaylarken siz seçersiniz. Sipariş "Gönderildi" durumundayken iptal edebilirsiniz; frezeleme başladıktan sonra iptal edilemez.',
+  navy_price_title: 'Fiyatlar',
+  navy_price_credits: '{n} kredi',
+  navy_price_per: 'diş başına',
+  navy_price_note: 'Diş başına THB, %{vat} KDV hariç · Krediler 12 ay geçerlidir.',
+  navy_final_title: 'İlk vakanızı bugün gönderin.',
+  navy_final_signup: 'Hesap oluştur',
+  navy_final_line: 'LINE\'da sohbet edin',
+  navy_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

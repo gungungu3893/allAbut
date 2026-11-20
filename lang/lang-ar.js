@@ -2031,6 +2031,31 @@ LANG.ar = {
   mono_fact_price: 'ابتداءً من {price} THB للسن، غير شامل ضريبة القيمة المضافة',
   mono_landing_image_alt: 'دعامة CNC مخصصة',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'الأسعار',
+  navy_eyebrow: 'دعامة CNC مخصصة · تفاوت ⁦<5μm⁩',
+  navy_hero_title: 'دعامة CNC المخصصة التي تستحقها زرعتك.',
+  navy_hero_desc: 'ارفع المسح، ووافق على التصميم، وتابع كل خطوة عبر الإنترنت.',
+  navy_cta_start: 'ابدأ طلبًا',
+  navy_cta_how: 'كيف يعمل',
+  navy_card_material: 'المادة',
+  navy_card_tolerance: 'التفاوت',
+  navy_card_manufacturer: 'الشركة المصنّعة',
+  navy_why_title: 'لماذا allAbut',
+  navy_how_title: 'كيف يعمل',
+  navy_steps_aria: 'خطوات الطلب',
+  navy_how_head: 'خمس خطوات، كلها عبر الإنترنت.',
+  navy_how_desc: 'تختار موعد التسليم عند الموافقة على التصميم. يمكنك الإلغاء ما دام الطلب "مُرسَلًا"؛ وبعد بدء التفريز لا يمكن الإلغاء.',
+  navy_price_title: 'الأسعار',
+  navy_price_credits: '{n} رصيد',
+  navy_price_per: 'لكل سن',
+  navy_price_note: 'THB لكل سن، غير شامل ضريبة القيمة المضافة {vat}% · الأرصدة صالحة لمدة 12 شهرًا.',
+  navy_final_title: 'أرسل حالتك الأولى اليوم.',
+  navy_final_signup: 'إنشاء حساب',
+  navy_final_line: 'تحدث عبر LINE',
+  navy_image_alt: 'دعامة CNC مخصصة',
+  navy_price_credits_one: 'رصيد واحد',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

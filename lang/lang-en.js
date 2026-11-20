@@ -2034,6 +2034,31 @@ LANG.en = {
   mono_fact_price: 'From {price} THB per tooth, excluding VAT',
   mono_landing_image_alt: 'CNC Custom Abutment',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'Pricing',
+  navy_eyebrow: 'CNC Custom Abutment · <5μm',
+  navy_hero_title: 'The CNC custom abutment your implant deserves.',
+  navy_hero_desc: 'Upload a scan, approve the design and follow every step online.',
+  navy_cta_start: 'Start an order',
+  navy_cta_how: 'How it works',
+  navy_card_material: 'Material',
+  navy_card_tolerance: 'Tolerance',
+  navy_card_manufacturer: 'Manufacturer',
+  navy_why_title: 'Why allAbut',
+  navy_how_title: 'How it works',
+  navy_steps_aria: 'Order steps',
+  navy_how_head: 'Five steps, all online.',
+  navy_how_desc: 'You choose the delivery date when you approve the design. You can cancel while the order is still "Submitted"; once milling starts, it can no longer be cancelled.',
+  navy_price_title: 'Pricing',
+  navy_price_credits: '{n} credits',
+  navy_price_per: 'per tooth',
+  navy_price_note: 'THB per tooth, excluding {vat}% VAT · Credits are valid for 12 months.',
+  navy_final_title: 'Send your first case today.',
+  navy_final_signup: 'Create account',
+  navy_final_line: 'Chat on LINE',
+  navy_image_alt: 'CNC Custom Abutment',
+  navy_price_credits_one: '{n} credit',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

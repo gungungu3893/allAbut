@@ -2031,6 +2031,31 @@ LANG.es = {
   mono_fact_price: 'Desde {price} THB por diente, sin IVA',
   mono_landing_image_alt: 'Pilar personalizado CNC',
 
+  // ----- 네이비 스플릿(navy) 랜딩: 메뉴 "가격" · Hero · 카드 · Why · How it works · 가격 · 마지막 띠 (SITE_THEME 'navy' 일 때만 보여요) -----
+  navy_nav_pricing: 'Precios',
+  navy_eyebrow: 'Pilar personalizado CNC · tolerancia <5μm',
+  navy_hero_title: 'El pilar personalizado CNC que su implante merece.',
+  navy_hero_desc: 'Suba un escaneo, apruebe el diseño y siga cada paso en línea.',
+  navy_cta_start: 'Iniciar un pedido',
+  navy_cta_how: 'Cómo funciona',
+  navy_card_material: 'Material',
+  navy_card_tolerance: 'Tolerancia',
+  navy_card_manufacturer: 'Fabricante',
+  navy_why_title: 'Por qué allAbut',
+  navy_how_title: 'Cómo funciona',
+  navy_steps_aria: 'Pasos del pedido',
+  navy_how_head: 'Cinco pasos, todo en línea.',
+  navy_how_desc: 'Usted elige la fecha de entrega al aprobar el diseño. Puede cancelar mientras el pedido esté "Enviado"; una vez iniciado el fresado, ya no se puede cancelar.',
+  navy_price_title: 'Precios',
+  navy_price_credits: '{n} créditos',
+  navy_price_per: 'por diente',
+  navy_price_note: 'THB por diente, sin el {vat}% de IVA · Los créditos son válidos durante 12 meses.',
+  navy_final_title: 'Envíe su primer caso hoy.',
+  navy_final_signup: 'Crear cuenta',
+  navy_final_line: 'Chatear por LINE',
+  navy_image_alt: 'Pilar personalizado CNC',
+  navy_price_credits_one: '{n} crédito',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

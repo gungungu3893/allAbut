@@ -1,0 +1,270 @@
+/* =================================================================
+   allAbut — 네이비 스플릿 디자인 (SITE_THEME = 'navy')
+   -----------------------------------------------------------------
+   - 이 파일의 규칙은 **전부 html[data-site-theme="navy"] 아래**에만 있어요 → SITE_THEME 이 'classic' · 'mono' 이면 하나도 적용되지 않아요.
+     css/landing.css · css/app.css · css/theme-mono.css 는 고치지 않아요.
+   - 바꾸는 곳은 **로그인 전 화면만**: 랜딩(ui/landing-navy.js 본문) · 로그인 화면 · 로그인 전 회사소개/문의/법적 문서(#screen-legal)의 헤더와 푸터.
+     로그인 후 화면은 classic(네이비 · 골드) 그대로라 여기 규칙이 없어요.
+   - 색: 네이비 #001D4A · 골드 #D4AF37 · 옅은 면 #EEF1F6 · #F4F6FA · 글자 #001D4A · 보조 #4B5563 · 네이비 위 보조 #C9D2E3
+     (네이비 위 흰 글자 16:1 · 골드 8.1:1 · #C9D2E3 11:1 / 옅은 면 위 #4B5563 6.6:1 — 모두 4.5:1 이상)
+   - ⚠️ 새 로그인 전 화면 · 새 색을 만들면 여기도 같이 봐요 (theme-mono.css 도)
+   ================================================================= */
+
+html[data-site-theme="navy"] {
+  --nv-navy: #001D4A;
+  --nv-navy-2: #0A2A5E;          /* 네이비 버튼 호버 */
+  --nv-gold: #D4AF37;
+  --nv-gold-2: #E3C35A;          /* 골드 버튼 호버 */
+  --nv-soft: #EEF1F6;
+  --nv-soft-2: #F4F6FA;
+  --nv-text: #001D4A;
+  --nv-sub: #4B5563;
+  --nv-on-navy: #C9D2E3;
+  --nv-line: #DCE2EC;
+}
+
+/* =================================================================
+   1) 헤더 (랜딩 · 로그인 화면 · 로그인 전 법적 문서/회사소개/문의) — 네이비 띠
+   ================================================================= */
+html[data-site-theme="navy"] .landing-nav {
+  position: relative; align-self: stretch; width: 100%;
+  background: var(--nv-navy); border-bottom: 1px solid var(--nv-navy);
+}
+html[data-site-theme="navy"] .landing-nav .logo-light .logo-all,
+html[data-site-theme="navy"] .landing-nav .logo-light .logo-but,
+html[data-site-theme="navy"] #screen-legal .legal-header .logo-light .logo-all,
+html[data-site-theme="navy"] #screen-legal .legal-header .logo-light .logo-but { color: #FFFFFF; }
+html[data-site-theme="navy"] .landing-nav .logo-light .logo-a,
+html[data-site-theme="navy"] .landing-nav .logo-light .logo-um,
+html[data-site-theme="navy"] #screen-legal .legal-header .logo-light .logo-a,
+html[data-site-theme="navy"] #screen-legal .legal-header .logo-light .logo-um { color: var(--nv-gold); }
+html[data-site-theme="navy"] .landing-nav-link,
+html[data-site-theme="navy"] .landing-nav-link:hover,
+html[data-site-theme="navy"] .landing-nav-link:focus-visible { color: #FFFFFF; }
+html[data-site-theme="navy"] .landing-nav-link:hover,
+html[data-site-theme="navy"] .landing-nav-link:focus-visible { border-bottom-color: var(--nv-gold); }
+html[data-site-theme="navy"] .landing-lang.public-lang { color: #FFFFFF; }
+html[data-site-theme="navy"] .landing-nav .public-lang select {
+  background: var(--nv-navy); color: #FFFFFF; border-color: rgba(255, 255, 255, 0.45);
+}
+html[data-site-theme="navy"] .landing-nav .public-lang select:hover { border-color: #FFFFFF; }
+html[data-site-theme="navy"] .landing-nav .public-lang option { color: var(--nv-navy); background: #FFFFFF; }
+html[data-site-theme="navy"] .landing-nav-signin {
+  background: var(--nv-gold); color: var(--nv-navy); border-color: var(--nv-gold); border-radius: 999px;
+}
+html[data-site-theme="navy"] .landing-nav-signin:hover,
+html[data-site-theme="navy"] .landing-nav-signin:focus-visible { background: var(--nv-gold-2); border-color: var(--nv-gold-2); color: var(--nv-navy); }
+
+/* 로그인 전 법적 문서 · 회사소개 · 문의 (#screen-legal 은 로그인 전에만 써요) */
+html[data-site-theme="navy"] #screen-legal .legal-header { background: var(--nv-navy); border-bottom-color: var(--nv-navy); }
+html[data-site-theme="navy"] #screen-legal .legal-header .hdr-link { color: #FFFFFF; }
+html[data-site-theme="navy"] #screen-legal .legal-header .hdr-link:hover { color: #FFFFFF; }
+html[data-site-theme="navy"] #screen-legal .legal-header .hdr-link.active { color: #FFFFFF; border-bottom-color: var(--nv-gold); }
+html[data-site-theme="navy"] #screen-legal .legal-header .lang-select { color: #FFFFFF; }
+html[data-site-theme="navy"] #screen-legal .legal-header .lang-select select { background: var(--nv-navy); color: #FFFFFF; border-color: rgba(255, 255, 255, 0.45); }
+html[data-site-theme="navy"] #screen-legal .legal-header .lang-select option { color: var(--nv-navy); background: #FFFFFF; }
+html[data-site-theme="navy"] #screen-legal .legal-header .btn-primary { background: var(--nv-gold); border-color: var(--nv-gold); color: var(--nv-navy); }
+html[data-site-theme="navy"] #screen-legal .legal-header .btn-primary:hover:not(:disabled) { background: var(--nv-gold-2); border-color: var(--nv-gold-2); color: var(--nv-navy); }
+
+/* =================================================================
+   2) 푸터 (랜딩 · 로그인 · 로그인 전 법적 문서) — 네이비 띠 + 흰 글자
+   ================================================================= */
+html[data-site-theme="navy"] .public-footer,
+html[data-site-theme="navy"] #screen-legal .app-footer {
+  background: var(--nv-navy); color: var(--nv-on-navy); border-top-color: var(--nv-navy);
+}
+/* 랜딩 본문이 길어서 푸터를 화면에 고정하지 않고 본문 다음에 (휴대폰에서 화면을 가리지 않게) */
+html[data-site-theme="navy"] .public-footer { position: static; }
+html[data-site-theme="navy"] .public-footer a,
+html[data-site-theme="navy"] .public-footer a:hover,
+html[data-site-theme="navy"] .public-footer .footer-contact,
+html[data-site-theme="navy"] .public-footer .footer-contact a,
+html[data-site-theme="navy"] #screen-legal .app-footer a { color: #FFFFFF; }
+html[data-site-theme="navy"] .public-footer .footer-maker,
+html[data-site-theme="navy"] .public-footer .footer-copy,
+html[data-site-theme="navy"] .public-footer .footer-ad-license,
+html[data-site-theme="navy"] #screen-legal .app-footer .footer-maker,
+html[data-site-theme="navy"] #screen-legal .app-footer .footer-copy,
+html[data-site-theme="navy"] #screen-legal .app-footer .footer-ad-license { color: var(--nv-on-navy); }
+
+/* =================================================================
+   3) 랜딩 — 흰 바탕, 가로 꽉 찬 구역들 (ui/landing-navy.js)
+   ================================================================= */
+html[data-site-theme="navy"] #screen-landing {
+  background: #FFFFFF; color: var(--nv-text);
+  justify-content: flex-start; align-items: stretch; text-align: start;
+  padding: 0 0 0;
+}
+/* 큰 로고 · 슬로건 · 불꽃 캔버스는 navy 에서 숨겨요 (불꽃 인트로는 classic 일 때만 — app.js). "Beta test service" 는 남겨요 */
+html[data-site-theme="navy"] #screen-landing .logo-hero,
+html[data-site-theme="navy"] #screen-landing .slogan,
+html[data-site-theme="navy"] #screen-landing .logo-fx { display: none; }
+/* 순서: 메뉴 줄 → Hero → 방문자 숫자 · Beta · 이벤트 배너 · 광고 → 나머지 구역 */
+html[data-site-theme="navy"] #screen-landing .landing-nav { order: 0; }
+html[data-site-theme="navy"] #screen-landing .navy-hero { order: 1; }
+html[data-site-theme="navy"] #screen-landing .visit-counter { order: 2; position: static; align-self: flex-end; margin: 14px 24px 0; }
+html[data-site-theme="navy"] #screen-landing .slogan-row { order: 3; justify-content: center; margin-top: 10px; }
+html[data-site-theme="navy"] #screen-landing .campaign-banner { order: 4; margin: 16px auto 0; }
+html[data-site-theme="navy"] #screen-landing .ad-slot-landing { order: 5; }
+html[data-site-theme="navy"] #screen-landing .navy-rest { order: 6; }
+html[data-site-theme="navy"] .visit-counter .vc-label,
+html[data-site-theme="navy"] .visit-counter .vc-sep { color: var(--nv-sub); }
+html[data-site-theme="navy"] .visit-counter .vc-num { color: var(--nv-navy); }
+html[data-site-theme="navy"] .beta-note { color: #B45309; }
+html[data-site-theme="navy"] .ad-slot-landing .ad-frame { background: var(--nv-soft-2); }
+/* 이벤트 배너: 골드 면 + 네이비 글자 (흰 바탕 위) */
+html[data-site-theme="navy"] .campaign-banner { background: var(--nv-gold); color: var(--nv-navy); box-shadow: none; }
+
+/* ----- 공통 부품 ----- */
+html[data-site-theme="navy"] .navy-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+html[data-site-theme="navy"] .navy-section { padding: 64px 0; }
+html[data-site-theme="navy"] .navy-h2 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 300; line-height: 1.15; letter-spacing: -0.01em; color: var(--nv-navy); }
+html[data-site-theme="navy"] .navy-split { display: grid; grid-template-columns: 1fr 1fr; }
+html[data-site-theme="navy"] .navy-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+html[data-site-theme="navy"] .navy-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 54px; padding: 0 28px; border-radius: 999px; border: 2px solid transparent; cursor: pointer;
+  font-size: 1.0625rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+html[data-site-theme="navy"] .navy-btn-gold { background: var(--nv-gold); border-color: var(--nv-gold); color: var(--nv-navy); }
+html[data-site-theme="navy"] .navy-btn-gold:hover { background: var(--nv-gold-2); border-color: var(--nv-gold-2); }
+html[data-site-theme="navy"] .navy-btn-ghost { background: transparent; border-color: #FFFFFF; color: #FFFFFF; }
+html[data-site-theme="navy"] .navy-btn-ghost:hover { background: #FFFFFF; color: var(--nv-navy); }
+html[data-site-theme="navy"] .navy-btn-navy { background: var(--nv-navy); border-color: var(--nv-navy); color: #FFFFFF; }
+html[data-site-theme="navy"] .navy-btn-navy:hover { background: var(--nv-navy-2); border-color: var(--nv-navy-2); }
+html[data-site-theme="navy"] .navy-btn-line { background: #05893C; border-color: #05893C; color: #FFFFFF; }   /* LINE 초록 (흰 글자 4.6:1 — 앱의 .btn-line 과 같은 색) */
+html[data-site-theme="navy"] .navy-btn-line:hover { background: #047233; border-color: #047233; }
+
+/* ----- (1) Hero: 왼쪽 네이비 / 오른쪽 옅은 면 ----- */
+html[data-site-theme="navy"] .navy-hero-split { min-height: 520px; }
+html[data-site-theme="navy"] .navy-hero-main {
+  background: var(--nv-navy); color: #FFFFFF;
+  padding: 72px max(24px, calc((100vw - 1200px) / 2 + 24px)) 72px max(24px, calc((100vw - 1200px) / 2 + 24px));
+  padding-inline-end: 48px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+html[data-site-theme="navy"] .navy-eyebrow {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 22px;
+  color: var(--nv-gold); font-size: 0.875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+}
+html[data-site-theme="navy"] .navy-eyebrow .mono { color: var(--nv-gold); letter-spacing: 0.04em; text-transform: none; }   /* 대문자로 바꾸면 μ 가 M 이 돼서 규격 글자는 그대로 */
+html[data-site-theme="navy"] .navy-eyebrow-line { flex: 0 0 auto; width: 36px; height: 2px; background: var(--nv-gold); }
+html[data-site-theme="navy"] .navy-hero-title {
+  margin: 0; max-width: 15ch; font-size: clamp(36px, 4.4vw, 58px); font-weight: 300; line-height: 1.12; letter-spacing: -0.015em;
+  color: #FFFFFF; overflow-wrap: anywhere;
+}
+html[data-site-theme="navy"] .navy-hero-desc { margin: 22px 0 0; max-width: 34em; font-size: 1.125rem; line-height: 1.6; color: var(--nv-on-navy); }
+html[data-site-theme="navy"] .navy-hero-side {
+  background: var(--nv-soft);
+  padding: 56px max(24px, calc((100vw - 1200px) / 2 + 24px)) 56px 48px;
+  display: flex; align-items: center;
+}
+html[data-site-theme="navy"] .navy-hero-photo { width: 100%; border-radius: 20px; overflow: hidden; background: #FFFFFF; }
+html[data-site-theme="navy"] .navy-hero-photo img { display: block; width: 100%; height: auto; max-height: 520px; object-fit: cover; }
+html[data-site-theme="navy"] .navy-spec-cards { width: 100%; max-width: 480px; display: grid; gap: 14px; }
+html[data-site-theme="navy"] .navy-spec-card { background: #FFFFFF; border-radius: 16px; padding: 20px 24px; box-shadow: 0 1px 2px rgba(0, 29, 74, 0.06); }
+html[data-site-theme="navy"] .navy-spec-label { margin: 0 0 6px; color: var(--nv-sub); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+html[data-site-theme="navy"] .navy-spec-value { color: var(--nv-navy); font-size: 1.0625rem; line-height: 1.5; overflow-wrap: anywhere; }
+html[data-site-theme="navy"] .navy-spec-value p { margin: 0; }
+html[data-site-theme="navy"] .navy-spec-big { font-size: 1.75rem; }
+html[data-site-theme="navy"] .navy-spec-name { font-weight: 600; }
+html[data-site-theme="navy"] .navy-spec-certs { list-style: none; margin: 6px 0 0; padding: 0; color: var(--nv-sub); font-size: 0.9375rem; }
+html[data-site-theme="navy"] .navy-spec-certs li { padding: 2px 0; }
+
+/* ----- (2) Why allAbut: 왼쪽 제목 / 오른쪽 카드 4장 ----- */
+html[data-site-theme="navy"] .navy-why-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 40px; align-items: start; }
+html[data-site-theme="navy"] .navy-why-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+html[data-site-theme="navy"] .navy-why-card { background: var(--nv-soft-2); border-radius: 16px; padding: 24px; min-width: 0; }
+html[data-site-theme="navy"] .navy-why-num { display: block; color: var(--nv-sub); font-size: 0.9375rem; font-weight: 500; margin-bottom: 14px; }
+html[data-site-theme="navy"] .navy-why-card-title { margin: 0 0 8px; font-size: 1.1875rem; font-weight: 600; color: var(--nv-navy); overflow-wrap: anywhere; }
+html[data-site-theme="navy"] .navy-why-card-text { margin: 0; color: var(--nv-sub); line-height: 1.6; overflow-wrap: anywhere; }
+html[data-site-theme="navy"] .navy-why-card .mono { color: var(--nv-navy); }
+
+/* ----- (3) How it works: 옅은 면(5단계) / 네이비 면(안내) ----- */
+html[data-site-theme="navy"] .navy-how { padding: 0; }
+html[data-site-theme="navy"] .navy-how-steps {
+  background: var(--nv-soft);
+  padding: 64px 48px 64px max(24px, calc((100vw - 1200px) / 2 + 24px));
+}
+html[data-site-theme="navy"] .navy-steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 14px; }
+html[data-site-theme="navy"] .navy-step { display: flex; align-items: center; gap: 16px; }
+html[data-site-theme="navy"] .navy-step-num {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--nv-navy); color: #FFFFFF; font-size: 1.0625rem; font-weight: 600;
+}
+html[data-site-theme="navy"] .navy-step-gold .navy-step-num { background: var(--nv-gold); color: var(--nv-navy); }
+html[data-site-theme="navy"] .navy-step-label { font-size: 1.125rem; font-weight: 500; color: var(--nv-navy); overflow-wrap: anywhere; }
+html[data-site-theme="navy"] .navy-how-panel {
+  background: var(--nv-navy); color: #FFFFFF;
+  padding: 64px max(24px, calc((100vw - 1200px) / 2 + 24px)) 64px 48px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+html[data-site-theme="navy"] .navy-how-head { margin: 0; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 300; line-height: 1.15; color: #FFFFFF; }
+html[data-site-theme="navy"] .navy-how-desc { margin: 18px 0 0; max-width: 32em; font-size: 1.0625rem; line-height: 1.65; color: var(--nv-on-navy); }
+
+/* ----- (4) 가격 카드 ----- */
+html[data-site-theme="navy"] .navy-price-cards {
+  list-style: none; margin: 28px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;
+}
+html[data-site-theme="navy"] .navy-price-card { border: 1.5px solid var(--nv-line); border-radius: 16px; padding: 22px; background: #FFFFFF; min-width: 0; }
+html[data-site-theme="navy"] .navy-price-credits { margin: 0; color: var(--nv-sub); font-weight: 600; }
+html[data-site-theme="navy"] .navy-price-amount { margin: 10px 0 0; color: var(--nv-navy); font-size: 1.625rem; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+html[data-site-theme="navy"] .navy-price-unit { font-size: 1rem; font-weight: 500; }
+html[data-site-theme="navy"] .navy-price-per { margin: 4px 0 0; color: var(--nv-sub); font-size: 0.9375rem; }
+html[data-site-theme="navy"] .navy-price-top { background: var(--nv-navy); border-color: var(--nv-navy); }
+html[data-site-theme="navy"] .navy-price-top .navy-price-credits,
+html[data-site-theme="navy"] .navy-price-top .navy-price-per { color: var(--nv-on-navy); }
+html[data-site-theme="navy"] .navy-price-top .navy-price-amount { color: #FFFFFF; }
+html[data-site-theme="navy"] .navy-price-note { margin: 18px 0 0; color: var(--nv-sub); }
+
+/* ----- (5) 마지막 띠 ----- */
+html[data-site-theme="navy"] .navy-final { background: var(--nv-soft-2); }
+html[data-site-theme="navy"] .navy-final-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 32px; }
+html[data-site-theme="navy"] .navy-final .navy-cta { margin-top: 0; }
+
+/* ----- 좁은 화면: 반반 → 위아래 ----- */
+@media (max-width: 899px) {
+  html[data-site-theme="navy"] .navy-split { grid-template-columns: 1fr; }
+  html[data-site-theme="navy"] .navy-hero-split { min-height: 0; }
+  html[data-site-theme="navy"] .navy-hero-main,
+  html[data-site-theme="navy"] .navy-hero-side,
+  html[data-site-theme="navy"] .navy-how-steps,
+  html[data-site-theme="navy"] .navy-how-panel { padding: 48px 24px; }
+  html[data-site-theme="navy"] .navy-hero-title { max-width: none; }
+  html[data-site-theme="navy"] .navy-spec-cards { max-width: none; }
+  html[data-site-theme="navy"] .navy-why-grid { grid-template-columns: 1fr; gap: 24px; }
+}
+@media (max-width: 599px) {
+  html[data-site-theme="navy"] .navy-section { padding: 44px 0; }
+  html[data-site-theme="navy"] .navy-wrap { padding: 0 16px; }
+  html[data-site-theme="navy"] .navy-hero-main,
+  html[data-site-theme="navy"] .navy-hero-side,
+  html[data-site-theme="navy"] .navy-how-steps,
+  html[data-site-theme="navy"] .navy-how-panel { padding: 40px 16px; }
+  html[data-site-theme="navy"] .navy-why-cards { grid-template-columns: 1fr; }
+  html[data-site-theme="navy"] .navy-cta { flex-direction: column; align-items: stretch; }
+  html[data-site-theme="navy"] .navy-btn { white-space: normal; text-align: center; }
+  html[data-site-theme="navy"] .navy-price-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-site-theme="navy"] #screen-landing .visit-counter { align-self: center; margin: 14px 16px 0; }
+}
+
+/* =================================================================
+   4) 로그인 화면 — 바탕 네이비 + 흰 카드, 주 버튼 네이비, 강조 골드 (폼 동작 · Turnstile · 에러 표시는 그대로)
+   ================================================================= */
+html[data-site-theme="navy"] #screen-auth { background: var(--nv-navy); padding: 0 0 48px; }
+html[data-site-theme="navy"] #screen-auth .auth-card { width: calc(100% - 32px); }
+html[data-site-theme="navy"] #screen-auth .landing-nav { margin-bottom: 8px; border-bottom-color: rgba(255, 255, 255, 0.12); }
+html[data-site-theme="navy"] #screen-auth .logo-small .logo-all,
+html[data-site-theme="navy"] #screen-auth .logo-small .logo-but { color: #FFFFFF; }
+html[data-site-theme="navy"] #screen-auth .logo-small .logo-a,
+html[data-site-theme="navy"] #screen-auth .logo-small .logo-um { color: var(--nv-gold); }
+html[data-site-theme="navy"] .auth-card { border-top-color: var(--nv-gold); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35); }
+html[data-site-theme="navy"] .auth-tab.active { color: var(--nv-navy); border-bottom-color: var(--nv-gold); }
+html[data-site-theme="navy"] .auth-submit { background: var(--nv-navy); color: #FFFFFF; }
+html[data-site-theme="navy"] .auth-submit:hover { background: var(--nv-navy-2); }
+html[data-site-theme="navy"] .back-link { color: var(--nv-on-navy); }
+html[data-site-theme="navy"] .back-link:hover { color: var(--nv-gold); }
+html[data-site-theme="navy"] .screen-dark { padding-bottom: 48px; }
+/* 로그인 전 화면의 페이지 바탕 (화면보다 짧은 페이지에서 아래가 다크로 보이지 않게) — 로그인 후(in-app)는 classic 그대로 */
+html[data-site-theme="navy"] body:not(.in-app) { background: var(--nv-navy); }

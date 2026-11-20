@@ -28,7 +28,7 @@
     `_headers`: `/` · `/index.html` = `no-cache`, 맨 위 js 7개(loader.js · theme.js 포함) · `/css/*` · `/lang/*` · `/legal/*` · `/cnc/*` · `/ui/*` = 1년 `immutable` (주소가 배포마다 바뀌어서 안전).
     → 배포 뒤 Ctrl+Shift+R 없이 새 화면. **index.html 에 새 js · css 를 넣으면 상대 경로(`src="ui/…"`)로** (자동으로 ?v= 가 붙어요), 새로 동적으로 불러오는 내 파일이 생기면 그 주소에도 `cncAssetQuery()`
 - **첫 접속을 가볍게 — 필요할 때 불러오기** (`loader.js`):
-  - index.html 은 모든 사람이 쓰는 파일만 (스크립트 46개 = 내 파일 45(theme.js · ui/landing-mono.js 포함) + supabase-js, 예전 65개). **관리자 · 영업 · 세금계산서 화면 파일과 영어가 아닌 언어 파일은 index.html 에 넣지 않는다**
+  - index.html 은 모든 사람이 쓰는 파일만 (스크립트 47개 = 내 파일 46(theme.js · ui/landing-mono.js · ui/landing-navy.js 포함) + supabase-js, 예전 65개). **관리자 · 영업 · 세금계산서 화면 파일과 영어가 아닌 언어 파일은 index.html 에 넣지 않는다**
   - 언어: index.html 에는 `lang/lang-en.js`(대체용)만. `lang.js` 가 끝에서 `cncLoadLang(currentLang)` 으로 지금 언어를 바로 받기 시작 → boot · 로그인 후 프로필 언어는 `cncLoadLangWithin(code)`(최대 4초 `LANG_WAIT_MS`) 로 기다려요.
     `setLang(code)` = 파일이 있으면 바로, 없으면 받은 뒤에 바꾸고 `langchange` (기다리는 사이 다른 언어를 고르면 마지막 것). 못 받으면 영어로 보여 주고 조용히 다시 시도(3초 · 10초 · 30초 · 60초…, 최대 10번) → 도착하면 다시 그려요(`langArrived`).
     `currentLang` 을 직접 바꾸지 말고 `setLang` 을 쓰거나, 꼭 직접 바꿔야 하면 먼저 `cncLoadLangWithin`. 다른 언어 문구를 미리 읽어야 하는 코드는 `cncLoadLang(code)` 를 기다린 뒤에
@@ -73,8 +73,20 @@
 - 색 대비 충분히 (보조 글씨는 `--muted: #4B5563`)
 
 ## 디자인
-- **디자인 스위치 `SITE_THEME`** (config.js): `'mono'` = 흑백 미니멀(지금 기본) / `'classic'` = 예전 디자인(아래 다크 랜딩 · 네이비 · 골드 · 불꽃 인트로 — 이 "디자인" 절의 나머지 설명은 전부 classic 기준).
-  - `theme.js`(<head>, config.js 바로 다음)가 화면을 그리기 전에 `<html data-site-theme="mono|classic">` + mono 면 `theme-color` 흰색 + 처음부터 있는 로고에 `logo-mono` 클래스. JS 에서는 `cncIsMono()` · `cncSiteTheme()`
+- **디자인 스위치 `SITE_THEME`** (config.js) — 값 세 가지: `'navy'` = 네이비 스플릿(지금 기본) / `'mono'` = 흑백 미니멀 / `'classic'` = 처음 디자인(아래 다크 랜딩 · 네이비 · 골드 · 불꽃 인트로 — 이 "디자인" 절의 나머지 설명은 전부 classic 기준). 모르는 값이면 'classic'
+  - `theme.js`(<head>, config.js 바로 다음)가 화면을 그리기 전에 `<html data-site-theme="navy|mono|classic">` + mono 일 때만 `theme-color` 흰색 + 처음부터 있는 로고에 `logo-mono` 클래스. JS 에서는 `cncSiteTheme()` · `cncIsMono()` · `cncIsNavy()`
+  - **각 디자인의 스타일은 그 값일 때만**: navy = `css/theme-navy.css`(`html[data-site-theme="navy"]` 아래만) + `ui/landing-navy.js` / mono = `css/theme-mono.css` + `ui/landing-mono.js` / classic = `css/landing.css` · `css/app.css` 만.
+    새 디자인을 더할 때도 기존 css 파일(landing · app · theme-mono)의 규칙은 고치지 않는다 → 다른 두 디자인은 픽셀까지 그대로 (navy 를 넣을 때 classic · mono 를 예전 커밋과 화면 54장씩 비교해서 확인 — 다른 곳은 시간에 따라 바뀌는 헤더 오른쪽 · 충전 QR 뿐)
+  - **navy (네이비 스플릿) = 로그인 전 화면만** (랜딩 · 로그인 화면 · 로그인 전 회사소개/문의/법적 문서 `#screen-legal` 의 헤더와 푸터). **로그인 후 화면은 classic 그대로** (navy 전용 규칙 없음, 로그인 후 화면 42장이 classic 과 같음)
+    - 색: 네이비 #001D4A · 골드 #D4AF37 · 옅은 면 #EEF1F6 · #F4F6FA · 글자 #001D4A · 보조 #4B5563 · 네이비 위 보조 #C9D2E3 (모든 글자 4.5:1 이상)
+    - 헤더 = 네이비 띠(로고 all · but 흰색, A · 위첨자 골드 / 회사소개 · **가격 #/credit-policy**(landing-navy.js 가 넣음) · 언어 흰 글자 / [로그인] 골드 채움 + 네이비 글자 / TEST 배지 자리 그대로). 푸터 = 네이비 띠 + 흰 글자 ("Sold by · Manufactured by" 그대로, 화면에 고정하지 않고 본문 다음)
+    - 랜딩 본문 `LandingNavy`: (1) 반반 Hero — 왼쪽 네이비(골드 선 + "CNC CUSTOM ABUTMENT · <5μm" · 큰 제목 300 clamp(36px, 4.4vw, 58px) · 설명 · [Start an order] 골드(`handleStartOrder`) · [How it works] 흰 테두리(#/about)) /
+      오른쪽 #EEF1F6 — config.js `LANDING_IMAGE` 사진, 없으면 흰 카드 3장(소재 · 공차 · 제조사 = `cncManufacturerInfo()` 이름 + 인증, 비면 그 카드만 숨김) → 방문자 숫자 · Beta · 이벤트 배너(골드) · 광고 자리 →
+      (2) Why allAbut(카드 4장, `about_why1~4` 재사용 · {manufacturer} 자리 채움) (3) How it works(옅은 면 5단계 `wiz_step1~5` 네이비 동그라미 · 3번만 골드 / 네이비 면 "Five steps, all online." + 납품일 · 취소 안내)
+      (4) 가격(판매 중 어버트먼트 패키지 카드 — 크레딧 수 + 1개당 단가, 가장 큰 패키지만 네이비 채움, "THB per tooth, excluding {vat}% VAT · 12개월" — VAT 는 로그인 전에 못 읽어서 7, 못 읽으면 구역 전체 숨김)
+      (5) 마지막 띠 "Send your first case today." + [Create account](네이비, 회원가입 탭) + [Chat on LINE](LINE 초록 #05893C, `cncContactInfo().lineUrl`). 문구 키 `navy_*` 9개 언어
+    - 로그인 화면 = 네이비 바탕 + 흰 카드(위 골드 선), 주 버튼 네이비, 선택 탭 골드 밑줄. 큰 로고 · 슬로건 숨김, **불꽃 인트로는 classic 일 때만**. 3D 뷰어 · 로고는 classic 그대로(logo-mono · 회색 모델 · 흰 theme-color 는 mono 에서만)
+  - **새 화면 · 새 색을 만들 때는 `css/theme-mono.css` 와 `css/theme-navy.css` 도 같이 본다** (navy 는 로그인 전 화면, mono 는 사이트 전체)
   - **mono 스타일은 전부 `css/theme-mono.css` 의 `html[data-site-theme="mono"]` 아래에만** — `css/landing.css` · `css/app.css` 의 기존 규칙은 고치지 않는다 → 'classic' 이면 예전과 픽셀까지 같아요 (예전 커밋과 화면 54장 비교로 확인)
   - theme-mono.css = 1) 색 변수(`--navy` · `--text` → #0B0F17, `--gold` → #0B0F17(선), `--gold-dark` → #4B5563, `--bg` #F5F5F7, `--dark` 흰색, `--muted-light` #575E6B …) →
     2) 자동 규칙(예전 css 에 직접 써 넣은 네이비 · 골드 계열 색을 같은 선택자로 흑백 값으로 — scratchpad 의 생성 스크립트가 만들었고, 이제는 손으로 고쳐도 돼요) → 3)~7) 손으로 쓴 규칙 (골드로 채운 버튼 · 배지 = 검정 + 흰 글자, 그래프 계열 색 원래대로, 랜딩 · 로그인 · 회사소개 Hero, 대비 수정)
@@ -87,8 +99,9 @@
     큰 로고 · 슬로건은 mono 에서 숨김, **불꽃 인트로는 classic 일 때만** (app.js, 코드는 그대로). 로그인 화면 = #F5F5F7 + 흰 카드 + 검정 버튼. 회사소개 Hero = 옅은 면 + 검정 글자
   - mono 로고 = `logo-mono`(all · A · but 검정, 위첨자 #4B5563) — `logoHtml()` · 회사소개 · theme.js 가 붙여요. 3D 뷰어 모델 색: classic 골드 / mono 밝은 회색 (`cnc-viewer.js`)
   - **새 화면 · 새 색을 만들 때는 `css/theme-mono.css` 에도 같이 넣는다** (네이비 · 골드 · 그 연한 색을 직접 쓰면 mono 값도 정하기, 새 문구는 9개 언어). mono 에서 바꾸는 건 색 · 로고 · 버튼 색까지 (화면 구성 · 이모지 · 메뉴 순서는 두 디자인이 같게)
-  - **되돌리는 방법 3가지**: (1) `config.js` 의 `SITE_THEME = 'classic'` 으로 바꾸고 push (가장 쉬움 — mono 코드는 남지만 하나도 적용되지 않아요)
-    (2) `git revert <mono 디자인 커밋>` 로 이번 커밋 통째로 되돌리기 (3) 태그 `before-mono-design` = mono 를 넣기 직전 커밋 `65a09c0` (`git diff before-mono-design` 으로 바뀐 곳 확인)
+  - **되돌리는 방법 3가지**: (1) `config.js` 의 `SITE_THEME = 'classic'`(처음 디자인) 또는 `'mono'`(흑백) 으로 바꾸고 push (가장 쉬움 — 다른 디자인 코드는 남지만 하나도 적용되지 않아요)
+    (2) `git revert <디자인 커밋>` 로 그 커밋 통째로 되돌리기 (navy 커밋을 되돌리면 mono 가 기본으로, mono 커밋까지 되돌리면 classic 만)
+    (3) 태그 `before-navy-design` = navy 를 넣기 직전 커밋 `aeaaa21` · `before-mono-design` = mono 를 넣기 직전 커밋 `65a09c0` (`git diff before-navy-design` 으로 바뀐 곳 확인)
 - 랜딩·로그인: 다크 `#06090f` + 골드 로고 (B1 스타일), 로그인은 흰색 카드
 - **로그인 전 화면: 흰 헤더 · 흰 푸터 + 다크 본문.** 상단 메뉴 줄 `.landing-nav`(랜딩 · 로그인 화면 `.auth-nav`)는 흰 배경 + 아래 1px 경계선,
   작은 로고는 `logo-light`(all/but 네이비, A·5μm 골드), 회사소개·언어 네이비, "로그인" 버튼 네이비 테두리·글자(호버 네이비 배경 + 흰 글자).
@@ -451,8 +464,9 @@
 
 ## 파일 구조 (로직과 화면 분리)
 - `index.html` — 화면 틀 3개 (landing / auth / app), 스크립트 순서
-- `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`, 디자인 스위치 `SITE_THEME` · mono 랜딩 사진 `LANDING_IMAGE` (index.html <head> 에서 읽어요)
-- `theme.js` — 디자인 스위치 적용 (`<html data-site-theme>` · theme-color · `logo-mono`, `cncIsMono()`), `css/theme-mono.css` — 흑백 미니멀 스타일 (mono 일 때만), `ui/landing-mono.js` — mono 랜딩 본문
+- `config.js` — Supabase 주소·공개 키, 사이트 주소 `SITE_URL`, 디자인 스위치 `SITE_THEME`('navy' | 'mono' | 'classic') · mono/navy 랜딩 사진 `LANDING_IMAGE` (index.html <head> 에서 읽어요)
+- `theme.js` — 디자인 스위치 적용 (`<html data-site-theme>` · mono 의 theme-color · `logo-mono`, `cncSiteTheme()` · `cncIsMono()` · `cncIsNavy()`),
+  `css/theme-mono.css` · `ui/landing-mono.js` — 흑백 미니멀 (mono 일 때만), `css/theme-navy.css` · `ui/landing-navy.js` — 네이비 스플릿 로그인 전 화면 (navy 일 때만)
 - `loader.js` — 필요할 때 불러오기: `cncAssetQuery()` · `cncLoadScript(path)` · `cncWithin(promise, ms)` · 관리자 화면 목록 `STAFF_SCRIPTS` · `cncLoadStaffScripts()` · `cncStaffScriptsReady()` (위 "첫 접속을 가볍게")
 - `build.sh`, `404.html`, `_redirects`, `_headers` — Cloudflare Pages 배포용 (위 "배포 · 도메인")
 - `favicon.ico` · `robots.txt` · `sitemap.xml` · `site.webmanifest` — 검색 · 공유용 맨 위 파일 (위 "검색 · 링크 공유"), `assets/brand/` — 파비콘 · 공유 이미지 · LINE 카드 아이콘
