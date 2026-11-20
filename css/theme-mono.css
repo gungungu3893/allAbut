@@ -1,0 +1,306 @@
+/* =================================================================
+   allAbut — 흑백 미니멀 디자인 (SITE_THEME = 'mono')
+   -----------------------------------------------------------------
+   - 이 파일의 규칙은 **전부 html[data-site-theme="mono"] 아래**에만 있어요 → config.js 의 SITE_THEME = 'classic' 이면 하나도 적용되지 않아서
+     예전 디자인(css/landing.css · css/app.css)이 그대로 보여요. 예전 css 파일은 고치지 않아요.
+   - 색: 바탕 #FFFFFF · 앱 바탕 #F5F5F7 · 카드 흰색 · 글자 #0B0F17 · 보조 글자 #4B5563 · 선 #E5E7EB. 네이비 · 골드는 쓰지 않아요.
+     골드 · 네이비로 채운 버튼 · 선택 상태 → 검정 채움 + 흰 글자 / 골드 선 → 검정 · 회색 선 / 골드 글자 → #4B5563 / 네이비 글자 → #0B0F17
+   - 그대로 두는 색 (뜻을 전해요): 주문 단계 배지(STAGE_COLORS) · 오류 빨강 · 성공 초록 · 경고 노랑 · TEST 배지 · LINE 초록 · 관리자 그래프 계열 색 · 역할 색 · 안내(파랑)
+   - ⚠️ 새 화면 · 새 색을 만들면 여기에도 같이 넣어요 (예전 css 에 #001D4A · 골드를 직접 썼다면 아래 "자동 규칙"을 다시 만들거나 손으로 추가)
+   - 순서: 1) 색 변수 → 2) 자동 규칙 → 3)~6) 손으로 쓴 규칙 (뒤에 있는 것이 이겨요)
+   ================================================================= */
+
+/* =================================================================
+   1) 색 변수 — 예전 변수 이름 그대로 값만 바꿔요 (네이비 글자 · 채움은 검정, 골드 선은 검정, 골드 글자(--gold-dark)는 회색)
+      골드로 "채운" 곳은 글자가 네이비라서 검정 위 검정이 되지 않게 3) 에서 흰 글자로 하나씩 바꿔요
+   ================================================================= */
+html[data-site-theme="mono"] {
+  --navy: #0B0F17;
+  --gold: #0B0F17;
+  --gold-dark: #4B5563;
+  --dark: #FFFFFF;
+  --bg: #F5F5F7;
+  --card: #FFFFFF;
+  --text: #0B0F17;
+  --muted: #4B5563;
+  --muted-light: #575E6B;        /* #6B7280 은 #F5F5F7 위에서 4.5:1 이 안 돼서 조금 진하게 */
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --public-bar-bg: #FFFFFF;
+  --public-bar-border: #E5E7EB;
+  --public-bar-text: #0B0F17;
+  --public-bar-hover-bg: #0B0F17;
+  --public-bar-hover-text: #FFFFFF;
+  --public-footer-text: #4B5563;
+  --public-footer-link: #0B0F17;
+  --shadow: 0 1px 2px rgba(11, 15, 23, 0.06), 0 4px 16px rgba(11, 15, 23, 0.05);
+}
+
+/* =================================================================
+   2) 자동 규칙 — 예전 css 에 직접 써 넣은 네이비 · 골드 색(배경 · 테두리 · 그림자)을 같은 선택자로 흑백 값으로
+   ================================================================= */
+html[data-site-theme="mono"] .public-lang { color: #4B5563; }
+html[data-site-theme="mono"] .public-lang option { color: #0B0F17; }
+html[data-site-theme="mono"] .auth-field input:focus { box-shadow: 0 0 0 3px rgba(11, 15, 23, 0.12); }
+html[data-site-theme="mono"] .auth-field select:not(.phone-dial-select):focus { box-shadow: 0 0 0 3px rgba(11, 15, 23, 0.12); }
+html[data-site-theme="mono"] .auth-submit:hover { background: #262B33; }
+html[data-site-theme="mono"] .auth-link:hover { color: #4B5563; }
+html[data-site-theme="mono"] .back-link { color: #4B5563; }
+html[data-site-theme="mono"] .credit-badge { background: #F5F5F7; border: 1px solid #D1D5DB; }
+html[data-site-theme="mono"] .session-extend:hover { background: #F3F4F6; }
+html[data-site-theme="mono"] .btn-primary:hover:not(:disabled) { background: #262B33; }
+html[data-site-theme="mono"] .btn-outline:hover:not(:disabled) { background: #F3F4F6; }
+html[data-site-theme="mono"] .input:focus { box-shadow: 0 0 0 3px rgba(11, 15, 23, 0.12); }
+html[data-site-theme="mono"] .readonly-value { background: #F3F4F6; }
+html[data-site-theme="mono"] .badge { background: #F3F4F6; }
+html[data-site-theme="mono"] .stage-badge { background: var(--stage-bg, #F3F4F6); }
+html[data-site-theme="mono"] .credit-use { background: #F3F4F6; }
+html[data-site-theme="mono"] .home-card:hover { box-shadow: 0 8px 24px rgba(11, 15, 23, 0.1); }
+html[data-site-theme="mono"] .home-card-new .home-card-desc { color: #D1D5DB; }
+html[data-site-theme="mono"] .wiz-bottom-bar { box-shadow: 0 -4px 16px rgba(11, 15, 23, 0.06); }
+html[data-site-theme="mono"] .tooth-side { background: #F3F4F6; }
+html[data-site-theme="mono"] .tooth-shape { stroke: #9CA3AF; }
+html[data-site-theme="mono"] .tooth-cej { stroke: #D1D5DB; }
+html[data-site-theme="mono"] .tooth-btn:hover { border-color: rgba(11, 15, 23, 0.35); }
+html[data-site-theme="mono"] .tooth-info { background: #F3F4F6; }
+html[data-site-theme="mono"] .shade-chip { border: 1.5px solid rgba(11, 15, 23, 0.25); }
+html[data-site-theme="mono"] .shade-option { border: 2px solid rgba(11, 15, 23, 0.15); }
+html[data-site-theme="mono"] .drop-zone.dragging { background: #F3F4F6; }
+html[data-site-theme="mono"] .credit-box { background: #F5F5F7; border: 1.5px solid #D1D5DB; }
+html[data-site-theme="mono"] .progress-box { background: #F3F4F6; }
+html[data-site-theme="mono"] .progress { background: #E5E7EB; }
+html[data-site-theme="mono"] .table th { background: #F3F4F6; }
+html[data-site-theme="mono"] .sum-credits { background: #F5F5F7; }
+html[data-site-theme="mono"] .seg { background: #ECECEF; }
+html[data-site-theme="mono"] .seg-btn.active { box-shadow: 0 1px 3px rgba(11, 15, 23, 0.15); }
+html[data-site-theme="mono"] .order-summary:hover { background: #FAFAFA; }
+html[data-site-theme="mono"] .action-box { background: #F3F4F6; }
+html[data-site-theme="mono"] .action-box.highlight { background: #F5F5F7; border: 1.5px solid #D1D5DB; }
+html[data-site-theme="mono"] .order-todo { border-top: 1px solid #D1D5DB; }
+html[data-site-theme="mono"] .home-todo { background: #FAFAFA; }
+html[data-site-theme="mono"] .home-todo-item { border: 1px solid #D1D5DB; }
+html[data-site-theme="mono"] .viewer-body { background: #F3F4F6; }
+html[data-site-theme="mono"] .admin-table tr.clickable:hover td { background: #F3F4F6; }
+html[data-site-theme="mono"] .credit-badge-sm { background: #F5F5F7; }
+html[data-site-theme="mono"] .chip:hover { background: #F3F4F6; }
+html[data-site-theme="mono"] .datepicker { box-shadow: 0 16px 40px rgba(11, 15, 23, 0.2); }
+html[data-site-theme="mono"] .dp-day { background: #F5F5F7; }
+html[data-site-theme="mono"] .popover { box-shadow: 0 12px 32px rgba(11, 15, 23, 0.18); }
+html[data-site-theme="mono"] .guide-flow li.action { background: #F5F5F7; border: 1.5px solid #D1D5DB; }
+html[data-site-theme="mono"] .pp-box { background: #F3F4F6; border: 2px solid #0B0F17; }
+html[data-site-theme="mono"] .pp-title { color: #0B0F17; }
+html[data-site-theme="mono"] .legal-toc a:hover { background: #F3F4F6; }
+html[data-site-theme="mono"] .legal-notice { background: #F3F4F6; }
+html[data-site-theme="mono"] .admin-role-tag { background: rgba(11, 15, 23, 0.12); }
+html[data-site-theme="mono"] .about-why-card:hover { box-shadow: 0 10px 28px rgba(11, 15, 23, 0.08); }
+html[data-site-theme="mono"] .about-cert-chip { background: #F5F5F7; }
+html[data-site-theme="mono"] .free-option { background: #F5F5F7; }
+html[data-site-theme="mono"] .lot-free td { background: #F5F5F7; }
+html[data-site-theme="mono"] .free-ship-box { background: #F5F5F7; }
+html[data-site-theme="mono"] .clinic-change-new { background: #F5F5F7; border: 1px solid #D1D5DB; }
+html[data-site-theme="mono"] .complete-desc { border: 1px solid #D1D5DB; }
+html[data-site-theme="mono"] .kind-paid { background: #E5E7EB; }
+html[data-site-theme="mono"] .deadline-later-note { background: #F3F4F6; border: 1px solid #E5E7EB; }
+html[data-site-theme="mono"] .filter-chip { background: #F3F4F6; }
+html[data-site-theme="mono"] .product-badge.product-crown { background: #F5F5F7; border-color: #D1D5DB; }
+html[data-site-theme="mono"] .pc-row.pc-crown_set { background: #FAFAFA; border-color: #D1D5DB; }
+html[data-site-theme="mono"] .product-seg .seg-btn.product-opt-crown_set.active { background: #F5F5F7; }
+html[data-site-theme="mono"] .credit-box-crown_set { border-color: #D1D5DB; }
+html[data-site-theme="mono"] .tooth-crown-row td { background: #FAFAFA; }
+html[data-site-theme="mono"] .back-to-top { box-shadow: 0 6px 18px rgba(11, 15, 23, 0.28), 0 2px 4px rgba(0, 0, 0, 0.12); }
+html[data-site-theme="mono"] .back-to-top:hover { background: #262B33; box-shadow: 0 8px 22px rgba(11, 15, 23, 0.38), 0 0 0 2px var(--gold); }
+html[data-site-theme="mono"] .back-to-top:focus-visible { box-shadow: 0 0 0 6px #fff, 0 8px 22px rgba(11, 15, 23, 0.38); }
+html[data-site-theme="mono"] .guide-topup-steps li::marker { color: var(--gold-dark, #4B5563); }
+html[data-site-theme="mono"] .phone-field .phone-dial:focus-within { box-shadow: 0 0 0 3px rgba(11, 15, 23, 0.12); }
+html[data-site-theme="mono"] .perf-bar-fill { background: #6B7280; }
+
+/* =================================================================
+   3) 손으로 정한 규칙 (위 자동 규칙보다 뒤 = 이쪽이 이겨요)
+   ================================================================= */
+
+/* ----- 기본 바탕 · 글자 ----- */
+html[data-site-theme="mono"] body { background: #FFFFFF; color: #0B0F17; }
+html[data-site-theme="mono"] body.in-app { background: #F5F5F7; color: #0B0F17; }
+
+/* ----- 로고: all · A · but 검정, 위첨자 회색 (logo-mono — theme.js · logoHtml · 회사소개가 붙여요) ----- */
+html[data-site-theme="mono"] .logo-mono .logo-all,
+html[data-site-theme="mono"] .logo-mono .logo-but,
+html[data-site-theme="mono"] .logo-mono .logo-a { color: #0B0F17; }
+html[data-site-theme="mono"] .logo-mono .logo-um { color: #4B5563; }
+
+/* ----- 골드로 채운 버튼 · 배지 → 검정 채움 + 흰 글자 (예전: 골드 배경 + 네이비 글자) ----- */
+html[data-site-theme="mono"] .btn-gold,
+html[data-site-theme="mono"] .tooth-check,
+html[data-site-theme="mono"] .admin-badge,
+html[data-site-theme="mono"] .guide-step-num,
+html[data-site-theme="mono"] .guide-flow-num,
+html[data-site-theme="mono"] .pkg-badge.best,
+html[data-site-theme="mono"] .fin-top li:first-child .fin-rank,
+html[data-site-theme="mono"] .wiz-step.current .wiz-step-num,
+html[data-site-theme="mono"] .stagebar-step.current .stagebar-dot,
+html[data-site-theme="mono"] .wiz-dots li.current .wiz-dot { background: #0B0F17; border-color: #0B0F17; color: #FFFFFF; }
+html[data-site-theme="mono"] .btn-gold:hover:not(:disabled) { background: #262B33; color: #FFFFFF; }
+
+/* ----- 골드 글자 → 회색 #4B5563 ----- */
+html[data-site-theme="mono"] .home-card-arrow,
+html[data-site-theme="mono"] .back-link:hover,
+html[data-site-theme="mono"] .about-icon { color: #4B5563; }
+
+/* ----- 관리자 그래프의 계열 색은 그대로 (네이비 막대 · 골드 막대가 서로 구별되게) ----- */
+html[data-site-theme="mono"] .bar,
+html[data-site-theme="mono"] .legend-dot,
+html[data-site-theme="mono"] .legend-line { background: #001D4A; }
+html[data-site-theme="mono"] .bar.teeth,
+html[data-site-theme="mono"] .legend-dot.teeth,
+html[data-site-theme="mono"] .legend-dot.fin-legend-bar { background: #D4AF37; }
+html[data-site-theme="mono"] .fin-bar { fill: #D4AF37; }
+html[data-site-theme="mono"] .fin-bar-g.selected .fin-bar { fill: #B8921F; }
+
+/* ----- "맨 위로" 버튼: 밝은 화면용 모양 (검정 + 흰 글자). 랜딩 · 로그인도 밝아서 on-dark 도 같은 모양 ----- */
+html[data-site-theme="mono"] .back-to-top,
+html[data-site-theme="mono"] .back-to-top.on-dark {
+  background: #0B0F17; color: #FFFFFF; border-color: #0B0F17;
+  box-shadow: 0 6px 18px rgba(11, 15, 23, 0.22), 0 2px 4px rgba(0, 0, 0, 0.10);
+}
+html[data-site-theme="mono"] .back-to-top:hover,
+html[data-site-theme="mono"] .back-to-top.on-dark:hover { background: #262B33; box-shadow: 0 8px 22px rgba(11, 15, 23, 0.30), 0 0 0 2px #FFFFFF; }
+html[data-site-theme="mono"] .back-to-top.on-dark:focus-visible { outline-color: var(--focus); box-shadow: 0 0 0 6px #FFFFFF, 0 8px 22px rgba(11, 15, 23, 0.30); }
+
+/* ----- 🎁 이벤트 배너 (랜딩 · 로그인): 검정 채움 + 흰 글자 ----- */
+html[data-site-theme="mono"] .campaign-banner {
+  background: #0B0F17; color: #FFFFFF; box-shadow: none; border-radius: 999px; padding: 12px 22px;
+}
+html[data-site-theme="mono"] .campaign-until { opacity: 1; color: #D1D5DB; }
+
+/* =================================================================
+   4) 로그인 전 화면 — 랜딩 (흰 바탕 · 가운데 정렬 · 최대 폭 1080px)
+   ================================================================= */
+html[data-site-theme="mono"] .screen-dark { background: #FFFFFF; color: #0B0F17; }
+html[data-site-theme="mono"] #screen-landing { justify-content: flex-start; padding-top: 96px; }
+/* 랜딩 본문이 길어서 아래 푸터를 화면에 고정하지 않고 본문 다음에 놓아요 (휴대폰에서 푸터가 화면을 가리지 않게) */
+html[data-site-theme="mono"] .public-footer { position: static; }
+html[data-site-theme="mono"] .screen-dark { padding-bottom: 48px; }
+/* 예전 큰 로고 · 슬로건은 mono 에서 숨겨요 (불꽃 인트로도 mono 에서는 실행 안 함 — app.js). "Beta test service" 는 남겨요 */
+html[data-site-theme="mono"] #screen-landing .logo-hero,
+html[data-site-theme="mono"] #screen-landing .slogan,
+html[data-site-theme="mono"] #screen-landing .logo-fx { display: none; }
+/* 순서: 메뉴 줄 → 방문자 숫자 → 새 본문 → Beta · 이벤트 배너 → 광고 */
+html[data-site-theme="mono"] #screen-landing .visit-counter { position: static; order: 1; align-self: flex-end; margin: 4px 4px 0; }
+html[data-site-theme="mono"] #screen-landing .mono-landing { order: 2; }
+html[data-site-theme="mono"] #screen-landing .slogan-row { order: 3; margin-top: 18px; }
+html[data-site-theme="mono"] #screen-landing .campaign-banner { order: 4; }
+html[data-site-theme="mono"] #screen-landing .ad-slot-landing { order: 5; }
+html[data-site-theme="mono"] .visit-counter .vc-label,
+html[data-site-theme="mono"] .visit-counter .vc-sep { color: #4B5563; }
+html[data-site-theme="mono"] .visit-counter .vc-num { color: #4B5563; font-weight: 500; font-size: 0.875rem; }
+html[data-site-theme="mono"] .beta-note { color: #B45309; }
+html[data-site-theme="mono"] .ad-slot-landing .ad-frame { background: #F5F5F7; }
+
+/* 메뉴 줄: 로고 · 회사소개 · 가격 · 언어 · 로그인 (가격 링크는 ui/landing-mono.js 가 mono 일 때만 넣어요) */
+html[data-site-theme="mono"] .landing-nav-link:hover,
+html[data-site-theme="mono"] .landing-nav-link:focus-visible { border-bottom-color: #0B0F17; }
+html[data-site-theme="mono"] .landing-nav-signin { border-radius: 999px; }
+
+/* ----- 새 본문 (ui/landing-mono.js) ----- */
+html[data-site-theme="mono"] .mono-landing {
+  display: block; width: 100%; max-width: 1080px; margin: 40px auto 0; text-align: center; color: #0B0F17;
+}
+html[data-site-theme="mono"] .mono-hero-title {
+  margin: 0; font-size: clamp(40px, 7vw, 84px); font-weight: 600; line-height: 1.04; letter-spacing: -0.035em;
+  color: #0B0F17; overflow-wrap: anywhere;
+}
+html[data-site-theme="mono"] .mono-hero-title span { display: block; }
+html[data-site-theme="mono"] .mono-hero-title .mono-hero-l2 { color: #6B7280; }
+html[data-site-theme="mono"] .mono-hero-desc { margin: 22px auto 0; max-width: 640px; font-size: 1.1875rem; line-height: 1.55; color: #4B5563; }
+html[data-site-theme="mono"] .mono-cta { margin-top: 30px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 26px; }
+html[data-site-theme="mono"] .mono-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 56px; padding: 0 32px; border-radius: 999px; border: none; cursor: pointer;
+  background: #0B0F17; color: #FFFFFF; font-size: 1.0625rem; font-weight: 600; text-decoration: none;
+}
+html[data-site-theme="mono"] .mono-btn-primary:hover { background: #262B33; }
+html[data-site-theme="mono"] .mono-link {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 4px;
+  color: #0B0F17; font-size: 1.0625rem; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
+}
+html[data-site-theme="mono"] .mono-link:hover { text-decoration-thickness: 2px; }
+
+/* 주문 5단계 면 (#F5F5F7, 모서리 32px) + 위쪽 사진 자리(config.js LANDING_IMAGE 가 있을 때만) */
+html[data-site-theme="mono"] .mono-steps-panel { margin-top: 56px; padding: 40px 32px; border-radius: 32px; background: #F5F5F7; text-align: start; }
+html[data-site-theme="mono"] .mono-landing-photo { margin: -8px -8px 32px; border-radius: 24px; overflow: hidden; background: #FFFFFF; }
+html[data-site-theme="mono"] .mono-landing-photo img { display: block; width: 100%; height: auto; max-height: 460px; object-fit: cover; }
+html[data-site-theme="mono"] .mono-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
+html[data-site-theme="mono"] .mono-step { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+html[data-site-theme="mono"] .mono-step-num { font-family: var(--font-mono); font-size: clamp(32px, 4vw, 48px); font-weight: 500; line-height: 1; color: #0B0F17; letter-spacing: -0.02em; }
+html[data-site-theme="mono"] .mono-step-label { font-size: 1.0625rem; font-weight: 500; line-height: 1.4; color: #0B0F17; overflow-wrap: anywhere; }
+
+/* 세 가지 사실 한 줄 (휴대폰은 세로) */
+html[data-site-theme="mono"] .mono-facts {
+  list-style: none; margin: 28px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0;
+  color: #4B5563; font-size: 1rem;
+}
+html[data-site-theme="mono"] .mono-fact { padding: 0 20px; border-inline-start: 1px solid #D1D5DB; overflow-wrap: anywhere; }
+html[data-site-theme="mono"] .mono-fact:first-child { border-inline-start: none; }
+html[data-site-theme="mono"] .mono-fact .mono { color: #0B0F17; font-weight: 500; }
+
+@media (max-width: 899px) {
+  html[data-site-theme="mono"] .mono-steps { grid-template-columns: 1fr; gap: 0; }
+  html[data-site-theme="mono"] .mono-step { flex-direction: row; align-items: baseline; gap: 18px; padding: 14px 0; border-top: 1px solid #E5E7EB; }
+  html[data-site-theme="mono"] .mono-step:first-child { border-top: none; padding-top: 0; }
+  html[data-site-theme="mono"] .mono-step-num { font-size: 32px; min-width: 2.2ch; }
+}
+@media (max-width: 639px) {
+  html[data-site-theme="mono"] .mono-landing { margin-top: 28px; }
+  html[data-site-theme="mono"] .mono-steps-panel { margin-top: 40px; padding: 26px 20px; border-radius: 24px; }
+  html[data-site-theme="mono"] .mono-landing-photo { margin: -6px -6px 22px; border-radius: 18px; }
+  html[data-site-theme="mono"] .mono-facts { flex-direction: column; align-items: center; gap: 8px; }
+  html[data-site-theme="mono"] .mono-fact { border-inline-start: none; padding: 0; }
+  html[data-site-theme="mono"] .mono-cta { flex-direction: column; gap: 6px; }
+}
+@media (max-width: 479px) {
+  html[data-site-theme="mono"] #screen-landing { padding-top: 124px; }
+  html[data-site-theme="mono"] #screen-landing .visit-counter { align-self: center; }
+}
+
+/* =================================================================
+   5) 로그인 화면 — 바탕 #F5F5F7 + 흰 카드, 주 버튼 검정 (폼 동작 · Turnstile · 에러 표시는 그대로)
+   ================================================================= */
+html[data-site-theme="mono"] #screen-auth { background: #F5F5F7; }
+html[data-site-theme="mono"] .auth-card { border-top: 1px solid #E5E7EB; border: 1px solid #E5E7EB; box-shadow: 0 8px 30px rgba(11, 15, 23, 0.06); }
+html[data-site-theme="mono"] .auth-tab.active { color: #0B0F17; border-bottom-color: #0B0F17; }
+html[data-site-theme="mono"] .auth-submit { background: #0B0F17; color: #FFFFFF; border-radius: 999px; }
+html[data-site-theme="mono"] .auth-submit:hover { background: #262B33; }
+html[data-site-theme="mono"] .auth-link:hover { color: #4B5563; }
+html[data-site-theme="mono"] .public-lang select { background: #FFFFFF; border-color: #D1D5DB; color: #0B0F17; }
+html[data-site-theme="mono"] .public-lang option { color: #0B0F17; }
+html[data-site-theme="mono"] .back-link { color: #4B5563; }
+html[data-site-theme="mono"] .back-link:hover { color: #0B0F17; }
+
+/* ----- 세션 만료 안내 (랜딩 위 3초) ----- */
+html[data-site-theme="mono"] .landing-notice { border-inline-start-color: #0B0F17; }
+
+/* =================================================================
+   6) 회사소개 Hero (예전: 다크 네이비 그라데이션) → 옅은 면 + 검정 글자
+   ================================================================= */
+html[data-site-theme="mono"] .about-hero { background: #F5F5F7; color: #0B0F17; }
+html[data-site-theme="mono"] .about-hero-title { color: #0B0F17; }
+html[data-site-theme="mono"] .about-hero-um { color: #4B5563; }
+html[data-site-theme="mono"] .about-hero-sub { color: #4B5563; }
+html[data-site-theme="mono"] .about-dim path { stroke: #9CA3AF; }
+html[data-site-theme="mono"] .about-dim text { fill: #4B5563; }
+html[data-site-theme="mono"] .about-btn-ghost { color: #0B0F17; border-color: #0B0F17; background: transparent; }
+html[data-site-theme="mono"] .about-btn-ghost:hover { color: #FFFFFF; background: #0B0F17; border-color: #0B0F17; }
+html[data-site-theme="mono"] .about-cta-order { background: #0B0F17; color: #FFFFFF; }
+html[data-site-theme="mono"] .about-sec-num,
+html[data-site-theme="mono"] .page-about .about-spec,
+html[data-site-theme="mono"] .page-about .about-num,
+html[data-site-theme="mono"] .about-stat dt { color: #0B0F17; }
+html[data-site-theme="mono"] .about-sec-rule,
+html[data-site-theme="mono"] .about-cert-dot,
+html[data-site-theme="mono"] .about-step::before { background: #9CA3AF; }
+
+/* =================================================================
+   7) 대비 검사에서 고친 곳 (모든 글자 4.5:1 이상)
+   ================================================================= */
+html[data-site-theme="mono"] .about-why-idx { color: #6B7280; }                 /* 예전 #98A2B3 (2.6:1) */
+html[data-site-theme="mono"] .home-card-new .home-card-arrow { color: #FFFFFF; } /* 검정 카드 위 화살표 */

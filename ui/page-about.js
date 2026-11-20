@@ -139,7 +139,7 @@ var PageAbout = {
     var hero =
       '<section class="about-hero" aria-labelledby="about-hero-title">' +
         '<div class="about-hero-inner">' +
-          '<div class="logo about-logo" aria-label="allAbut 5μm">' +
+          '<div class="logo about-logo' + (window.cncIsMono && cncIsMono() ? ' logo-mono' : '') + '" aria-label="allAbut 5μm">' +   // mono: 흑백 로고
             '<span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>' +
           '</div>' +
           '<h1 class="about-hero-title" id="about-hero-title">' + escHtml(t('about_hero_title')) +

@@ -2021,6 +2021,19 @@ LANG.en = {
   admin_ad_license_hint: 'If entered, it is shown in the footer of the screens before sign-in.',
   admin_mfr_need_sql: 'To enter manufacturer information, run sql/026_manufacturer.sql in Supabase first.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'Pricing',
+  mono_hero_l1: 'CNC custom abutments.',
+  mono_hero_l2: 'Ordered online.',
+  mono_hero_desc: 'Upload a scan. Approve the design. Receive the piece.',
+  mono_cta_start: 'Start an order',
+  mono_cta_how: 'See how it works',
+  mono_steps_aria: 'How ordering works',
+  mono_fact_tolerance: '<5μm tolerance',
+  mono_fact_material: 'Grade 23 titanium · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: 'From {price} THB per tooth, excluding VAT',
+  mono_landing_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

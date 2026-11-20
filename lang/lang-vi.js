@@ -2013,6 +2013,19 @@ LANG.vi = {
   admin_ad_license_hint: 'Nếu nhập, số này sẽ hiển thị ở chân trang của các màn hình trước khi đăng nhập.',
   admin_mfr_need_sql: 'Để nhập thông tin nhà sản xuất, hãy chạy sql/026_manufacturer.sql trong Supabase trước.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'Bảng giá',
+  mono_hero_l1: 'CNC Custom Abutment.',
+  mono_hero_l2: 'Đặt hàng trực tuyến.',
+  mono_hero_desc: 'Tải lên bản quét. Duyệt thiết kế. Nhận sản phẩm.',
+  mono_cta_start: 'Bắt đầu đặt hàng',
+  mono_cta_how: 'Xem cách hoạt động',
+  mono_steps_aria: 'Các bước đặt hàng',
+  mono_fact_tolerance: 'Dung sai <5μm',
+  mono_fact_material: 'Titan Grade 23 · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: 'Từ {price} THB mỗi răng, chưa gồm VAT',
+  mono_landing_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

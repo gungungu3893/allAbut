@@ -2013,6 +2013,19 @@ LANG.th = {
   admin_ad_license_hint: 'ถ้ากรอกไว้ จะแสดงในส่วนท้ายของหน้าก่อนเข้าสู่ระบบ',
   admin_mfr_need_sql: 'หากต้องการกรอกข้อมูลผู้ผลิต ให้รัน sql/026_manufacturer.sql ใน Supabase ก่อน',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'ราคา',
+  mono_hero_l1: 'CNC Custom Abutment',
+  mono_hero_l2: 'สั่งซื้อออนไลน์',
+  mono_hero_desc: 'อัปโหลดไฟล์สแกน อนุมัติแบบ แล้วรับชิ้นงาน',
+  mono_cta_start: 'เริ่มสั่งงาน',
+  mono_cta_how: 'ดูวิธีการทำงาน',
+  mono_steps_aria: 'ขั้นตอนการสั่งงาน',
+  mono_fact_tolerance: 'ค่าพิกัดความเผื่อ <5μm',
+  mono_fact_material: 'ไทเทเนียม Grade 23 · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: 'เริ่มต้น {price} THB ต่อซี่ ไม่รวม VAT',
+  mono_landing_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

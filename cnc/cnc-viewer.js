@@ -375,7 +375,9 @@ function _showGeometry(geometry) {
   _viewer.camera.far = size * 100;
   _viewer.camera.updateProjectionMatrix();
 
-  var mat = new THREE.MeshPhongMaterial({ color: 0xd4af37, shininess: 45, specular: 0x555555, side: THREE.DoubleSide });
+  // 모델 색: 예전 디자인 = 골드 / 흑백 미니멀(SITE_THEME 'mono') = 티타늄 같은 밝은 회색
+  var mono = !!(window.cncIsMono && cncIsMono());
+  var mat = new THREE.MeshPhongMaterial({ color: mono ? 0xb9bec7 : 0xd4af37, shininess: 45, specular: 0x555555, side: THREE.DoubleSide });
   _viewer.mesh = new THREE.Mesh(geometry, mat);
   _viewer.scene.add(_viewer.mesh);
 
@@ -396,9 +398,11 @@ function _makeShadow(radius, y) {
     c.width = c.height = 128;
     var g = c.getContext('2d');
     var grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(0, 29, 74, 0.22)');
-    grad.addColorStop(0.6, 'rgba(0, 29, 74, 0.08)');
-    grad.addColorStop(1, 'rgba(0, 29, 74, 0)');
+    // 바닥 그림자 색: classic = 네이비 / mono = 검정 계열 (네이비 · 골드는 mono 에서 쓰지 않아요)
+    var shade = (window.cncIsMono && cncIsMono()) ? '11, 15, 23' : '0, 29, 74';
+    grad.addColorStop(0, 'rgba(' + shade + ', 0.22)');
+    grad.addColorStop(0.6, 'rgba(' + shade + ', 0.08)');
+    grad.addColorStop(1, 'rgba(' + shade + ', 0)');
     g.fillStyle = grad;
     g.fillRect(0, 0, 128, 128);
     var tex = new THREE.CanvasTexture(c);

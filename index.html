@@ -80,9 +80,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
     integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 
-  <!-- 화면 스타일: 랜딩·로그인(다크) / 앱(밝은 테마) -->
+  <!-- 설정 + 디자인 스위치: config.js 의 SITE_THEME ('mono' 흑백 미니멀 / 'classic' 예전 디자인) →
+       theme.js 가 화면을 그리기 전에 <html data-site-theme="..."> 를 붙여요 (그래서 여기 <head> 에서 읽어요) -->
+  <script src="config.js"></script>
+  <script src="theme.js"></script>
+
+  <!-- 화면 스타일: 랜딩·로그인(다크) / 앱(밝은 테마) = 예전 디자인(classic) 그대로.
+       theme-mono.css = 흑백 미니멀 — 규칙이 전부 html[data-site-theme="mono"] 아래에 있어서 classic 에서는 하나도 적용되지 않아요 -->
   <link rel="stylesheet" href="css/landing.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/theme-mono.css">
 </head>
 <body>
   <!-- 스크립트를 못 읽는 검색 로봇 · 브라우저용 짧은 소개 (화면에는 안 보여요) -->
@@ -358,10 +365,9 @@
 
   </div>
 
-  <!-- 설정 · 언어
+  <!-- 언어 (config.js 는 <head> 에서 이미 읽었어요)
        loader.js = 필요할 때 불러오기 (cncAssetQuery · cncLoadScript · 관리자 화면 목록 STAFF_SCRIPTS)
        언어 파일은 영어(대체용)만 여기에 — 지금 언어는 lang.js 가, 다른 언어는 고를 때 받아요 -->
-  <script src="config.js"></script>
   <script src="loader.js"></script>
   <script src="lang/lang-en.js"></script>
   <script src="lang.js"></script>
@@ -392,6 +398,7 @@
   <script src="ui/logo-intro.js"></script>
   <script src="ui/visit-counter.js"></script>
   <script src="ui/service-badge.js"></script>
+  <script src="ui/landing-mono.js"></script><!-- 흑백 미니멀 랜딩 본문 (SITE_THEME 'mono' 일 때만 그려요, classic 이면 아무것도 안 해요) -->
   <script src="ui/ad-banner.js"></script>
   <script src="ui/back-to-top.js"></script>
   <script src="ui/line-connect.js"></script>

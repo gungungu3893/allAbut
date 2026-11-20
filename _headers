@@ -41,6 +41,9 @@
 /loader.js
   Cache-Control: public, max-age=31536000, immutable
 
+/theme.js
+  Cache-Control: public, max-age=31536000, immutable
+
 /auth.js
   Cache-Control: public, max-age=31536000, immutable
 

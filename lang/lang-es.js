@@ -2018,6 +2018,19 @@ LANG.es = {
   admin_ad_license_hint: 'Si se introduce, se muestra en el pie de página de las pantallas anteriores al inicio de sesión.',
   admin_mfr_need_sql: 'Para introducir los datos del fabricante, ejecute primero sql/026_manufacturer.sql en Supabase.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'Precios',
+  mono_hero_l1: 'Pilares personalizados CNC.',
+  mono_hero_l2: 'Pedidos en línea.',
+  mono_hero_desc: 'Suba un escaneo. Apruebe el diseño. Reciba la pieza.',
+  mono_cta_start: 'Iniciar un pedido',
+  mono_cta_how: 'Ver cómo funciona',
+  mono_steps_aria: 'Cómo se hace un pedido',
+  mono_fact_tolerance: 'Tolerancia <5μm',
+  mono_fact_material: 'Titanio Grade 23 · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: 'Desde {price} THB por diente, sin IVA',
+  mono_landing_image_alt: 'Pilar personalizado CNC',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

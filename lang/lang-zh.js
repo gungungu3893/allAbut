@@ -2013,6 +2013,19 @@ LANG.zh = {
   admin_ad_license_hint: '填写后会显示在登录前页面的页脚。',
   admin_mfr_need_sql: '要填写制造商信息，请先在 Supabase 中运行 sql/026_manufacturer.sql。',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: '价格',
+  mono_hero_l1: 'CNC定制基台。',
+  mono_hero_l2: '在线订购。',
+  mono_hero_desc: '上传扫描。确认设计。收到成品。',
+  mono_cta_start: '开始下单',
+  mono_cta_how: '了解流程',
+  mono_steps_aria: '订购流程',
+  mono_fact_tolerance: '公差 <5μm',
+  mono_fact_material: 'Grade 23 钛合金 · Ti-6Al-4V ELI，ASTM F136',
+  mono_fact_price: '每颗牙 {price} THB 起（不含增值税）',
+  mono_landing_image_alt: 'CNC定制基台',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

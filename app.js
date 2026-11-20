@@ -61,7 +61,8 @@ function showScreen(name) {
         if (name === 'landing' && window.AdBanner) { AdBanner.newPage(); AdBanner.mountAll(next); }
 
         // 랜딩이 처음 보일 때 로고 인트로 (탭당 1번). 페이드인(0.4초)이 끝난 뒤 — LogoIntro 가 글꼴 로딩 + 0.5초 더 기다려요
-        if (name === 'landing' && window.LogoIntro) {
+        //   예전 디자인(SITE_THEME 'classic')일 때만 — 흑백 미니멀(mono) 랜딩에는 큰 로고가 없어서 실행하지 않아요 (코드는 그대로)
+        if (name === 'landing' && window.LogoIntro && !(window.cncIsMono && cncIsMono())) {
           setTimeout(function () {
             if (next.classList.contains('active') && next.classList.contains('visible')) LogoIntro.maybePlay();
           }, 400);
@@ -603,6 +604,7 @@ function leaveLegalPage(event, toSignIn) {
 
   await cncLoadLangWithin(currentLang);   // 지금 언어 파일 (lang.js 가 이미 받기 시작했어요. 늦으면 영어로 먼저 → 도착하면 다시 그려요)
   applyLangToDocument();   // 저장된 언어 반영 (아랍어·페르시아어는 RTL)
+  if (window.LandingMono) LandingMono.render();   // 흑백 미니멀 랜딩 본문을 지금 언어로 (classic 이면 아무것도 안 해요)
   applyFontScale();        // 저장된 글자 크기 반영
   fillLangSelects();
   renderSignupAgree();

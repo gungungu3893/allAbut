@@ -2018,6 +2018,19 @@ LANG.ar = {
   admin_ad_license_hint: 'إذا أُدخل، يظهر في تذييل الشاشات قبل تسجيل الدخول.',
   admin_mfr_need_sql: 'لإدخال بيانات الشركة المصنّعة، شغّل أولًا sql/026_manufacturer.sql في Supabase.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'الأسعار',
+  mono_hero_l1: 'دعامات CNC مخصصة.',
+  mono_hero_l2: 'اطلبها عبر الإنترنت.',
+  mono_hero_desc: 'ارفع المسح. وافق على التصميم. استلم القطعة.',
+  mono_cta_start: 'ابدأ طلبًا',
+  mono_cta_how: 'شاهد كيف يعمل',
+  mono_steps_aria: 'خطوات الطلب',
+  mono_fact_tolerance: 'تفاوت ⁦<5μm⁩',
+  mono_fact_material: 'تيتانيوم Grade 23 · Ti-6Al-4V ELI، ASTM F136',
+  mono_fact_price: 'ابتداءً من {price} THB للسن، غير شامل ضريبة القيمة المضافة',
+  mono_landing_image_alt: 'دعامة CNC مخصصة',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

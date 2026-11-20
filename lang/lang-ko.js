@@ -2014,6 +2014,19 @@ LANG.ko = {
   admin_ad_license_hint: '입력하면 로그인 전 화면의 푸터에 보여요.',
   admin_mfr_need_sql: '제조사 정보를 입력하려면 먼저 Supabase 에서 sql/026_manufacturer.sql 을 실행하세요.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: '가격',
+  mono_hero_l1: 'CNC 커스텀 어버트먼트.',
+  mono_hero_l2: '온라인으로 주문하세요.',
+  mono_hero_desc: '스캔을 올리고, 디자인을 승인하고, 제품을 받으세요.',
+  mono_cta_start: '주문 시작하기',
+  mono_cta_how: '주문 방법 보기',
+  mono_steps_aria: '주문 순서',
+  mono_fact_tolerance: '공차 <5μm',
+  mono_fact_material: 'Grade 23 티타늄 · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: '치아 1개당 {price} THB 부터 (VAT 별도)',
+  mono_landing_image_alt: 'CNC 커스텀 어버트먼트',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

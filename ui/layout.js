@@ -56,9 +56,10 @@ function setFontScale(id) {
 
 // ================================================================
 // 3) 로고 (밝은 배경용: all/but 네이비, A·5μm 골드)
+//    흑백 미니멀(SITE_THEME 'mono')이면 logo-mono 를 더해요 → all · A · but 검정, 위첨자 회색 (css/theme-mono.css). classic 은 예전 그대로
 // ================================================================
 function logoHtml() {
-  return '<span class="logo logo-light" aria-label="allAbut 5μm">' +
+  return '<span class="logo logo-light' + (window.cncIsMono && cncIsMono() ? ' logo-mono' : '') + '" aria-label="allAbut 5μm">' +
     '<span class="logo-all">all</span><span class="logo-a">A</span><span class="logo-but">but</span><span class="logo-um">5μm</span>' +
     '</span>';
 }

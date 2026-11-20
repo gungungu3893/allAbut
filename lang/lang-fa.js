@@ -2013,6 +2013,19 @@ LANG.fa = {
   admin_ad_license_hint: 'اگر وارد شود، در پانویس صفحه‌های پیش از ورود نمایش داده می‌شود.',
   admin_mfr_need_sql: 'برای وارد کردن اطلاعات سازنده، ابتدا sql/026_manufacturer.sql را در Supabase اجرا کنید.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'قیمت‌ها',
+  mono_hero_l1: 'اباتمنت CNC سفارشی.',
+  mono_hero_l2: 'سفارش آنلاین.',
+  mono_hero_desc: 'اسکن را بارگذاری کنید. طرح را تأیید کنید. قطعه را دریافت کنید.',
+  mono_cta_start: 'شروع سفارش',
+  mono_cta_how: 'ببینید چگونه کار می‌کند',
+  mono_steps_aria: 'مراحل سفارش',
+  mono_fact_tolerance: 'تلرانس ⁦<5μm⁩',
+  mono_fact_material: 'تیتانیوم Grade 23 · Ti-6Al-4V ELI، ASTM F136',
+  mono_fact_price: 'از {price} THB برای هر دندان، بدون مالیات بر ارزش افزوده',
+  mono_landing_image_alt: 'اباتمنت CNC سفارشی',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================

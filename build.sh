@@ -26,6 +26,7 @@ FILES=(
   index.html
   404.html
   config.js
+  theme.js          # 디자인 스위치 (config.js 의 SITE_THEME → <html data-site-theme>, css/theme-mono.css 는 css/ 폴더째 복사)
   loader.js         # 필요할 때 불러오기 (언어 파일 · 관리자 화면 파일 STAFF_SCRIPTS)
   lang.js
   auth.js

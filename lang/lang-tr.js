@@ -2013,6 +2013,19 @@ LANG.tr = {
   admin_ad_license_hint: 'Girilirse oturum açmadan önceki ekranların alt bilgisinde gösterilir.',
   admin_mfr_need_sql: 'Üretici bilgilerini girmek için önce Supabase\'de sql/026_manufacturer.sql dosyasını çalıştırın.',
 
+  // ----- 흑백 미니멀(mono) 랜딩: 메뉴 "가격" · 큰 제목 · 설명 · 버튼 · 주문 5단계 · 세 가지 사실 (SITE_THEME 'mono' 일 때만 보여요) -----
+  mono_nav_pricing: 'Fiyatlar',
+  mono_hero_l1: 'CNC Custom Abutment.',
+  mono_hero_l2: 'Çevrimiçi sipariş.',
+  mono_hero_desc: 'Taramayı yükleyin. Tasarımı onaylayın. Parçayı teslim alın.',
+  mono_cta_start: 'Sipariş başlatın',
+  mono_cta_how: 'Nasıl çalıştığını görün',
+  mono_steps_aria: 'Sipariş adımları',
+  mono_fact_tolerance: 'Tolerans <5μm',
+  mono_fact_material: 'Grade 23 titanyum · Ti-6Al-4V ELI, ASTM F136',
+  mono_fact_price: 'Diş başına {price} THB\'den başlayan fiyatlar, KDV hariç',
+  mono_landing_image_alt: 'CNC Custom Abutment',
+
   // ================================================================
   // Dentalk 에서 가져온 CNC 문구
   // ================================================================
