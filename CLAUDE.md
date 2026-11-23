@@ -8,6 +8,10 @@
   ```bash
   git add . && git commit -m "메시지" && git push origin main
   ```
+- 커밋하기 전에 항상 `node tools/check.js` 를 돌린다. 실패가 있으면 고친 뒤에 올린다.
+- 새 SQL 함수 · 새 오류 코드 · 새 번역 키 · 새 디자인 파일을 만들면 이 검사가 같이 확인한다. 허용 목록에 넣을 때는 이유를 적는다.
+  - 검사 8가지: 문법 · 번역 9개 언어 · DB 함수 이름과 p_ 인자 · 오류 안내 · 빌드 · 디자인 스위치 범위 · 브랜드 규칙(CNC · <5μm) · 비밀값. 빌드를 빼고 빠르게: `node tools/check.js --no-build`
+  - 허용 목록은 `tools/check.js` 맨 위 `ALLOW` 한 곳에만 (항목마다 이유). `tools/` 는 배포되지 않아요
 
 ## 배포 · 도메인
 - 사이트 주소: **https://allabut.com** (www.allabut.com 도 연결 — www → allabut.com 301 은 Cloudflare 대시보드 Redirect Rules 에서)
